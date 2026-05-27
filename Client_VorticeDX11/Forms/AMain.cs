@@ -659,8 +659,8 @@ namespace Launcher
 
         private void Credit_label_Click(object sender, EventArgs e)
         {
-            if (Credit_label.Text == "技术支持水晶传奇：CrystalM2") Credit_label.Text = "致敬设计者：Breezer";
-            else Credit_label.Text = "技术支持水晶传奇：CrystalM2";
+            if (Credit_label.Text == "技术支持清风传奇：CrystalM2") Credit_label.Text = "致敬设计者：Breezer";
+            else Credit_label.Text = "技术支持清风传奇：CrystalM2";
         }
 
         private void AMain_FormClosed(object sender, FormClosedEventArgs e)
