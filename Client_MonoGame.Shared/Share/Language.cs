@@ -275,7 +275,7 @@ public class GameLanguage
                          LowDC = "物理攻击不足",
                          LowMC = "魔法攻击不足",
                          LowSC = "道术攻击不足",
-                         GameName = "清风传奇2",
+                         GameName = "Legend of Mir 2",
                          ExpandedStorageExpiresOn = "扩展仓库过期",
 
                          NotFemale = "非女性",
