@@ -1,4 +1,4 @@
-# LyoCrystal
+# CHX项目代码
 水晶传奇三端版，C#脚本驱动带热更，带移动端，使用微端更新。
 </br>
 </br>
@@ -26,9 +26,9 @@
 相关资源文件在QQ群共享文件中，群号：1063081017</br>
 </br>
 </br>
-<img src='https://github.com/AndrewChien/LyoCrystal/blob/main/Docs/Pics/%E7%95%8C%E9%9D%A2.png'/></br>
-<img src='https://github.com/AndrewChien/LyoCrystal/blob/main/Docs/Pics/%E8%83%8C%E5%8C%85.png'/></br>
-<img src='https://github.com/AndrewChien/LyoCrystal/blob/main/Docs/Pics/%E7%8A%B6%E6%80%81.png'/></br>
+<img src='https://github.com/Tri250/CXHDDOO/blob/main/Docs/Pics/%E7%95%8C%E9%9D%A2.png'/></br>
+<img src='https://github.com/Tri250/CXHDDOO/blob/main/Docs/Pics/%E8%83%8C%E5%8C%85.png'/></br>
+<img src='https://github.com/Tri250/CXHDDOO/blob/main/Docs/Pics/%E7%8A%B6%E6%80%81.png'/></br>
 
 ---
 
