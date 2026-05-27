@@ -1,0 +1,17 @@
+[
+  {
+    "Name": "新建配置文件",
+    "Projects": [
+      {
+        "Path": "Server.MirForms\\Server.csproj",
+        "Action": "Start",
+        "DebugTarget": "Server"
+      },
+      {
+        "Path": "Client_SharpDX9_AOT\\Client_SharpDX9_AOT.csproj",
+        "Action": "Start",
+        "DebugTarget": "Client_SharpDX9_AOT"
+      }
+    ]
+  }
+]
