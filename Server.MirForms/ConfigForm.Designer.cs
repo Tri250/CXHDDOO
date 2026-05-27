@@ -178,7 +178,7 @@
             DBVersionLabel.Name = "DBVersionLabel";
             DBVersionLabel.Size = new Size(52, 17);
             DBVersionLabel.TabIndex = 24;
-            DBVersionLabel.Text = "Version";
+            DBVersionLabel.Text = "数据库版本";
             // 
             // ServerVersionLabel
             // 
@@ -188,7 +188,7 @@
             ServerVersionLabel.Name = "ServerVersionLabel";
             ServerVersionLabel.Size = new Size(52, 17);
             ServerVersionLabel.TabIndex = 7;
-            ServerVersionLabel.Text = "Version";
+            ServerVersionLabel.Text = "服务端版本";
             // 
             // label10
             // 
@@ -503,7 +503,7 @@
             labelMicroAuthor.Name = "labelMicroAuthor";
             labelMicroAuthor.Size = new Size(81, 17);
             labelMicroAuthor.TabIndex = 3;
-            labelMicroAuthor.Text = "User/Author";
+            labelMicroAuthor.Text = "用户/作者";
             // 
             // MicroResourcePathTextBox
             // 

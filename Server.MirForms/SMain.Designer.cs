@@ -846,7 +846,7 @@ namespace Server
             Margin = new Padding(4, 3, 4, 3);
             MaximizeBox = false;
             Name = "SMain";
-            Text = "Legend of Mir 2 Server";
+            Text = "清风传奇2 服务端",
             FormClosing += SMain_FormClosing;
             Load += SMain_Load;
             MainTabs.ResumeLayout(false);
