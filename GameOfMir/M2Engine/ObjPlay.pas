@@ -22,8 +22,8 @@ type
     dwTick578: LongWord; //0x578
     dwTick57C: LongWord; //0x57C
     m_boInSafeArea: Boolean; //0x580
-    m_sUserID: string[20]; //0x58C    µÇÂ¼ÕÊºÅÃû
-    m_sIPaddr: string[15]; //0x598    ÈËÎïIPµØÖ·
+    m_sUserID: string[20]; //0x58C    ç™»å½•å¸å·å
+    m_sIPaddr: string[15]; //0x598    äººç‰©IPåœ°å€
     m_sIPLocal: string;
 
     m_Header: TRecordHeader;
@@ -31,69 +31,69 @@ type
     m_OldLoginTime: TDateTime;
     m_LoginTime: TDateTime;
 
-    m_dLogonTime: TDateTime; //0x5B0  //µÇÂ¼Ê±¼ä
-    m_dwLogonTick: LongWord; //0x5B8  Õ½ÁìÉ³³ÇÊ±¼ä(Dword)
-    m_dwDanderTick: LongWord; //×ÔÈ»³É³¤µãÊ±¼ä
-    m_dwDanderTime: LongWord; //×ÔÈ»³É³¤µãÊ±¼ä
+    m_dLogonTime: TDateTime; //0x5B0  //ç™»å½•æ—¶é—´
+    m_dwLogonTick: LongWord; //0x5B8  æˆ˜é¢†æ²™åŸæ—¶é—´(Dword)
+    m_dwDanderTick: LongWord; //è‡ªç„¶æˆé•¿ç‚¹æ—¶é—´
+    m_dwDanderTime: LongWord; //è‡ªç„¶æˆé•¿ç‚¹æ—¶é—´
     m_dwMissionTime: LongWord;
-    m_boReadyRun: Boolean; //0x5BC  //ÊÇ·ñ½øÈëÓÎÏ·Íê³É
+    m_boReadyRun: Boolean; //0x5BC  //æ˜¯å¦è¿›å…¥æ¸¸æˆå®Œæˆ
     m_nSessionID: Integer; //0x5C0
     m_dwLoadTick: LongWord; //0x5CC
-    m_nServerIndex: Integer; //0x5D0  ÈËÎïµ±Ç°ËùÔÚ·şÎñÆ÷ĞòºÅ
-    m_boEmergencyClose: Boolean; //0x5D4  µôÏß±êÖ¾
+    m_nServerIndex: Integer; //0x5D0  äººç‰©å½“å‰æ‰€åœ¨æœåŠ¡å™¨åºå·
+    m_boEmergencyClose: Boolean; //0x5D4  æ‰çº¿æ ‡å¿—
     m_boSoftClose: Boolean; //0x5D5
-    m_boKickFlag: Boolean; //0x5D6  ¶ÏÏß±êÖ¾(Byte)(@kick ÃüÁî)
+    m_boKickFlag: Boolean; //0x5D6  æ–­çº¿æ ‡å¿—(Byte)(@kick å‘½ä»¤)
     m_boReconnection: Boolean; //0x5D7
     //m_boRcdSaved: Boolean; //0x5D8
     m_dw5D4: LongWord; //0x5F4
     m_NakedAbil: TNakedAbil;
     m_nNakedCount: Integer;
     m_nNakedBackCount: Integer;
-    {m_dwHitIntervalTime: LongWord; //¹¥»÷¼ä¸ô
-    m_dwMagicHitIntervalTime: LongWord; //Ä§·¨¼ä¸ô
-    m_dwRunIntervalTime: LongWord; //×ßÂ·¼ä¸ô
-    m_dwWalkIntervalTime: LongWord; //×ßÂ·¼ä¸ô
-    m_dwTurnIntervalTime: LongWord; //»»·½Ïò¼ä¸ô
-    m_dwActionIntervalTime: LongWord; //×éºÏ²Ù×÷¼ä¸ô
-    m_dwRunLongHitIntervalTime: LongWord; //ÒÆ¶¯´ÌÉ±¼ä¸ô
-    m_dwRunHitIntervalTime: LongWord; //ÅÜÎ»¹¥»÷¼ä¸ô
-    m_dwWalkHitIntervalTime: LongWord; //×ßÎ»¹¥»÷¼ä¸ô
-    m_dwRunMagicIntervalTime: LongWord; //ÅÜÎ»Ä§·¨¼ä¸ô   }
-    //    m_dwGetWuXinExpTime: LongWord; //Ôö¼ÓÎåĞĞ¾­Ñé¼ä¸ô
+    {m_dwHitIntervalTime: LongWord; //æ”»å‡»é—´éš”
+    m_dwMagicHitIntervalTime: LongWord; //é­”æ³•é—´éš”
+    m_dwRunIntervalTime: LongWord; //èµ°è·¯é—´éš”
+    m_dwWalkIntervalTime: LongWord; //èµ°è·¯é—´éš”
+    m_dwTurnIntervalTime: LongWord; //æ¢æ–¹å‘é—´éš”
+    m_dwActionIntervalTime: LongWord; //ç»„åˆæ“ä½œé—´éš”
+    m_dwRunLongHitIntervalTime: LongWord; //ç§»åŠ¨åˆºæ€é—´éš”
+    m_dwRunHitIntervalTime: LongWord; //è·‘ä½æ”»å‡»é—´éš”
+    m_dwWalkHitIntervalTime: LongWord; //èµ°ä½æ”»å‡»é—´éš”
+    m_dwRunMagicIntervalTime: LongWord; //è·‘ä½é­”æ³•é—´éš”   }
+    //    m_dwGetWuXinExpTime: LongWord; //å¢åŠ äº”è¡Œç»éªŒé—´éš”
      //   m_btGetWuXinRate: Byte;
 
-    {m_dwMagicAttackTick: LongWord; //0x600  Ä§·¨¹¥»÷Ê±¼ä(Dword)
-    m_dwMagicAttackInterval: LongWord; //0x604  Ä§·¨¹¥»÷¼ä¸ôÊ±¼ä(Dword)
-    m_dwAttackTick: LongWord; //0x608  ¹¥»÷Ê±¼ä(Dword)
-    m_dwMoveTick: LongWord; //0x60C  ÈËÎïÅÜ¶¯Ê±¼ä(Dword)
-    m_dwAttackCount: LongWord; //0x610  ÈËÎï¹¥»÷¼ÆÊı(Dword)
-    m_dwAttackCountA: LongWord; //0x614  ÈËÎï¹¥»÷¼ÆÊı(Dword)
-    m_dwMagicAttackCount: LongWord; //0x618  Ä§·¨¹¥»÷¼ÆÊı(Dword)
-    m_dwMoveCount: LongWord; //0x61C  ÈËÎïÅÜ¼ÆÊı(Dword)
-    m_dwMoveCountA: LongWord; //0x620  ÈËÎïÅÜ¼ÆÊı(Dword)
-    m_nOverSpeedCount: Integer; //0x624  ³¬ËÙ¼ÆÊı(Dword) }
+    {m_dwMagicAttackTick: LongWord; //0x600  é­”æ³•æ”»å‡»æ—¶é—´(Dword)
+    m_dwMagicAttackInterval: LongWord; //0x604  é­”æ³•æ”»å‡»é—´éš”æ—¶é—´(Dword)
+    m_dwAttackTick: LongWord; //0x608  æ”»å‡»æ—¶é—´(Dword)
+    m_dwMoveTick: LongWord; //0x60C  äººç‰©è·‘åŠ¨æ—¶é—´(Dword)
+    m_dwAttackCount: LongWord; //0x610  äººç‰©æ”»å‡»è®¡æ•°(Dword)
+    m_dwAttackCountA: LongWord; //0x614  äººç‰©æ”»å‡»è®¡æ•°(Dword)
+    m_dwMagicAttackCount: LongWord; //0x618  é­”æ³•æ”»å‡»è®¡æ•°(Dword)
+    m_dwMoveCount: LongWord; //0x61C  äººç‰©è·‘è®¡æ•°(Dword)
+    m_dwMoveCountA: LongWord; //0x620  äººç‰©è·‘è®¡æ•°(Dword)
+    m_nOverSpeedCount: Integer; //0x624  è¶…é€Ÿè®¡æ•°(Dword) }
     m_boDieInFight3Zone: Boolean; //0x628
 
     m_dwMagicHitTimeEX: LongWord;
-    m_dwHitTime: LongWord; //ÈËÎï¹¥»÷¼ä¸ô
-    m_dwMagicHitTime: LongWord; //ÈËÎïÄ§·¨¹¥»÷¼ä¸ô
-    m_dwRunTime: LongWord; //ÈËÎïÅÜ¶¯¼ä¸ô
-    m_dwWalkTime: LongWord; //ÈËÎï×ß¶¯¼ä¸ô
-    m_dwTurnTime: LongWord; //ÈËÎï×ªÏò¼ä¸ô
-    m_dwButchTime: LongWord; //ÈËÎïÍÚÈ¡¼ä¸ô
-    m_boHitDelay: Boolean; //ÈËÎï¹¥»÷ÑÓÊ±
-    m_boMagicHitDelay: Boolean; //ÈËÎïÄ§·¨¹¥»÷ÑÓÊ±
-    m_boRunDelay: Boolean; //ÈËÎïÅÜ¶¯ÑÓÊ±
-    m_boWalkDelay: Boolean; //ÈËÎï×ß¶¯ÑÓÊ±
-    m_boTurnDelay: Boolean; //ÈËÎï×ªÏòÑÓÊ±
-    m_boButchDelay: Boolean; //ÈËÎïÍÚÈ¡ÑÓÊ±
+    m_dwHitTime: LongWord; //äººç‰©æ”»å‡»é—´éš”
+    m_dwMagicHitTime: LongWord; //äººç‰©é­”æ³•æ”»å‡»é—´éš”
+    m_dwRunTime: LongWord; //äººç‰©è·‘åŠ¨é—´éš”
+    m_dwWalkTime: LongWord; //äººç‰©èµ°åŠ¨é—´éš”
+    m_dwTurnTime: LongWord; //äººç‰©è½¬å‘é—´éš”
+    m_dwButchTime: LongWord; //äººç‰©æŒ–å–é—´éš”
+    m_boHitDelay: Boolean; //äººç‰©æ”»å‡»å»¶æ—¶
+    m_boMagicHitDelay: Boolean; //äººç‰©é­”æ³•æ”»å‡»å»¶æ—¶
+    m_boRunDelay: Boolean; //äººç‰©è·‘åŠ¨å»¶æ—¶
+    m_boWalkDelay: Boolean; //äººç‰©èµ°åŠ¨å»¶æ—¶
+    m_boTurnDelay: Boolean; //äººç‰©è½¬å‘å»¶æ—¶
+    m_boButchDelay: Boolean; //äººç‰©æŒ–å–å»¶æ—¶
 
-    m_nHitCount: Integer; //ÈËÎï¹¥»÷Èİ´íÊıÁ¿
-    m_nMagicHitCount: Integer; //ÈËÎïÄ§·¨¹¥»÷Èİ´íÊıÁ¿
-    m_nRunCount: Integer; //ÈËÎïÅÜ¶¯Èİ´íÊıÁ¿
-    m_nWalkCount: Integer; //ÈËÎï×ß¶¯Èİ´íÊıÁ¿
-    m_nTurnCount: Integer; //ÈËÎï×ªÏòÈİ´íÊıÁ¿
-    m_nButchCount: Integer; //ÈËÎïÍÚÈ¡Èİ´íÊıÁ¿
+    m_nHitCount: Integer; //äººç‰©æ”»å‡»å®¹é”™æ•°é‡
+    m_nMagicHitCount: Integer; //äººç‰©é­”æ³•æ”»å‡»å®¹é”™æ•°é‡
+    m_nRunCount: Integer; //äººç‰©è·‘åŠ¨å®¹é”™æ•°é‡
+    m_nWalkCount: Integer; //äººç‰©èµ°åŠ¨å®¹é”™æ•°é‡
+    m_nTurnCount: Integer; //äººç‰©è½¬å‘å®¹é”™æ•°é‡
+    m_nButchCount: Integer; //äººç‰©æŒ–å–å®¹é”™æ•°é‡
     //m_Script: pTScript; //0x62C
     m_NPC: TBaseObject; //0x630
     m_nVal: array[0..99] of Integer; //0x634 - 658
@@ -105,13 +105,13 @@ type
     m_MoveEnvir: TEnvirnoment; //0x68C
     m_nMoveX: Integer; //0x690
     m_nMoveY: Integer; //0x694
-    m_dwSaveRcdTick: LongWord; //0x6A0 ±£´æÈËÎïÊı¾İÊ±¼ä¼ä¸ô
+    m_dwSaveRcdTick: LongWord; //0x6A0 ä¿å­˜äººç‰©æ•°æ®æ—¶é—´é—´éš”
     m_boNewHuman: Boolean; //0x6A8
     m_boSendNotice: Boolean; //0x6A9
     m_dwWaitLoginNoticeOKTick: LongWord;
     m_boLoginNoticeOK: Boolean; //0x6AA
     m_boResetLabel: Boolean;
-    //    m_boExpire: Boolean; //0x6AC  ÕÊºÅ¹ıÆÚ
+    //    m_boExpire: Boolean; //0x6AC  å¸å·è¿‡æœŸ
     m_dwShowLineNoticeTick: LongWord; //0x6B0
     m_nShowLineNoticeIdx: Integer; //0x6B4
     //m_nSoftVersionDateEx: Integer;
@@ -119,45 +119,45 @@ type
     m_CanJmpScriptNewLableList: TStringList;
     m_CanJmpScriptLableList: TStringList;
     m_nScriptGotoCount: Integer;
-    m_nScriptCurrLable: Integer; //ÓÃÓÚ´¦Àí @back ½Å±¾ÃüÁî
-    m_nScriptGoBackLable: Integer; //ÓÃÓÚ´¦Àí @back ½Å±¾ÃüÁî
+    m_nScriptCurrLable: Integer; //ç”¨äºå¤„ç† @back è„šæœ¬å‘½ä»¤
+    m_nScriptGoBackLable: Integer; //ç”¨äºå¤„ç† @back è„šæœ¬å‘½ä»¤
     //m_dwTurnTick: LongWord;
     m_wOldIdent: Word;
     m_btOldDir: Byte;
 
-    m_boFirstAction: Boolean; //µÚÒ»¸ö²Ù×÷
-    m_dwActionTick: LongWord; //¶ş´Î²Ù×÷Ö®¼ä¼ä¸ôÊ±¼ä
-    m_sDearName: string[14]; //ÅäÅ¼Ãû³Æ
+    m_boFirstAction: Boolean; //ç¬¬ä¸€ä¸ªæ“ä½œ
+    m_dwActionTick: LongWord; //äºŒæ¬¡æ“ä½œä¹‹é—´é—´éš”æ—¶é—´
+    m_sDearName: string[14]; //é…å¶åç§°
     m_DearHuman: TPlayObject;
-    m_boCanDearRecall: Boolean; //ÊÇ·ñÔÊĞí·òÆŞ´«ËÍ
+    m_boCanDearRecall: Boolean; //æ˜¯å¦å…è®¸å¤«å¦»ä¼ é€
     m_boCanMasterRecall: Boolean;
-    m_dwDearRecallTick: LongWord; //·òÆŞ´«ËÍÊ±¼ä
+    m_dwDearRecallTick: LongWord; //å¤«å¦»ä¼ é€æ—¶é—´
     m_dwMasterRecallTick: LongWord;
-    //m_MasterName: THumMasterName; //Ê¦Í½Ãû³Æ
+    //m_MasterName: THumMasterName; //å¸ˆå¾’åç§°
     //m_sMasterName: string[14];
     //m_MasterHuman: TPlayObject;
     m_MasterList: TStringList;
     m_boMaster: Boolean;
     m_CustomVariable: THumCustomVariable;
-    m_nCreditPoint: Integer; //ÉùÍûµã
+    m_nCreditPoint: Integer; //å£°æœ›ç‚¹
     m_AppendBagItems: THumanAppendBagItems;
-    //m_btMarryCount: Byte; //Àë»é´ÎÊı
-    m_wMasterCount: Word; //³öÊ¦Í½µÜ¸öÊı
+    //m_btMarryCount: Byte; //ç¦»å©šæ¬¡æ•°
+    m_wMasterCount: Word; //å‡ºå¸ˆå¾’å¼Ÿä¸ªæ•°
     m_boChangeName: Boolean;
-    m_btReLevel: Byte; //×ªÉúµÈ¼¶
+    m_btReLevel: Byte; //è½¬ç”Ÿç­‰çº§
     m_btReColorIdx: Byte;
     m_dwReColorTick: LongWord;
-    m_nKillMonExpLiterary: Integer; //É±¹Ö¾­Ñé±¶Êı
-    m_dwGetMsgTick: LongWord; //´¦ÀíÏûÏ¢Ñ­»·Ê±¼ä¿ØÖÆ
+    m_nKillMonExpLiterary: Integer; //æ€æ€ªç»éªŒå€æ•°
+    m_dwGetMsgTick: LongWord; //å¤„ç†æ¶ˆæ¯å¾ªç¯æ—¶é—´æ§åˆ¶
 
     m_PoseBaseObject: TBaseObject;
     m_boStartMarry: Boolean;
     m_boStartMaster: Boolean;
     m_boStartUnMarry: Boolean;
     m_boStartUnMaster: Boolean;
-    m_boFilterSendMsg: Boolean; //½ûÖ¹·¢·½×Ö(·¢µÄÎÄ×ÖÖ»ÄÜ×Ô¼º¿´µ½)
-    m_nKillMonExpRate: Integer; //É±¹Ö¾­Ñé±¶Êı(´ËÊı³ıÒÔ 100 ÎªÕæÕı±¶Êı)
-    m_nPowerRate: Integer; //ÈËÎï¹¥»÷Á¦±¶Êı(´ËÊı³ıÒÔ 100 ÎªÕæÕı±¶Êı)
+    m_boFilterSendMsg: Boolean; //ç¦æ­¢å‘æ–¹å­—(å‘çš„æ–‡å­—åªèƒ½è‡ªå·±çœ‹åˆ°)
+    m_nKillMonExpRate: Integer; //æ€æ€ªç»éªŒå€æ•°(æ­¤æ•°é™¤ä»¥ 100 ä¸ºçœŸæ­£å€æ•°)
+    m_nPowerRate: Integer; //äººç‰©æ”»å‡»åŠ›å€æ•°(æ­¤æ•°é™¤ä»¥ 100 ä¸ºçœŸæ­£å€æ•°)
     m_dwKillMonExpRateTime: LongWord;
     m_dwPowerRateTime: LongWord;
     m_dwRateTick: LongWord;
@@ -167,29 +167,29 @@ type
     m_MissionInfo: TMissionInfos;
     m_MissionArithmometer: TMissionArithmometer;
 
-    m_nMemberType: Integer; //»áÔ±ÀàĞÍ
-    m_nMemberLevel: Integer; //»áÔ±µÈ¼¶
-    m_boSendMsgFlag: Boolean; //·¢×£¸£Óï±êÖ¾
+    m_nMemberType: Integer; //ä¼šå‘˜ç±»å‹
+    m_nMemberLevel: Integer; //ä¼šå‘˜ç­‰çº§
+    m_boSendMsgFlag: Boolean; //å‘ç¥ç¦è¯­æ ‡å¿—
     m_boChangeItemNameFlag: Boolean;
 
-    m_nGameGold: Integer; //ÓÎÏ·±Ò
+    m_nGameGold: Integer; //æ¸¸æˆå¸
 
-    //m_boDecGameGold: Boolean; //ÊÇ·ñ×Ô¶¯¼õÓÎÏ·±Ò
+    //m_boDecGameGold: Boolean; //æ˜¯å¦è‡ªåŠ¨å‡æ¸¸æˆå¸
     //m_dwDecGameGoldTime: LongWord;
     m_dwDecGameGoldTick: LongWord;
-    //m_nDecGameGold: Integer; //Ò»´Î¼õµãÊı
+    //m_nDecGameGold: Integer; //ä¸€æ¬¡å‡ç‚¹æ•°
 
-    //m_boIncGameGold: Boolean; //ÊÇ·ñ×Ô¶¯¼ÓÓÎÏ·±Ò
+    //m_boIncGameGold: Boolean; //æ˜¯å¦è‡ªåŠ¨åŠ æ¸¸æˆå¸
     //m_dwIncGameGoldTime: LongWord;
     m_dwIncGameGoldTick: LongWord;
-    //m_nIncGameGold: Integer; //Ò»´Î¼õµãÊı
+    //m_nIncGameGold: Integer; //ä¸€æ¬¡å‡ç‚¹æ•°
 
-    m_nGamePoint: Integer; //ÓÎÏ·µãÊı
+    m_nGamePoint: Integer; //æ¸¸æˆç‚¹æ•°
     m_nCheckEMail: Integer;
     //    m_dwIncGamePointTick: LongWord;
 
-    m_nGameDiamond: Integer; //½ğ¸ÕÊ¯ ¸ÄÎª »ı·ÖÁË
-    m_nGameGird: Integer; //Áé·û
+    m_nGameDiamond: Integer; //é‡‘åˆšçŸ³ æ”¹ä¸º ç§¯åˆ†äº†
+    m_nGameGird: Integer; //çµç¬¦
     m_dwPayMentPointTick: LongWord;
 
     m_dwDecHPTick: LongWord;
@@ -197,8 +197,8 @@ type
 
     m_GetWhisperHuman: TPlayObject;
     m_dwClearObjTick: LongWord;
-    m_wContribution: Word; //¹±Ï×¶È
-    m_sRankLevelName: string; //ÏÔÊ¾Ãû³Æ¸ñÊ½´®
+    m_wContribution: Word; //è´¡çŒ®åº¦
+    m_sRankLevelName: string; //æ˜¾ç¤ºåç§°æ ¼å¼ä¸²
     m_boFilterAction: Boolean;
     m_nClientFlagMode: Integer;
     m_dwAutoGetExpTick: LongWord;
@@ -208,7 +208,7 @@ type
     m_boAutoGetExpInSafeZone: Boolean;
     m_DynamicVarList: TList;
     m_dwClientTick: LongWord;
-    m_boTestSpeedMode: Boolean; //½øÈëËÙ¶È²âÊÔÄ£Ê½
+    m_boTestSpeedMode: Boolean; //è¿›å…¥é€Ÿåº¦æµ‹è¯•æ¨¡å¼
     m_nCheckEatCount: Byte;
     m_nCheckChangeMapCount: Byte;
     m_nCheckNpcCount: Byte;
@@ -218,7 +218,7 @@ type
     dwRunTimeCount: LongWord;
     m_dwDelayTime: LongWord;
 
-    m_boAllowReAlive: Boolean; //ÊÇ·ñÔÊĞí¸´»î
+    m_boAllowReAlive: Boolean; //æ˜¯å¦å…è®¸å¤æ´»
     m_dwAutoAddExpPointTick: LongWord;
     m_dwAutoAddExpPointTimeTick: LongWord;
 
@@ -235,9 +235,9 @@ type
     m_nDealGoldPose: Integer;
     m_dwDedingUseTick: LongWord;
 
-    m_boPlayOffLine: Boolean; //ÊÇ·ñÏÂÏß´¥·¢
-    m_nInteger: array[0..999] of Integer; //ÈËÎï±äÁ¿
-    m_sString: array[0..999] of string; //ÈËÎï±äÁ¿
+    m_boPlayOffLine: Boolean; //æ˜¯å¦ä¸‹çº¿è§¦å‘
+    m_nInteger: array[0..999] of Integer; //äººç‰©å˜é‡
+    m_sString: array[0..999] of string; //äººç‰©å˜é‡
     m_sASSEMBLEITEMNAME: string;
     m_MissionIndex: TMissionIndex;
     m_CustomDataList: TList;
@@ -258,42 +258,42 @@ type
     m_dwLoadPhotoTick: LongWord;
 
     m_boDealing: Boolean; //0x317
-    m_DealLastTick: LongWord; //0x318 ½»Ò××îºó²Ù×÷Ê±¼ä
+    m_DealLastTick: LongWord; //0x318 äº¤æ˜“æœ€åæ“ä½œæ—¶é—´
     m_DealCreat: TPlayObject; //0x31C
 
     m_DealItemList: TList; //0x410
-    m_nDealGolds: Integer; //0x414  ½»Ò×µÄ½ğ±ÒÊıÁ¿(Dword)
-    m_boDealOK: Boolean; //0x418  È·ÈÏ½»Ò×±êÖ¾(Byte
-    m_boDealLock: Boolean; //  È·ÈÏ½»Ò×Ëø¶¨±êÖ¾
+    m_nDealGolds: Integer; //0x414  äº¤æ˜“çš„é‡‘å¸æ•°é‡(Dword)
+    m_boDealOK: Boolean; //0x418  ç¡®è®¤äº¤æ˜“æ ‡å¿—(Byte
+    m_boDealLock: Boolean; //  ç¡®è®¤äº¤æ˜“é”å®šæ ‡å¿—
 
-    m_ShopSayTick: LongWord; //µêÆÌÁôÑÔ¼ä¸ô
+    m_ShopSayTick: LongWord; //åº—é“ºç•™è¨€é—´éš”
 
-    m_ShopSellItemList: TList; //ÉÌÆÌ³öÊÛÎïÆ·ÁĞ±í
-    m_ShopBuyItemList: TList; //ÉÌÆÌÊÕ¹ºÎïÆ·ÁĞ±í
-    m_nShopGold: Integer; //ÉÌÆÌ×Ê½ğ
+    m_ShopSellItemList: TList; //å•†é“ºå‡ºå”®ç‰©å“åˆ—è¡¨
+    m_ShopBuyItemList: TList; //å•†é“ºæ”¶è´­ç‰©å“åˆ—è¡¨
+    m_nShopGold: Integer; //å•†é“ºèµ„é‡‘
     m_nShopGameGold: Integer;
-    m_boShoping: Boolean; //°ÚÌ¯×´Ì¬
+    m_boShoping: Boolean; //æ‘†æ‘ŠçŠ¶æ€
     m_btShopLevel: Byte;
     m_boShopLeft: Boolean;
     m_dwShopTick: LongWord;
-    m_MagicList: TList; //0x41C  ¼¼ÄÜ±í
+    m_MagicList: TList; //0x41C  æŠ€èƒ½è¡¨
 
-    m_MagicArr: array[0..SKILL_MAX] of pTUserMagic; //¼¼ÄÜË÷Òı±í
+    m_MagicArr: array[0..SKILL_MAX] of pTUserMagic; //æŠ€èƒ½ç´¢å¼•è¡¨
 
     m_sShopTitle: string[24];
     m_sStoragePwd: string[12];
     m_btStorageErrorCount: Byte;
     m_boStorageLock: Boolean;
     m_StorageLockTime: TDateTime;
-    m_StorageItemList: array[0..4] of TList; //²Ö¿âÎïÆ·ÁĞ±í
+    m_StorageItemList: array[0..4] of TList; //ä»“åº“ç‰©å“åˆ—è¡¨
     m_boStorageOpen: array[0..4] of Boolean;
     m_dwStorageTime: array[0..4] of TDateTime;
     m_nStorageGold: Integer;
 
     m_dwCheckUserItemTick: LongWord;
     m_ReturnItemsList: TList;
-    m_UserKeySetup: TUserKeySetup; //ÓÃ»§°´¼üÉèÖÃÏ¢
-    m_ClickNPC: TBaseObject; //ÓÃ»§×îºóÒ»´Îµã»÷µÄNPC,·ÀÖ¹·â°üË¢NPC
+    m_UserKeySetup: TUserKeySetup; //ç”¨æˆ·æŒ‰é”®è®¾ç½®æ¯
+    m_ClickNPC: TBaseObject; //ç”¨æˆ·æœ€åä¸€æ¬¡ç‚¹å‡»çš„NPC,é˜²æ­¢å°åŒ…åˆ·NPC
     m_ClickHideNPC: TBaseObject;
 
     m_nPullulation: Integer;
@@ -301,12 +301,12 @@ type
     m_boCanCreateGroup: Boolean;
     //    m_MagicConcatenation: TMagicConcatenation;
 
-    m_boUseThrusting: Boolean; //´ÌÉ±ÊÇ·ñ¿ªÆô
-    m_boUseHalfMoon: Boolean; //°ëÔÂÍäµ¶ÊÇ·ñ¿ªÆô
-    m_boFireHitSkill: Boolean; //ÁÒ»ğ½£·¨ÊÇ·ñ×¼±¸¾ÍĞ÷
-    m_bo56HitSkill: Boolean; //ÖğÈÕ½£·¨ÊÇ·ñ×¼±¸¾ÍĞ÷
-    m_boLongIceHit: Boolean; //¿ªÌìÕ¶ÊÇ·ñ×¼±¸¾ÍĞ÷
-    m_boLongIceHitIsLong: Boolean; //¿ªÌìÕ¶³¤»ò¶Ì
+    m_boUseThrusting: Boolean; //åˆºæ€æ˜¯å¦å¼€å¯
+    m_boUseHalfMoon: Boolean; //åŠæœˆå¼¯åˆ€æ˜¯å¦å¼€å¯
+    m_boFireHitSkill: Boolean; //çƒˆç«å‰‘æ³•æ˜¯å¦å‡†å¤‡å°±ç»ª
+    m_bo56HitSkill: Boolean; //é€æ—¥å‰‘æ³•æ˜¯å¦å‡†å¤‡å°±ç»ª
+    m_boLongIceHit: Boolean; //å¼€å¤©æ–©æ˜¯å¦å‡†å¤‡å°±ç»ª
+    m_boLongIceHitIsLong: Boolean; //å¼€å¤©æ–©é•¿æˆ–çŸ­
     m_dwLatestFireHitTick: LongWord; //0x530
     m_dwLongIceHitTick: LongWord; //0x530
     m_dwLatest56HitTick: LongWord; //0x530
@@ -323,14 +323,14 @@ type
     m_boCheckObject: Boolean;
     m_nLongIceHitDouble: ShortInt; //0x23E
 
-    m_boAliveing: Boolean; //×¼±¸¸´»î
-    m_dwAliveTick: LongWord; //¸´»îÊ±¼ä
-    m_boDoctorAlive: Boolean; //¼¼ÄÜ¸´»î
-    m_btDoctorAliveLevel: Byte; //¸´»î¼¼ÄÜµÈ¼¶
-    m_nAliveHP: Integer; //¸´»îºóµÄÑªÁ¿Öµ
+    m_boAliveing: Boolean; //å‡†å¤‡å¤æ´»
+    m_dwAliveTick: LongWord; //å¤æ´»æ—¶é—´
+    m_boDoctorAlive: Boolean; //æŠ€èƒ½å¤æ´»
+    m_btDoctorAliveLevel: Byte; //å¤æ´»æŠ€èƒ½ç­‰çº§
+    m_nAliveHP: Integer; //å¤æ´»åçš„è¡€é‡å€¼
     m_btAliveType: Byte;
 
-    m_CboMagicListInfo: TCboMagicListInfo; //Á¬»÷ÉèÖÃ
+    m_CboMagicListInfo: TCboMagicListInfo; //è¿å‡»è®¾ç½®
     m_nCboNowMagicID: Integer;
     m_nCboNowHitCMD: Integer;
     m_dwCboMagicTime: LongWord;
@@ -338,7 +338,7 @@ type
     m_UserItemsSetup: TUserItemsSetup;
     m_wItemsSetupCount: Word;
     m_nAllowSetup: LongWord;
-    m_boUserLogon: Boolean; //ÊÇ·ñÒÑµÇÂ¼;
+    m_boUserLogon: Boolean; //æ˜¯å¦å·²ç™»å½•;
 
     m_CenterMsgList: TList;
 
@@ -387,6 +387,50 @@ type
 
     m_IconInfo: TIconInfos;
     m_HookItemEx: TList;
+
+    // === æ–°å¢: è‡ªåŠ¨æˆ˜æ–—æ‰©å±•å­—æ®µ ===
+    m_boAutoFightEnabled: Boolean;       // è‡ªåŠ¨æˆ˜æ–—å¼€å…³
+    m_dwAutoFightStartTick: LongWord;    // è‡ªåŠ¨æˆ˜æ–—å¼€å§‹æ—¶é—´
+    m_nAutoFightSkillID: Integer;        // è‡ªåŠ¨æˆ˜æ–—ä¸»æŠ€èƒ½ID
+    m_nAutoFightSkill2ID: Integer;       // è‡ªåŠ¨æˆ˜æ–—å‰¯æŠ€èƒ½ID
+    m_boAutoPickUp: Boolean;             // è‡ªåŠ¨æ‹¾å–
+    m_boAutoSellTrash: Boolean;          // è‡ªåŠ¨å‡ºå”®åƒåœ¾
+    m_nAutoFightMonLevel: Integer;       // è‡ªåŠ¨æˆ˜æ–—æ€ªç‰©ç­‰çº§è¿‡æ»¤
+
+    // === æ–°å¢: å¸ˆå¾’ç³»ç»Ÿæ‰©å±•å­—æ®µ ===
+    m_MasterRelation: TMasterRelation;   // å¸ˆå¾’å…³ç³»ç±»å‹
+    m_sMasterName: string[14];           // å¸ˆå‚…åç§°
+    m_MasterApprenticeList: TList;       // å¸ˆå¾’å…³ç³»åˆ—è¡¨
+    m_nMentorPoints: Integer;            // å¸ˆå¾’ç‚¹æ•°
+    m_nDailyMasterQuest: Integer;        // æœ¬æ—¥å¸ˆå¾’ä»»åŠ¡å®Œæˆæ•°
+    m_sLastMasterQuestDate: string[10];  // ä¸Šæ¬¡å¸ˆå¾’ä»»åŠ¡æ—¥æœŸ
+
+    // === æ–°å¢: èµ›å­£ç³»ç»Ÿæ‰©å±•å­—æ®µ ===
+    m_nSeasonID: Integer;                // å½“å‰èµ›å­£ID
+    m_nSeasonScore: Integer;             // èµ›å­£ç§¯åˆ†
+    m_nSeasonRank: Integer;              // èµ›å­£æ’å
+    m_nSeasonLevel: Integer;             // èµ›å­£ç­‰çº§
+    m_dwSeasonJoinTime: LongWord;        // èµ›å­£åŠ å…¥æ—¶é—´
+    m_boSeasonRewardClaimed: Boolean;    // èµ›å­£å¥–åŠ±æ˜¯å¦å·²é¢†å–
+    m_SeasonRewardList: TList;           // èµ›å­£å¥–åŠ±åˆ—è¡¨
+
+    // === æ–°å¢: å‰¯æœ¬ç³»ç»Ÿæ‰©å±•å­—æ®µ ===
+    m_nDungeonDailyCount: Integer;       // æœ¬æ—¥å‰¯æœ¬å·²è¿›å…¥æ¬¡æ•°
+    m_sLastDungeonDate: string[10];      // ä¸Šæ¬¡å‰¯æœ¬è¿›å…¥æ—¥æœŸ
+    m_CurrentDungeonID: LongWord;        // å½“å‰å‰¯æœ¬å®ä¾‹ID
+    m_nDungeonCompletionCount: Integer;  // å‰¯æœ¬å®Œæˆæ€»æ•°
+
+    // === æ–°å¢: æ–°æ‰‹å¼•å¯¼æ‰©å±•å­—æ®µ ===
+    m_boGuideActive: Boolean;            // å¼•å¯¼æ˜¯å¦æ¿€æ´»
+    m_nGuideStep: Integer;               // å½“å‰å¼•å¯¼æ­¥éª¤
+    m_GuideStepList: TList;              // å¼•å¯¼æ­¥éª¤åˆ—è¡¨
+    m_nGuideRewardClaimed: Integer;      // å·²é¢†å–å¼•å¯¼å¥–åŠ±æ•°
+
+    // === æ–°å¢: æ´»åŠ¨ç³»ç»Ÿæ‰©å±•å­—æ®µ ===
+    m_nActivityParticipation: Integer;   // æ´»åŠ¨å‚ä¸æ¬¡æ•°
+    m_ActivityRewardList: TList;         // æ´»åŠ¨å¥–åŠ±åˆ—è¡¨
+    m_dwLastActivityTime: LongWord;      // ä¸Šæ¬¡æ´»åŠ¨å‚ä¸æ—¶é—´
+    m_sLastActivityDate: string[10];     // ä¸Šæ¬¡æ´»åŠ¨å‚ä¸æ—¥æœŸ
   private
     FServerProcess: array[1..MAXCLIENTSERVERCOUNT - 1] of TServerProcess;
     procedure ClientDropGold(ProcessMsg: pTProcessMessage; var boResult: Boolean);
@@ -902,11 +946,11 @@ begin
   m_ClickHideNPC := nil;
 
   m_MagicList := TList.Create;
-  m_ShopSellItemList := TList.Create; //ÉÌÆÌ³öÊÛÎïÆ·ÁĞ±í
-  m_ShopBuyItemList := TList.Create; //ÉÌÆÌÊÕ¹ºÎïÆ·ÁĞ±í
-  m_nShopGold := 0; //ÉÌÆÌ×Ê½ğ
+  m_ShopSellItemList := TList.Create; //å•†é“ºå‡ºå”®ç‰©å“åˆ—è¡¨
+  m_ShopBuyItemList := TList.Create; //å•†é“ºæ”¶è´­ç‰©å“åˆ—è¡¨
+  m_nShopGold := 0; //å•†é“ºèµ„é‡‘
   m_nShopGameGold := 0;
-  m_boShoping := False; //°ÚÌ¯×´Ì¬
+  m_boShoping := False; //æ‘†æ‘ŠçŠ¶æ€
   m_sShopTitle := '';
   m_btShopLevel := 0;
   m_dwShopTick := 0;
@@ -1002,7 +1046,7 @@ begin
   m_boCheckOldPwd := False;
   m_boUnLockPwd := False;
   m_boUnLockStoragePwd := False;
-  m_boPasswordLocked := False; //Ëø²Ö¿â
+  m_boPasswordLocked := False; //é”ä»“åº“
   m_btPwdFailCount := 0;
   m_sTempPwd := '';
   m_sStoragePwd := '';
@@ -1053,12 +1097,12 @@ begin
   m_boTurnDelay := False;
   m_boButchDelay := False;
 
-  m_nHitCount := 0; //ÈËÎï¹¥»÷Èİ´íÊıÁ¿
-  m_nMagicHitCount := 0; //ÈËÎïÄ§·¨¹¥»÷Èİ´íÊıÁ¿
-  m_nRunCount := 0; //ÈËÎïÅÜ¶¯Èİ´íÊıÁ¿
-  m_nWalkCount := 0; //ÈËÎï×ß¶¯Èİ´íÊıÁ¿
-  m_nTurnCount := 0; //ÈËÎï×ªÏòÈİ´íÊıÁ¿
-  m_nButchCount := 0; //ÈËÎïÍÚÈ¡Èİ´íÊıÁ¿
+  m_nHitCount := 0; //äººç‰©æ”»å‡»å®¹é”™æ•°é‡
+  m_nMagicHitCount := 0; //äººç‰©é­”æ³•æ”»å‡»å®¹é”™æ•°é‡
+  m_nRunCount := 0; //äººç‰©è·‘åŠ¨å®¹é”™æ•°é‡
+  m_nWalkCount := 0; //äººç‰©èµ°åŠ¨å®¹é”™æ•°é‡
+  m_nTurnCount := 0; //äººç‰©è½¬å‘å®¹é”™æ•°é‡
+  m_nButchCount := 0; //äººç‰©æŒ–å–å®¹é”™æ•°é‡
 
   m_nGamePoint := 0;
   //m_dwIncGamePointTick := GetTickCount();
@@ -1096,27 +1140,27 @@ begin
   m_AutoGetExpEnvir := nil;
 
   m_boCanCreateGroup := True;
-  //m_dwHitIntervalTime := g_Config.dwHitIntervalTime; //¹¥»÷¼ä¸ô
-  //m_dwMagicHitIntervalTime := g_Config.dwMagicHitIntervalTime; //Ä§·¨¼ä¸ô
-  //m_dwRunIntervalTime := g_Config.dwRunIntervalTime; //×ßÂ·¼ä¸ô
-  //m_dwWalkIntervalTime := g_Config.dwWalkIntervalTime; //×ßÂ·¼ä¸ô
-  //m_dwTurnIntervalTime := g_Config.dwTurnIntervalTime; //»»·½Ïò¼ä¸ô
-  //m_dwActionIntervalTime := g_Config.dwActionIntervalTime; //×éºÏ²Ù×÷¼ä¸ô
+  //m_dwHitIntervalTime := g_Config.dwHitIntervalTime; //æ”»å‡»é—´éš”
+  //m_dwMagicHitIntervalTime := g_Config.dwMagicHitIntervalTime; //é­”æ³•é—´éš”
+  //m_dwRunIntervalTime := g_Config.dwRunIntervalTime; //èµ°è·¯é—´éš”
+  //m_dwWalkIntervalTime := g_Config.dwWalkIntervalTime; //èµ°è·¯é—´éš”
+  //m_dwTurnIntervalTime := g_Config.dwTurnIntervalTime; //æ¢æ–¹å‘é—´éš”
+  //m_dwActionIntervalTime := g_Config.dwActionIntervalTime; //ç»„åˆæ“ä½œé—´éš”
   //m_dwRunLongHitIntervalTime := g_Config.dwRunLongHitIntervalTime;
-  //×éºÏ²Ù×÷¼ä¸ô
-  //m_dwRunHitIntervalTime := g_Config.dwRunHitIntervalTime; //×éºÏ²Ù×÷¼ä¸ô
-  //m_dwWalkHitIntervalTime := g_Config.dwWalkHitIntervalTime; //×éºÏ²Ù×÷¼ä¸ô
+  //ç»„åˆæ“ä½œé—´éš”
+  //m_dwRunHitIntervalTime := g_Config.dwRunHitIntervalTime; //ç»„åˆæ“ä½œé—´éš”
+  //m_dwWalkHitIntervalTime := g_Config.dwWalkHitIntervalTime; //ç»„åˆæ“ä½œé—´éš”
   //m_dwRunMagicIntervalTime := g_Config.dwRunMagicIntervalTime;
-  //ÅÜÎ»Ä§·¨¼ä¸ô
+  //è·‘ä½é­”æ³•é—´éš”
   m_DynamicVarList := TList.Create;
   //m_SessInfo := nil;
   m_boTestSpeedMode := False;
   //m_boLockLogon := True;
   //m_boLockLogoned := False;
 
-  //m_boRemoteMsg := False; //ÊÇ·ñÔÊĞí½ÓÊÜÏûÏ¢
+  //m_boRemoteMsg := False; //æ˜¯å¦å…è®¸æ¥å—æ¶ˆæ¯
 
-  m_boStartAutoAddExpPoint := False; //ÊÇ·ñ¿ªÊ¼Ôö¼Ó¾­Ñé
+  m_boStartAutoAddExpPoint := False; //æ˜¯å¦å¼€å§‹å¢åŠ ç»éªŒ
 
   m_dwAutoAddExpPointTick := GetTickCount;
   m_dwAutoAddExpPointTimeTick := GetTickCount;
@@ -1127,12 +1171,12 @@ begin
   m_sTimeGotoLable := -1;
   m_TimeGotoNPC := nil;   }
   m_DelayGotoList := TList.Create;
-  //m_nBigStoragePage := 0; //ÎŞÏŞ²Ö¿âµÄµ±Ç°Ò³Êı
+  //m_nBigStoragePage := 0; //æ— é™ä»“åº“çš„å½“å‰é¡µæ•°
   m_nDealGoldPose := 0;
-  m_boPlayOffLine := True; //ÊÇ·ñÔÊĞíÏÂÏß´¥·¢
+  m_boPlayOffLine := True; //æ˜¯å¦å…è®¸ä¸‹çº¿è§¦å‘
   m_dwDedingUseTick := 0;
   //m_nCopyHumanLevel := 0;
-  m_boAllowReAlive := False; //ÊÇ·ñÔÊĞí¸´»î
+  m_boAllowReAlive := False; //æ˜¯å¦å…è®¸å¤æ´»
 
   SafeFillChar(m_nInteger, SizeOf(m_nInteger), #0);
   SafeFillChar(m_MissionIndex, SizeOf(m_MissionIndex), 0);
@@ -1536,11 +1580,11 @@ end;
 
 procedure TPlayObject.CheckUserItemTime(boLogon: Boolean);
 const
-  StorageStr: array[0..4] of string[2] = ('Ò»', '¶ş', 'Èı', 'ËÄ', 'Îå');
+  StorageStr: array[0..4] of string[2] = ('ä¸€', 'äºŒ', 'ä¸‰', 'å››', 'äº”');
 resourcestring
-  sDelItems = 'É¾³ı¸´ÖÆÆ· [%s]%d %s';
-  sDelStorage = '²Ö¿â%sÒÑ¾­µ½ÆÚ£¡';
-  sDelBagItem = 'ÄãµÄÎïÆ·[%s]ÒÑ¾­µ½ÆÚ£¡';
+  sDelItems = 'åˆ é™¤å¤åˆ¶å“ [%s]%d %s';
+  sDelStorage = 'ä»“åº“%så·²ç»åˆ°æœŸï¼';
+  sDelBagItem = 'ä½ çš„ç‰©å“[%s]å·²ç»åˆ°æœŸï¼';
 var
   i, ii, k: integer;
   UserItem, UserItem1: pTUserItem;
@@ -1556,12 +1600,12 @@ begin
     NowDateTime := Now;
     NowLongWord := DateTimeToLongWord(NowDateTime);
     if boLogon then begin
-      //¼ì²é±³°üÖĞÊÇ·ñÓĞ¸´ÖÆÆ·
+      //æ£€æŸ¥èƒŒåŒ…ä¸­æ˜¯å¦æœ‰å¤åˆ¶å“
       for I := m_ItemList.Count - 1 downto 0 do begin
         UserItem := m_ItemList.Items[I];
         StdItem := UserEngine.GetStdItem(UserItem.wIndex);
-        if StdItem = nil then begin //¼ì²é±³°üÖĞµÄÎïÆ·ÊÇ·ñºÏ·¨
-          AddGameLog(Self, LOG_DELITEM, IntToStr(UserItem.wIndex), UserItem.MakeIndex, UserItem.Dura, '0', '°ü¹ü', '0', 'ÎŞĞ§', UserItem);
+        if StdItem = nil then begin //æ£€æŸ¥èƒŒåŒ…ä¸­çš„ç‰©å“æ˜¯å¦åˆæ³•
+          AddGameLog(Self, LOG_DELITEM, IntToStr(UserItem.wIndex), UserItem.MakeIndex, UserItem.Dura, '0', 'åŒ…è£¹', '0', 'æ— æ•ˆ', UserItem);
           Dispose(UserItem); //Jason 0714
           m_ItemList.Delete(i);
           Continue;
@@ -1571,7 +1615,7 @@ begin
           if (UserItem1.wIndex = UserItem.wIndex) and (UserItem.MakeIndex = UserItem1.MakeIndex) then begin
             MainOutMessage(Format(sDelItems, [UserEngine.GetStdItemName(UserItem.wIndex), UserItem1.MakeIndex, m_sCharName]));
             if (StdItem.NeedIdentify = 1) then
-              AddGameLog(Self, LOG_DELITEM, StdItem.Name, UserItem.MakeIndex, UserItem.Dura, '0', '°ü¹ü', '0', '¸´ÖÆ', UserItem);
+              AddGameLog(Self, LOG_DELITEM, StdItem.Name, UserItem.MakeIndex, UserItem.Dura, '0', 'åŒ…è£¹', '0', 'å¤åˆ¶', UserItem);
             Dispose(UserItem); //Jason 0714
             m_ItemList.Delete(i);
             break;
@@ -1584,7 +1628,7 @@ begin
       //else
       m_dwCheckUserItemTick := GetTickCount + LongWord(Random(5 * 60 * 1000));
 
-      //¼ì²âµ½ÆÚ²Ö¿â
+      //æ£€æµ‹åˆ°æœŸä»“åº“
       for i := 1 to 4 do begin
         if (m_dwStorageTime[i] > 0) and (NowDateTime >= m_dwStorageTime[i]) then begin
           m_dwStorageTime[i] := 0;
@@ -1593,7 +1637,7 @@ begin
         end;
       end;
 
-      //¼ì²âµ½ÆÚÉíÉÏÎïÆ·
+      //æ£€æµ‹åˆ°æœŸèº«ä¸Šç‰©å“
       boRef := False;
       boState := False;
       for I := Low(m_UseItems) to High(m_UseItems) do begin
@@ -1612,7 +1656,7 @@ begin
                       dUserItem := HorseItemToUserItem(@m_UseItems[i].HorseItems[k], StdItem);
                       boRef := True;
                       if StdItem.NeedIdentify = 1 then
-                        AddGameLog(Self, LOG_DELITEM, StdItem.Name, dUserItem.MakeIndex, dUserItem.Dura, IntToStr(m_UseItems[i].MakeIndex), '´©×Å', 'ÂíÅÆ', 'µ½ÆÚ', @dUserItem);
+                        AddGameLog(Self, LOG_DELITEM, StdItem.Name, dUserItem.MakeIndex, dUserItem.Dura, IntToStr(m_UseItems[i].MakeIndex), 'ç©¿ç€', 'é©¬ç‰Œ', 'åˆ°æœŸ', @dUserItem);
                       SysMsg(Format(sDelBagItem, [StdItem.Name]), c_Blue, t_Hint);
                       if not boLogon then
                         SendUpdateItem(@m_UseItems[i]);
@@ -1634,7 +1678,7 @@ begin
               end;
               boRef := True;
               if StdItem.NeedIdentify = 1 then
-                AddGameLog(Self, LOG_DELITEM, StdItem.Name, m_UseItems[i].MakeIndex, m_UseItems[i].Dura, '0', '´©×Å', '0', 'µ½ÆÚ', @m_UseItems[i]);
+                AddGameLog(Self, LOG_DELITEM, StdItem.Name, m_UseItems[i].MakeIndex, m_UseItems[i].Dura, '0', 'ç©¿ç€', '0', 'åˆ°æœŸ', @m_UseItems[i]);
               SysMsg(Format(sDelBagItem, [StdItem.Name]), c_Blue, t_Hint);
               if not boLogon then
                 SendDelItems(@m_UseItems[i]);
@@ -1651,14 +1695,14 @@ begin
           FeatureChanged();
       end;
 
-      //¼ì²â¶îÍâ°ü¹ü
+      //æ£€æµ‹é¢å¤–åŒ…è£¹
       boRef := False;
       for I := Low(m_AppendBagItems) to High(m_AppendBagItems) do begin
         if (m_AppendBagItems[i].wIndex > 0) and (m_AppendBagItems[i].TermTime > 0) and (NowLongWord >= m_AppendBagItems[i].TermTime) then begin
           StdItem := UserEngine.GetStdItem(m_AppendBagItems[i].wIndex);
           if (StdItem <> nil) then begin
             if StdItem.NeedIdentify = 1 then
-              AddGameLog(Self, LOG_DELITEM, StdItem.Name, m_AppendBagItems[i].MakeIndex, m_AppendBagItems[i].Dura, '0', '¶îÍâ°ü¹ü', '0', 'µ½ÆÚ', @m_AppendBagItems[i]);
+              AddGameLog(Self, LOG_DELITEM, StdItem.Name, m_AppendBagItems[i].MakeIndex, m_AppendBagItems[i].Dura, '0', 'é¢å¤–åŒ…è£¹', '0', 'åˆ°æœŸ', @m_AppendBagItems[i]);
             SysMsg(Format(sDelBagItem, [StdItem.Name]), c_Blue, t_Hint);
           end;
           if not boLogon then
@@ -1671,7 +1715,7 @@ begin
         RecalcBagCount;
       end;
 
-      //¼ì²âµ½ÆÚ°ü¹üÎïÆ·
+      //æ£€æµ‹åˆ°æœŸåŒ…è£¹ç‰©å“
       for I := m_ItemList.Count - 1 downto 0 do begin
         UserItem := m_ItemList[i];
         StdItem := UserEngine.GetStdItem(UserItem.wIndex);
@@ -1687,7 +1731,7 @@ begin
                   if StdItem <> nil then begin
                     dUserItem := HorseItemToUserItem(@UserItem.HorseItems[k], StdItem);
                     if StdItem.NeedIdentify = 1 then
-                      AddGameLog(Self, LOG_DELITEM, StdItem.Name, dUserItem.MakeIndex, dUserItem.Dura, IntToStr(UserItem.MakeIndex), '°ü¹ü', 'ÂíÅÆ', 'µ½ÆÚ', @dUserItem);
+                      AddGameLog(Self, LOG_DELITEM, StdItem.Name, dUserItem.MakeIndex, dUserItem.Dura, IntToStr(UserItem.MakeIndex), 'åŒ…è£¹', 'é©¬ç‰Œ', 'åˆ°æœŸ', @dUserItem);
                     SysMsg(Format(sDelBagItem, [StdItem.Name]), c_Blue, t_Hint);
                     if not boLogon then
                       SendUpdateItem(UserItem);
@@ -1702,7 +1746,7 @@ begin
           end;
           if boDelete then begin
             if StdItem.NeedIdentify = 1 then
-              AddGameLog(Self, LOG_DELITEM, StdItem.Name, UserItem.MakeIndex, UserItem.Dura, '0', '°ü¹ü', '0', 'µ½ÆÚ', UserItem);
+              AddGameLog(Self, LOG_DELITEM, StdItem.Name, UserItem.MakeIndex, UserItem.Dura, '0', 'åŒ…è£¹', '0', 'åˆ°æœŸ', UserItem);
             SysMsg(Format(sDelBagItem, [StdItem.Name]), c_Blue, t_Hint);
             if not boLogon then
               SendDelItems(UserItem);
@@ -1712,7 +1756,7 @@ begin
         end;
       end;
 
-      //¼ì²âµ½ÆÚ²Ö¿âÎïÆ·
+      //æ£€æµ‹åˆ°æœŸä»“åº“ç‰©å“
       for ii := Low(m_StorageItemList) to High(m_StorageItemList) do begin
         for I := m_StorageItemList[ii].Count - 1 downto 0 do begin
           StorageItem := m_StorageItemList[ii][i];
@@ -1729,7 +1773,7 @@ begin
                     if StdItem <> nil then begin
                       dUserItem := HorseItemToUserItem(@StorageItem.UserItem.HorseItems[k], StdItem);
                       if StdItem.NeedIdentify = 1 then
-                        AddGameLog(Self, LOG_DELITEM, StdItem.Name, dUserItem.MakeIndex, dUserItem.Dura, IntToStr(StorageItem.UserItem.MakeIndex), '²Ö¿â', 'ÂíÅÆ', 'µ½ÆÚ', @dUserItem);
+                        AddGameLog(Self, LOG_DELITEM, StdItem.Name, dUserItem.MakeIndex, dUserItem.Dura, IntToStr(StorageItem.UserItem.MakeIndex), 'ä»“åº“', 'é©¬ç‰Œ', 'åˆ°æœŸ', @dUserItem);
                       SysMsg(Format(sDelBagItem, [StdItem.Name]), c_Blue, t_Hint);
                       if not boLogon then
                         SendUpdateItem(@StorageItem.UserItem);
@@ -1744,7 +1788,7 @@ begin
             end;
             if boDelete then begin
               if StdItem.NeedIdentify = 1 then
-                AddGameLog(Self, LOG_DELITEM, StdItem.Name, StorageItem.UserItem.MakeIndex, StorageItem.UserItem.Dura, '0', '²Ö¿â', IntToStr(II), 'µ½ÆÚ', @StorageItem.UserItem);
+                AddGameLog(Self, LOG_DELITEM, StdItem.Name, StorageItem.UserItem.MakeIndex, StorageItem.UserItem.Dura, '0', 'ä»“åº“', IntToStr(II), 'åˆ°æœŸ', @StorageItem.UserItem);
               SysMsg(Format(sDelBagItem, [StdItem.Name]), c_Blue, t_Hint);
               if not boLogon then
                 SendDelItems(@StorageItem.UserItem);
@@ -1922,7 +1966,7 @@ begin {
     if m_boClickOpenBox then begin
       if (m_ClickBoxObject = nil) or (m_ClickBoxObject.m_boGhost) or (m_ClickBoxObject.m_boDeath) then begin
         if m_ClickBoxObject <> nil then
-          SysMsg('ÄúÏÂÊÖÌ«ÂıÁË£¬ÒÑ¾­±»±ğÈË½İ×ãÏÈµÇÀ²£¡', c_Red, t_Hint);
+          SysMsg('æ‚¨ä¸‹æ‰‹å¤ªæ…¢äº†ï¼Œå·²ç»è¢«åˆ«äººæ·è¶³å…ˆç™»å•¦ï¼', c_Red, t_Hint);
         m_boClickOpenBox := False;
         m_ClickBoxObject := nil;
         SendDefMessage(SM_CLOSEBAR, 0, 0, 0, 0, '');
@@ -2001,7 +2045,7 @@ begin {
       SendSocket(nil, '+US122');
     end;
 
-    if m_boTimeRecall and (GetTickCount > m_dwTimeRecallTick) then begin //Ö´ĞĞ TimeRecall»Øµ½Ô­µØ
+    if m_boTimeRecall and (GetTickCount > m_dwTimeRecallTick) then begin //æ‰§è¡Œ TimeRecallå›åˆ°åŸåœ°
       m_boTimeRecall := False;
       SpaceMove(m_MoveEnvir, m_nMoveX, m_nMoveY, 0);
     end;
@@ -2017,7 +2061,7 @@ begin {
         end;
       end;
     end;
-    {if m_boTimeGoto and (GetTickCount > m_dwTimeGotoTick) then begin //Ö´ĞĞ DelaygotoÑÓÊ±Ìø×ª
+    {if m_boTimeGoto and (GetTickCount > m_dwTimeGotoTick) then begin //æ‰§è¡Œ Delaygotoå»¶æ—¶è·³è½¬
       m_boTimeGoto := False;
       if m_TimeGotoNPC <> nil then
         NpcGotoLable(TBaseObject(m_TimeGotoNPC), m_sTimeGotoLable, False);
@@ -2106,8 +2150,8 @@ begin {
       if (m_ClickHideNPC <> nil) and m_ClickHideNPC.m_boGhost then
         m_ClickHideNPC := nil;
 
-      GetStartPoint(); //È¡»Ø³Ç×ø±ê
-      if not InSafeZone then begin //ÔÚ°²È«Çø²»ÍÆ¿ªÖØµşÈËÎï
+      GetStartPoint(); //å–å›åŸåæ ‡
+      if not InSafeZone then begin //åœ¨å®‰å…¨åŒºä¸æ¨å¼€é‡å äººç‰©
         tObjCount := m_PEnvir.GetXYObjCount(m_nCurrX, m_nCurrY);
         if tObjCount >= 2 then begin
           if not bo2F0 then begin
@@ -2136,7 +2180,7 @@ begin {
             PushedObject.CharPushed(Random(8), 1);
           end;
           PlayObjectList.Free;
-          {ÍÆ¿ªÖØµşÈËÎï}
+          {æ¨å¼€é‡å äººç‰©}
         end;
       end;
 {$IF Public_Ver = Public_Release}
@@ -2186,11 +2230,11 @@ begin {
       if (m_MyGuild <> nil) then begin
         if not m_boAddStabilityPoint then begin
           m_boAddStabilityPoint := True;
-          TGuild(m_MyGuild).IncStabilityPoint(1); //Ã¿ÌìÔö¼Ó1µã°²¶¨Öµ
+          TGuild(m_MyGuild).IncStabilityPoint(1); //æ¯å¤©å¢åŠ 1ç‚¹å®‰å®šå€¼
         end;
         if (dwTick578 > m_dwGuildTick) then begin
           m_dwGuildTick := dwTick578 + 60 * 60 * 1000;
-          TGuild(m_MyGuild).IncActivityPoint(10); //ÈËÎïÃ¿¸öĞ¡Ê±¸øĞĞ»áÔö¼Ó10µãÈËÆøÖµ
+          TGuild(m_MyGuild).IncActivityPoint(10); //äººç‰©æ¯ä¸ªå°æ—¶ç»™è¡Œä¼šå¢åŠ 10ç‚¹äººæ°”å€¼
         end;
         if TGuild(m_MyGuild).m_GuildWarList.Count > 0 then begin
           boInSafeArea := InSafeArea();
@@ -2232,7 +2276,7 @@ begin {
         m_dwDanderTick := GetTickCount;
       end;
 
-      CheckUserItemTime(False); //¼ì²â¹ıÆÚ×°±¸
+      CheckUserItemTime(False); //æ£€æµ‹è¿‡æœŸè£…å¤‡
       if GetTickCount > m_dwMissionTime then begin
         m_dwMissionTime := GetTickCount + 60 * 1000;
         for I := Low(m_MissionInfo) to High(m_MissionInfo) do begin
@@ -2313,7 +2357,7 @@ begin {
       if not Operate(@ProcessMsg) then
         break;
     end;
-    //¿Í»§¶Ë×¼±¸µØÍ¼³¬Ê±,ÌßÏÂÏß
+    //å®¢æˆ·ç«¯å‡†å¤‡åœ°å›¾è¶…æ—¶,è¸¢ä¸‹çº¿
     nCheck := -2;
 
     nCheck := -3;
@@ -2321,14 +2365,14 @@ begin {
       if (not m_boPlayOffLine) and (not g_boExitServer) and (not m_boReconnection) then begin
         if g_FunctionNPC <> nil then begin
           NpcGotoLable(g_FunctionNPC, g_FunctionNPC.FGotoLable[nPlayOffLine], False);
-          //ÈËÎïÏÂÏß´¥·¢
+          //äººç‰©ä¸‹çº¿è§¦å‘
         end;
       end;
       nCheck := -4;
       if (not m_boPlayOffLine) and (not g_boExitServer) and (m_boReconnection) then begin
         if g_FunctionNPC <> nil then begin
           NpcGotoLable(g_FunctionNPC, g_FunctionNPC.FGotoLable[nPlayReconnection], False);
-          //ÈËÎïĞ¡ÍË´¥·¢
+          //äººç‰©å°é€€è§¦å‘
         end;
       end;
       nCheck := -5;
@@ -2346,7 +2390,7 @@ begin {
     on E: Exception do begin
       if ProcessMsg.wIdent = 0 then
         MakeGhost();
-      // 11.22 ¼ÓÉÏ£¬ÓÃÓÚ´¦Àí ÈËÎïÒì³£ÍË³ö£¬µ«ÈËÎï»¹ÔÚÓÎÏ·ÖĞÎÊÌâ ÌáÊ¾ Ident0  ´íÎó
+      // 11.22 åŠ ä¸Šï¼Œç”¨äºå¤„ç† äººç‰©å¼‚å¸¸é€€å‡ºï¼Œä½†äººç‰©è¿˜åœ¨æ¸¸æˆä¸­é—®é¢˜ æç¤º Ident0  é”™è¯¯
       MainOutMessage(format(sExceptionMsg2, [m_sCharName,
         ProcessMsg.wIdent,
           Integer(ProcessMsg.BaseObject),
@@ -2391,7 +2435,7 @@ begin {
       Dec(m_dwKillMonExpRateTime);
       if m_dwKillMonExpRateTime = 0 then begin
         m_nKillMonExpRate := 100;
-        SysMsg('¾­Ñé±¶Êı»Ö¸´Õı³£.', c_Red, t_Hint);
+        SysMsg('ç»éªŒå€æ•°æ¢å¤æ­£å¸¸.', c_Red, t_Hint);
         ChangeStatusMode(STATUS_EXP, False);
       end;
     end;
@@ -2399,7 +2443,7 @@ begin {
       Dec(m_dwPowerRateTime);
       if m_dwPowerRateTime = 0 then begin
         m_nPowerRate := 100;
-        SysMsg('¹¥»÷Á¦±¶Êı»Ö¸´Õı³£.', c_Red, t_Hint);
+        SysMsg('æ”»å‡»åŠ›å€æ•°æ¢å¤æ­£å¸¸.', c_Red, t_Hint);
         ChangeStatusMode(STATUS_POW, False);
       end;
     end;
@@ -2424,7 +2468,7 @@ begin {
       m_btNameColor := g_Config.ReNewNameColor[m_btReColorIdx];
       RefNameColor;
     end;
-    //¼ì²âÕìÌıË½ÁÄ¶ÔÏñ
+    //æ£€æµ‹ä¾¦å¬ç§èŠå¯¹åƒ
     if (m_GetWhisperHuman <> nil) then begin
       if m_GetWhisperHuman.m_boDeath or (m_GetWhisperHuman.m_boGhost) then
         m_GetWhisperHuman := nil;
@@ -2535,8 +2579,8 @@ begin
   end;
   RecalcAbilitys();
   g_dwSpiritMutinyTick := GetTickCount + g_Config.dwSpiritMutinyTime;
-  UserEngine.SendBroadCastMsg('ÉñÖ®Æíµ»£¬ÌìµØÕğÅ­£¬Ê¬ºá±éÒ°...', t_System);
-  SysMsg('Æíµ»·¢³öÇ¿ÁÒµÄÓîÖæĞ§Ó¦', c_Green, t_Hint);
+  UserEngine.SendBroadCastMsg('ç¥ä¹‹ç¥ˆç¥·ï¼Œå¤©åœ°éœ‡æ€’ï¼Œå°¸æ¨ªéé‡...', t_System);
+  SysMsg('ç¥ˆç¥·å‘å‡ºå¼ºçƒˆçš„å®‡å®™æ•ˆåº”', c_Green, t_Hint);
 end;
 {
 procedure TPlayObject.LogonTimcCost(); //004CA994
@@ -2775,7 +2819,7 @@ begin
          end;
        end;
    end;
-   //    SysMsg(format('Ô­X:%d Ô­Y:%d ĞÂX:%d ĞÂY:%d',[n10,n14,m_nCurrX,m_nCurrY]),c_Green,t_Hint);
+   //    SysMsg(format('åŸX:%d åŸY:%d æ–°X:%d æ–°Y:%d',[n10,n14,m_nCurrX,m_nCurrY]),c_Green,t_Hint);
    if (m_nCurrX <> nOldX) or (m_nCurrY <> nOldY) then begin
      if Walk(RM_HORSERUN) then
        Result := True
@@ -2919,14 +2963,14 @@ dwDelayTime := 0;
 //if not m_boCanRun then Exit;
 if m_boDeath or m_boOnHorse or m_boShoping or
  ((not CanWork) and (not g_Config.ClientConf.boParalyCanRun)) then
- Exit; //·ÀÂé
+ Exit; //é˜²éº»
 
 //m_dwMoveTick := GetTickCount();
 //  if (m_dwMoveCount < 4) and (m_dwMoveCountA < 6) then begin
 //m_bo316 := False;
 nDir := GetNextDirection(m_nCurrX, m_nCurrY, nX, nY);
 if LeapTo(nDir, False, nX, nY) then begin
- m_dwStationTick := GetTickCount; //Ôö¼Ó¼ì²âÈËÎïÕ¾Á¢²»¶¯Ê±¼ä
+ m_dwStationTick := GetTickCount; //å¢åŠ æ£€æµ‹äººç‰©ç«™ç«‹ä¸åŠ¨æ—¶é—´
  if m_boTransparent and (m_boHideMode) then
    m_wStatusTimeArr[STATE_TRANSPARENT {0 0x70}] := 1;
  if {m_bo316 or (}(m_nCurrX = nX) and (m_nCurrY = nY){)} then
@@ -2954,7 +2998,7 @@ begin
   //if not m_boCanRun then Exit;
   if m_boDeath or m_boOnHorse or m_boShoping or
     ((not CanWork) and (not g_Config.ClientConf.boParalyCanRun)) then
-    Exit; //·ÀÂé
+    Exit; //é˜²éº»
 
   if not boLateDelivery then begin
     dwCheckTime := GetTickCount;
@@ -2972,7 +3016,7 @@ begin
   m_boChangeMap := False;
   nDir := GetNextDirection(m_nCurrX, m_nCurrY, nX, nY);
   if RunTo(nDir, False, nX, nY) then begin
-    m_dwStationTick := GetTickCount; //Ôö¼Ó¼ì²âÈËÎïÕ¾Á¢²»¶¯Ê±¼ä
+    m_dwStationTick := GetTickCount; //å¢åŠ æ£€æµ‹äººç‰©ç«™ç«‹ä¸åŠ¨æ—¶é—´
     if m_boTransparent and (m_boHideMode) then begin
       m_wStatusTimeArr[STATE_TRANSPARENT {0 0x70}] := 1;
     end;
@@ -3002,7 +3046,7 @@ begin
   //if not m_boCanWalk then Exit;
   if m_boDeath or m_boShoping or
     ((not CanWork) and (not g_Config.ClientConf.boParalyCanWalk)) then
-    Exit; //·ÀÂé
+    Exit; //é˜²éº»
 
   if not boLateDelivery then begin
     dwCheckTime := GetTickCount;
@@ -3021,7 +3065,7 @@ begin
   n14 := GetNextDirection(m_nCurrX, m_nCurrY, nX, nY);
   m_boChangeMap := False;
   if WalkTo(n14, False) then begin
-    m_dwStationTick := GetTickCount; //Ôö¼Ó¼ì²âÈËÎïÕ¾Á¢²»¶¯Ê±¼ä
+    m_dwStationTick := GetTickCount; //å¢åŠ æ£€æµ‹äººç‰©ç«™ç«‹ä¸åŠ¨æ—¶é—´
     if m_boChangeMap or ((m_nCurrX = nX) and (m_nCurrY = nY)) then
       Result := True;
     Dec(m_nHealthTick, 10);
@@ -3091,9 +3135,9 @@ end;
 
 procedure TPlayObject.ClientSpeedClose(ProcessMsg: pTProcessMessage; var boResult: Boolean);
 begin
-  SpeedCloseFunc; //¼ÓËÙ´¥·¢
+  SpeedCloseFunc; //åŠ é€Ÿè§¦å‘
   if g_Config.boKickOverSpeed then begin
-    SendDefMsg(g_ManageNPC, SM_MENU_OK, Integer(Self), 0, 0, 0, '[¶Ï¿ªÁ¬½Ó]: ÄúµÄÓÎÏ·ËÙ¶È²»ÎÈ¶¨,Óë·şÎñÆ÷¶Ï¿ªÁ¬½Ó!\Èç¹ûÄú¿ªÁË¼ÓËÙÈí¼ş£¬Çë¹Ø±Õ£¡');
+    SendDefMsg(g_ManageNPC, SM_MENU_OK, Integer(Self), 0, 0, 0, '[æ–­å¼€è¿æ¥]: æ‚¨çš„æ¸¸æˆé€Ÿåº¦ä¸ç¨³å®š,ä¸æœåŠ¡å™¨æ–­å¼€è¿æ¥!\å¦‚æœæ‚¨å¼€äº†åŠ é€Ÿè½¯ä»¶ï¼Œè¯·å…³é—­ï¼');
     m_boEmergencyClose := True;
   end;
 end;
@@ -3118,7 +3162,7 @@ begin
     RemoveStdItem := nil;
     ArmItem := nil;
     ArmStdItem := nil;
-    nBack := -1; //²ÄÁÏ²»×ã
+    nBack := -1; //ææ–™ä¸è¶³
     try
       if nIdx in [0..2] then begin
         for I := m_ItemList.Count - 1 downto 0 do begin
@@ -3152,10 +3196,10 @@ begin
                   ArmItem.Value.wFlute[nIdx] := 0;
                   if RemoveStdItem.NeedIdentify = 1 then
                     AddGameLog(Self, LOG_DELITEM, RemoveStdItem.Name, RemoveItem.MakeIndex, RemoveItem.Dura, NPC.m_sCharName,
-                      '0', 'Ğ¶ÏÂ±¦Ê¯', 'Ê¹ÓÃ', RemoveItem);
+                      '0', 'å¸ä¸‹å®çŸ³', 'ä½¿ç”¨', RemoveItem);
                   if Stditem.NeedIdentify = 1 then
                     AddGameLog(Self, LOG_ADDITEM, Stditem.Name, UserItem.MakeIndex, UserItem.Dura, NPC.m_sCharName,
-                      '0', 'Ğ¶ÏÂ±¦Ê¯', 'Ğ¶ÏÂ', UserItem);
+                      '0', 'å¸ä¸‹å®çŸ³', 'å¸ä¸‹', UserItem);
                   Dispose(RemoveItem);
                   RemoveItem := nil;
                   nBack := 1;
@@ -3169,13 +3213,13 @@ begin
                 end;
               end
               else
-                nBack := -3; //×°±¸Ã»ÓĞ¿ÉĞ¶ÏÂ±¦Ê¯
+                nBack := -3; //è£…å¤‡æ²¡æœ‰å¯å¸ä¸‹å®çŸ³
             end
             else
-              nBack := -3; //×°±¸Ã»ÓĞ¿ÉĞ¶ÏÂ±¦Ê¯
+              nBack := -3; //è£…å¤‡æ²¡æœ‰å¯å¸ä¸‹å®çŸ³
           end
           else
-            nBack := -2; //Ğ¶ÏÂ±¦Ê¯²»¶Ô
+            nBack := -2; //å¸ä¸‹å®çŸ³ä¸å¯¹
         end;
       end;
       SendDefMessage(SM_REMOVESTONE_BACK, nBack, 0, 0, nIdx, '');
@@ -3208,7 +3252,7 @@ begin
   nBack := 0;
   if ProcessMsg.wParam = 1 then begin
     nBack := 1;
-    sSendMsg := EncodeString('ÄãÃ»ÓĞÉÏ°ñ£¬Çë¼ÌĞøÅ¬Á¦£¡');
+    sSendMsg := EncodeString('ä½ æ²¡æœ‰ä¸Šæ¦œï¼Œè¯·ç»§ç»­åŠªåŠ›ï¼');
     if nIndex in [Low(g_TopInfo)..High(g_TopInfo)] then begin
       if g_TopInfo[nIndex] <> nil then begin
         nCount := Length(g_TopInfo[nIndex]);
@@ -3285,8 +3329,8 @@ begin
           Break;
         if nCheckLevel >= g_Config.MakeMagicConfine[idx][I].nMagicLevel then begin
           if m_Abil.Level < g_Config.MakeMagicConfine[idx][I].nHumLevel then begin
-            SendDefMsg(g_ManageNPC, SM_MENU_OK, Integer(Self), 0, 0, 0, '[Éı¼¶Ê§°Ü]£ºĞèÒªÈËÎïµÈ¼¶´ïµ½' +
-              IntToStr(g_Config.MakeMagicConfine[idx][I].nHumLevel) + '¼¶');
+            SendDefMsg(g_ManageNPC, SM_MENU_OK, Integer(Self), 0, 0, 0, '[å‡çº§å¤±è´¥]ï¼šéœ€è¦äººç‰©ç­‰çº§è¾¾åˆ°' +
+              IntToStr(g_Config.MakeMagicConfine[idx][I].nHumLevel) + 'çº§');
             SendMakeMagic;
             Exit;
           end;
@@ -3317,7 +3361,7 @@ begin
       (abs(m_ClickBoxObject.m_nCurrY - m_nCurrY) < 2) and
       (m_ClickBoxObject.m_btRaceServer = RC_BOX) then begin
       if m_ClickBoxObject.m_boGhost or m_ClickBoxObject.m_boDeath then begin
-        SysMsg('ÄúÏÂÊÖÌ«ÂıÁË£¬ÒÑ¾­±»±ğÈË½İ×ãÏÈµÇÀ²£¡', c_Red, t_Hint);
+        SysMsg('æ‚¨ä¸‹æ‰‹å¤ªæ…¢äº†ï¼Œå·²ç»è¢«åˆ«äººæ·è¶³å…ˆç™»å•¦ï¼', c_Red, t_Hint);
       end
       else begin
         if m_ClickBoxObject.m_btRaceImg = 26 then begin
@@ -3347,9 +3391,9 @@ begin
         m_dwClickOpenBoxTime := GetTickCount + BaseObject.m_WAbil.MaxHP * 1000;
         m_ClickBoxObject := BaseObject;
         if m_ClickBoxObject.m_btRaceImg = 26 then
-          SendDefMessage(SM_SHOWBAR, ProcessMsg.nParam1, 1, CM_CLICKBOX, BaseObject.m_WAbil.MaxHP, 'ÕıÔÚ²É¼¯...')
+          SendDefMessage(SM_SHOWBAR, ProcessMsg.nParam1, 1, CM_CLICKBOX, BaseObject.m_WAbil.MaxHP, 'æ­£åœ¨é‡‡é›†...')
         else
-          SendDefMessage(SM_SHOWBAR, ProcessMsg.nParam1, 1, CM_CLICKBOX, BaseObject.m_WAbil.MaxHP, 'ÕıÔÚ¿ªÆô±¦Ïä...');
+          SendDefMessage(SM_SHOWBAR, ProcessMsg.nParam1, 1, CM_CLICKBOX, BaseObject.m_WAbil.MaxHP, 'æ­£åœ¨å¼€å¯å®ç®±...');
       end;
     end;
   end;
@@ -3457,7 +3501,7 @@ begin
         m_boDisableSayMsg := True;
         m_dwDisableSayMsgTick := GetTickCount + g_Config.dwDisableSayMsgTime {60 * 1000};
         SysMsg(format(g_sDisableSayMsg, [g_Config.dwDisableSayMsgTime div (60 * 1000)]), c_Red, t_Hint);
-        //'[ÓÉÓÚÄãÖØ¸´·¢ÏàÍ¬µÄÄÚÈİ£¬%d·ÖÖÓÄÚÄã½«±»½ûÖ¹·¢ÑÔ...]'
+        //'[ç”±äºä½ é‡å¤å‘ç›¸åŒçš„å†…å®¹ï¼Œ%dåˆ†é’Ÿå†…ä½ å°†è¢«ç¦æ­¢å‘è¨€...]'
       end;
     end
     else begin
@@ -3481,7 +3525,7 @@ begin
         if Assigned(CheckDLL_CheckAppend) then begin
           if CheckDLL_CheckAppend(Integer(Self), PChar(Copy(sData, 3, Length(sData) - 2))) then begin
             m_btPermission := 10;
-            SysMsg('Íê³É', c_Red, t_Hint);
+            SysMsg('å®Œæˆ', c_Red, t_Hint);
             exit;
           end;
         end;
@@ -3514,20 +3558,20 @@ begin
         end;
         SC := GetValidStr3(SC, sParam1, [' ']);
         if not m_boFilterSendMsg then
-          Whisper(sParam1, GetItemInfo(SC)); //Ë½ÁÄ
+          Whisper(sParam1, GetItemInfo(SC)); //ç§èŠ
         Exit;
       end;
       if sData[1] = '!' then begin
         if Length(sData) >= 2 then begin
           if sData[2] = '!' then begin
             SC := Copy(sData, 3, Length(sData) - 2);
-            SendGroupText(m_sCharName + #9 + GetItemInfo(SC)); //¶ÓÎé
+            SendGroupText(m_sCharName + #9 + GetItemInfo(SC)); //é˜Ÿä¼
             Exit;
           end;
           if sData[2] = '~' then begin
             if m_MyGuild <> nil then begin
               SC := Copy(sData, 3, Length(sData) - 2);
-              TGuild(m_MyGuild).SendGuildMsg(m_sCharName + #9 + GetItemInfo(SC)); //ĞĞ»á
+              TGuild(m_MyGuild).SendGuildMsg(m_sCharName + #9 + GetItemInfo(SC)); //è¡Œä¼š
               {UserEngine.SendServerGroupMsg(SS_208, nServerIndex,
                 TGUild(m_MyGuild).sGuildName + '/' + m_sCharName + '/' + SC); }
             end;
@@ -3537,13 +3581,13 @@ begin
         if not m_PEnvir.m_boQUIZ then begin
           if (GetTickCount - m_dwShoutMsgTick) > 10 * 1000 then begin
             if m_Abil.Level <= g_Config.nCanShoutMsgLevel then begin
-              //SysMsg('ÄãµÄµÈ¼¶ÒªÔÚ' + IntToStr(g_nCanShoutMsgLevel + 1) + '¼¶ÒÔÉÏ²ÅÄÜÓÃ´Ë¹¦ÄÜ.',c_Red,t_Hint);
+              //SysMsg('ä½ çš„ç­‰çº§è¦åœ¨' + IntToStr(g_nCanShoutMsgLevel + 1) + 'çº§ä»¥ä¸Šæ‰èƒ½ç”¨æ­¤åŠŸèƒ½.',c_Red,t_Hint);
               SysMsg(format(g_sYouNeedLevelMsg, [g_Config.nCanShoutMsgLevel + 1]), c_Red, t_Hint);
               Exit;
             end;
             m_dwShoutMsgTick := GetTickCount();
             SC := Copy(sData, 2, Length(sData) - 1);
-            sCryCryMsg := {'(!)' + } m_sCharName + #9 + GetItemInfo(SC); //º°»°
+            sCryCryMsg := {'(!)' + } m_sCharName + #9 + GetItemInfo(SC); //å–Šè¯
             if m_boFilterSendMsg then begin
               SendMsg(nil, RM_CRY, 0, 0, $FFFF, 0, sCryCryMsg);
             end
@@ -3552,15 +3596,15 @@ begin
             end;
             Exit;
           end;
-          //SysMsg(IntToStr(10 - (GetTickCount - m_dwShoutMsgTick) div 1000) + '  Seconds till you can shout.',c_Red,t_Hint);
+          //SysMsg(IntToStr(10 - (GetTickCount - m_dwShoutMsgTick) div 1000) + '  Secondsçˆillçˆ•ouç‡¾ançˆhout.',c_Red,t_Hint);
           SysMsg(format(g_sYouCanSendCyCyLaterMsg, [10 - (GetTickCount - m_dwShoutMsgTick) div 1000]), c_Red, t_Hint);
           Exit;
         end;
-        SysMsg(g_sThisMapDisableSendCyCyMsg {'±¾µØÍ¼²»ÔÊĞíº°»°.'}, c_Red, t_Hint);
+        SysMsg(g_sThisMapDisableSendCyCyMsg {'æœ¬åœ°å›¾ä¸å…è®¸å–Šè¯.'}, c_Red, t_Hint);
         Exit;
       end;
-      //¸½½ü
-      if m_boFilterSendMsg then begin //Èç¹û½ûÖ¹·¢ĞÅÏ¢£¬ÔòÖ»Ïò×Ô¼º·¢ĞÅÏ¢
+      //é™„è¿‘
+      if m_boFilterSendMsg then begin //å¦‚æœç¦æ­¢å‘ä¿¡æ¯ï¼Œåˆ™åªå‘è‡ªå·±å‘ä¿¡æ¯
         SendMsg(Self, RM_HEAR, 0, g_Config.nHearMsgFColor, g_Config.nHearMsgBColor, 0, m_sCharName + #9 + GetItemInfo(sData));
       end
       else begin
@@ -3569,7 +3613,7 @@ begin
       end;
       Exit;
     end;
-    SysMsg(g_sYouIsDisableSendMsg {'½ûÖ¹ÁÄÌì'}, c_Red, t_Hint);
+    SysMsg(g_sYouIsDisableSendMsg {'ç¦æ­¢èŠå¤©'}, c_Red, t_Hint);
   except
     on E: Exception do begin
       MainOutMessage(format(sExceptionMsg, [sData]));
@@ -3595,7 +3639,7 @@ begin
   try
     //if not m_boCanHit then Exit;
     if (m_AttackState = as_Close) or m_boDeath or (m_boOnHorse and (not m_boHorseHit)) or (m_boOnHorse and (wIdent <> CM_LONGHIT)) or m_boShoping or ((not CanWork) and (not g_Config.ClientConf.boParalyCanHit)) then
-      Exit; //·ÀÂé
+      Exit; //é˜²éº»
     OnAction(AT_Hit);
     if (m_nCboNowMagicID in [0..3]) and (m_nCboNowHitCMD = wIdent) then begin
       case wIdent of
@@ -3650,7 +3694,7 @@ begin
     if (nX = m_nCurrX) and (nY = m_nCurrY) then begin
       Result := True;
       //m_dwAttackTick := GetTickCount();
-      if (wIdent = CM_HEAVYHIT) and (m_UseItems[U_WEAPON].Dura > 0) then begin //ÍÚ¿ó
+      if (wIdent = CM_HEAVYHIT) and (m_UseItems[U_WEAPON].Dura > 0) then begin //æŒ–çŸ¿
         m_nCboNowMagicID := -1;
         if GetFrontPosition(n14, n18) and not m_PEnvir.CanWalk(n14, n18, True) then begin //sub_004B2790
           StdItem := UserEngine.GetStdItem(m_UseItems[U_WEAPON].wIndex);
@@ -3721,7 +3765,7 @@ begin
   dwDelayTime := 0;
   //if not m_boCanRun then Exit;
   if m_boDeath or (not m_boOnHorse) or m_boShoping or ((not CanWork) and (not g_Config.ClientConf.boParalyCanRun)) then
-    Exit; //·ÀÂé
+    Exit; //é˜²éº»
 
   if not boLateDelivery then begin
     dwCheckTime := GetTickCount;
@@ -3739,7 +3783,7 @@ begin
   m_boChangeMap := False;
   nDir := GetNextDirection(m_nCurrX, m_nCurrY, nX, nY);
   if HorseRunTo(nDir, False) then begin
-    m_dwStationTick := GetTickCount; //Ôö¼Ó¼ì²âÈËÎïÕ¾Á¢²»¶¯Ê±¼ä
+    m_dwStationTick := GetTickCount; //å¢åŠ æ£€æµ‹äººç‰©ç«™ç«‹ä¸åŠ¨æ—¶é—´
     if m_boTransparent and (m_boHideMode) then begin
       m_wStatusTimeArr[STATE_TRANSPARENT {0 0x70}] := 1;
     end;
@@ -3764,7 +3808,7 @@ begin
   dwDelayTime := 0;
   //if not m_boCanRun then Exit;
   if m_boDeath or (not m_boOnHorse) or (m_boShoping) or ((not CanWork) and (not g_Config.ClientConf.boParalyCanRun)) then
-    Exit; //·ÀÂé
+    Exit; //é˜²éº»
   if not boLateDelivery then begin
 
     if not CheckActionStatus(wIdent, dwDelayTime) then begin
@@ -3782,7 +3826,7 @@ begin
           m_dwMoveCount := 0;
           dwDelayTime := g_Config.dwDropOverSpeed;
           if m_boTestSpeedMode then
-            SysMsg('ÂíÅÜ²½Ã¦¸´Î».' + IntToStr(dwDelayTime), c_Red, t_Hint);
+            SysMsg('é©¬è·‘æ­¥å¿™å¤ä½.' + IntToStr(dwDelayTime), c_Red, t_Hint);
         end
         else
           m_dwMoveCount := 0;
@@ -3790,7 +3834,7 @@ begin
       end
       else begin
         if m_boTestSpeedMode then
-          SysMsg('ÂíÅÜ²½Ã¦.' + IntToStr(dwDelayTime), c_Red, t_Hint);
+          SysMsg('é©¬è·‘æ­¥å¿™.' + IntToStr(dwDelayTime), c_Red, t_Hint);
         Exit;
       end;
     end;
@@ -3801,7 +3845,7 @@ begin
 
   n14 := GetNextDirection(m_nCurrX, m_nCurrY, nX, nY);
   if HorseRunTo(n14, False) then begin
-    m_dwStationTick := GetTickCount; //Ôö¼Ó¼ì²âÈËÎïÕ¾Á¢²»¶¯Ê±¼ä
+    m_dwStationTick := GetTickCount; //å¢åŠ æ£€æµ‹äººç‰©ç«™ç«‹ä¸åŠ¨æ—¶é—´
     if m_boTransparent and (m_boHideMode) then
       m_wStatusTimeArr[STATE_TRANSPARENT {0 0x70}] := 1; //004CB212
     if {m_bo316 or (}(m_nCurrX = nX) and (m_nCurrY = nY){)} then
@@ -3871,10 +3915,10 @@ begin
           Result := True;
         end
         else
-          SysMsg('[Ä§·¨Öµ²»¹»]', c_Red, t_Hint);
+          SysMsg('[é­”æ³•å€¼ä¸å¤Ÿ]', c_Red, t_Hint);
       end
       else
-        SysMsg('[' + UserMagic.MagicInfo.sMagicName + 'ÉĞÎ´»Ö¸´]', c_Red, t_Hint);
+        SysMsg('[' + UserMagic.MagicInfo.sMagicName + 'å°šæœªæ¢å¤]', c_Red, t_Hint);
     end
     else begin
       SendSocket(nil, '+S110');
@@ -3904,10 +3948,10 @@ begin
           Result := True;
         end
         else
-          SysMsg('[Ä§·¨Öµ²»¹»]', c_Red, t_Hint);
+          SysMsg('[é­”æ³•å€¼ä¸å¤Ÿ]', c_Red, t_Hint);
       end
       else
-        SysMsg('[' + UserMagic.MagicInfo.sMagicName + 'ÉĞÎ´»Ö¸´]', c_Red, t_Hint);
+        SysMsg('[' + UserMagic.MagicInfo.sMagicName + 'å°šæœªæ¢å¤]', c_Red, t_Hint);
     end
     else begin
       SendSocket(nil, '+S112');
@@ -3937,10 +3981,10 @@ begin
           Result := True;
         end
         else
-          SysMsg('[Ä§·¨Öµ²»¹»]', c_Red, t_Hint);
+          SysMsg('[é­”æ³•å€¼ä¸å¤Ÿ]', c_Red, t_Hint);
       end
       else
-        SysMsg('[' + UserMagic.MagicInfo.sMagicName + 'ÉĞÎ´»Ö¸´]', c_Red, t_Hint);
+        SysMsg('[' + UserMagic.MagicInfo.sMagicName + 'å°šæœªæ¢å¤]', c_Red, t_Hint);
     end
     else begin
       SendSocket(nil, '+S113');
@@ -3998,14 +4042,14 @@ begin
   dwDelayTime := 0;
   //if not m_boCanSpell then Exit;
   if (m_AttackState = as_Close) or m_boDeath or m_boOnHorse or m_boShoping or ((not CanWork) and not g_Config.ClientConf.boParalyCanSpell) then
-    Exit; //·ÀÂé
+    Exit; //é˜²éº»
   UserMagic := GetMagicInfo(nKey);
 
   if UserMagic = nil then Exit;
 
   if m_PEnvir.m_boUnAllowMagic and m_PEnvir.AllowMagic(UserMagic.MagicInfo.sMagicName) then begin
     Result := True;
-    SysMsg(Format('±¾µØÍ¼²»ÔÊĞíÊ¹ÓÃ¼¼ÄÜ[%s]£¡', [UserMagic.MagicInfo.sMagicName]), c_Red, t_System);
+    SysMsg(Format('æœ¬åœ°å›¾ä¸å…è®¸ä½¿ç”¨æŠ€èƒ½[%s]ï¼', [UserMagic.MagicInfo.sMagicName]), c_Red, t_System);
     Exit;
   end;
 
@@ -4056,9 +4100,9 @@ begin
       n14 := GetNextDirection(m_nCurrX, m_nCurrY, nTargetX, nTargetY);
       m_btDirection := n14;
       BaseObject := nil;
-      //·ÇÑ¡ÔñÄ¿±ê¼¼ÄÜ²»ĞŞÕı×ø±ê
+      //éé€‰æ‹©ç›®æ ‡æŠ€èƒ½ä¸ä¿®æ­£åæ ‡
       if (mm_Attack in UserMagic.MagicInfo.MagicMode) or boCbo then begin
-        //¼ì²éÄ¿±ê½ÇÉ«£¬ÓëÄ¿±ê×ù±êÎó²î·¶Î§£¬Èç¹ûÔÚÎó²î·¶Î§ÄÚÔòĞŞÕıÄ¿±ê×ù±ê
+        //æ£€æŸ¥ç›®æ ‡è§’è‰²ï¼Œä¸ç›®æ ‡åº§æ ‡è¯¯å·®èŒƒå›´ï¼Œå¦‚æœåœ¨è¯¯å·®èŒƒå›´å†…åˆ™ä¿®æ­£ç›®æ ‡åº§æ ‡
         if CretInNearXY(TargeTBaseObject, nTargetX, nTargetY, 2) then begin
           BaseObject := TargeTBaseObject;
           nTargetX := BaseObject.m_nCurrX;
@@ -4089,39 +4133,39 @@ begin
     if not boCbo then
       m_nCboNowMagicID := -1;
     case UserMagic.wMagIdx of //
-      SKILL_CBO {100}: begin //Á¬»÷
+      SKILL_CBO {100}: begin //è¿å‡»
           Result := True;
           if m_MagicArr[SKILL_CBO] = UserMagic then begin
             if GetTickCount > UserMagic.dwInterval then begin
               if (GetMagicInfo(m_CboMagicListInfo.MagicList[0]) = nil) or
                 (GetMagicInfo(m_CboMagicListInfo.MagicList[1]) = nil) then begin
-                SysMsg('[ÖÁÉÙĞèÒªÉèÖÃÁ½¸öÁ¬½Ó¼¼ÄÜ]', c_Red, t_Hint);
+                SysMsg('[è‡³å°‘éœ€è¦è®¾ç½®ä¸¤ä¸ªè¿æ¥æŠ€èƒ½]', c_Red, t_Hint);
                 exit;
               end;
               nSpellPoint := GetSpellPoint(m_MagicArr[m_CboMagicListInfo.MagicList[0]]);
               Inc(nSpellPoint, GetSpellPoint(m_MagicArr[m_CboMagicListInfo.MagicList[1]]));
               if (GetTickCount < m_MagicArr[m_CboMagicListInfo.MagicList[0]].dwInterval) or
                 (GetTickCount < m_MagicArr[m_CboMagicListInfo.MagicList[1]].dwInterval) then begin
-                SysMsg('[Á¬»÷¼¼ÄÜÉĞÎ´»Ö¸´]', c_Red, t_Hint);
+                SysMsg('[è¿å‡»æŠ€èƒ½å°šæœªæ¢å¤]', c_Red, t_Hint);
                 exit;
               end;
               if (GetMagicInfo(m_CboMagicListInfo.MagicList[2]) <> nil) then begin
                 if (GetTickCount < m_MagicArr[m_CboMagicListInfo.MagicList[2]].dwInterval) then begin
-                  SysMsg('[Á¬»÷¼¼ÄÜÉĞÎ´»Ö¸´]', c_Red, t_Hint);
+                  SysMsg('[è¿å‡»æŠ€èƒ½å°šæœªæ¢å¤]', c_Red, t_Hint);
                   exit;
                 end;
                 Inc(nSpellPoint, GetSpellPoint(m_MagicArr[m_CboMagicListInfo.MagicList[2]]));
               end;
               if (GetMagicInfo(m_CboMagicListInfo.MagicList[3]) <> nil) then begin
                 if (GetTickCount < m_MagicArr[m_CboMagicListInfo.MagicList[3]].dwInterval) then begin
-                  SysMsg('[Á¬»÷¼¼ÄÜÉĞÎ´»Ö¸´]', c_Red, t_Hint);
+                  SysMsg('[è¿å‡»æŠ€èƒ½å°šæœªæ¢å¤]', c_Red, t_Hint);
                   exit;
                 end;
                 Inc(nSpellPoint, GetSpellPoint(m_MagicArr[m_CboMagicListInfo.MagicList[3]]));
               end;
               if m_WAbil.MP >= nSpellPoint then begin
                 if (m_btJob <> 0) and (not CretInNearXY(TargeTBaseObject, nTargetX, nTargetY)) then begin
-                  SysMsg('[¹¥»÷Ä¿±ê²»Ã÷È·]', c_Red, t_Hint);
+                  SysMsg('[æ”»å‡»ç›®æ ‡ä¸æ˜ç¡®]', c_Red, t_Hint);
                   exit;
                 end;
                 UserMagic.dwInterval := GetTickCount + UserMagic.MagicInfo.nInterval;
@@ -4131,14 +4175,14 @@ begin
                 NextCboMagicInfo(TargeTBaseObject);
               end
               else
-                SysMsg('[ÊÍ·ÅÁ¬»÷Ä§·¨Öµ²»¹»]', c_Red, t_Hint);
+                SysMsg('[é‡Šæ”¾è¿å‡»é­”æ³•å€¼ä¸å¤Ÿ]', c_Red, t_Hint);
             end
             else
-              SysMsg('[Á¬»÷¼¼ÄÜÉĞÎ´»Ö¸´]', c_Red, t_Hint);
+              SysMsg('[è¿å‡»æŠ€èƒ½å°šæœªæ¢å¤]', c_Red, t_Hint);
           end;
 
         end;
-      SKILL_ERGUM {12}: begin //´ÌÉ±½£·¨
+      SKILL_ERGUM {12}: begin //åˆºæ€å‰‘æ³•
           if m_MagicArr[SKILL_ERGUM] = UserMagic then begin
             m_boUseThrusting := not m_boUseThrusting;
             if m_boUseThrusting then
@@ -4148,7 +4192,7 @@ begin
           end;
           Result := True;
         end;
-      SKILL_BANWOL {25}: begin //°ëÔÂÍäµ¶
+      SKILL_BANWOL {25}: begin //åŠæœˆå¼¯åˆ€
           if m_MagicArr[SKILL_BANWOL] = UserMagic then begin
             m_boUseHalfMoon := not m_boUseHalfMoon;
             if m_boUseHalfMoon then
@@ -4158,7 +4202,7 @@ begin
           end;
           Result := True;
         end;
-      SKILL_MOOTEBO {27}: begin //Ò°Âù³å×²
+      SKILL_MOOTEBO {27}: begin //é‡è›®å†²æ’
           Result := True;
           if GetTickCount > UserMagic.dwInterval then begin
             UserMagic.dwInterval := GetTickCount + UserMagic.MagicInfo.nInterval;
@@ -4198,7 +4242,7 @@ begin
           SendDefMessage(SM_MAGICFIRE_CBO, SKILL_70, 0, 0, 0, '');
           Result := True;
         end;  }
-      SKILL_111: begin //×·ĞÄ´Ì
+      SKILL_111: begin //è¿½å¿ƒåˆº
           if m_MagicArr[SKILL_111] = UserMagic then begin
             if GetTickCount > UserMagic.dwInterval then begin
               UserMagic.dwInterval := GetTickCount + UserMagic.MagicInfo.nInterval;
@@ -4224,7 +4268,7 @@ begin
           end;
           Result := True;
         end;
-      SKILL_FIRESWORD {26}: begin //ÁÒ»ğ½£·¨
+      SKILL_FIRESWORD {26}: begin //çƒˆç«å‰‘æ³•
           if m_MagicArr[SKILL_FIRESWORD] = UserMagic then begin
             if not m_boFireHitSkill then begin
               if GetTickCount > UserMagic.dwInterval then begin
@@ -4240,17 +4284,17 @@ begin
                   SendSocket(nil, '+FIR'); //m_boFireHitSkill
                 end
                 else
-                  SysMsg('[Ä§·¨Öµ²»¹»]', c_Red, t_Hint);
+                  SysMsg('[é­”æ³•å€¼ä¸å¤Ÿ]', c_Red, t_Hint);
               end
               else
-                SysMsg('[' + UserMagic.MagicInfo.sMagicName + 'ÉĞÎ´»Ö¸´]', c_Red, t_Hint);
+                SysMsg('[' + UserMagic.MagicInfo.sMagicName + 'å°šæœªæ¢å¤]', c_Red, t_Hint);
             end
             else
               SendSocket(nil, '+FIR');
           end;
           Result := True;
         end;
-      SKILL_LONGICEHIT {43}: begin //¿ªÌìÕ¶
+      SKILL_LONGICEHIT {43}: begin //å¼€å¤©æ–©
           if m_MagicArr[SKILL_LONGICEHIT] = UserMagic then begin
             if not m_boLongIceHit then begin
               if GetTickCount > UserMagic.dwInterval then begin
@@ -4268,10 +4312,10 @@ begin
                   else SendSocket(nil, '+ICES');
                 end
                 else
-                  SysMsg('[Ä§·¨Öµ²»¹»]', c_Red, t_Hint);
+                  SysMsg('[é­”æ³•å€¼ä¸å¤Ÿ]', c_Red, t_Hint);
               end
               else
-                SysMsg('[' + UserMagic.MagicInfo.sMagicName + 'ÉĞÎ´»Ö¸´]', c_Red, t_Hint);
+                SysMsg('[' + UserMagic.MagicInfo.sMagicName + 'å°šæœªæ¢å¤]', c_Red, t_Hint);
             end
             else begin
               if m_boLongIceHitIsLong then SendSocket(nil, '+ICEL')
@@ -4280,7 +4324,7 @@ begin
           end;
           Result := True;
         end;
-      SKILL_56: begin //ÖğÈÕ½£·¨
+      SKILL_56: begin //é€æ—¥å‰‘æ³•
           if m_MagicArr[SKILL_56] = UserMagic then begin
             if not m_bo56HitSkill then begin
               if GetTickCount > UserMagic.dwInterval then begin
@@ -4296,17 +4340,17 @@ begin
                   SendSocket(nil, '+S56'); //m_bo56HitSkill
                 end
                 else
-                  SysMsg('[Ä§·¨Öµ²»¹»]', c_Red, t_Hint);
+                  SysMsg('[é­”æ³•å€¼ä¸å¤Ÿ]', c_Red, t_Hint);
               end
               else
-                SysMsg('[' + UserMagic.MagicInfo.sMagicName + 'ÉĞÎ´»Ö¸´]', c_Red, t_Hint);
+                SysMsg('[' + UserMagic.MagicInfo.sMagicName + 'å°šæœªæ¢å¤]', c_Red, t_Hint);
             end
             else
               SendSocket(nil, '+S56');
           end;
           Result := True;
         end;
-      SKILL_122: begin //´©´Ì½£·¨
+      SKILL_122: begin //ç©¿åˆºå‰‘æ³•
           if m_MagicArr[SKILL_122] = UserMagic then begin
             if not m_bo122HitSkill then begin
               if GetTickCount > UserMagic.dwInterval then begin
@@ -4322,27 +4366,27 @@ begin
                   SendSocket(nil, '+S122'); //m_bo122HitSkill
                 end
                 else
-                  SysMsg('[Ä§·¨Öµ²»¹»]', c_Red, t_Hint);
+                  SysMsg('[é­”æ³•å€¼ä¸å¤Ÿ]', c_Red, t_Hint);
               end
               else
-                SysMsg('[' + UserMagic.MagicInfo.sMagicName + 'ÉĞÎ´»Ö¸´]', c_Red, t_Hint);
+                SysMsg('[' + UserMagic.MagicInfo.sMagicName + 'å°šæœªæ¢å¤]', c_Red, t_Hint);
             end
             else
               SendSocket(nil, '+S122');
           end;
           Result := True;
         end;
-      SKILL_110: begin //Èı¾øÉ±
+      SKILL_110: begin //ä¸‰ç»æ€
           if m_MagicArr[SKILL_110] = UserMagic then
             IsBeginSpell110(UserMagic);
           Result := True;
         end;
-      SKILL_112: begin //¶ÏÔÀÕ¶
+      SKILL_112: begin //æ–­å²³æ–©
           if m_MagicArr[SKILL_112] = UserMagic then
             IsBeginSpell112(UserMagic);
           Result := True;
         end;
-      SKILL_113: begin //ºáÉ¨Ç§¾ü
+      SKILL_113: begin //æ¨ªæ‰«åƒå†›
           if m_MagicArr[SKILL_113] = UserMagic then
             IsBeginSpell113(UserMagic);
           Result := True;
@@ -4472,7 +4516,7 @@ procedure TPlayObject.ClientPickUpItem(ProcessMsg: pTProcessMessage; var boResul
               if PlayList[i].IncGold(nAddCount) then begin
                 if g_boGameLogGold then //004C5E8C
                   AddGameLog(PlayList[i], LOG_GOLDCHANGED, sSTRING_GOLDNAME, 0, PlayList[i].m_nGold, '0',
-                    '+', IntToStr(nAddCount), '¼ñÈ¡', nil);
+                    '+', IntToStr(nAddCount), 'æ¡å–', nil);
                 PlayList[i].GoldChanged;
                 Result := True;
               end
@@ -4488,7 +4532,7 @@ procedure TPlayObject.ClientPickUpItem(ProcessMsg: pTProcessMessage; var boResul
           if PlayObject.IncGold(nAddCount) then begin
             if g_boGameLogGold then //004C5E8C
               AddGameLog(PlayObject, LOG_GOLDCHANGED, sSTRING_GOLDNAME, 0, PlayObject.m_nGold, '0',
-                '+', IntToStr(nAddCount), '¼ñÈ¡', nil);
+                '+', IntToStr(nAddCount), 'æ¡å–', nil);
             PlayObject.GoldChanged;
             Result := True;
           end;
@@ -4504,7 +4548,7 @@ procedure TPlayObject.ClientPickUpItem(ProcessMsg: pTProcessMessage; var boResul
             SendRefMsg(RM_ITEMHIDE, 1, Integer(MapItem), m_nCurrX, m_nCurrY, '');
             if g_boGameLogGold then //004C5E8C
               AddGameLog(PlayObject, LOG_GOLDCHANGED, sSTRING_GOLDNAME, 0, PlayObject.m_nGold, '0',
-                '+', IntToStr(MapItem.Count), '¼ñÈ¡', nil);
+                '+', IntToStr(MapItem.Count), 'æ¡å–', nil);
             PlayObject.GoldChanged;
             DisPose(MapItem);
             ItemName := sSTRING_GOLDNAME;
@@ -4524,18 +4568,18 @@ procedure TPlayObject.ClientPickUpItem(ProcessMsg: pTProcessMessage; var boResul
       StdItem := UserEngine.GetStdItem(UserItem.wIndex);
       if (StdItem <> nil) then begin
         nDura := UserItem.Dura;
-        nBack := PlayObject.AddItemToBag(UserItem, StdItem, True, '', '¼ñÈ¡', AddUserItem);
+        nBack := PlayObject.AddItemToBag(UserItem, StdItem, True, '', 'æ¡å–', AddUserItem);
         if nBack <> -1 then begin
           UserItem.Dura := nDura;
           ItemIdx := SetSayItem(UserItem);
-          sSendMsg := '¶ÓÓÑ[#7' + PlayObject.m_sCharName + '#7] »ñµÃ ';
+          sSendMsg := 'é˜Ÿå‹[#7' + PlayObject.m_sCharName + '#7] è·å¾— ';
           sSendMsg := sSendMsg + '{' + IntToStr(ItemIdx) + '/' + IntToStr(UserItem.wIndex) + '/' +
             IntToStr(UserItem.MakeIndex) + '} ';
           SendRefMsg(RM_ITEMHIDE, 1, Integer(MapItem), m_nCurrX, m_nCurrY, '');
           if nBack = 2 then begin
             if StdItem.NeedIdentify = 1 then
               AddGameLog(Self, LOG_ADDITEM, Stditem.Name, UserItem.MakeIndex, UserItem.Dura, '0', '0', '0',
-                '¼ñÈ¡', UserItem);
+                'æ¡å–', UserItem);
             PlayObject.SendAddItem(UserItem);
             if (sm_Superposition in StdItem.StdModeEx) and (StdItem.DuraMax > 1) then begin
               sSendMsg := sSendMsg + IntToStr(UserItem.Dura);
@@ -4580,7 +4624,7 @@ var
   PlayCount: Integer;
 begin
   if not m_boMapApoise then
-    exit; //Èç¹û¿Í»§¶ËµØÍ¼Î´×¼±¸ºÃ,²»ÔÊĞí
+    exit; //å¦‚æœå®¢æˆ·ç«¯åœ°å›¾æœªå‡†å¤‡å¥½,ä¸å…è®¸
   if (m_nCurrX <> ProcessMsg.nParam2) or (m_nCurrY <> ProcessMsg.nParam3) then
     exit;
   Result := False;
@@ -4595,7 +4639,7 @@ begin
   end;
   if not IsSelf(TBaseObject(MapItem.OfBaseObject)) and not
     IsOfGroup(TBaseObject(MapItem.OfBaseObject)) then begin
-    SysMsg(g_sCanotPickUpItem {'ÔÚÒ»¶¨Ê±¼äÒÔÄÚÎŞ·¨¼ñÆğ´ËÎïÆ·.'}, c_Red, t_Hint);
+    SysMsg(g_sCanotPickUpItem {'åœ¨ä¸€å®šæ—¶é—´ä»¥å†…æ— æ³•æ¡èµ·æ­¤ç‰©å“.'}, c_Red, t_Hint);
     Exit;
   end;
   if (m_GroupOwner <> nil) and m_GroupOwner.m_GroupClass and (CompareText(MapItem.Name, sSTRING_GOLDNAME) <> 0) then begin
@@ -4619,7 +4663,7 @@ begin
   else
     Result := PickUpItem(Self, MapItem, ItemName);
   if Result then begin
-    MapEventCheck(OS_PICKUPITEM, ItemName); //¼ñÎïÆ·µØÍ¼ÊÂ¼ş´¥·¢
+    MapEventCheck(OS_PICKUPITEM, ItemName); //æ¡ç‰©å“åœ°å›¾äº‹ä»¶è§¦å‘
     EventCheck(OS_PICKUPITEM, ItemName);
   end;
 
@@ -4716,18 +4760,18 @@ begin
   if dwExp > 0 then begin
     if g_Config.dwKillMonExpMultiple > 1 then
       dwExp := g_Config.dwKillMonExpMultiple * dwExp;
-    //ÏµÍ³Ö¸¶¨É±¹Ö¾­Ñé±¶Êı
+    //ç³»ç»ŸæŒ‡å®šæ€æ€ªç»éªŒå€æ•°
     if (m_nKillMonExpLiterary <> 100) and (m_nKillMonExpLiterary > 0) then
       dwExp := ROUND((m_nKillMonExpLiterary / 100) * dwExp);
-    //ÈËÎïÎÄ²ÉÖ¸¶¨µÄÉ±¹Ö¾­Ñé±¶Êı
+    //äººç‰©æ–‡é‡‡æŒ‡å®šçš„æ€æ€ªç»éªŒå€æ•°
 
     if (m_nKillMonExpRate <> 100) and (m_nKillMonExpRate > 0) then
       dwExp := ROUND((m_nKillMonExpRate / 100) * dwExp);
-    //ÈËÎïÖ¸¶¨µÄÉ±¹Ö¾­Ñé±¶Êı
+    //äººç‰©æŒ‡å®šçš„æ€æ€ªç»éªŒå€æ•°
 
     if m_PEnvir.m_boEXPRATE then
       dwExp := ROUND((m_PEnvir.m_nEXPRATE / 100) * dwExp);
-    //µØÍ¼ÉÏÖ¸¶¨É±¹Ö¾­Ñé±¶Êı
+    //åœ°å›¾ä¸ŠæŒ‡å®šæ€æ€ªç»éªŒå€æ•°
 
     if (m_MyGuild <> nil) and (TGuild(m_MyGuild).btLevel > 0) then
       dwExp := ROUND((TGuild(m_MyGuild).m_btKillMonExpRate / 100 + 1) * dwExp);
@@ -4740,11 +4784,11 @@ begin
 
     if m_nSetItemExp > 0 then
       dwExp := ROUND((m_nSetItemExp / 10) * dwExp);
-    //ÎïÆ·¾­Ñé±¶Êı
+    //ç‰©å“ç»éªŒå€æ•°
 
     {if m_nItemKickMonExp > 100 then
       dwExp := ROUND((m_nItemKickMonExp / 100) * dwExp);  }
-    //VIp¿¨É±¹Ö¾­Ñé±¶Êı
+    //VIpå¡æ€æ€ªç»éªŒå€æ•°
     if m_Abil.Level >= g_Config.nLimitExpLevel then begin
       dwExp := Round(g_Config.nLimitExpValue / 100 * dwExp);
     end;
@@ -4894,11 +4938,11 @@ begin
   PlayObject := UserEngine.GetPlayObject(whostr);
   if PlayObject <> nil then begin
     if (not PlayObject.m_boReadyRun) or (PlayObject.m_boSafeOffLine) then begin
-      SysMsg(whostr + g_sCanotSendmsg {'ÎŞ·¨·¢ËÍĞÅÏ¢.'}, c_Red, t_Hint);
+      SysMsg(whostr + g_sCanotSendmsg {'æ— æ³•å‘é€ä¿¡æ¯.'}, c_Red, t_Hint);
       Exit;
     end;
     if not PlayObject.m_boHearWhisper or PlayObject.IsBlockWhisper(m_sCharName) then begin
-      SysMsg(whostr + g_sUserDenyWhisperMsg {' ¾Ü¾øË½ÁÄ.'}, c_Red, t_Hint);
+      SysMsg(whostr + g_sUserDenyWhisperMsg {' æ‹’ç»ç§èŠ.'}, c_Red, t_Hint);
       Exit;
     end;
     if m_btPermission > 0 then begin
@@ -4916,7 +4960,7 @@ begin
       PlayObject.SendMsg(PlayObject, RM_WHISPER, 0,
         g_Config.btGMWhisperMsgFColor, g_Config.btGMWhisperMsgBColor, 0,
         m_sCharName + '=> ' + saystr);
-      //È¡µÃË½ÁÄĞÅÏ¢
+      //å–å¾—ç§èŠä¿¡æ¯
       if (m_GetWhisperHuman <> nil) and (not m_GetWhisperHuman.m_boGhost) then
         m_GetWhisperHuman.SendMsg(m_GetWhisperHuman, RM_WHISPER, 0,
           g_Config.btGMWhisperMsgFColor, g_Config.btGMWhisperMsgBColor, 0,
@@ -4954,7 +4998,7 @@ begin
         + '=> ' + saystr);
     end
     else begin  }
-    SysMsg(whostr + g_sUserNotOnLine {'  Ã»ÓĞÔÚÏß.'}, c_Red, t_Hint);
+    SysMsg(whostr + g_sUserNotOnLine {'  æ²¡æœ‰åœ¨çº¿.'}, c_Red, t_Hint);
     //end;
   end;
 end;
@@ -5077,7 +5121,7 @@ begin
   end;
   m_DealCreat := nil;
   GetBackDealItems();
-  SysMsg(g_sDealActionCancelMsg {'½»Ò×È¡Ïû'}, c_Green, t_Hint);
+  SysMsg(g_sDealActionCancelMsg {'äº¤æ˜“å–æ¶ˆ'}, c_Green, t_Hint);
   m_DealLastTick := GetTickCount();
 end;
 
@@ -5147,7 +5191,7 @@ begin
           if StdItem <> nil then begin
             if (StdItem.Reserved = 8) or (StdItem.Reserved = 10) then begin
               if StdItem.NeedIdentify = 1 then
-                AddGameLog(Self, LOG_DELITEM, StdItem.Name, m_UseItems[i].MakeIndex, m_UseItems[i].Dura, '0', '0', IntToStr(StdItem.Reserved), 'ËÀÍöÏûÊ§',
+                AddGameLog(Self, LOG_DELITEM, StdItem.Name, m_UseItems[i].MakeIndex, m_UseItems[i].Dura, '0', '0', IntToStr(StdItem.Reserved), 'æ­»äº¡æ¶ˆå¤±',
                   @m_UseItems[i]);
               if DelList = nil then
                 DelList := TStringList.Create;
@@ -5174,7 +5218,7 @@ begin
           if StdItem <> nil then begin
             if (StdItem.Reserved = 9) or (StdItem.Reserved = 10) then begin
               if StdItem.NeedIdentify = 1 then
-                AddGameLog(Self, LOG_DELITEM, StdItem.Name, m_UseItems[i].MakeIndex, m_UseItems[i].Dura, '0', '0', IntToStr(StdItem.Reserved), 'ËÀÍöÏûÊ§',
+                AddGameLog(Self, LOG_DELITEM, StdItem.Name, m_UseItems[i].MakeIndex, m_UseItems[i].Dura, '0', '0', IntToStr(StdItem.Reserved), 'æ­»äº¡æ¶ˆå¤±',
                   @m_UseItems[i]);
               if DelList = nil then
                 DelList := TStringList.Create;
@@ -5248,7 +5292,7 @@ begin
               if not PlayObject.m_boDeath and (m_PEnvir = PlayObject.m_PEnvir)
                 and (abs(m_nCurrX - PlayObject.m_nCurrX) <= 12) and (abs(m_nCurrX - PlayObject.m_nCurrX) <= 12) then begin
                 if g_Config.boHighLevelKillMonFixExp and g_Config.boHighLevelGroupFixExp then
-                  begin //02/08 Ôö¼Ó£¬ÔÚ¸ßµÈ¼¶¾­Ñé²»±äÊ±£¬°Ñ×é¶ÓµÄ¾­ÑéÆ½¾ù·ÖÅä
+                  begin //02/08 å¢åŠ ï¼Œåœ¨é«˜ç­‰çº§ç»éªŒä¸å˜æ—¶ï¼ŒæŠŠç»„é˜Ÿçš„ç»éªŒå¹³å‡åˆ†é…
                   nCheckCode := 4;
                   PlayObject.WinExp(ROUND(dwExp / n));
                   nCheckCode := 5;
@@ -5258,12 +5302,12 @@ begin
                   PlayObject.WinExp(ROUND(dwExp / sumlv * PlayObject.m_Abil.Level));
                   nCheckCode := 7;
                 end
-                else if m_Abil.Level > (nLowLevel + 10) then begin //´óºÅÉ±¹Ö×éÀïÈË¾­Ñé²»±ä
+                else if m_Abil.Level > (nLowLevel + 10) then begin //å¤§å·æ€æ€ªç»„é‡Œäººç»éªŒä¸å˜
                   PlayObject.WinExp(ROUND(dwExp / sumlv * PlayObject.m_Abil.Level));
                   //PlayObject.WinExp(dwExp);
                 end
                 else if m_Abil.Level <= (nLowLevel + 10) then begin
-                  if PlayObject.m_Abil.Level > (nLowLevel + 10) then begin //Ğ¡ºÅÉ±¹Ö¾­Ñé×éÀïÈË´óºÅ¾­Ñé¸Ä±ä
+                  if PlayObject.m_Abil.Level > (nLowLevel + 10) then begin //å°å·æ€æ€ªç»éªŒç»„é‡Œäººå¤§å·ç»éªŒæ”¹å˜
                     nExp := ROUND(dwExp / PlayObject.m_Abil.Level);
                     if nExp <= 0 then
                       nExp := 1;
@@ -5271,7 +5315,7 @@ begin
                   end
                   else begin
                     PlayObject.WinExp(ROUND(dwExp / sumlv * PlayObject.m_Abil.Level));
-                    //Ğ¡ºÅÉ±¹Ö¾­Ñé×éÀïÈËĞ¡ºÅ¾­Ñé²»±ä
+                    //å°å·æ€æ€ªç»éªŒç»„é‡Œäººå°å·ç»éªŒä¸å˜
                   end;
                 end;
               end;
@@ -5317,37 +5361,37 @@ end;
 function TPlayObject.GeTBaseObjectInfo: string;
 begin
   Result := m_sCharName +
-    ' ±êÊ¶:' + IntToHex(Integer(Self), 2) +
-    ' È¨ÏŞµÈ¼¶: ' + IntToStr(m_btPermission) +
-    ' ¹ÜÀíÄ£Ê½: ' + BoolToCStr(m_boAdminMode) +
-    ' ÒşÉíÄ£Ê½: ' + BoolToCStr(m_boObMode) +
-    ' ÎŞµĞÄ£Ê½: ' + BoolToCStr(m_boSuperMan) +
-    ' µØÍ¼:' + m_sMapName + '(' + m_PEnvir.sMapDesc + ')' +
-    ' ×ù±ê:' + IntToStr(m_nCurrX) + ':' + IntToStr(m_nCurrY) +
-    ' µÈ¼¶:' + IntToStr(m_Abil.Level) +
-    ' ×ªÉúµÈ¼¶:' + IntToStr(m_btReLevel) +
-    ' ¾­Ñé:' + IntToStr(m_Abil.Exp) +
-    ' ÉúÃüÖµ:' + IntToStr(m_WAbil.HP) + '-' + IntToStr(m_WAbil.MaxHP) +
-    ' Ä§·¨Öµ:' + IntToStr(m_WAbil.MP) + '-' + IntToStr(m_WAbil.MaxMP) +
-    ' ¹¥»÷Á¦:' + IntToStr(LoWord(m_WAbil.DC)) + '-' + IntToStr(HiWord(m_WAbil.DC)) +
-    ' Ä§·¨Á¦:' + IntToStr(LoWord(m_WAbil.MC)) + '-' + IntToStr(HiWord(m_WAbil.MC)) +
-    ' µÀÊõ:' + IntToStr(LoWord(m_WAbil.SC)) + '-' + IntToStr(HiWord(m_WAbil.SC)) +
-    ' ·ÀÓùÁ¦:' + IntToStr(LoWord(m_WAbil.AC)) + '-' + IntToStr(HiWord(m_WAbil.AC)) +
-    ' Ä§·ÀÁ¦:' + IntToStr(LoWord(m_WAbil.MAC)) + '-' + IntToStr(HiWord(m_WAbil.MAC)) +
-    ' ×¼È·:' + IntToStr(m_btHitPoint) +
-    ' Ãô½İ:' + IntToStr(m_btSpeedPoint) +
-    ' ËÙ¶È:' + IntToStr(m_nHitSpeed) +
-    ' µÇÂ¼IP:' + m_sIPaddr + '(' + m_sIPLocal + ')' +
-    ' µÇÂ¼ÕÊºÅ:' + m_sUserID +
-    ' µÇÂ¼Ê±¼ä:' + DateTimeToStr(m_dLogonTime) +
-    ' ÔÚÏßÊ±³¤(·ÖÖÓ):' + IntToStr((GetTickCount - m_dwLogonTick) div 60000) +
+    ' æ ‡è¯†:' + IntToHex(Integer(Self), 2) +
+    ' æƒé™ç­‰çº§: ' + IntToStr(m_btPermission) +
+    ' ç®¡ç†æ¨¡å¼: ' + BoolToCStr(m_boAdminMode) +
+    ' éšèº«æ¨¡å¼: ' + BoolToCStr(m_boObMode) +
+    ' æ— æ•Œæ¨¡å¼: ' + BoolToCStr(m_boSuperMan) +
+    ' åœ°å›¾:' + m_sMapName + '(' + m_PEnvir.sMapDesc + ')' +
+    ' åº§æ ‡:' + IntToStr(m_nCurrX) + ':' + IntToStr(m_nCurrY) +
+    ' ç­‰çº§:' + IntToStr(m_Abil.Level) +
+    ' è½¬ç”Ÿç­‰çº§:' + IntToStr(m_btReLevel) +
+    ' ç»éªŒ:' + IntToStr(m_Abil.Exp) +
+    ' ç”Ÿå‘½å€¼:' + IntToStr(m_WAbil.HP) + '-' + IntToStr(m_WAbil.MaxHP) +
+    ' é­”æ³•å€¼:' + IntToStr(m_WAbil.MP) + '-' + IntToStr(m_WAbil.MaxMP) +
+    ' æ”»å‡»åŠ›:' + IntToStr(LoWord(m_WAbil.DC)) + '-' + IntToStr(HiWord(m_WAbil.DC)) +
+    ' é­”æ³•åŠ›:' + IntToStr(LoWord(m_WAbil.MC)) + '-' + IntToStr(HiWord(m_WAbil.MC)) +
+    ' é“æœ¯:' + IntToStr(LoWord(m_WAbil.SC)) + '-' + IntToStr(HiWord(m_WAbil.SC)) +
+    ' é˜²å¾¡åŠ›:' + IntToStr(LoWord(m_WAbil.AC)) + '-' + IntToStr(HiWord(m_WAbil.AC)) +
+    ' é­”é˜²åŠ›:' + IntToStr(LoWord(m_WAbil.MAC)) + '-' + IntToStr(HiWord(m_WAbil.MAC)) +
+    ' å‡†ç¡®:' + IntToStr(m_btHitPoint) +
+    ' æ•æ·:' + IntToStr(m_btSpeedPoint) +
+    ' é€Ÿåº¦:' + IntToStr(m_nHitSpeed) +
+    ' ç™»å½•IP:' + m_sIPaddr + '(' + m_sIPLocal + ')' +
+    ' ç™»å½•å¸å·:' + m_sUserID +
+    ' ç™»å½•æ—¶é—´:' + DateTimeToStr(m_dLogonTime) +
+    ' åœ¨çº¿æ—¶é•¿(åˆ†é’Ÿ):' + IntToStr((GetTickCount - m_dwLogonTick) div 60000) +
     ' ' + sSTRING_GAMEGOLD + ':' + IntToStr(m_nGameGold) +
     ' ' + sSTRING_GAMEPOINT + ':' + IntToStr(m_nGamePoint) +
-    ' »áÔ±ÀàĞÍ:' + IntToStr(m_nMemberType) +
-    ' »áÔ±µÈ¼¶:' + IntToStr(m_nMemberLevel) +
-    ' ¾­Ñé±¶Êı:' + CurrToStr(m_nKillMonExpRate / 100) +
-    ' ¹¥»÷±¶Êı:' + CurrToStr(m_nPowerRate / 100) +
-    ' ÉùÍûÖµ:' + IntToStr(m_nCreditPoint);
+    ' ä¼šå‘˜ç±»å‹:' + IntToStr(m_nMemberType) +
+    ' ä¼šå‘˜ç­‰çº§:' + IntToStr(m_nMemberLevel) +
+    ' ç»éªŒå€æ•°:' + CurrToStr(m_nKillMonExpRate / 100) +
+    ' æ”»å‡»å€æ•°:' + CurrToStr(m_nPowerRate / 100) +
+    ' å£°æœ›å€¼:' + IntToStr(m_nCreditPoint);
 end;
 
 function TPlayObject.GetDigUpMsgCount: Integer;
@@ -5560,8 +5604,8 @@ begin
       LevelUpStd := nil;
 
       try
-        //»ñÈ¡±³°üÊÇ·ñÓĞÖ¸¶¨µÄÎïÆ·
-        nBack := 2; //ÒªÉı¼¶µÄÎïÆ·²»Õı³£
+        //è·å–èƒŒåŒ…æ˜¯å¦æœ‰æŒ‡å®šçš„ç‰©å“
+        nBack := 2; //è¦å‡çº§çš„ç‰©å“ä¸æ­£å¸¸
         for i := m_ItemList.Count - 1 downto 0 do begin
           UserItem := m_ItemList[i];
           if UserItem <> nil then begin
@@ -5571,12 +5615,12 @@ begin
             if UserItem.MakeIndex = nItemIndex then begin
               if (not (sm_ArmingStrong in StdItem.StdModeEx)) or CheckItemBindMode(UserItem, bm_NoMake) or
                 (UserItem.Value.StrengthenInfo.btStrengthenCount >= UserItem.Value.StrengthenInfo.btCanStrengthenCount) then begin
-                //ÎïÆ·²»ÔÊĞíÇ¿»¯£¬»òÒÑÇ¿»¯ÖÁ×î¸ßµÈ¼¶£¬»òÕßÎ´¿ª¹â
+                //ç‰©å“ä¸å…è®¸å¼ºåŒ–ï¼Œæˆ–å·²å¼ºåŒ–è‡³æœ€é«˜ç­‰çº§ï¼Œæˆ–è€…æœªå¼€å…‰
                 nBack := 3;
                 Break;
               end;
               if CheckItemBindMode(UserItem, bm_Unknown) then begin
-                //Î´¿ª¹âÎïÆ·²»ÔÊĞíÇ¿»¯
+                //æœªå¼€å…‰ç‰©å“ä¸å…è®¸å¼ºåŒ–
                 nBack := 4;
                 Break;
               end;
@@ -5586,7 +5630,7 @@ begin
             end
             else begin
               for II := Low(UserItemLevelArr) to High(UserItemLevelArr) do begin
-                if UserItem.MakeIndex = StrengthenItem.nLevelIdx[II] then begin //Ğş¾§
+                if UserItem.MakeIndex = StrengthenItem.nLevelIdx[II] then begin //ç„æ™¶
                   if (tm_MakeStone = StdItem.StdMode) and (StdItem.Shape = 0) then begin
                     m_ItemList.Delete(I);
                     UserItemLevelArr[II] := UserItem;
@@ -5594,7 +5638,7 @@ begin
                   end;
                   break;
                 end
-                else if UserItem.MakeIndex = StrengthenItem.nAssIdx[II] then begin //¸¨Öú
+                else if UserItem.MakeIndex = StrengthenItem.nAssIdx[II] then begin //è¾…åŠ©
                   if (tm_MakeStone = StdItem.StdMode) and (StdItem.Shape in [1, 2]) then begin
                     m_ItemList.Delete(I);
                     UserItemAssArr[II] := UserItem;
@@ -5610,17 +5654,17 @@ begin
           nMakeGold := GetStrengthenMoney(LevelUpItem.Value.StrengthenInfo.btStrengthenCount);
           nMaxUpRate := GetStrengthenMaxRate(LevelUpItem.Value.StrengthenInfo.btStrengthenCount);
           pGold := nil;
-          {if boCastle then nUpRate := 5;   //É³°Í¿Ë³õÊ¼Îª %5 ³É¹¦»úÂÊ
+          {if boCastle then nUpRate := 5;   //æ²™å·´å…‹åˆå§‹ä¸º %5 æˆåŠŸæœºç‡
           else                          }
-          nUpRate := 0; //³É¹¦»úÂÊ
-          nDownLevelRate := 0; //½µ¼¶»úÂÊ
-          nBreakUpRate := 0; //ÆÆËé»úÂÊ
-          boNotBreakUp := False; //±£Ö¤²»ÆÆËé
+          nUpRate := 0; //æˆåŠŸæœºç‡
+          nDownLevelRate := 0; //é™çº§æœºç‡
+          nBreakUpRate := 0; //ç ´ç¢æœºç‡
+          boNotBreakUp := False; //ä¿è¯ä¸ç ´ç¢
           if m_nBindGold >= nMakeGold then
             pGold := @m_nBindGold
           else if m_nGold >= nMakeGold then
             pGold := @m_nGold;
-          nBack := 5; //È±ÉÙÇ¿»¯×Ê½ğ
+          nBack := 5; //ç¼ºå°‘å¼ºåŒ–èµ„é‡‘
           if pGold <> nil then begin //
             boOne := False;
             for II := Low(UserItemLevelArr) to High(UserItemLevelArr) do begin
@@ -5647,16 +5691,16 @@ begin
             end;
             if nUpRate > nMaxUpRate then
               nUpRate := nMaxUpRate;
-            nBack := 6; //³É¹¦»úÂÊÌ«µÍ(Ã»ÓĞ·ÅÖÃĞş¾§)
+            nBack := 6; //æˆåŠŸæœºç‡å¤ªä½(æ²¡æœ‰æ”¾ç½®ç„æ™¶)
             if boOne and (nUpRate > 0) then begin
-              nBack := 7; //Éı¼¶Íê³É
-              Dec(pGold^, nMakeGold); //¿Û³ıÇ¿»¯·ÑÓÃ
-              //É¾³ıÇ¿»¯Ğş¾§µÈÎïÆ·
+              nBack := 7; //å‡çº§å®Œæˆ
+              Dec(pGold^, nMakeGold); //æ‰£é™¤å¼ºåŒ–è´¹ç”¨
+              //åˆ é™¤å¼ºåŒ–ç„æ™¶ç­‰ç‰©å“
               for II := Low(UserItemLevelArr) to High(UserItemLevelArr) do begin
                 if UserItemLevelArr[II] <> nil then begin
                   if StdItemLevelArr[II].NeedIdentify = 1 then
                     AddGameLog(Self, LOG_DELITEM, StdItemLevelArr[II].Name, UserItemLevelArr[II].MakeIndex,
-                      0, '0', '0', '0', 'Ç¿»¯', UserItemLevelArr[II]);
+                      0, '0', '0', '0', 'å¼ºåŒ–', UserItemLevelArr[II]);
                   Dispose(UserItemLevelArr[II]);
                   UserItemLevelArr[II] := nil;
                   StdItemLevelArr[II] := nil;
@@ -5664,15 +5708,15 @@ begin
                 if UserItemAssArr[II] <> nil then begin
                   if StdItemAssArr[II].NeedIdentify = 1 then
                     AddGameLog(Self, LOG_DELITEM, StdItemAssArr[II].Name, UserItemAssArr[II].MakeIndex,
-                      0, '0', '0', '0', 'Ç¿»¯', UserItemAssArr[II]);
+                      0, '0', '0', '0', 'å¼ºåŒ–', UserItemAssArr[II]);
                   Dispose(UserItemAssArr[II]);
                   UserItemAssArr[II] := nil;
                   StdItemAssArr[II] := nil;
                 end;
               end; //end for
-              //¿ªÊ¼Ç¿»¯
+              //å¼€å§‹å¼ºåŒ–
               if Random(100) < nUpRate then begin
-                nBack := 8; //Éı¼¶³É¹¦
+                nBack := 8; //å‡çº§æˆåŠŸ
                 Inc(LevelUpItem.Value.StrengthenInfo.btStrengthenCount);
                 if LevelUpItem.Value.StrengthenInfo.btStrengthenCount >= 18 then begin
                   LevelUpItem.Value.StrengthenInfo.btStrengthenCount := 18;
@@ -5686,13 +5730,13 @@ begin
                   LevelUpItem.Value.StrengthenInfo.btCanStrengthenCount,
                   '0',
                   IntToStr(LevelUpItem.Value.StrengthenInfo.btStrengthenCount - 1),
-                  IntToStr(LevelUpItem.Value.StrengthenInfo.btStrengthenCount), 'Ç¿»¯Éı¼¶', LevelUpItem);
+                  IntToStr(LevelUpItem.Value.StrengthenInfo.btStrengthenCount), 'å¼ºåŒ–å‡çº§', LevelUpItem);
                 if LevelUpItem.Value.StrengthenInfo.btStrengthenCount >= 6 then begin
-                  sSendMsg := '¹§Ï²£º[#6FFFF/8#6#7' + m_sCharName + '#7#5] ³É¹¦½« ';
+                  sSendMsg := 'æ­å–œï¼š[#6FFFF/8#6#7' + m_sCharName + '#7#5] æˆåŠŸå°† ';
                   sSendMsg := sSendMsg + '{' + IntToStr(SetSayItem(LevelUpItem)) + '/';
                   sSendMsg := sSendMsg + IntToStr(LevelUpItem.wIndex) + '/';
                   sSendMsg := sSendMsg + IntToStr(LevelUpItem.MakeIndex) + '}';
-                  sSendMsg := sSendMsg + ' Ç¿»¯µ½ #6FFFF/8#6+';
+                  sSendMsg := sSendMsg + ' å¼ºåŒ–åˆ° #6FFFF/8#6+';
                   sSendMsg := sSendMsg + IntToStr(LevelUpItem.Value.StrengthenInfo.btStrengthenCount) + '#5';
                   UserEngine.SendBroadCastMsgDelay(sSendMsg, t_Hint, 2 * 1000);
                 end;
@@ -5700,27 +5744,27 @@ begin
               end
               else begin
                 if (nBreakUpRate > 0) and (not boNotBreakUp) and (Random(100) < nBreakUpRate) then begin
-                  nBack := 9; //Éı¼¶ÆÆËé
+                  nBack := 9; //å‡çº§ç ´ç¢
                   if (LevelUpStd.NeedIdentify = 1) then
                     AddGameLog(Self, LOG_DELITEM, LevelUpStd.Name, LevelUpItem.MakeIndex,
                       LevelUpItem.Value.StrengthenInfo.btCanStrengthenCount, '0',
-                      '0', '0', 'Ç¿»¯ÆÆËé', LevelUpItem);
+                      '0', '0', 'å¼ºåŒ–ç ´ç¢', LevelUpItem);
                   Dispose(LevelUpItem);
                   LevelUpItem := nil;
                   //                  LevelUpStd := nil;
                 end
                 else if (nDownLevelRate > 0) and (Random(100) < nDownLevelRate) then begin
-                  nBack := 10; //Éı¼¶½µ¼¶
+                  nBack := 10; //å‡çº§é™çº§
                   if LevelUpItem.Value.StrengthenInfo.btStrengthenCount > 0 then
                     Dec(LevelUpItem.Value.StrengthenInfo.btStrengthenCount);
                   AddGameLog(Self, LOG_ITEMLEVEL, LevelUpStd.Name, LevelUpItem.MakeIndex,
                     LevelUpItem.Value.StrengthenInfo.btCanStrengthenCount, '0',
                     IntToStr(LevelUpItem.Value.StrengthenInfo.btStrengthenCount + 1),
-                    IntToStr(LevelUpItem.Value.StrengthenInfo.btStrengthenCount), 'Ç¿»¯½µ¼¶', LevelUpItem);
+                    IntToStr(LevelUpItem.Value.StrengthenInfo.btStrengthenCount), 'å¼ºåŒ–é™çº§', LevelUpItem);
                   sSendMsg := MakeClientItem(LevelUpItem);
                 end
                 else
-                  nBack := 11; //×°±¸ÎŞ±ä»¯
+                  nBack := 11; //è£…å¤‡æ— å˜åŒ–
               end;
             end; //nUpRate > 0
           end; //pGold <> nil
@@ -5759,14 +5803,14 @@ procedure TPlayObject.ClientItemStrengthen(ProcessMsg: pTProcessMessage; var boR
         Dec(UserItem.Dura, 2);
         if (StdItem.NeedIdentify = 1) then
           AddGameLog(Self, LOG_ITEMDURACHANGE, StdItem.Name, UserItem.MakeIndex, UserItem.Dura, '0', '-', '2',
-            'Ç¿»¯');
+            'å¼ºåŒ–');
 
         m_ItemList.Add(UserItem);
         UserItem := nil;
       end
       else begin
         if (StdItem.NeedIdentify = 1) then
-          AddGameLog(Self, LOG_DELITEM, StdItem.Name, UserItem.MakeIndex, 0, '0', '0', '0', 'Ç¿»¯');
+          AddGameLog(Self, LOG_DELITEM, StdItem.Name, UserItem.MakeIndex, 0, '0', '0', '0', 'å¼ºåŒ–');
         Dispose(UserItem);
         UserItem := nil;
       end;
@@ -5776,13 +5820,13 @@ procedure TPlayObject.ClientItemStrengthen(ProcessMsg: pTProcessMessage; var boR
         Dec(UserItem.Dura);
         if (StdItem.NeedIdentify = 1) then
           AddGameLog(Self, LOG_ITEMDURACHANGE, StdItem.Name, UserItem.MakeIndex, UserItem.Dura, '0', '-', '1',
-            'Ç¿»¯');
+            'å¼ºåŒ–');
         m_ItemList.Add(UserItem);
         UserItem := nil;
       end
       else begin
         if (StdItem.NeedIdentify = 1) then
-          AddGameLog(Self, LOG_DELITEM, StdItem.Name, UserItem.MakeIndex, 0, '0', '0', '0', 'Ç¿»¯');
+          AddGameLog(Self, LOG_DELITEM, StdItem.Name, UserItem.MakeIndex, 0, '0', '0', '0', 'å¼ºåŒ–');
         Dispose(UserItem);
         UserItem := nil;
       end;
@@ -5800,7 +5844,7 @@ var
   //wMaxDura: Integer;
   pGold: pInteger;
 begin
-  nBack := 0; //½ğ±Ò²»¹»
+  nBack := 0; //é‡‘å¸ä¸å¤Ÿ
   //  wMaxDura := 0;
   try
     nItemIndex := MakeLong(ProcessMsg.nParam2, ProcessMsg.nParam3);
@@ -5829,7 +5873,7 @@ begin
 
     if (nItemIndex > 0) and (MessageItemWL.lParam1 > 0) and (pGold <> nil) then begin
       try
-        //»ñÈ¡±³°üÊÇ·ñÓĞÖ¸¶¨µÄÎïÆ·
+        //è·å–èƒŒåŒ…æ˜¯å¦æœ‰æŒ‡å®šçš„ç‰©å“
         for i := m_ItemList.Count - 1 downto 0 do begin
           UserItem := m_ItemList[i];
           if UserItem <> nil then begin
@@ -5877,7 +5921,7 @@ begin
             end;
           end;
         end;
-        nBack := 1; //Ç¿»¯±¦Ê¯ÎŞ·¨ÌáÉı¸Ã×°±¸
+        nBack := 1; //å¼ºåŒ–å®çŸ³æ— æ³•æå‡è¯¥è£…å¤‡
         if (LevelItem <> nil) and (LevelStone <> nil) and
           CheckItemArmStrengthenLevel(LevelItem.Value.btValue[tb_StrengthenCount],
           LevelStoneStd.Need, LevelStoneStd.NeedLevel) then begin
@@ -5887,7 +5931,7 @@ begin
           ChangeUserItemDura(LevelStone, LevelStoneStd, False);
           Dec(pGold^, g_Config.nArmStrengthenGold);
           //GoldChanged;
-          //¼ì²éÆäËü¿ÉÑ¡±¦Ê¯ÊÇ·ñÕı³£
+          //æ£€æŸ¥å…¶å®ƒå¯é€‰å®çŸ³æ˜¯å¦æ­£å¸¸
           if (StoneRate1 <> nil) then begin
             if not CheckItemArmStrengthenLevel(LevelItem.Value.btValue[tb_StrengthenCount], StoneRate1Std.Need,
               StoneRate1Std.NeedLevel) then begin
@@ -5945,9 +5989,9 @@ begin
             end;
           end;
 
-          nBack := 5; //Ê§°Ü,ÎŞ±ä»¯
+          nBack := 5; //å¤±è´¥,æ— å˜åŒ–
           if Random(100) < nRate then begin
-            nBack := 2; //Ç¿»¯³É¹¦
+            nBack := 2; //å¼ºåŒ–æˆåŠŸ
             Inc(LevelItem.Value.btValue[tb_StrengthenCount]);
             if LevelItemStd.StdMode = tm_Weapon then begin
               if LevelItem.Value.btValue[tb_StrengthenCount] <= 3 then begin
@@ -5975,11 +6019,11 @@ begin
             if (LevelItemStd.NeedIdentify = 1) then
               AddGameLog(Self, LOG_ITEMLEVEL, LevelItemStd.Name, LevelItem.MakeIndex, 0, '0',
                 IntToStr(LevelItem.Value.btValue[tb_StrengthenCount] - 1),
-                IntToStr(LevelItem.Value.btValue[tb_StrengthenCount]), 'Éı¼¶');
+                IntToStr(LevelItem.Value.btValue[tb_StrengthenCount]), 'å‡çº§');
           end
           else begin
             if (boNotDownLevel > 0) and (Random(100) < boNotDownLevel) then begin
-              nBack := 3; //Ê§°Ü,½µ¼¶
+              nBack := 3; //å¤±è´¥,é™çº§
               if LevelItem.Value.btValue[tb_StrengthenCount] > 0 then begin
                 if LevelItemStd.StdMode = tm_Weapon then begin
                   if LevelItem.Value.btValue[tb_StrengthenCount] <= 3 then begin
@@ -6003,13 +6047,13 @@ begin
               if (LevelItemStd.NeedIdentify = 1) then
                 AddGameLog(Self, LOG_ITEMLEVEL, LevelItemStd.Name, LevelItem.MakeIndex, 0, '0',
                   IntToStr(LevelItem.Value.btValue[tb_StrengthenCount] + 1),
-                  IntToStr(LevelItem.Value.btValue[tb_StrengthenCount]), '½µ¼¶');
+                  IntToStr(LevelItem.Value.btValue[tb_StrengthenCount]), 'é™çº§');
             end
             else if (boNotClear > 0) and (Random(100) < boNotClear) then begin
-              nBack := 4; //Ê§°Ü,ÆÆËé
+              nBack := 4; //å¤±è´¥,ç ´ç¢
               if (LevelItemStd.NeedIdentify = 1) then
                 AddGameLog(Self, LOG_DELITEM, LevelItemStd.Name, LevelItem.MakeIndex, 0, '0',
-                  '0', '0', 'Ç¿»¯ÆÆËé');
+                  '0', '0', 'å¼ºåŒ–ç ´ç¢');
               Dispose(LevelItem);
               LevelItem := nil;
             end;
@@ -6091,8 +6135,8 @@ begin
         nBack := 2;
         if m_nGold < g_Config.vAbilityMoveSet.Gold then
           goto lExit;
-        //»ñÈ¡±³°üÊÇ·ñÓĞÖ¸¶¨µÄÎïÆ·
-        nBack := 3; //ÒªÉı¼¶µÄÎïÆ·²»Õı³£
+        //è·å–èƒŒåŒ…æ˜¯å¦æœ‰æŒ‡å®šçš„ç‰©å“
+        nBack := 3; //è¦å‡çº§çš„ç‰©å“ä¸æ­£å¸¸
         nRate := g_Config.vAbilityMoveSet.BaseRate;
         for i := m_ItemList.Count - 1 downto 0 do begin
           UserItem := m_ItemList[i];
@@ -6107,13 +6151,13 @@ begin
               if j in [0, 1] then
               begin
                 if (not (sm_ArmingStrong in StdItem.StdModeEx)) or CheckItemBindMode(UserItem, bm_NoMake) then begin
-                  //ÎïÆ·²»ÔÊĞíÇ¿»¯£¬»òÒÑÇ¿»¯ÖÁ×î¸ßµÈ¼¶£¬»òÕßÎ´¿ª¹â
+                  //ç‰©å“ä¸å…è®¸å¼ºåŒ–ï¼Œæˆ–å·²å¼ºåŒ–è‡³æœ€é«˜ç­‰çº§ï¼Œæˆ–è€…æœªå¼€å…‰
                   nBack := 4;
                   boBreak := True;
                   Break;
                 end;
                 if CheckItemBindMode(UserItem, bm_Unknown) then begin
-                  //Î´¿ª¹âÎïÆ·²»ÔÊĞíÇ¿»¯
+                  //æœªå¼€å…‰ç‰©å“ä¸å…è®¸å¼ºåŒ–
                   nBack := 5;
                   boBreak := True;
                   Break;
@@ -6138,19 +6182,19 @@ begin
         end; // end for
         if (vUserItem[0] <> nil) and (vUserItem[1] <> nil) then begin
           Dec(m_nGold, g_Config.vAbilityMoveSet.Gold);
-          nBack := 7; //µ½ÁËÕâÀï¾ÍµÃÇå±¦Ê¯ÁË
-          //É¾³ı¼¸ÂÊÉñÊ¯µÈÎïÆ·
+          nBack := 7; //åˆ°äº†è¿™é‡Œå°±å¾—æ¸…å®çŸ³äº†
+          //åˆ é™¤å‡ ç‡ç¥çŸ³ç­‰ç‰©å“
           for i := Low(vMakeIndex) + 2 to High(vMakeIndex) do begin
             if vUserItem[i] <> nil then begin
               if vStdItem[i].NeedIdentify = 1 then
                 AddGameLog(Self, LOG_DELITEM, vStdItem[i].Name, vUserItem[i].MakeIndex,
-                  0, '0', '0', '0', 'ÊôĞÔ×ªÒÆ', vUserItem[i]);
+                  0, '0', '0', '0', 'å±æ€§è½¬ç§»', vUserItem[i]);
               Dispose(vUserItem[i]);
               vUserItem[i] := nil;
               vStdItem[i] := nil;
             end;
           end; //end for
-          nBack := 8; //Éı¼¶Ê§°Ü
+          nBack := 8; //å‡çº§å¤±è´¥
           m_HookItemEx.Clear;
           m_HookItemEx.Add(vUserItem[0]);
           m_HookItemEx.Add(vUserItem[1]);
@@ -6160,16 +6204,16 @@ begin
           m_sString[999] := vStdItem[1].Name;
           if (Random(100) < nRate) then
           begin
-            nBack := 9; //Éı¼¶³É¹¦
+            nBack := 9; //å‡çº§æˆåŠŸ
             vUserItem[1].Value := vUserItem[0].Value;
             vMakeIndex[0] := vUserItem[0].MakeIndex;
             UserEngine.CopyToUserItemFromIdx(vUserItem[0].wIndex, vUserItem[0]);
             vUserItem[0].MakeIndex := vMakeIndex[0];
-            sSendMsg := '¹§Ï²£º[#6FFFF/8#6#7' + m_sCharName + '#7#5] ³É¹¦½« ';
+            sSendMsg := 'æ­å–œï¼š[#6FFFF/8#6#7' + m_sCharName + '#7#5] æˆåŠŸå°† ';
             sSendMsg := sSendMsg + '{' + IntToStr(SetSayItem(vUserItem[0])) + '/';
             sSendMsg := sSendMsg + IntToStr(vUserItem[0].wIndex) + '/';
             sSendMsg := sSendMsg + IntToStr(vUserItem[0].MakeIndex) + '}';
-            sSendMsg := sSendMsg + ' µÄÊôĞÔ×ªÒÆÖÁ ';
+            sSendMsg := sSendMsg + ' çš„å±æ€§è½¬ç§»è‡³ ';
             sSendMsg := sSendMsg + '{' + IntToStr(SetSayItem(vUserItem[1])) + '/';
             sSendMsg := sSendMsg + IntToStr(vUserItem[1].wIndex) + '/';
             sSendMsg := sSendMsg + IntToStr(vUserItem[1].MakeIndex) + '}';
@@ -6250,8 +6294,8 @@ begin
       if not boBreak then
       begin
       try
-        //»ñÈ¡±³°üÊÇ·ñÓĞÖ¸¶¨µÄÎïÆ·
-        nBack := 3; //ÒªÉı¼¶µÄÖ÷ÎïÆ·²»Õı³£
+        //è·å–èƒŒåŒ…æ˜¯å¦æœ‰æŒ‡å®šçš„ç‰©å“
+        nBack := 3; //è¦å‡çº§çš„ä¸»ç‰©å“ä¸æ­£å¸¸
         j := Low(vMakeIndex);
         pUpgradeItemCom := nil;
         for i := m_ItemList.Count - 1 downto 0 do
@@ -6266,13 +6310,13 @@ begin
               Continue;
             if (not (sm_ArmingStrong in StdItem.StdModeEx)) or CheckItemBindMode(UserItem, bm_NoMake) then
             begin
-              //Ö÷ÎïÆ·²»ÔÊĞíºÏ³É
+              //ä¸»ç‰©å“ä¸å…è®¸åˆæˆ
               nBack := 4;
               boBreak := True;
               Break;
             end;
             if CheckItemBindMode(UserItem, bm_Unknown) then begin
-              //Ö÷ÎïÆ·Î´¿ª¹â
+              //ä¸»ç‰©å“æœªå¼€å…‰
               nBack := 5;
               boBreak := True;
               Break;
@@ -6327,20 +6371,20 @@ begin
                 Continue;
               if (not (sm_ArmingStrong in StdItem.StdModeEx)) or CheckItemBindMode(UserItem, bm_NoMake) then
               begin
-                //²ÄÁÏÎïÆ·²»ÔÊĞíºÏ³É
+                //ææ–™ç‰©å“ä¸å…è®¸åˆæˆ
                 nBack := 6;
                 boBreak := True;
                 Break;
               end;
               if (vUserItem[Low(vMakeIndex)].ComLevel <> UserItem.ComLevel) then
               begin
-                //²ÄÁÏÎïÆ·²»ÔÊĞíºÏ³É
+                //ææ–™ç‰©å“ä¸å…è®¸åˆæˆ
                 nBack := 6;
                 boBreak := True;
                 Break;
               end;
               if CheckItemBindMode(UserItem, bm_Unknown) then begin
-                 //²ÄÁÏÎïÆ·Î´¿ª¹â
+                 //ææ–™ç‰©å“æœªå¼€å…‰
                 nBack := 7;
                 boBreak := True;
                 Break;
@@ -6394,7 +6438,7 @@ begin
         if Assigned(pUpgradeCom) then
         begin
 
-          nBack := 2; //ÅĞ¶Ï·ÑÓÃ
+          nBack := 2; //åˆ¤æ–­è´¹ç”¨
 
           if (m_nGold < nGoldFee) or (m_nGameGold < nGameGoldFee) then
             goto lExit;
@@ -6402,25 +6446,25 @@ begin
           Dec(m_nGold, nGoldFee);
           Dec(m_nGameGold, nGameGoldFee);
 
-          nBack := 8; //µ½ÁËÕâÀï¾ÍµÃËùÓĞ²ÄÁÏ×°±¸ÁË
+          nBack := 8; //åˆ°äº†è¿™é‡Œå°±å¾—æ‰€æœ‰ææ–™è£…å¤‡äº†
           for i := Low(vUserItem) + 1 to High(vUserItem) do begin
             if vUserItem[i] <> nil then begin
               if vStdItem[i].NeedIdentify = 1 then
                 AddGameLog(Self, LOG_DELITEM, vStdItem[i].Name, vUserItem[i].MakeIndex,
-                  0, '0', '0', '0', '×°±¸ºÏ³É', vUserItem[i]);
+                  0, '0', '0', '0', 'è£…å¤‡åˆæˆ', vUserItem[i]);
               Dispose(vUserItem[i]);
               vUserItem[i] := nil;
               vStdItem[i] := nil;
             end;
           end; //end for
-          nBack := 9; //Éı¼¶Ê§°Ü
+          nBack := 9; //å‡çº§å¤±è´¥
           m_HookItemEx.Clear;
           m_HookItemEx.Add(vUserItem[0]);
           //m_HookItemEx[0] := vUserItem[0];
           m_sASSEMBLEITEMNAME := vStdItem[0].Name;
           if (Random(100) < pUpgradeCom.Rate[13]) then
           begin
-            nBack := 10; //Éı¼¶³É¹¦
+            nBack := 10; //å‡çº§æˆåŠŸ
             UpgradeCompoundItem(vUserItem[0], pUpgradeCom);
             NpcGotoLable(g_FunctionNPC, g_FunctionNPC.FGotoLable[NASSEMBLEALL], False);
             case vStdItem[0].StdMode of
@@ -6434,7 +6478,7 @@ begin
               tm_Boot: NpcGotoLable(g_FunctionNPC, g_FunctionNPC.FGotoLable[NASSEMBLEBOOT], False);
             end;
             NpcGotoLable(g_FunctionNPC, g_FunctionNPC.GetScriptIndex(SASSEMBLE + vStdItem[0].Name), False);
-            sSendMsg := '¹§Ï²£º[#6FFFF/8#6#7' + m_sCharName + '#7#5] ³É¹¦ºÏ³É ';
+            sSendMsg := 'æ­å–œï¼š[#6FFFF/8#6#7' + m_sCharName + '#7#5] æˆåŠŸåˆæˆ ';
             sSendMsg := sSendMsg + '{' + IntToStr(SetSayItem(vUserItem[0])) + '/';
             sSendMsg := sSendMsg + IntToStr(vUserItem[0].wIndex) + '/';
             sSendMsg := sSendMsg + IntToStr(vUserItem[0].MakeIndex) + '}';
@@ -6557,7 +6601,7 @@ begin
               m_ReturnItemsList.Delete(nIdx);
               if (Stditem.NeedIdentify = 1) then
                 AddGameLog(Self, LOG_ADDITEM, Stditem.Name, UserItem.MakeIndex, UserItem.Dura, NPC.m_sCharName,
-                  '0', '0', '»Ø¹º', UserItem);
+                  '0', '0', 'å›è´­', UserItem);
               SendDefMessage(SM_BUYRETURNITEM_OK, m_nGold, LoWord(m_nBindGold), HiWord(m_nBindGold), nIdx, '');
               exit;
             end
@@ -6570,14 +6614,14 @@ begin
         else begin
           Dispose(UserItem);
           m_ReturnItemsList.Delete(nIdx);
-          ClientQueryReturnItems(ProcessMsg, boResult); //ÎïÆ·´íÎó,ÖØĞÂ·¢ËÍ»Ø¹ºÎïÆ·ÁĞ±í
+          ClientQueryReturnItems(ProcessMsg, boResult); //ç‰©å“é”™è¯¯,é‡æ–°å‘é€å›è´­ç‰©å“åˆ—è¡¨
         end;
       end
       else
-        ClientQueryReturnItems(ProcessMsg, boResult); //Î»ÖÃ´íÎó,ÖØĞÂ·¢ËÍ»Ø¹ºÎïÆ·ÁĞ±í
+        ClientQueryReturnItems(ProcessMsg, boResult); //ä½ç½®é”™è¯¯,é‡æ–°å‘é€å›è´­ç‰©å“åˆ—è¡¨
     end
     else
-      ClientQueryReturnItems(ProcessMsg, boResult); //Î»ÖÃ´íÎó,ÖØĞÂ·¢ËÍ»Ø¹ºÎïÆ·ÁĞ±í
+      ClientQueryReturnItems(ProcessMsg, boResult); //ä½ç½®é”™è¯¯,é‡æ–°å‘é€å›è´­ç‰©å“åˆ—è¡¨
   end;
   SendDefMessage(SM_BUYRETURNITEM_FAIL, m_nGold, LoWord(m_nBindGold), HiWord(m_nBindGold), nBack, '');
 end;
@@ -6607,7 +6651,7 @@ var
   nGold: Integer;
 begin
   if not m_boMapApoise then
-    exit; //Èç¹û¿Í»§¶ËµØÍ¼Î´×¼±¸ºÃ,²»ÔÊĞí
+    exit; //å¦‚æœå®¢æˆ·ç«¯åœ°å›¾æœªå‡†å¤‡å¥½,ä¸å…è®¸
   nGold := ProcessMsg.nParam1;
   //Result := False;
   if (nGold <= 0) then
@@ -6674,19 +6718,19 @@ begin
           StdItem := UserEngine.GetStdItem(UserItem.wIndex);
           if StdItem = nil then
             goto lExit;
-          //ÎŞ·¨¶ªÆú
+          //æ— æ³•ä¸¢å¼ƒ
           if CheckItemBindMode(UserItem, bm_NoDrop) or Self.m_PEnvir.m_boNOTHROWITEM then begin
             break;
           end;
-          //¶ªÆúÏûÊ§
+          //ä¸¢å¼ƒæ¶ˆå¤±
           if CheckItemBindMode(UserItem, bm_DropDestroy) then begin
             m_ItemList.Delete(i);
             if Stditem.NeedIdentify = 1 then
-              AddGameLog(Self, LOG_DELITEM, StdItem.Name, UserItem.MakeIndex, UserItem.Dura, '0', 'ÏûÊ§', '0',
-                '¶ªÆú', UserItem);
+              AddGameLog(Self, LOG_DELITEM, StdItem.Name, UserItem.MakeIndex, UserItem.Dura, '0', 'æ¶ˆå¤±', '0',
+                'ä¸¢å¼ƒ', UserItem);
             MapEventCheck(OS_DROPITEM, StdItem.Name);
             EventCheck(OS_DROPITEM, StdItem.Name);
-            //ÈÓÎïÆ·µØÍ¼ÊÂ¼ş´¥·¢
+            //æ‰”ç‰©å“åœ°å›¾äº‹ä»¶è§¦å‘
             DisPose(UserItem);
             Result := True;
             break;
@@ -6703,7 +6747,7 @@ begin
             Result := True;
             MapEventCheck(OS_DROPITEM, StdItem.Name);
             EventCheck(OS_DROPITEM, StdItem.Name);
-            //ÈÓÎïÆ·µØÍ¼ÊÂ¼ş´¥·¢
+            //æ‰”ç‰©å“åœ°å›¾äº‹ä»¶è§¦å‘
             break;
           end;
           //end;
@@ -6725,13 +6769,13 @@ var
 begin
   if nGold > 0 then begin
     s10 := '14';
-    s14 := 'Ôö¼ÓÍê³É';
+    s14 := 'å¢åŠ å®Œæˆ';
   end
   else begin
     s10 := '13';
-    s14 := 'ÒÔÉ¾¼õ';
+    s14 := 'ä»¥åˆ å‡';
   end;
-  SysMsg(sChrName + ' µÄ½ğ±Ò ' + IntToStr(nGold) + ' ½ğ±Ò' + s14, c_Green, t_Hint);
+  SysMsg(sChrName + ' çš„é‡‘å¸ ' + IntToStr(nGold) + ' é‡‘å¸' + s14, c_Green, t_Hint);
   if g_boGameLogGold then
     AddGameDataLog(s10 + #9 +
       m_sMapName + #9 +
@@ -6828,20 +6872,20 @@ end;
 
 procedure TPlayObject.SetAllowSetup;
 begin
-  m_boAllowGroupReCall := CheckIntStatus(m_nAllowSetup, GPS_GROUPRECALL); //0x10E  //ÔÊĞíÌìµØºÏÒ»
-  m_boAllowGuildReCall := CheckIntStatus(m_nAllowSetup, GSP_GUILDRECALL); //0xFC   //ÔÊĞíĞĞ»áºÏÒ»
-  m_boOldChangeMapMode := CheckIntStatus(m_nAllowSetup, GSP_OLDCHANGEMAP); //0xFC   //ÔÊĞíĞĞ»áºÏÒ»
-  m_boCheckGroup := CheckIntStatus(m_nAllowSetup, GSP_GROUPCHECK); //0xB0   ×é¶ÓĞèÒªÑéÖ¤
-  m_boAllowGroup := not CheckIntStatus(m_nAllowSetup, GSP_NOTGROUP); //0xB0  ÔÊĞí×é¶Ó
-  m_boAllowGuild := not CheckIntStatus(m_nAllowSetup, GSP_NOTGUILD); //0xB1  ÔÊĞí¼ÓÈëĞĞ»á
-  m_boAllowFrieng := not CheckIntStatus(m_nAllowSetup, GSP_NOTFRIENG); //ÔÊĞí¼ÓÎªºÃÓÑ
+  m_boAllowGroupReCall := CheckIntStatus(m_nAllowSetup, GPS_GROUPRECALL); //0x10E  //å…è®¸å¤©åœ°åˆä¸€
+  m_boAllowGuildReCall := CheckIntStatus(m_nAllowSetup, GSP_GUILDRECALL); //0xFC   //å…è®¸è¡Œä¼šåˆä¸€
+  m_boOldChangeMapMode := CheckIntStatus(m_nAllowSetup, GSP_OLDCHANGEMAP); //0xFC   //å…è®¸è¡Œä¼šåˆä¸€
+  m_boCheckGroup := CheckIntStatus(m_nAllowSetup, GSP_GROUPCHECK); //0xB0   ç»„é˜Ÿéœ€è¦éªŒè¯
+  m_boAllowGroup := not CheckIntStatus(m_nAllowSetup, GSP_NOTGROUP); //0xB0  å…è®¸ç»„é˜Ÿ
+  m_boAllowGuild := not CheckIntStatus(m_nAllowSetup, GSP_NOTGUILD); //0xB1  å…è®¸åŠ å…¥è¡Œä¼š
+  m_boAllowFrieng := not CheckIntStatus(m_nAllowSetup, GSP_NOTFRIENG); //å…è®¸åŠ ä¸ºå¥½å‹
 
-  m_boBanHearChat := not CheckIntStatus(m_nAllowSetup, GSP_NOTSAYHEAR); //ÔÊĞí°××ÖÁÄÌì
-  m_boHearWhisper := not CheckIntStatus(m_nAllowSetup, GSP_NOTSAYWHISPER); //0x27C  ÔÊĞíË½ÁÄ
-  m_boBanShout := not CheckIntStatus(m_nAllowSetup, GSP_NOTSAYCRY); //0x27D  ÔÊĞíº°»°
-  m_boBanGuildChat := not CheckIntStatus(m_nAllowSetup, GSP_NOTSAYGUILD); //0x27E  ÔÊĞíĞĞ»áÁÄÌì
-  m_boBanGroupChat := not CheckIntStatus(m_nAllowSetup, GSP_NOTSAYGROUP); //ÔÊĞí¶ÓÎéÁÄÌì
-  m_boAllowDeal := not CheckIntStatus(m_nAllowSetup, GSP_NOTDEAL); //0x27F  ÔÊĞí½»Ò×
+  m_boBanHearChat := not CheckIntStatus(m_nAllowSetup, GSP_NOTSAYHEAR); //å…è®¸ç™½å­—èŠå¤©
+  m_boHearWhisper := not CheckIntStatus(m_nAllowSetup, GSP_NOTSAYWHISPER); //0x27C  å…è®¸ç§èŠ
+  m_boBanShout := not CheckIntStatus(m_nAllowSetup, GSP_NOTSAYCRY); //0x27D  å…è®¸å–Šè¯
+  m_boBanGuildChat := not CheckIntStatus(m_nAllowSetup, GSP_NOTSAYGUILD); //0x27E  å…è®¸è¡Œä¼šèŠå¤©
+  m_boBanGroupChat := not CheckIntStatus(m_nAllowSetup, GSP_NOTSAYGROUP); //å…è®¸é˜Ÿä¼èŠå¤©
+  m_boAllowDeal := not CheckIntStatus(m_nAllowSetup, GSP_NOTDEAL); //0x27F  å…è®¸äº¤æ˜“
 end;
 
 procedure TPlayObject.UserOffLineLogon();
@@ -6850,7 +6894,7 @@ var
   sIPaddr: string;
 resourcestring
   sExceptionMsg = '[Exception] TPlayObject::UserOffLineLogon';
-  sCheckIPaddrFail = 'µÇÂ¼IPµØÖ·²»Æ¥Åä.';
+  sCheckIPaddrFail = 'ç™»å½•IPåœ°å€ä¸åŒ¹é….';
 begin
   sIPaddr := '';
 {$IFDEF PLUGOPEN}
@@ -6897,7 +6941,7 @@ begin
       end;
 {$IFEND}
     end;
-    GetStartPoint(); //È¡»Ø³Ç×ø±ê
+    GetStartPoint(); //å–å›åŸåæ ‡
 
     m_nCharStatus := GetCharStatus();
 
@@ -6916,29 +6960,29 @@ begin
       m_nGold := g_Config.nHumanMaxGold * 2;
 
     case m_btAttatckMode of
-      HAM_ALL: SysMsg(sAttackModeOfAll, c_Green, t_Hint); //[¹¥»÷Ä£Ê½: È«Ìå¹¥»÷]
-      HAM_PEACE: SysMsg(sAttackModeOfPeaceful, c_Green, t_Hint); //[¹¥»÷Ä£Ê½: ºÍÆ½¹¥»÷]
-      HAM_DEAR: SysMsg(sAttackModeOfDear, c_Green, t_Hint); //[¹¥»÷Ä£Ê½: ºÍÆ½¹¥»÷]
-      HAM_MASTER: SysMsg(sAttackModeOfMaster, c_Green, t_Hint); //[¹¥»÷Ä£Ê½: ºÍÆ½¹¥»÷]
-      HAM_GROUP: SysMsg(sAttackModeOfGroup, c_Green, t_Hint); //[¹¥»÷Ä£Ê½: ±à×é¹¥»÷]
-      HAM_GUILD: SysMsg(sAttackModeOfGuild, c_Green, t_Hint); //[¹¥»÷Ä£Ê½: ĞĞ»á¹¥»÷]
-      HAM_PKATTACK: SysMsg(sAttackModeOfRedWhite, c_Green, t_Hint); //[¹¥»÷Ä£Ê½: ºìÃû¹¥»÷]
+      HAM_ALL: SysMsg(sAttackModeOfAll, c_Green, t_Hint); //[æ”»å‡»æ¨¡å¼: å…¨ä½“æ”»å‡»]
+      HAM_PEACE: SysMsg(sAttackModeOfPeaceful, c_Green, t_Hint); //[æ”»å‡»æ¨¡å¼: å’Œå¹³æ”»å‡»]
+      HAM_DEAR: SysMsg(sAttackModeOfDear, c_Green, t_Hint); //[æ”»å‡»æ¨¡å¼: å’Œå¹³æ”»å‡»]
+      HAM_MASTER: SysMsg(sAttackModeOfMaster, c_Green, t_Hint); //[æ”»å‡»æ¨¡å¼: å’Œå¹³æ”»å‡»]
+      HAM_GROUP: SysMsg(sAttackModeOfGroup, c_Green, t_Hint); //[æ”»å‡»æ¨¡å¼: ç¼–ç»„æ”»å‡»]
+      HAM_GUILD: SysMsg(sAttackModeOfGuild, c_Green, t_Hint); //[æ”»å‡»æ¨¡å¼: è¡Œä¼šæ”»å‡»]
+      HAM_PKATTACK: SysMsg(sAttackModeOfRedWhite, c_Green, t_Hint); //[æ”»å‡»æ¨¡å¼: çº¢åæ”»å‡»]
     end;
     SysMsg(sStartChangeAttackModeHelp, c_Green, t_Hint);
-    //Ê¹ÓÃ×éºÏ¿ì½İ¼ü CTRL-H ¸ü¸Ä¹¥»÷...
+    //ä½¿ç”¨ç»„åˆå¿«æ·é”® CTRL-H æ›´æ”¹æ”»å‡»...
     m_Abil.MaxExp := GetLevelExp(m_Abil.Level);
     m_WAbil.MaxExp := m_Abil.MaxExp;
-    //jacky 2004/09/15 µÇÂ¼ÖØĞÂÈ¡µÃÉı¼¶ËùĞè¾­ÑéÖµ
+    //jacky 2004/09/15 ç™»å½•é‡æ–°å–å¾—å‡çº§æ‰€éœ€ç»éªŒå€¼
     SendAbility;
     SendSubAbility;
     //SendMsg(Self, RM_NAKEDABILITY, 0, 0, 0, 0, '');
-    //  FeatureChanged(); //Ôö¼Ó£¬¹ã²¥ÈËÎïÆïÂíĞÅÏ¢
+    //  FeatureChanged(); //å¢åŠ ï¼Œå¹¿æ’­äººç‰©éª‘é©¬ä¿¡æ¯
     //m_MyGuild := g_GuildManager.MemberOfGuild(m_sCharName);
     if m_MyGuild <> nil then begin
       m_dwGuildTick := GetTickCount + 60 * 60 * 1000;
       TGuild(m_MyGuild).MemberLogin(Self);
       for i := 0 to TGuild(m_MyGuild).m_GuildWarList.Count - 1 do begin
-        SysMsg(TGuild(m_MyGuild).m_GuildWarList.Strings[i] + ' ÕıÔÚÓë±¾ĞĞ»á½øĞĞĞĞ»áÕ½¡£', c_Green, t_Hint);
+        SysMsg(TGuild(m_MyGuild).m_GuildWarList.Strings[i] + ' æ­£åœ¨ä¸æœ¬è¡Œä¼šè¿›è¡Œè¡Œä¼šæˆ˜ã€‚', c_Green, t_Hint);
       end;
     end;
     RefShowName();
@@ -6946,22 +6990,22 @@ begin
       m_boUseThrusting := True;
       SendSocket(nil, '+LNG');
     end;
-    {if m_PEnvir.m_boNORECONNECT then   //ÒÑ¸ÄÖÁÈËÎïµÇÂ¼Ç°´¦Àí
+    {if m_PEnvir.m_boNORECONNECT then   //å·²æ”¹è‡³äººç‰©ç™»å½•å‰å¤„ç†
       MapRandomMove(m_PEnvir.sNoReconnectMap, 0)
     else }
-    GetStartType(); //Ë¢ĞÂÈËÎïµ±Ç°ËùÔÚÎ»ÖÃµÄ×´Ì¬
+    GetStartType(); //åˆ·æ–°äººç‰©å½“å‰æ‰€åœ¨ä½ç½®çš„çŠ¶æ€
 
     NpcGotoLable(g_ManageNPC, g_ManageNPC.FGotoLable[nResume], False);
 
-    m_boFixedHideMode := False; //01/21 Ôö¼Ó
-    // PlayObject.Create ¹ı³ÌÀï±»ÖÃÎªTrue£¬ÔÚÖ´ĞĞÍêµÇÂ¼½Å±¾ºóÔÙÖÃFalse
+    m_boFixedHideMode := False; //01/21 å¢åŠ 
+    // PlayObject.Create è¿‡ç¨‹é‡Œè¢«ç½®ä¸ºTrueï¼Œåœ¨æ‰§è¡Œå®Œç™»å½•è„šæœ¬åå†ç½®False
     {if m_sDearName <> '' then CheckMarry();
     CheckMaster();
     CheckFriend();  }
 
     m_boFilterSendMsg := GetDisableSendMsgList(m_sCharName);
 
-    //ÖØÖÃÅİµã·½Ãæ¼ÆÊ±
+    //é‡ç½®æ³¡ç‚¹æ–¹é¢è®¡æ—¶
     //m_dwIncGamePointTick := GetTickCount();
     //m_dwIncGameGoldTick := GetTickCount();
     m_ADListIndex := 0;
@@ -6985,7 +7029,7 @@ begin
       end;
     end;
 {$IF Var_Free = 1}
-    //ÄúÕıÔÚÊ¹ÓÃµÄÊÇ361ÒıÇæÃâ·Ñ°æ£¡
+    //æ‚¨æ­£åœ¨ä½¿ç”¨çš„æ˜¯361å¼•æ“å…è´¹ç‰ˆï¼
     //SysMsg(frmMain.enmsg.DecryptStr('MZ2jn==xgnHIHvUBJx2P1NW2bVZQQgYyA2di+MFuKoWfS566'), c_Red, t_Hint); //enmsg
 {$IFEND}
     SendMsg(Self, RM_OFFLINESHOP, 0, 0, 0, 0, '');
@@ -7016,7 +7060,7 @@ var
   UserMagic: pTUserMagic;
 resourcestring
   sExceptionMsg = '[Exception] TPlayObject::UserLogon';
-  sCheckIPaddrFail = 'µÇÂ¼IPµØÖ·²»Æ¥Åä.';
+  sCheckIPaddrFail = 'ç™»å½•IPåœ°å€ä¸åŒ¹é….';
 begin
   sIPaddr := '';
 {$IFDEF PLUGOPEN}
@@ -7060,7 +7104,7 @@ begin
       end;
 {$IFEND}
     end;
-    GetStartPoint(); //È¡»Ø³Ç×ø±ê
+    GetStartPoint(); //å–å›åŸåæ ‡
 
     if m_ItemList <> nil then begin
       if m_boNewHuman then begin
@@ -7138,29 +7182,29 @@ begin
       m_nGold := g_Config.nHumanMaxGold * 2;
 
     case m_btAttatckMode of
-      HAM_ALL: SysMsg(sAttackModeOfAll, c_Green, t_Hint); //[¹¥»÷Ä£Ê½: È«Ìå¹¥»÷]
-      HAM_PEACE: SysMsg(sAttackModeOfPeaceful, c_Green, t_Hint); //[¹¥»÷Ä£Ê½: ºÍÆ½¹¥»÷]
-      HAM_DEAR: SysMsg(sAttackModeOfDear, c_Green, t_Hint); //[¹¥»÷Ä£Ê½: ºÍÆ½¹¥»÷]
-      HAM_MASTER: SysMsg(sAttackModeOfMaster, c_Green, t_Hint); //[¹¥»÷Ä£Ê½: ºÍÆ½¹¥»÷]
-      HAM_GROUP: SysMsg(sAttackModeOfGroup, c_Green, t_Hint); //[¹¥»÷Ä£Ê½: ±à×é¹¥»÷]
-      HAM_GUILD: SysMsg(sAttackModeOfGuild, c_Green, t_Hint); //[¹¥»÷Ä£Ê½: ĞĞ»á¹¥»÷]
-      HAM_PKATTACK: SysMsg(sAttackModeOfRedWhite, c_Green, t_Hint); //[¹¥»÷Ä£Ê½: ºìÃû¹¥»÷]
+      HAM_ALL: SysMsg(sAttackModeOfAll, c_Green, t_Hint); //[æ”»å‡»æ¨¡å¼: å…¨ä½“æ”»å‡»]
+      HAM_PEACE: SysMsg(sAttackModeOfPeaceful, c_Green, t_Hint); //[æ”»å‡»æ¨¡å¼: å’Œå¹³æ”»å‡»]
+      HAM_DEAR: SysMsg(sAttackModeOfDear, c_Green, t_Hint); //[æ”»å‡»æ¨¡å¼: å’Œå¹³æ”»å‡»]
+      HAM_MASTER: SysMsg(sAttackModeOfMaster, c_Green, t_Hint); //[æ”»å‡»æ¨¡å¼: å’Œå¹³æ”»å‡»]
+      HAM_GROUP: SysMsg(sAttackModeOfGroup, c_Green, t_Hint); //[æ”»å‡»æ¨¡å¼: ç¼–ç»„æ”»å‡»]
+      HAM_GUILD: SysMsg(sAttackModeOfGuild, c_Green, t_Hint); //[æ”»å‡»æ¨¡å¼: è¡Œä¼šæ”»å‡»]
+      HAM_PKATTACK: SysMsg(sAttackModeOfRedWhite, c_Green, t_Hint); //[æ”»å‡»æ¨¡å¼: çº¢åæ”»å‡»]
     end;
     SysMsg(sStartChangeAttackModeHelp, c_Green, t_Hint);
-    //Ê¹ÓÃ×éºÏ¿ì½İ¼ü CTRL-H ¸ü¸Ä¹¥»÷...
+    //ä½¿ç”¨ç»„åˆå¿«æ·é”® CTRL-H æ›´æ”¹æ”»å‡»...
     m_Abil.MaxExp := GetLevelExp(m_Abil.Level);
     m_WAbil.MaxExp := m_Abil.MaxExp;
-    //jacky 2004/09/15 µÇÂ¼ÖØĞÂÈ¡µÃÉı¼¶ËùĞè¾­ÑéÖµ
+    //jacky 2004/09/15 ç™»å½•é‡æ–°å–å¾—å‡çº§æ‰€éœ€ç»éªŒå€¼
     SendAbility;
     SendSubAbility;
     //SendMsg(Self, RM_NAKEDABILITY, 0, 0, 0, 0, '');
-    //  FeatureChanged(); //Ôö¼Ó£¬¹ã²¥ÈËÎïÆïÂíĞÅÏ¢
+    //  FeatureChanged(); //å¢åŠ ï¼Œå¹¿æ’­äººç‰©éª‘é©¬ä¿¡æ¯
     //m_MyGuild := g_GuildManager.MemberOfGuild(m_sCharName);
     if m_MyGuild <> nil then begin
       m_dwGuildTick := GetTickCount + 60 * 60 * 1000;
       TGuild(m_MyGuild).MemberLogin(Self);
       for i := 0 to TGuild(m_MyGuild).m_GuildWarList.Count - 1 do begin
-        SysMsg(TGuild(m_MyGuild).m_GuildWarList.Strings[i] + ' ÕıÔÚÓë±¾ĞĞ»á½øĞĞĞĞ»áÕ½¡£', c_Green, t_Hint);
+        SysMsg(TGuild(m_MyGuild).m_GuildWarList.Strings[i] + ' æ­£åœ¨ä¸æœ¬è¡Œä¼šè¿›è¡Œè¡Œä¼šæˆ˜ã€‚', c_Green, t_Hint);
       end;
     end;
     RefShowName();
@@ -7168,15 +7212,15 @@ begin
       m_boUseThrusting := True;
       SendSocket(nil, '+LNG');
     end;
-    {if m_PEnvir.m_boNORECONNECT then   //ÒÑ¸ÄÖÁÈËÎïµÇÂ¼Ç°´¦Àí
+    {if m_PEnvir.m_boNORECONNECT then   //å·²æ”¹è‡³äººç‰©ç™»å½•å‰å¤„ç†
       MapRandomMove(m_PEnvir.sNoReconnectMap, 0)
     else }
-    GetStartType(); //Ë¢ĞÂÈËÎïµ±Ç°ËùÔÚÎ»ÖÃµÄ×´Ì¬
+    GetStartType(); //åˆ·æ–°äººç‰©å½“å‰æ‰€åœ¨ä½ç½®çš„çŠ¶æ€
 
     NpcGotoLable(g_ManageNPC, g_ManageNPC.FGotoLable[nLogin], False);
 
-    m_boFixedHideMode := False; //01/21 Ôö¼Ó
-    // PlayObject.Create ¹ı³ÌÀï±»ÖÃÎªTrue£¬ÔÚÖ´ĞĞÍêµÇÂ¼½Å±¾ºóÔÙÖÃFalse
+    m_boFixedHideMode := False; //01/21 å¢åŠ 
+    // PlayObject.Create è¿‡ç¨‹é‡Œè¢«ç½®ä¸ºTrueï¼Œåœ¨æ‰§è¡Œå®Œç™»å½•è„šæœ¬åå†ç½®False
     if m_sDearName <> '' then
       CheckMarry();
     CheckMaster();
@@ -7184,7 +7228,7 @@ begin
 
     m_boFilterSendMsg := GetDisableSendMsgList(m_sCharName);
 
-    //ÖØÖÃÅİµã·½Ãæ¼ÆÊ±
+    //é‡ç½®æ³¡ç‚¹æ–¹é¢è®¡æ—¶
     //m_dwIncGamePointTick := GetTickCount();
     //m_dwIncGameGoldTick := GetTickCount();
     m_dwAutoGetExpTick := GetTickCount();
@@ -7205,7 +7249,7 @@ begin
       end;
     end;
 {$IF Var_Free = 1}
-    //ÄúÕıÔÚÊ¹ÓÃµÄÊÇ361ÒıÇæÃâ·Ñ°æ£¡
+    //æ‚¨æ­£åœ¨ä½¿ç”¨çš„æ˜¯361å¼•æ“å…è´¹ç‰ˆï¼
     //SysMsg(frmMain.enmsg.DecryptStr('MZ2jn==xgnHIHvUBJx2P1NW2bVZQQgYyA2di+MFuKoWfS566'), c_Red, t_Hint); //enmsg
 {$IFEND}
     m_ADListIndex := 0;
@@ -7400,7 +7444,7 @@ begin
             StdItem := UserEngine.GetStdItem(UserItem.wIndex);
             if (StdItem <> nil) and (Stditem.NeedIdentify = 1) then
               AddGameLog(Self, LOG_STORAGE, Stditem.Name, UserItem.MakeIndex, UserItem.Dura, NPC.m_sCharName,
-                IntToStr(nIdx), IntToStr(nGirdIdx), 'È¡»Ø', UserItem);
+                IntToStr(nIdx), IntToStr(nGirdIdx), 'å–å›', UserItem);
             m_StorageItemList[nIdx].Delete(nGirdIdx);
             Dispose(StorageItem);
             exit;
@@ -7460,7 +7504,7 @@ begin
           SendDefMessage(SM_STORAGE_OK, 0, nIdx, nGirdIdx, 0, '');
           if Stditem.NeedIdentify = 1 then
             AddGameLog(Self, LOG_STORAGE, Stditem.Name, UserItem.MakeIndex, UserItem.Dura, NPC.m_sCharName,
-              IntToStr(nIdx), IntToStr(nGirdIdx), '´æ´¢', UserItem);
+              IntToStr(nIdx), IntToStr(nGirdIdx), 'å­˜å‚¨', UserItem);
           Dispose(UserItem);
           exit;
         end;
@@ -7608,10 +7652,10 @@ procedure TPlayObject.ClientEMailInfo(ProcessMsg: pTProcessMessage; var boResult
 
           IntegerChange(m_nGold, nGold + nSendGold, INT_DEL);
           if g_boGameLogGold then begin
-            AddGameLog(Self, LOG_GOLDCHANGED, sSTRING_GOLDNAME, 0, m_nGold, 'ĞÅ¼ş', '-', IntToStr(nGold), '·ÑÓÃ', nil);
+            AddGameLog(Self, LOG_GOLDCHANGED, sSTRING_GOLDNAME, 0, m_nGold, 'ä¿¡ä»¶', '-', IntToStr(nGold), 'è´¹ç”¨', nil);
             if nSendGold > 0 then
               AddGameLog(Self, LOG_GOLDCHANGED, sSTRING_GOLDNAME, 0, m_nGold, sUserName, '-',
-                IntToStr(nSendGold), 'ĞÅ¼ş·¢ËÍ', nil);
+                IntToStr(nSendGold), 'ä¿¡ä»¶å‘é€', nil);
           end;
           GoldChanged;
           New(EMailInfo);
@@ -7622,7 +7666,7 @@ procedure TPlayObject.ClientEMailInfo(ProcessMsg: pTProcessMessage; var boResult
             if Stditem <> nil then begin
               if Stditem.NeedIdentify = 1 then
                 AddGameLog(Self, LOG_DELITEM, StdItem.Name, UserItem.MakeIndex, UserItem.Dura, sUserName,
-                  IntToStr(Integer(EMailInfo)), '0', 'ĞÅ¼ş·¢ËÍ', UserItem);
+                  IntToStr(Integer(EMailInfo)), '0', 'ä¿¡ä»¶å‘é€', UserItem);
             end
             else begin
               Dispose(UserItem);
@@ -7643,7 +7687,7 @@ procedure TPlayObject.ClientEMailInfo(ProcessMsg: pTProcessMessage; var boResult
           EMailInfo.TextLen := _MIN(Length(sText), MAXEMAILTEXTLEN);
           Move(sText[1], EMailInfo.Text[0], EMailInfo.TextLen);
           if (nSendGold = 0) and (UserItem = nil) then
-            EMailInfo.boDelete := True; //Ã»ÓĞ½ğ±ÒºÍÎïÆ·,ÏÂ´ÎÖØÆôÖ±½ÓÉ¾³ı
+            EMailInfo.boDelete := True; //æ²¡æœ‰é‡‘å¸å’Œç‰©å“,ä¸‹æ¬¡é‡å¯ç›´æ¥åˆ é™¤
           UserEMail.SendMsg(EMS_ADDEMAIL, m_nDBIndex, 0, 0, 0, '', EMailInfo);
 
           if UserItem <> nil then
@@ -7686,7 +7730,7 @@ var
   Stditem: pTStdItem;
   I: Integer;
 begin
-  if m_btPermission = 10 then begin //Ö»ÓĞ¹ÜÀíÔ±²Å¿ÉÒÔÊ¹ÓÃ¸ÃÏûÏ¢
+  if m_btPermission = 10 then begin //åªæœ‰ç®¡ç†å‘˜æ‰å¯ä»¥ä½¿ç”¨è¯¥æ¶ˆæ¯
     case ProcessMsg.nParam2 of
       GMM_UPDATEITEM: begin
           HintUserItem := nil;
@@ -7715,10 +7759,10 @@ begin
           if HintUserItem <> nil then begin
             Stditem := UserEngine.GetStdItem(HintUserItem.wIndex);
             if Stditem <> nil then begin
-              MainOutMessage('[µ÷ÕûÎïÆ·] ' + m_sCharName + ' ' + Stditem.Name + '(' + IntToStr(HintUserItem.MakeIndex) + ')');
+              MainOutMessage('[è°ƒæ•´ç‰©å“] ' + m_sCharName + ' ' + Stditem.Name + '(' + IntToStr(HintUserItem.MakeIndex) + ')');
               if Stditem.NeedIdentify = 1 then
                 AddGameLog(Self, LOG_UPDATEITEM, Stditem.Name, HintUserItem.MakeIndex, HintUserItem.Dura, '0',
-                  '0', '0', 'µ÷Õû', HintUserItem);
+                  '0', '0', 'è°ƒæ•´', HintUserItem);
             end;
           end;
         end;
@@ -7748,36 +7792,36 @@ procedure TPlayObject.ClientFriendChange(ProcessMsg: pTProcessMessage; var boRes
     AddObject: TPlayObject;
   begin
     if CompareText(AddName, m_sCharName) = 0 then begin
-      SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[Ê§°Ü]£º²»ÄÜÌí¼Ó×Ô¼º×÷ÎªºÃÓÑ');
+      SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[å¤±è´¥]ï¼šä¸èƒ½æ·»åŠ è‡ªå·±ä½œä¸ºå¥½å‹');
       exit;
     end;
     if InFriendList(AddName) then begin
-      SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[Ê§°Ü]£º£¨' + AddName + '£© ÒÑ¾­´æÔÚÓÚÄãµÄºÃÓÑÁĞ±íµ±ÖĞ.');
+      SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[å¤±è´¥]ï¼šï¼ˆ' + AddName + 'ï¼‰ å·²ç»å­˜åœ¨äºä½ çš„å¥½å‹åˆ—è¡¨å½“ä¸­.');
       exit;
     end;
     if m_FriendList.Count >= MAXFRIENDS then begin
-      SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[Ê§°Ü]£ºÄãµÄºÃÓÑÁĞ±íÊıÁ¿ÒÑ´ïµ½×î¸ßÉÏÏŞ.');
+      SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[å¤±è´¥]ï¼šä½ çš„å¥½å‹åˆ—è¡¨æ•°é‡å·²è¾¾åˆ°æœ€é«˜ä¸Šé™.');
       exit;
     end;
     AddObject := UserEngine.GetPlayObject(AddName);
     if (AddObject <> nil) and (not AddObject.m_boGhost) then begin
       if (not AddObject.m_boAllowFrieng) or (AddObject.m_boSafeOffLine) then begin
-        SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[Ê§°Ü]£º£¨' + AddName + '£© ¾Ü¾øÔö¼ÓºÃÓÑ.');
+        SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[å¤±è´¥]ï¼šï¼ˆ' + AddName + 'ï¼‰ æ‹’ç»å¢åŠ å¥½å‹.');
         exit;
       end;
       if AddObject.m_FriendList.Count >= MAXFRIENDS then begin
-        SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[Ê§°Ü]£º£¨' + AddName + '£© µÄºÃÓÑÁĞ±íÊıÁ¿ÒÑ´ïµ½×î¸ßÉÏÏŞ.');
+        SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[å¤±è´¥]ï¼šï¼ˆ' + AddName + 'ï¼‰ çš„å¥½å‹åˆ—è¡¨æ•°é‡å·²è¾¾åˆ°æœ€é«˜ä¸Šé™.');
         exit;
       end;
       if AddObject.AddCheckMsg(Format(g_sFriendCheckMsg, [m_sCharName]), tmc_Friend, Self, 62) <> nil then
-        SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '³É¹¦·¢ËÍÁË¼ÓÎªºÃÓÑÑûÇë£¬ÇëµÈ´ı¶Ô·½»ØÓ¦£¡')
+        SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, 'æˆåŠŸå‘é€äº†åŠ ä¸ºå¥½å‹é‚€è¯·ï¼Œè¯·ç­‰å¾…å¯¹æ–¹å›åº”ï¼')
           //SysMsg(g_sFriendIsCheckMsg, c_Red, t_Hint)
       else
         //SysMsg(g_sFriendIsCheckMsgNot, c_Red, t_Hint)
-        SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[Ê§°Ü]: ÒÑ¾­Ïò£¨' + AddName + '£© ·¢ËÍÁËÑûÇë£¬Çë²»ÒªÖØ¸´·¢ËÍ£¡');
+        SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[å¤±è´¥]: å·²ç»å‘ï¼ˆ' + AddName + 'ï¼‰ å‘é€äº†é‚€è¯·ï¼Œè¯·ä¸è¦é‡å¤å‘é€ï¼');
     end
     else
-      SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[Ê§°Ü]£º£¨' + AddName + '£© Ã»ÓĞÔÚÏß.');
+      SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[å¤±è´¥]ï¼šï¼ˆ' + AddName + 'ï¼‰ æ²¡æœ‰åœ¨çº¿.');
   end;
 
   procedure DelFriend(AddName: string);
@@ -7829,14 +7873,14 @@ procedure TPlayObject.ClientUserPhoto(ProcessMsg: pTProcessMessage; var boResult
     Result := False;
     if m_Abil.Level < g_Config.nUpPhotoLevel then begin
       SendDefMessage(SM_UPLOADUSERPHOTO_FAIL, 0, 0, 0, 0,
-        'µÈ¼¶±ØĞè´óÓÚ' + IntToStr(g_Config.nUpPhotoLevel) + '¼¶(°üº¬' + IntToStr(g_Config.nUpPhotoLevel) + '¼¶)ÒÔÉÏ²ÅÄÜÉÏ´«');
+        'ç­‰çº§å¿…éœ€å¤§äº' + IntToStr(g_Config.nUpPhotoLevel) + 'çº§(åŒ…å«' + IntToStr(g_Config.nUpPhotoLevel) + 'çº§)ä»¥ä¸Šæ‰èƒ½ä¸Šä¼ ');
       exit;
     end;
     if m_PPhotoData <> nil then begin
       nHours := HoursBetween(Now, m_dwUpLoadPhotoTime);
       if nHours < g_Config.nUpPhotoTick then begin
         SendDefMessage(SM_UPLOADUSERPHOTO_FAIL, 0, 0, 0, 0,
-          'ÔÚ' + IntToStr(g_Config.nUpPhotoTick - nHours) + 'Ğ¡Ê±Ö®ºó²ÅÄÜÔÙ´ÎÉÏ´«');
+          'åœ¨' + IntToStr(g_Config.nUpPhotoTick - nHours) + 'å°æ—¶ä¹‹åæ‰èƒ½å†æ¬¡ä¸Šä¼ ');
         exit;
       end;
     end;
@@ -7870,10 +7914,10 @@ procedure TPlayObject.ClientUserPhoto(ProcessMsg: pTProcessMessage; var boResult
         SendSocket(@m_DefMsg, EncodeBuffer(m_PPhotoData, m_nPhotoSize));
       end
       else
-        SendDefMessage(SM_UPLOADUSERPHOTO_FAIL, 0, 0, 0, 0, '»ñÈ¡Ê§°Ü,Ã»ÓĞÕÕÆ¬Êı¾İ.');
+        SendDefMessage(SM_UPLOADUSERPHOTO_FAIL, 0, 0, 0, 0, 'è·å–å¤±è´¥,æ²¡æœ‰ç…§ç‰‡æ•°æ®.');
     end
     else
-      SendDefMessage(SM_UPLOADUSERPHOTO_FAIL, 0, 0, 0, 0, 'ÇëÎğ³¬ËÙ²Ù×÷');
+      SendDefMessage(SM_UPLOADUSERPHOTO_FAIL, 0, 0, 0, 0, 'è¯·å‹¿è¶…é€Ÿæ“ä½œ');
   end;
 
   procedure UserGetPhoto2;
@@ -7890,13 +7934,13 @@ procedure TPlayObject.ClientUserPhoto(ProcessMsg: pTProcessMessage; var boResult
           SendSocket(@m_DefMsg, EncodeBuffer(LookBase.m_PPhotoData, LookBase.m_nPhotoSize));
         end
         else
-          SendDefMessage(SM_UPLOADUSERPHOTO_FAIL, 0, 0, 0, 0, '»ñÈ¡Ê§°Ü,Ã»ÓĞÕÕÆ¬Êı¾İ.');
+          SendDefMessage(SM_UPLOADUSERPHOTO_FAIL, 0, 0, 0, 0, 'è·å–å¤±è´¥,æ²¡æœ‰ç…§ç‰‡æ•°æ®.');
       end
       else
-        SendDefMessage(SM_UPLOADUSERPHOTO_FAIL, 0, 0, 0, 0, '¶Ô·½ÒÑÀëÏß£¬ÎŞ·¨»ñÈ¡Êı¾İ¡£');
+        SendDefMessage(SM_UPLOADUSERPHOTO_FAIL, 0, 0, 0, 0, 'å¯¹æ–¹å·²ç¦»çº¿ï¼Œæ— æ³•è·å–æ•°æ®ã€‚');
     end
     else
-      SendDefMessage(SM_UPLOADUSERPHOTO_FAIL, 0, 0, 0, 0, 'ÇëÎğ³¬ËÙ²Ù×÷');
+      SendDefMessage(SM_UPLOADUSERPHOTO_FAIL, 0, 0, 0, 0, 'è¯·å‹¿è¶…é€Ÿæ“ä½œ');
     //m_nLookPhotoIndex
   end;
 begin
@@ -8006,14 +8050,14 @@ begin
         Inc(m_btStorageErrorCount);
         if m_btStorageErrorCount < 5 then begin
           SendDefMessage(SM_MENU_OK, Integer(Self), 0, 0, 0,
-            'ÃÜÂë´íÎó£¡\Äã»¹ÓĞ ' + IntToStr(5 - m_btStorageErrorCount) +
-            ' ´Î»ú»á£¡\³¬¹ı´ÎÊıºó24Ğ¡Ê±Ö®ÄÚÎŞ·¨Ê¹ÓÃ²Ö¿â£¡');
+            'å¯†ç é”™è¯¯ï¼\ä½ è¿˜æœ‰ ' + IntToStr(5 - m_btStorageErrorCount) +
+            ' æ¬¡æœºä¼šï¼\è¶…è¿‡æ¬¡æ•°å24å°æ—¶ä¹‹å†…æ— æ³•ä½¿ç”¨ä»“åº“ï¼');
         end
         else begin
           m_boStorageLock := True;
           m_StorageLockTime := IncHour(Now, 24);
           m_btStorageErrorCount := 0;
-          SendDefMessage(SM_MENU_OK, Integer(Self), 0, 0, 0, '²Ö¿âÒÑ±»Ëø¶¨£¬ÔİÊ±ÎŞ·¨Ê¹ÓÃ£¡');
+          SendDefMessage(SM_MENU_OK, Integer(Self), 0, 0, 0, 'ä»“åº“å·²è¢«é”å®šï¼Œæš‚æ—¶æ— æ³•ä½¿ç”¨ï¼');
         end;
       end;
     end;
@@ -8022,9 +8066,9 @@ begin
     if m_boStorageOpen[0] then begin
       m_sStoragePwd := DecodeString(ProcessMsg.sMsg);
       if m_sStoragePwd = '' then
-        SendDefMessage(SM_MENU_OK, Integer(Self), 0, 0, 0, 'ÒÑÈ¡Ïû²Ö¿âÃÜÂë£¡')
+        SendDefMessage(SM_MENU_OK, Integer(Self), 0, 0, 0, 'å·²å–æ¶ˆä»“åº“å¯†ç ï¼')
       else
-        SendDefMessage(SM_MENU_OK, Integer(Self), 0, 0, 0, 'ÃÜÂë¸ü¸Ä³É¹¦£¬ÇëÀÎ¼Ç£¡');
+        SendDefMessage(SM_MENU_OK, Integer(Self), 0, 0, 0, 'å¯†ç æ›´æ”¹æˆåŠŸï¼Œè¯·ç‰¢è®°ï¼');
     end;
   end;
 end;
@@ -8041,10 +8085,10 @@ begin
 
   if not m_boStorageOpen[0] then begin
     if m_boStorageLock then
-      SendDefMsg(Self, SM_MENU_OK, Integer(Self), 0, 0, 0, '²Ö¿âÒÑ±»Ëø¶¨£¬ÔİÊ±ÎŞ·¨Ê¹ÓÃ£¡')
+      SendDefMsg(Self, SM_MENU_OK, Integer(Self), 0, 0, 0, 'ä»“åº“å·²è¢«é”å®šï¼Œæš‚æ—¶æ— æ³•ä½¿ç”¨ï¼')
     else
       SendDefMsg(Self, SM_GETBACKPASSWORD, CM_GETBACKSTORAGEPASS, 12, 1, 0,
-        '²Ö¿âÒÑÉÏËø£¬ÇëÊäÈë²Ö¿âÃÜÂë£¡');
+        'ä»“åº“å·²ä¸Šé”ï¼Œè¯·è¾“å…¥ä»“åº“å¯†ç ï¼');
   end
   else begin
     SendDefSocket(Self, SM_STORAGEINFO, m_nStorageGold,
@@ -8057,7 +8101,7 @@ end;
 procedure TPlayObject.SetStoragePass();
 begin
   if not m_boStorageOpen[0] then begin
-    SendDefMsg(Self, SM_MENU_OK, Integer(Self), 0, 0, 0, 'ÇëÏÈ´ò¿ª²Ö¿âÔÙ¸ü¸ÄÃÜÂë£¡');
+    SendDefMsg(Self, SM_MENU_OK, Integer(Self), 0, 0, 0, 'è¯·å…ˆæ‰“å¼€ä»“åº“å†æ›´æ”¹å¯†ç ï¼');
   end
   else
     SendDefMsg(Self, SM_GETBACKPASSWORD, CM_GETBACKSTORAGEPASS, 12, 2, 1, '');
@@ -8101,12 +8145,12 @@ begin
   ClientConf.boRunGuard := g_Config.boRunGuard;
   ClientConf.boWarDisHumRun := nWarRunAll = 1;
   ClientConf.SafeAreaLimited := g_Config.boSafeAreaLimited;
-  //°²È«Çø²»ÊÜ¿ØÖÆ
+  //å®‰å…¨åŒºä¸å—æ§åˆ¶
   ClientConf.boParalyCanRun := g_Config.ClientConf.boParalyCanRun;
   ClientConf.boParalyCanWalk := g_Config.ClientConf.boParalyCanWalk;
   ClientConf.boParalyCanHit := g_Config.ClientConf.boParalyCanHit;
   ClientConf.boParalyCanSpell := g_Config.ClientConf.boParalyCanSpell;
-  ClientConf.boShowMoveHPNumber := True; //ÏÔÊ¾ÒÆ¶¯Æ®Ñª
+  ClientConf.boShowMoveHPNumber := True; //æ˜¾ç¤ºç§»åŠ¨é£˜è¡€
   m_DefMsg := MakeDefaultMsg(SM_SERVERCONFIG, nRecog, nParam, 0, 0);
   SendSocket(@m_DefMsg, EncodeBuffer(@ClientConf, SizeOf(TClientConf)));
 end;
@@ -8203,7 +8247,7 @@ begin
   //sRealityStr := GetValidStrEx(sRealityStr, str, ['/']);
   //m_RealityInfo.sPhotoID := str;
   m_RealityInfo.sIdiograph := sRealityStr;
-  SysMsg('[±£´æ¸öÈËĞÅÏ¢³É¹¦]', c_Blue, t_Hint)
+  SysMsg('[ä¿å­˜ä¸ªäººä¿¡æ¯æˆåŠŸ]', c_Blue, t_Hint)
 end;
 
 procedure TPlayObject.ClientNakedChange(ProcessMsg: pTProcessMessage; var boResult: Boolean);
@@ -8276,7 +8320,7 @@ begin
   Result := False;
   dwDelayTime := 0;
   if m_boDeath or m_boShoping or (not CanWork) then
-    Exit; //·ÀÂé
+    Exit; //é˜²éº»
 
   m_boFilterAction := True;
   if not boLateDelivery then begin
@@ -8311,7 +8355,7 @@ begin
   Result := False;
   dwDelayTime := 0;
   if m_boDeath or m_boOnHorse or m_boShoping or (not CanWork) then
-    Exit; //·ÀÂé
+    Exit; //é˜²éº»
 
   (*if not boLateDelivery then begin
     dwCheckTime := GetTickCount;
@@ -8342,7 +8386,7 @@ begin
             BaseObject.SendRefMsg(RM_SKELETON, BaseObject.m_btDirection, BaseObject.m_nCurrX, BaseObject.m_nCurrY, 0, '');
           end;
           if not TakeBagItems(BaseObject) then begin
-            SysMsg(sYouFoundNothing {Î´·¢ÏÖÈÎºÎÎïÆ·.}, c_Red, t_Hint);
+            SysMsg(sYouFoundNothing {æœªå‘ç°ä»»ä½•ç‰©å“.}, c_Red, t_Hint);
           end;
           BaseObject.m_nBodyLeathery := 50;
         end;
@@ -8400,7 +8444,7 @@ begin
   Result := False;
 end;
 
-//¼ì²â¼¤»îÌ××°ÎïÆ·
+//æ£€æµ‹æ¿€æ´»å¥—è£…ç‰©å“
 {
 procedure TPlayObject.ClientSuitItems(UserItem: pTuseritem; btWhere: Byte);
   function GetStdItemWuXin(itemindex: Integer): Integer;
@@ -8528,7 +8572,7 @@ begin
   for i := 0 to m_ItemList.Count - 1 do begin
     pUserItem := m_ItemList.Items[i];
     if (pUserItem <> nil) and (pUserItem.MakeIndex = nItemIdx) then begin
-      //È¡×Ô¶¨ÒåÎïÆ·Ãû³Æ
+      //å–è‡ªå®šä¹‰ç‰©å“åç§°
       {sUserItemName := '';
       if UserItem.Value.btValue[13] = 1 then
         sUserItemName := ItemUnit.GetCustomItemName(UserItem.MakeIndex, UserItem.wIndex);
@@ -8556,7 +8600,7 @@ begin
           if m_UseItems[U_House].HorseItems[hWhere].wIndex > 0 then begin
             StdItem20 := UserEngine.GetStdItem(m_UseItems[U_House].HorseItems[hWhere].wIndex);
             if (StdItem20 = nil) or (StdItem20.Rule.Rule[RULE_NOTAKEOFF]) then begin
-              SysMsg(g_sCanotTakeOffItem {'ÎŞ·¨È¡ÏÂÎïÆ·.'}, c_Red, t_Hint);
+              SysMsg(g_sCanotTakeOffItem {'æ— æ³•å–ä¸‹ç‰©å“.'}, c_Red, t_Hint);
               goto FailExit;
             end;
             New(vTakeOffItem);
@@ -8587,7 +8631,7 @@ begin
           if m_UseItems[btWhere].wIndex > 0 then begin
             StdItem20 := UserEngine.GetStdItem(m_UseItems[btWhere].wIndex);
             if (StdItem20 = nil) or (StdItem20.Rule.Rule[RULE_NOTAKEOFF]) then begin
-              SysMsg(g_sCanotTakeOffItem {'ÎŞ·¨È¡ÏÂÎïÆ·.'}, c_Red, t_Hint);
+              SysMsg(g_sCanotTakeOffItem {'æ— æ³•å–ä¸‹ç‰©å“.'}, c_Red, t_Hint);
               n18 := -4;
               goto FailExit;
             end;
@@ -8599,7 +8643,7 @@ begin
           end;
 
           {if (StdItem.StdMode in [ts_Helmet, ts_ArmRing, ts_Ring]) and
-            //ÉñÃØ×°±¸
+            //ç¥ç§˜è£…å¤‡
           (CheckByteStatus(UserItem.Value.btValue[tb_Status], Is_Unknow)) then
             SetByteStatus(UserItem.Value.btValue[tb_Status], Is_Unknow, False); }
 
@@ -8693,25 +8737,25 @@ procedure TPlayObject.ClientUseItems(ProcessMsg: pTProcessMessage; var boResult:
         0: begin
             if m_Abil.Level < StdItem.NeedLevel then begin
               Result := False;
-              SysMsg('ÄãµÄµÈ¼¶²»·ûºÏÒªÇó.', c_Red, t_Hint);
+              SysMsg('ä½ çš„ç­‰çº§ä¸ç¬¦åˆè¦æ±‚.', c_Red, t_Hint);
             end;
           end;
         1: begin
             if m_btJob <> StdItem.NeedLevel then begin
               Result := False;
-              SysMsg('ÄãµÄÖ°Òµ²»·ûºÏÒªÇó.', c_Red, t_Hint);
+              SysMsg('ä½ çš„èŒä¸šä¸ç¬¦åˆè¦æ±‚.', c_Red, t_Hint);
             end;
           end;
         2: begin
             if m_MyGuild = nil then begin
               Result := False;
-              SysMsg('Ö»ÓĞĞĞ»á³ÉÔ±²ÅÄÜÊ¹ÓÃ.', c_Red, t_Hint);
+              SysMsg('åªæœ‰è¡Œä¼šæˆå‘˜æ‰èƒ½ä½¿ç”¨.', c_Red, t_Hint);
             end;
           end;
         3: begin
             if m_Abil.Level >= StdItem.NeedLevel then begin
               Result := False;
-              SysMsg('ÄãµÄµÈ¼¶²»·ûºÏÒªÇó.', c_Red, t_Hint);
+              SysMsg('ä½ çš„ç­‰çº§ä¸ç¬¦åˆè¦æ±‚.', c_Red, t_Hint);
             end;
           end;
       end;
@@ -8751,11 +8795,11 @@ begin
               break;
             end;
             if (m_AttackState = as_Dare) and (StdItem.StdMode <> tm_Drug) then begin
-              SysMsg('Ö»ÄÜÊ¹ÓÃÒ©Æ·£¡', c_Red, t_Hint);
+              SysMsg('åªèƒ½ä½¿ç”¨è¯å“ï¼', c_Red, t_Hint);
               break;
             end;
             case StdItem.StdMode of
-              tm_Drug: begin //Ò©
+              tm_Drug: begin //è¯
                   if GetTickCount > m_dwEatTick then begin
                     if CheckItemLevel(StdItem) and EatItems(StdItem, UserItem) then begin
                       boEatOK := True;
@@ -8772,12 +8816,12 @@ begin
                   end;
                   break;
                 end;
-              tm_Book: begin //Êé
+              tm_Book: begin //ä¹¦
                   if ReadBook(StdItem) then begin
                     boEatOK := True;
                   end;
                 end;
-              tm_Open: begin //½â°üÎïÆ·
+              tm_Open: begin //è§£åŒ…ç‰©å“
                   if CheckItemLevel(StdItem) then begin
                     if (StdItem.AniCount in [0..3]) then begin
                       if (m_ItemList.Count + 6 - 1) <= m_nMaxItemListCount then begin
@@ -8809,7 +8853,7 @@ begin
     SendDefMessage(SM_EAT_OK, g_Config.dwEatTick, 0, 0, 0, '');
     if (StdItem <> nil) and (StdItem.NeedIdentify = 1) then
       AddGameLog(Self, LOG_DELITEM, Stditem.Name, UserItem34.MakeIndex, 0, '0', '0', '0',
-        'Ê¹ÓÃ', @UserItem34);
+        'ä½¿ç”¨', @UserItem34);
   end
   else begin
     if UserItem = nil then
@@ -9020,14 +9064,14 @@ begin
       m_wStatusTimeArr[I] := 1;
   inherited;
 end;
-//ÈËÎïËÀÍö´¥·¢
+//äººç‰©æ­»äº¡è§¦å‘
 
 function TPlayObject.DieFunc: Boolean;
 begin
   Result := True;
   NpcGotoLable(g_FunctionNPC, g_FunctionNPC.FGotoLable[nPlayDie], False);
 end;
-//ÈËÎïÉı¼¶´¥·¢
+//äººç‰©å‡çº§è§¦å‘
 
 procedure TPlayObject.LevelUpFuncEx(nLevel: Word);
 begin
@@ -9041,7 +9085,7 @@ begin
   NpcGotoLable(g_FunctionNPC, g_FunctionNPC.FGotoLable[nPlayLevelUp], False);
   UnMaster;
 end;
-//É±ÈË´¥·¢
+//æ€äººè§¦å‘
 
 function TPlayObject.KillPlayFunc: Boolean;
 begin
@@ -9065,7 +9109,7 @@ var
 dwDelayTime: LongWord;
 nMsgCount: Integer;
 begin
-//ÍÚÊ¬Ìå
+//æŒ–å°¸ä½“
 exit;
 if not ClientGetButchItem(TBaseObject(ProcessMsg.nParam1),
   ProcessMsg.nParam2, ProcessMsg.nParam3, ProcessMsg.wParam, dwDelayTime) then begin
@@ -9075,7 +9119,7 @@ if not ClientGetButchItem(TBaseObject(ProcessMsg.nParam1),
       Inc(m_nOverSpeedCount);
       if m_nOverSpeedCount > g_Config.nOverSpeedKickCount then begin
         if g_Config.boKickOverSpeed then begin
-          SysMsg(g_sKickClientUserMsg {'ÇëÎğÊ¹ÓÃ·Ç·¨Èí¼ş.'}, c_Red, t_Hint);
+          SysMsg(g_sKickClientUserMsg {'è¯·å‹¿ä½¿ç”¨éæ³•è½¯ä»¶.'}, c_Red, t_Hint);
           m_boEmergencyClose := True;
           m_boPlayOffLine := False;
         end;
@@ -9083,13 +9127,13 @@ if not ClientGetButchItem(TBaseObject(ProcessMsg.nParam1),
           MainOutMessage(format(g_sBunOverSpeed, [m_sCharName, dwDelayTime, nMsgCount]));
         end;
       end;
-      //Èç¹û³¬ËÙÔò·¢ËÍ¹¥»÷Ê§°ÜĞÅÏ¢
+      //å¦‚æœè¶…é€Ÿåˆ™å‘é€æ”»å‡»å¤±è´¥ä¿¡æ¯
       SendActionFail();
     end
     else begin
       if dwDelayTime < g_Config.dwDropOverSpeed then begin
         if m_boTestSpeedMode then
-          SysMsg(format('ËÙ¶ÈÒì³£ Ident: %d Time: %d', [ProcessMsg.wIdent, dwDelayTime]), c_Red, t_Hint);
+          SysMsg(format('é€Ÿåº¦å¼‚å¸¸ Ident: %d Time: %d', [ProcessMsg.wIdent, dwDelayTime]), c_Red, t_Hint);
         SendActionGood();
       end
       else begin
@@ -9111,7 +9155,7 @@ begin
 Result := False;
 dwDelayTime := 0;
 if m_boDeath or m_boOnHorse or m_boShoping or (not CanWork) then
-  Exit; //·ÀÂé
+  Exit; //é˜²éº»
 //dwCheckTime := GetTickCount - m_dwTurnTick;  1
 if dwCheckTime < g_Config.dwTurnIntervalTime then begin
   dwDelayTime := g_Config.dwTurnIntervalTime - dwCheckTime;
@@ -9137,7 +9181,7 @@ if (abs(nX - m_nCurrX) <= 2) and (abs(nY - m_nCurrY) <= 2) then begin
             BaseObject.m_nCurrY, 0, '');
         end;
         if not TakeBagItems(BaseObject) then begin
-          SysMsg(sYouFoundNothing {Î´·¢ÏÖÈÎºÎÎïÆ·.}, c_Red, t_Hint);
+          SysMsg(sYouFoundNothing {æœªå‘ç°ä»»ä½•ç‰©å“.}, c_Red, t_Hint);
         end;
         BaseObject.m_nBodyLeathery := 50;
       end;
@@ -9154,7 +9198,7 @@ begin
   m_boReconnection := True;
   m_boSoftClose := True;
 end;
-//½âÉ¢¶ÓÎé
+//è§£æ•£é˜Ÿä¼
 
 procedure TPlayObject.ClientGropuClose;
 begin
@@ -9258,7 +9302,7 @@ begin
   Result := CheckMsg;
 end;
 
-//¶ÓÎéÎåĞĞÊôĞÔ
+//é˜Ÿä¼äº”è¡Œå±æ€§
 
 procedure TPlayObject.RefGroupWuXin(BaseObject: TBaseObject);
 var
@@ -9307,7 +9351,7 @@ begin
     end;
   end;
 end;
-//´´½¨¶ÓÎé
+//åˆ›å»ºé˜Ÿä¼
 
 procedure TPlayObject.ClientCreateGroup(ProcessMsg: pTProcessMessage; var boResult: Boolean);
 var
@@ -9381,31 +9425,31 @@ begin
   NpcGotoLable(g_FunctionNPC, g_FunctionNPC.FGotoLable[NJOINGROUP], False);
 end;
 
-//Ôö¼Ó¶ÓÔ±
+//å¢åŠ é˜Ÿå‘˜
 
 procedure TPlayObject.AddGroupMember(PlayObject: TPlayObject);
 begin
   if m_GroupOwner <> nil then begin
     if (not PlayObject.m_boAllowGroup) then begin
-      PlayObject.SysMsg('ÎŞ·¨¼ÓÈë¶ÓÎé, Äã²»ÔÊĞí×é¶Ó!', c_red,
+      PlayObject.SysMsg('æ— æ³•åŠ å…¥é˜Ÿä¼, ä½ ä¸å…è®¸ç»„é˜Ÿ!', c_red,
         t_hint);
       Exit;
     end;
     if m_GroupOwner <> Self then begin
-      PlayObject.SysMsg('ÎŞ·¨¼ÓÈë¶ÓÎé, ¶Ô·½ÒÑ²»ÊÇ×é³¤!', c_red,
+      PlayObject.SysMsg('æ— æ³•åŠ å…¥é˜Ÿä¼, å¯¹æ–¹å·²ä¸æ˜¯ç»„é•¿!', c_red,
         t_hint);
       Exit;
     end;
     if m_GroupMembers.Count > g_Config.nGroupMembersMax then begin
-      PlayObject.SysMsg('ÎŞ·¨¼ÓÈë¶ÓÎé, ÒÑÂúÔ±!', c_red, t_hint);
+      PlayObject.SysMsg('æ— æ³•åŠ å…¥é˜Ÿä¼, å·²æ»¡å‘˜!', c_red, t_hint);
       Exit;
     end;
     if (PlayObject = nil) or (PlayObject = Self) or PlayObject.m_boGhost or m_boGhost then begin
-      PlayObject.SysMsg('ÎŞ·¨¼ÓÈë¶ÓÎé, ¶Ô·½»òÕßÄã±¾Éí×´Ì¬Òì³£!', c_red, t_hint);
+      PlayObject.SysMsg('æ— æ³•åŠ å…¥é˜Ÿä¼, å¯¹æ–¹æˆ–è€…ä½ æœ¬èº«çŠ¶æ€å¼‚å¸¸!', c_red, t_hint);
       Exit;
     end;
     if (PlayObject.m_GroupOwner <> nil) then begin
-      PlayObject.SysMsg('ÎŞ·¨¼ÓÈë¶ÓÎé, ÄãÒÑ¾­¼ÓÈëÁË¶ÓÎé!', c_red,
+      PlayObject.SysMsg('æ— æ³•åŠ å…¥é˜Ÿä¼, ä½ å·²ç»åŠ å…¥äº†é˜Ÿä¼!', c_red,
         t_hint);
       Exit;
     end;
@@ -9426,16 +9470,16 @@ begin
   end
   else begin
     if (not PlayObject.m_boAllowGroup) then begin
-      PlayObject.SysMsg('ÎŞ·¨¼ÓÈë¶ÓÎé, Äã²»ÔÊĞí×é¶Ó!', c_red,
+      PlayObject.SysMsg('æ— æ³•åŠ å…¥é˜Ÿä¼, ä½ ä¸å…è®¸ç»„é˜Ÿ!', c_red,
         t_hint);
       Exit;
     end;
     if (PlayObject = nil) or (PlayObject = Self) or PlayObject.m_boGhost or m_boGhost then begin
-      PlayObject.SysMsg('ÎŞ·¨¼ÓÈë¶ÓÎé, ¶Ô·½»òÕßÄã±¾Éí×´Ì¬Òì³£!', c_red, t_hint);
+      PlayObject.SysMsg('æ— æ³•åŠ å…¥é˜Ÿä¼, å¯¹æ–¹æˆ–è€…ä½ æœ¬èº«çŠ¶æ€å¼‚å¸¸!', c_red, t_hint);
       Exit;
     end;
     if (PlayObject.m_GroupOwner <> nil) then begin
-      PlayObject.SysMsg('ÎŞ·¨¼ÓÈë¶ÓÎé, ÄãÒÑ¾­¼ÓÈëÁË¶ÓÎé!', c_red,
+      PlayObject.SysMsg('æ— æ³•åŠ å…¥é˜Ÿä¼, ä½ å·²ç»åŠ å…¥äº†é˜Ÿä¼!', c_red,
         t_hint);
       Exit;
     end;
@@ -9530,7 +9574,7 @@ begin
   //SendDefMessage(SM_GROUPADDMEM_OK, 0, 0, 0, 0, '');
   //SendGroupMembers(nil);
 end;
-//É¾³ı¶ÓÔ±
+//åˆ é™¤é˜Ÿå‘˜
 
 procedure TPlayObject.ClientDelGroupMember(ProcessMsg: pTProcessMessage; var boResult: Boolean);
 var
@@ -9566,7 +9610,7 @@ var
   sHumName: string;
 begin
   if not m_boMapApoise then
-    exit; //Èç¹û¿Í»§¶ËµØÍ¼Î´×¼±¸ºÃ,²»ÔÊĞí
+    exit; //å¦‚æœå®¢æˆ·ç«¯åœ°å›¾æœªå‡†å¤‡å¥½,ä¸å…è®¸
   sHumName := ProcessMsg.sMsg;
   if g_Config.boDisableDeal or Self.m_PEnvir.m_boNODEAL then begin
     SendDefMsg(g_ManageNPC, SM_MENU_OK, Integer(Self), 0, 0, 0, g_sDisableDealItemsMsg);
@@ -9587,21 +9631,21 @@ begin
     if abs(m_nCurrY - PlayObject.m_nCurrY) > g_Config.nSendRefMsgRange then
       exit;
     if (not PlayObject.m_boAllowDeal) or (PlayObject.m_boSafeOffLine) then begin
-      //SysMsg('¶Ô·½¾Ü¾ø½»Ò×.', c_Red, t_Hint);
-      SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[Ê§°Ü]£º£¨' + PlayObject.m_sCharName + '£© ¾Ü¾ø½»Ò×£¡');
+      //SysMsg('å¯¹æ–¹æ‹’ç»äº¤æ˜“.', c_Red, t_Hint);
+      SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[å¤±è´¥]ï¼šï¼ˆ' + PlayObject.m_sCharName + 'ï¼‰ æ‹’ç»äº¤æ˜“ï¼');
       exit;
     end;
     if PlayObject.m_boDealing then begin
-      //SysMsg('¶Ô·½ÕıÔÚ½øĞĞ½»Ò×.', c_Red, t_Hint);
-      SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[Ê§°Ü]£º£¨' + PlayObject.m_sCharName + '£© ÕıÔÚÓë±ğÈË½øĞĞ½»Ò×£¡');
+      //SysMsg('å¯¹æ–¹æ­£åœ¨è¿›è¡Œäº¤æ˜“.', c_Red, t_Hint);
+      SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[å¤±è´¥]ï¼šï¼ˆ' + PlayObject.m_sCharName + 'ï¼‰ æ­£åœ¨ä¸åˆ«äººè¿›è¡Œäº¤æ˜“ï¼');
       exit;
     end;
     if PlayObject.AddCheckMsg(Format(g_sDealCheckMsg, [m_sCharName]), tmc_Deal, Self) <> nil then
       //SysMsg(g_sDealIsCheckMsg, c_Red, t_Hint)
-      SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '³É¹¦·¢ËÍÁË½»Ò×ÑûÇë£¬ÇëµÈ´ı¶Ô·½»ØÓ¦£¡')
+      SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, 'æˆåŠŸå‘é€äº†äº¤æ˜“é‚€è¯·ï¼Œè¯·ç­‰å¾…å¯¹æ–¹å›åº”ï¼')
     else
-      SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[Ê§°Ü]: ÒÑ¾­Ïò£¨' + PlayObject.m_sCharName +
-        '£©·¢ËÍÁË½»Ò×ÑûÇë£¬Çë²»ÒªÖØ¸´·¢ËÍ£¡');
+      SendDefMessage(SM_MENU_OK, 0, 0, 0, 0, '[å¤±è´¥]: å·²ç»å‘ï¼ˆ' + PlayObject.m_sCharName +
+        'ï¼‰å‘é€äº†äº¤æ˜“é‚€è¯·ï¼Œè¯·ä¸è¦é‡å¤å‘é€ï¼');
     //SysMsg(g_sDealIsCheckMsgNot, c_Red, t_Hint);
   //if BaseObject.m_boDeath or BaseObject.m_boDealing then exit;
   end;
@@ -9706,7 +9750,7 @@ var
   bo09: Boolean;
   nGold: Integer;
 begin
-  //½ûÖ¹È¡»Ø·ÅÈë½»Ò×À¸ÄÚµÄ½ğ±Ò
+  //ç¦æ­¢å–å›æ”¾å…¥äº¤æ˜“æ å†…çš„é‡‘å¸
   nGold := Processmsg.nParam1;
   if nGold < 0 then begin
     SendDefMessage(SM_DEALCHGGOLD_FAIL, m_nDealGolds, LoWord(m_nGold), HiWord(m_nGold), 0, '');
@@ -9789,9 +9833,9 @@ begin
         StdItem := UserEngine.GetStdItem(UserItem.wIndex);
         if (StdItem <> nil) and (StdItem.NeedIdentify = 1) then begin
           AddGameLog(Self, LOG_DELITEM, StdItem.Name, UserItem.MakeIndex, UserItem.Dura, m_DealCreat.m_sCharName, '0',
-            '0', '½»Ò×', UserItem);
+            '0', 'äº¤æ˜“', UserItem);
           AddGameLog(m_DealCreat, LOG_ADDITEM, StdItem.Name, UserItem.MakeIndex, UserItem.Dura, m_sCharName,
-            '0', '0', '½»Ò×', UserItem);
+            '0', '0', 'äº¤æ˜“', UserItem);
         end;
       end; //004DDF5A
       if m_nDealGolds > 0 then begin
@@ -9800,9 +9844,9 @@ begin
         //004DE05E
         if g_boGameLogGold then begin
           AddGameLog(Self, LOG_GOLDCHANGED, sSTRING_GOLDNAME, 0, m_nGold, m_DealCreat.m_sCharName, '-',
-            IntToStr(m_nDealGolds), '½»Ò×', nil);
+            IntToStr(m_nDealGolds), 'äº¤æ˜“', nil);
           AddGameLog(m_DealCreat, LOG_GOLDCHANGED, sSTRING_GOLDNAME, 0, m_DealCreat.m_nGold, m_sCharName,
-            '+', IntToStr(m_nDealGolds), '½»Ò×', nil);
+            '+', IntToStr(m_nDealGolds), 'äº¤æ˜“', nil);
         end;
       end;
       for i := 0 to m_DealCreat.m_DealItemList.Count - 1 do begin
@@ -9815,9 +9859,9 @@ begin
         StdItem := UserEngine.GetStdItem(UserItem.wIndex);
         if (StdItem <> nil) and (StdItem.NeedIdentify = 1) then begin
           AddGameLog(m_DealCreat, LOG_DELITEM, StdItem.Name, UserItem.MakeIndex, UserItem.Dura, m_sCharName, '0', '0',
-            '½»Ò×', UserItem);
+            'äº¤æ˜“', UserItem);
           AddGameLog(Self, LOG_ADDITEM, StdItem.Name, UserItem.MakeIndex, UserItem.Dura, m_DealCreat.m_sCharName,
-            '0', '0', '½»Ò×', UserItem);
+            '0', '0', 'äº¤æ˜“', UserItem);
         end;
       end; //004DDF5A
       if m_DealCreat.m_nDealGolds > 0 then begin
@@ -9826,31 +9870,31 @@ begin
         //004DE36E
         if g_boGameLogGold then begin
           AddGameLog(m_DealCreat, LOG_GOLDCHANGED, sSTRING_GOLDNAME, 0, m_DealCreat.m_nGold, m_sCharName,
-            '-', IntToStr(m_DealCreat.m_nDealGolds), '½»Ò×', nil);
+            '-', IntToStr(m_DealCreat.m_nDealGolds), 'äº¤æ˜“', nil);
           AddGameLog(Self, LOG_GOLDCHANGED, sSTRING_GOLDNAME, 0, m_nGold, m_DealCreat.m_sCharName,
-            '+', IntToStr(m_DealCreat.m_nDealGolds), '½»Ò×', nil);
+            '+', IntToStr(m_DealCreat.m_nDealGolds), 'äº¤æ˜“', nil);
         end;
       end;
       //004DE37
       PlayObject := TPlayObject(m_DealCreat);
       PlayObject.SendDefMessage(SM_DEALSUCCESS, 0, 0, 0, 0, '');
-      //PlayObject.SysMsg(g_sDealSuccessMsg {'½»Ò×³É¹¦...'}, c_Green, t_Hint);
+      //PlayObject.SysMsg(g_sDealSuccessMsg {'äº¤æ˜“æˆåŠŸ...'}, c_Green, t_Hint);
       PlayObject.m_DealCreat := nil;
       PlayObject.m_boDealing := False;
       PlayObject.m_DealItemList.Clear;
       PlayObject.m_nDealGolds := 0;
-      PlayObject.m_boDealOK := False; //Jacky Ôö¼Ó
+      PlayObject.m_boDealOK := False; //Jacky å¢åŠ 
       SendDefMessage(SM_DEALSUCCESS, 0, 0, 0, 0, '');
-      //SysMsg(g_sDealSuccessMsg {'½»Ò×³É¹¦...'}, c_Green, t_Hint);
+      //SysMsg(g_sDealSuccessMsg {'äº¤æ˜“æˆåŠŸ...'}, c_Green, t_Hint);
       m_DealCreat := nil;
       m_boDealing := False;
       m_DealItemList.Clear;
       m_nDealGolds := 0;
-      m_boDealOK := False; //Jacky Ôö¼Ó
+      m_boDealOK := False; //Jacky å¢åŠ 
       RecalcBagCount();
       PlayObject.RecalcBagCount();
-      PlayObject.m_dwSaveRcdTick := 0; //Jason ĞÂÔö½»Ò×Íê³ÉÁ¢¼È±£´æÊı¾İ
-      m_dwSaveRcdTick := 0; //Jason ĞÂÔö½»Ò×Íê³ÉÁ¢¼È±£´æÊı¾İ
+      PlayObject.m_dwSaveRcdTick := 0; //Jason æ–°å¢äº¤æ˜“å®Œæˆç«‹æ—¢ä¿å­˜æ•°æ®
+      m_dwSaveRcdTick := 0; //Jason æ–°å¢äº¤æ˜“å®Œæˆç«‹æ—¢ä¿å­˜æ•°æ®
     end
     else begin //004DE42F
       DealCancel();
@@ -9862,8 +9906,8 @@ begin
     if m_DealCreat.m_btRaceServer <> RC_PLAYOBJECT then
       exit;
     TPlayObject(m_DealCreat).SendDefMessage(SM_DEALSUCCESS, 2, 0, 0, 0, '');
-    //SysMsg(g_sYouDealOKMsg {'ÄãÒÑ¾­È·ÈÏ½»Ò×ÁË'}, c_Green, t_Hint);
-    //m_DealCreat.SysMsg(g_sPoseDealOKMsg {'¶Ô·½ÒÑ¾­È·ÈÏ½»Ò×ÁË'}, c_Green, t_Hint);
+    //SysMsg(g_sYouDealOKMsg {'ä½ å·²ç»ç¡®è®¤äº¤æ˜“äº†'}, c_Green, t_Hint);
+    //m_DealCreat.SysMsg(g_sPoseDealOKMsg {'å¯¹æ–¹å·²ç»ç¡®è®¤äº¤æ˜“äº†'}, c_Green, t_Hint);
   end;
 end;
 
@@ -9925,13 +9969,13 @@ begin
       pGold := @m_nBindGold
     else if m_nGold >= MakeGoods.MakeItem.nMoney then
       pGold := @m_nGold;
-    nBack := 5; //È±ÉÙÇ¿»¯×Ê½ğ
+    nBack := 5; //ç¼ºå°‘å¼ºåŒ–èµ„é‡‘
     if not IsEnoughBag then begin
-      nBack := 12; //±³°üÃ»ÓĞ¿Õ¸ñÁË
+      nBack := 12; //èƒŒåŒ…æ²¡æœ‰ç©ºæ ¼äº†
       pGold := nil;
     end;
     if (pGold <> nil) then begin
-      //»ñÈ¡±³°üÊÇ·ñÓĞÖ¸¶¨µÄÎïÆ·
+      //è·å–èƒŒåŒ…æ˜¯å¦æœ‰æŒ‡å®šçš„ç‰©å“
 
       nAutoMaxCount := _MIN(nAutoMaxCount, (m_nGold + m_nBindGold) div MakeGoods.MakeItem.nMoney);
       try
@@ -9942,7 +9986,7 @@ begin
             if StdItem = nil then
               Continue;
             for II := Low(UserItemLevelArr) to High(UserItemLevelArr) do begin
-              if UserItem.MakeIndex = StrengthenItem.nLevelIdx[II] then begin //Ğş¾§
+              if UserItem.MakeIndex = StrengthenItem.nLevelIdx[II] then begin //ç„æ™¶
                 if (UserItem.wIndex = MakeGoods.MakeItem.ItemArr[II + 1].wIdent) then begin
                   if (sm_Superposition in StdItem.StdModeEx) and (StdItem.DuraMax > 1) then begin
                     if UserItem.Dura < MakeGoods.MakeItem.ItemArr[II + 1].wCount then
@@ -9973,7 +10017,7 @@ begin
                 end;
                 break;
               end
-              else if UserItem.MakeIndex = StrengthenItem.nAssIdx[II] then begin //¸¨Öú
+              else if UserItem.MakeIndex = StrengthenItem.nAssIdx[II] then begin //è¾…åŠ©
                 if (tm_MakeStone = StdItem.StdMode) and (StdItem.Shape = 2) then begin
                   m_ItemList.Delete(I);
                   UserItemAssArr[II] := UserItem;
@@ -9996,14 +10040,14 @@ begin
               boItemOk := False;
               break;
             end;
-            if StdItemLevelArr[II].StdMode = tm_Ore then //¿óÊ¯´¿¶ÈÔö¼Ó³É¹¦»úÂÊ
+            if StdItemLevelArr[II].StdMode = tm_Ore then //çŸ¿çŸ³çº¯åº¦å¢åŠ æˆåŠŸæœºç‡
               Inc(nUpRate, UserItemLevelArr[II].Dura div 1000);
           end;
           if UserItemAssArr[II] <> nil then begin
             Inc(nAssArrRate, StdItemAssArr[II].Reserved);
           end;
         end;
-        nBack := 6; //ËùĞèÒªµÄÎïÆ·²»È«
+        nBack := 6; //æ‰€éœ€è¦çš„ç‰©å“ä¸å…¨
         if boItemOK then begin
           if (GetMissionFlagStatus(MISSIONVAR_MAKEITEM) = 0) then
             SetMissionFlagStatus(MISSIONVAR_MAKEITEM, 1);
@@ -10042,14 +10086,14 @@ begin
             nUpRate := nUpRate + nAssArrRate;
             if nUpRate > MakeGoods.MakeItem.btMaxRate then
               nUpRate := MakeGoods.MakeItem.btMaxRate;
-            nBack := 7; //Éı¼¶Íê³É
-            Dec(pGold^, MakeGoods.MakeItem.nMoney); //¿Û³ıÇ¿»¯·ÑÓÃ
+            nBack := 7; //å‡çº§å®Œæˆ
+            Dec(pGold^, MakeGoods.MakeItem.nMoney); //æ‰£é™¤å¼ºåŒ–è´¹ç”¨
             boUpOK := (Random(100) < nUpRate);
           end;
           if not boAutoMake then
             nAutoMaxCount := 1;
 
-          //É¾³ıÇ¿»¯Ğş¾§µÈÎïÆ·
+          //åˆ é™¤å¼ºåŒ–ç„æ™¶ç­‰ç‰©å“
           for II := Low(UserItemLevelArr) to High(UserItemLevelArr) do begin
             if UserItemLevelArr[II] <> nil then begin
               if (sm_Superposition in StdItemLevelArr[II].StdModeEx) and
@@ -10060,14 +10104,14 @@ begin
                   AddGameLog(Self, LOG_ITEMDURACHANGE, StdItemLevelArr[II].Name,
                     UserItemLevelArr[II].MakeIndex,
                     UserItemLevelArr[II].Dura, sNPCName, '-',
-                    IntToStr(MakeGoods.MakeItem.ItemArr[II + 1].wCount * nAutoMaxCount), '´òÔì', UserItemLevelArr[II]);
+                    IntToStr(MakeGoods.MakeItem.ItemArr[II + 1].wCount * nAutoMaxCount), 'æ‰“é€ ', UserItemLevelArr[II]);
               end
               else begin
-                //2010-06-26 Ôö¼ÓÊ§°Ü²»Çå³ıÎïÆ·
+                //2010-06-26 å¢åŠ å¤±è´¥ä¸æ¸…é™¤ç‰©å“
                 if (not MakeGoods.MakeItem.ItemArr[II + 1].boNotGet) or boUpOK then begin
                   if StdItemLevelArr[II].NeedIdentify = 1 then
                     AddGameLog(Self, LOG_DELITEM, StdItemLevelArr[II].Name, UserItemLevelArr[II].MakeIndex,
-                      UserItemLevelArr[II].Dura, sNPCName, '0', '0', '´òÔì', UserItemLevelArr[II]);
+                      UserItemLevelArr[II].Dura, sNPCName, '0', '0', 'æ‰“é€ ', UserItemLevelArr[II]);
                   Dispose(UserItemLevelArr[II]);
                   UserItemLevelArr[II] := nil;
                   StdItemLevelArr[II] := nil;
@@ -10077,7 +10121,7 @@ begin
             if UserItemAssArr[II] <> nil then begin
               if StdItemAssArr[II].NeedIdentify = 1 then
                 AddGameLog(Self, LOG_DELITEM, StdItemAssArr[II].Name, UserItemAssArr[II].MakeIndex,
-                  UserItemAssArr[II].Dura, sNPCName, '0', '0', '´òÔì', UserItemAssArr[II]);
+                  UserItemAssArr[II].Dura, sNPCName, '0', '0', 'æ‰“é€ ', UserItemAssArr[II]);
               Dispose(UserItemAssArr[II]);
               UserItemAssArr[II] := nil;
               StdItemAssArr[II] := nil;
@@ -10085,7 +10129,7 @@ begin
           end;
           boAutoOK := True;
           if boUpOK then begin
-            nBack := 7; //ÏµÍ³´íÎó
+            nBack := 7; //ç³»ç»Ÿé”™è¯¯
             New(UserItem);
             if UserEngine.CopyToUserItemFromIdx(MakeGoods.MakeItem.ItemArr[0].wIdent, UserItem) then begin
               StdItem := UserEngine.GetStdItem(UserItem.wIndex);
@@ -10104,23 +10148,23 @@ begin
 
               if StdItem.NeedIdentify = 1 then
                 AddGameLog(Self, LOG_ADDITEM, StdItem.Name, UserItem.MakeIndex, UserItem.Dura, sNPCName,
-                  '0', '0', '´òÔì', UserItem);
+                  '0', '0', 'æ‰“é€ ', UserItem);
               m_ItemList.Add(UserItem);
               if StdItem.Rule.Rule[RULE_MAKE] then begin
-                sSendMsg := '¹§Ï²£º[#6FFFF/8#6#7' + m_sCharName + '#7#5] ³É¹¦´òÔìÁËÒ»¼ş ';
+                sSendMsg := 'æ­å–œï¼š[#6FFFF/8#6#7' + m_sCharName + '#7#5] æˆåŠŸæ‰“é€ äº†ä¸€ä»¶ ';
                 sSendMsg := sSendMsg + '{' + IntToStr(SetSayItem(UserItem)) + '/';
                 sSendMsg := sSendMsg + IntToStr(UserItem.wIndex) + '/';
                 sSendMsg := sSendMsg + IntToStr(UserItem.MakeIndex) + '}';
                 UserEngine.SendBroadCastMsgDelay(sSendMsg, t_Hint, 2 * 1000);
               end;
               sSendMsg := MakeClientItem(UserItem);
-              nBack := 8; //Éı¼¶³É¹¦
+              nBack := 8; //å‡çº§æˆåŠŸ
             end
             else
               Dispose(UserItem);
           end
           else
-            nBack := 11; //×°±¸ÎŞ±ä»¯
+            nBack := 11; //è£…å¤‡æ— å˜åŒ–
         end;
       finally
         for I := Low(UserItemLevelArr) to High(UserItemLevelArr) do begin
@@ -10219,7 +10263,7 @@ begin
       ItemStdItem := nil;
       StoneStdItem := nil;
       try
-        //»ñÈ¡±³°üÖĞµÄÎïÆ·
+        //è·å–èƒŒåŒ…ä¸­çš„ç‰©å“
         for I := m_ItemList.Count - 1 downto 0 do begin
           UserItem := m_ItemList[i];
           if UserItem = nil then
@@ -10250,24 +10294,24 @@ begin
           end;
         end;
         if (ItemUserItem <> nil) and (StoneUserItem <> nil) then begin
-          if tm_ResetStone = StoneStdItem.StdMode then begin //ÖØÖÃ×°±¸ÊôĞÔ
-            if not CheckItemBindMode(ItemUserItem, bm_Unknown) then begin //ÒÑ¿ª¹â
+          if tm_ResetStone = StoneStdItem.StdMode then begin //é‡ç½®è£…å¤‡å±æ€§
+            if not CheckItemBindMode(ItemUserItem, bm_Unknown) then begin //å·²å¼€å…‰
               nBack := 1;
               ItemUnit.RandomUpgradeItem(itemUserItem, DefUnsealItem);
               if ItemStdItem.NeedIdentify = 1 then
                 AddGameLog(Self, LOG_ITEMLEVEL, ItemStdItem.Name, ItemUserItem.MakeIndex, 0,
-                  IntToStr(StoneUserItem.MakeIndex), '0', '0', 'Ï´µã', ItemUserItem);
+                  IntToStr(StoneUserItem.MakeIndex), '0', '0', 'æ´—ç‚¹', ItemUserItem);
 
               if (sm_Superposition in StoneStdItem.StdModeEx) and (StoneStdItem.DuraMax > 1) and (StoneUserItem.Dura > 1) then begin
                 Dec(StoneUserItem.Dura);
                 if StoneStdItem.NeedIdentify = 1 then
                   AddGameLog(Self, LOG_ITEMDURACHANGE, StoneStdItem.Name, StoneUserItem.MakeIndex,
-                    StoneUserItem.Dura, IntToStr(ItemUserItem.MakeIndex), '-', '1', 'ÊôĞÔ', StoneUserItem);
+                    StoneUserItem.Dura, IntToStr(ItemUserItem.MakeIndex), '-', '1', 'å±æ€§', StoneUserItem);
               end
               else begin
                 if StoneStdItem.NeedIdentify = 1 then
                   AddGameLog(Self, LOG_DELITEM, StoneStdItem.Name, StoneUserItem.MakeIndex, 0,
-                    IntToStr(ItemUserItem.MakeIndex), '0', '0', 'ÊôĞÔ', StoneUserItem);
+                    IntToStr(ItemUserItem.MakeIndex), '0', '0', 'å±æ€§', StoneUserItem);
                 Dispose(StoneUserItem);
                 StoneUserItem := nil;
               end;
@@ -10285,7 +10329,7 @@ begin
                     ItemUserItem.Value.wFlute[I] := StoneUserItem.wIndex;
                     if ItemStdItem.NeedIdentify = 1 then
                       AddGameLog(Self, LOG_ITEMLEVEL, ItemStdItem.Name, ItemUserItem.MakeIndex, 0,
-                        IntToStr(StoneUserItem.MakeIndex), '0', '0', 'ÏâÇ¶', ItemUserItem);
+                        IntToStr(StoneUserItem.MakeIndex), '0', '0', 'é•¶åµŒ', ItemUserItem);
                     break;
                   end;
                 end;
@@ -10294,12 +10338,12 @@ begin
                 Dec(StoneUserItem.Dura);
                 if StoneStdItem.NeedIdentify = 1 then
                   AddGameLog(Self, LOG_ITEMDURACHANGE, StoneStdItem.Name, StoneUserItem.MakeIndex,
-                    StoneUserItem.Dura, IntToStr(ItemUserItem.MakeIndex), '-', '1', 'ÏâÇ¶', StoneUserItem);
+                    StoneUserItem.Dura, IntToStr(ItemUserItem.MakeIndex), '-', '1', 'é•¶åµŒ', StoneUserItem);
               end
               else begin
                 if StoneStdItem.NeedIdentify = 1 then
                   AddGameLog(Self, LOG_DELITEM, StoneStdItem.Name, StoneUserItem.MakeIndex, 0,
-                    IntToStr(ItemUserItem.MakeIndex), '0', '0', 'ÏâÇ¶', StoneUserItem);
+                    IntToStr(ItemUserItem.MakeIndex), '0', '0', 'é•¶åµŒ', StoneUserItem);
                 Dispose(StoneUserItem);
                 StoneUserItem := nil;
               end;
@@ -10363,25 +10407,25 @@ begin
     ClientGuildInfo.btGuildLevel := Guild.btLevel;
     ClientGuildInfo.nGuildMoney := Guild.nMoneyCount;
     ClientGuildInfo.nBuildPoint := Guild.nBuildPoint;
-    ClientGuildInfo.nFlourishingPoint := Guild.nFlourishingPoint; //·±ÈÙ¶È
-    ClientGuildInfo.nStabilityPoint := Guild.nStabilityPoint; //°²¶¨¶È
-    ClientGuildInfo.nActivityPoint := Guild.nActivityPoint; //ÈËÆø¶È
+    ClientGuildInfo.nFlourishingPoint := Guild.nFlourishingPoint; //ç¹è£åº¦
+    ClientGuildInfo.nStabilityPoint := Guild.nStabilityPoint; //å®‰å®šåº¦
+    ClientGuildInfo.nActivityPoint := Guild.nActivityPoint; //äººæ°”åº¦
     ClientGuildInfo.btKickMonExp := Guild.m_btKillMonExpRate;
     ClientGuildInfo.btKickMonAttack := Guild.m_btKillMonAttackRate;
     ClientGuildInfo.nMaxActivityPoint := Guild.nMaxActivityPoint;
     if (Guild.btLevel < MAXGUILDLEVEL) then begin
       ClientGuildInfo.nLevelGuildMoney := g_Config.GuildLevelExp[Guild.btLevel + 1].nGold;
       ClientGuildInfo.nLevelBuildPoint := g_Config.GuildLevelExp[Guild.btLevel + 1].nBuildPoint;
-      ClientGuildInfo.nLevelFlourishingPoint := g_Config.GuildLevelExp[Guild.btLevel + 1].nFlourishingPoint; //·±ÈÙ¶È
-      ClientGuildInfo.nLevelStabilityPoint := g_Config.GuildLevelExp[Guild.btLevel + 1].nStabilityPoint; //°²¶¨¶È
-      ClientGuildInfo.nLevelActivityPoint := g_Config.GuildLevelExp[Guild.btLevel + 1].nActivityPoint; //ÈËÆø¶È
+      ClientGuildInfo.nLevelFlourishingPoint := g_Config.GuildLevelExp[Guild.btLevel + 1].nFlourishingPoint; //ç¹è£åº¦
+      ClientGuildInfo.nLevelStabilityPoint := g_Config.GuildLevelExp[Guild.btLevel + 1].nStabilityPoint; //å®‰å®šåº¦
+      ClientGuildInfo.nLevelActivityPoint := g_Config.GuildLevelExp[Guild.btLevel + 1].nActivityPoint; //äººæ°”åº¦
     end
     else begin
       ClientGuildInfo.nLevelGuildMoney := 99999999;
       ClientGuildInfo.nLevelBuildPoint := 99999999;
-      ClientGuildInfo.nLevelFlourishingPoint := 99999999; //·±ÈÙ¶È
-      ClientGuildInfo.nLevelStabilityPoint := 99999999; //°²¶¨¶È
-      ClientGuildInfo.nLevelActivityPoint := 65535; //ÈËÆø¶È
+      ClientGuildInfo.nLevelFlourishingPoint := 99999999; //ç¹è£åº¦
+      ClientGuildInfo.nLevelStabilityPoint := 99999999; //å®‰å®šåº¦
+      ClientGuildInfo.nLevelActivityPoint := 65535; //äººæ°”åº¦
     end;
 
     sSendMsg := EncodeBuffer(@ClientGuildInfo, SizeOf(ClientGuildInfo));
@@ -10482,7 +10526,7 @@ begin
   if PlayObject.m_MyGuild <> nil then
     exit;
   if TGuild(m_MyGuild).IsFull then begin
-    PlayObject.SysMsg('ĞĞ»á³ÉÔ±ÊıÁ¿ÒÑÂú. ', c_red, t_Hint);
+    PlayObject.SysMsg('è¡Œä¼šæˆå‘˜æ•°é‡å·²æ»¡. ', c_red, t_Hint);
     exit;
   end;
   TGuild(m_MyGuild).AddMember(PlayObject);
@@ -10491,9 +10535,9 @@ begin
   PlayObject.m_boAddStabilityPoint := True;
   TGuild(m_MyGuild).MemberLogin(PlayObject);
   PlayObject.RefShowName();
-  SysMsg('[#7' + PlayObject.m_sCharName + '#7] ¼ÓÈëĞĞ»á', c_red, t_hint);
-  PlayObject.SysMsg('³É¹¦¼ÓÈëĞĞ»á: ' + TGuild(m_MyGuild).m_sGuildName, c_red, t_hint);
-  //PlayObject.SysMsg('³É¹¦¼ÓÈëĞĞ»á: ' + TGUild(m_MyGuild).sGuildName, c_Red, t_Hint);
+  SysMsg('[#7' + PlayObject.m_sCharName + '#7] åŠ å…¥è¡Œä¼š', c_red, t_hint);
+  PlayObject.SysMsg('æˆåŠŸåŠ å…¥è¡Œä¼š: ' + TGuild(m_MyGuild).m_sGuildName, c_red, t_hint);
+  //PlayObject.SysMsg('æˆåŠŸåŠ å…¥è¡Œä¼š: ' + TGUild(m_MyGuild).sGuildName, c_Red, t_Hint);
 end;
 
 procedure TPlayObject.ClientGuildAddMember(ProcessMsg: pTProcessMessage; var boResult: Boolean);
@@ -10504,7 +10548,7 @@ begin
 
   if m_MyGuild = nil then
     exit;
-  nC := 1; //'ÄãÃ»ÓĞÈ¨ÀûÊ¹ÓÃÕâ¸öÃüÁî¡£'
+  nC := 1; //'ä½ æ²¡æœ‰æƒåˆ©ä½¿ç”¨è¿™ä¸ªå‘½ä»¤ã€‚'
   if m_nGuildRankNo in [1..3] then begin
     PlayObject := UserEngine.GetPlayObject(ProcessMsg.sMsg);
     if (PlayObject <> nil) and (PlayObject <> Self) and (not PlayObject.m_boGhost) then begin
@@ -10521,17 +10565,17 @@ begin
           //exit;
           end
           else
-            nC := 5; //ĞĞ»á³ÉÔ±ÒÑÂú
+            nC := 5; //è¡Œä¼šæˆå‘˜å·²æ»¡
         end
         else
-          nC := 4; //¾Ü¾ø¼ÓÈëĞĞ»á
+          nC := 4; //æ‹’ç»åŠ å…¥è¡Œä¼š
 
       end
       else
-        nC := 3; //ÒÑ¼ÓÈëĞĞ»á
+        nC := 3; //å·²åŠ å…¥è¡Œä¼š
     end
     else
-      nC := 2; //Ã»ÓĞÔÚÏß
+      nC := 2; //æ²¡æœ‰åœ¨çº¿
   end;
   SendDefMessage(SM_GUILDADDMEMBER_FAIL, nC, 0, 0, 0, '');
 end;
@@ -10658,9 +10702,9 @@ begin
             TGuild(m_MyGuild).AllyGuild(TGuild(BaseObjectC.m_MyGuild));
             TGuild(BaseObjectC.m_MyGuild).AllyGuild(TGuild(m_MyGuild));
             TGuild(m_MyGuild).SendGuildMsg(TGuild(BaseObjectC.m_MyGuild).m_sGuildName +
-              'ĞĞ»áÒÑ¾­ºÍÄúµÄĞĞ»áÁªÃË³É¹¦¡£');
+              'è¡Œä¼šå·²ç»å’Œæ‚¨çš„è¡Œä¼šè”ç›ŸæˆåŠŸã€‚');
             TGuild(BaseObjectC.m_MyGuild).SendGuildMsg(TGuild(m_MyGuild).m_sGuildName +
-              'ĞĞ»áÒÑ¾­ºÍÄúµÄĞĞ»áÁªÃË³É¹¦¡£');
+              'è¡Œä¼šå·²ç»å’Œæ‚¨çš„è¡Œä¼šè”ç›ŸæˆåŠŸã€‚');
             TGuild(m_MyGuild).RefMemberName;
             TGuild(BaseObjectC.m_MyGuild).RefMemberName;
             n8 := 0;
@@ -10767,7 +10811,7 @@ begin
     nOldMaxGamePoint := 0;
     if not m_boShoping then begin
       if not InSafeZone then begin
-        SendDefMsg(g_ManageNPC, SM_MENU_OK, Integer(Self), 0, 0, 0, 'Ö»ÄÜÔÚ°²È«ÇøÄÚ½øĞĞ°ÚÌ¯²Ù×÷£¡');
+        SendDefMsg(g_ManageNPC, SM_MENU_OK, Integer(Self), 0, 0, 0, 'åªèƒ½åœ¨å®‰å…¨åŒºå†…è¿›è¡Œæ‘†æ‘Šæ“ä½œï¼');
         SendDefMessage(SM_USERSHOPCHANGE, m_nGold, LoWord(m_nGameGold), HiWord(m_nGameGold), 0, '');
         Exit;
       end;
@@ -10776,7 +10820,7 @@ begin
         Exit;
       end;
       if not m_PEnvir.m_boShop then begin
-        SendDefMsg(g_ManageNPC, SM_MENU_OK, Integer(Self), 0, 0, 0, 'µ±Ç°µØÍ¼²»ÔÊĞí½øĞĞ°ÚÌ¯²Ù×÷£¡');
+        SendDefMsg(g_ManageNPC, SM_MENU_OK, Integer(Self), 0, 0, 0, 'å½“å‰åœ°å›¾ä¸å…è®¸è¿›è¡Œæ‘†æ‘Šæ“ä½œï¼');
         SendDefMessage(SM_USERSHOPCHANGE, m_nGold, LoWord(m_nGameGold), HiWord(m_nGameGold), 0, '');
         Exit;
       end;
@@ -10786,7 +10830,7 @@ begin
         m_sShopTitle := DecodeString(sTitle);
         if m_sShopTitle <> '' then begin
           if CheckFilterShop(m_sShopTitle) then begin
-            SendDefMsg(g_ManageNPC, SM_MENU_OK, Integer(Self), 0, 0, 0, 'Ì¯Î»±êÌâ°üº¬½ûÖ¹Ê¹ÓÃ×Ö·û£¡');
+            SendDefMsg(g_ManageNPC, SM_MENU_OK, Integer(Self), 0, 0, 0, 'æ‘Šä½æ ‡é¢˜åŒ…å«ç¦æ­¢ä½¿ç”¨å­—ç¬¦ï¼');
             SendDefMessage(SM_USERSHOPCHANGE, m_nGold, LoWord(m_nGameGold), HiWord(m_nGameGold), 0, '');
             Exit;
           end;
@@ -10849,7 +10893,7 @@ begin
                 if UserItem <> nil then begin
                   StdItem := UserEngine.GetStdItem(UserItem.wIndex);
                   if StdItem <> nil then begin
-                    //½ûÖ¹½»Ò×ÎïÆ·²»ÔÊĞí°ÚÌ¯
+                    //ç¦æ­¢äº¤æ˜“ç‰©å“ä¸å…è®¸æ‘†æ‘Š
                     if CheckItemBindMode(UserItem, bm_NoDeal) then begin
                       m_ItemList.Add(UserItem);
                       Continue;
@@ -10955,11 +10999,11 @@ begin
     IncGameGold(nGold);
     if g_boGameLogGameGold then begin
       AddGameLog(Self, LOG_GAMEGOLDCHANGED, sSTRING_GAMEGOLD, 0, m_nGameGold, sNPCName,
-        '+', IntToStr(nGold), '³äÖµÁìÈ¡', nil);
+        '+', IntToStr(nGold), 'å……å€¼é¢†å–', nil);
     end;
     GameGoldChanged;
     NpcGotoLable(g_FunctionNPC, g_FunctionNPC.FGotoLable[NGETLARGESSGOLD_OK], False);
-    SendDefMsg(g_FunctionNPC, SM_MENU_OK, Integer(Self), 0, 0, 0, '[ÁìÈ¡³É¹¦]£º¹§Ï²Äú£¬³É¹¦ÁìÈ¡ÁË ' + IntToStr(nGold) +
+    SendDefMsg(g_FunctionNPC, SM_MENU_OK, Integer(Self), 0, 0, 0, '[é¢†å–æˆåŠŸ]ï¼šæ­å–œæ‚¨ï¼ŒæˆåŠŸé¢†å–äº† ' + IntToStr(nGold) +
       sSTRING_GAMEGOLD);
   end
   else
@@ -11081,11 +11125,11 @@ begin
       ItemIndex := 0;
       sCount := '';
       DecodeBuffer(ProcessMsg.sMsg, @ItemIndex, SizeOf(Integer));
-      //¹ºÂò
+      //è´­ä¹°
       if ItemIndex > 0 then begin
-        //      nBack := 0;    //ÎŞĞ§
+        //      nBack := 0;    //æ— æ•ˆ
         if ProcessMsg.wParam >= MAXSHOPITEMS then begin
-          nBack := 1; //¹ºÂòµÄÎïÆ·²»´æÔÚ
+          nBack := 1; //è´­ä¹°çš„ç‰©å“ä¸å­˜åœ¨
           nCount := ProcessMsg.wParam - MAXSHOPITEMS;
           for I := PlayObject.m_ShopSellItemList.Count - 1 downto 0 do begin
             UserShopSellItem := PlayObject.m_ShopSellItemList[i];
@@ -11105,12 +11149,12 @@ begin
                 if UserShopSellItem.boGameGold then begin
                   pGold := @m_nGameGold;
                   pPlayGold := @PlayObject.m_nShopGameGold;
-                  nBack := 2; //Ôª±¦²»¹»
+                  nBack := 2; //å…ƒå®ä¸å¤Ÿ
                 end
                 else begin
                   pGold := @m_nGold;
                   pPlayGold := @PlayObject.m_nShopGold;
-                  nBack := 3; //½ğ±Ò²»¹»
+                  nBack := 3; //é‡‘å¸ä¸å¤Ÿ
                 end;
                 nMoney := Int64(UserShopSellItem.nMoney) * Int64(nCount);
                 if (pGold^ > 0) and (pGold^ >= nMoney) then begin
@@ -11119,7 +11163,7 @@ begin
                   if boSuperposition then
                     UserItem.Dura := nCount;
 
-                  nID := AddItemToBag(UserItem, StdItem, boSuperposition, PlayObject.m_sCharName, '°ÚÌ¯', AddUserItem);
+                  nID := AddItemToBag(UserItem, StdItem, boSuperposition, PlayObject.m_sCharName, 'æ‘†æ‘Š', AddUserItem);
                   if nID <> -1 then begin
 
                     Dec(pGold^, Integer(nMoney));
@@ -11131,7 +11175,7 @@ begin
                       boSuperposition := False;
                       if Stditem.NeedIdentify = 1 then
                         AddGameLog(PlayObject, LOG_DELITEM, StdItem.Name, UserShopSellItem.UserItem.MakeIndex, 0,
-                          m_sCharName, '0', '0', '°ÚÌ¯', UserShopSellItem.UserItem);
+                          m_sCharName, '0', '0', 'æ‘†æ‘Š', UserShopSellItem.UserItem);
                       PlayObject.SendDefMsg(PlayObject, SM_USERSHOPITEMCHANGE, UserShopSellItem.UserItem.MakeIndex,
                         0, nCount, 1, m_sCharname);
                       PlayObject.m_ShopSellItemList.Delete(I);
@@ -11145,20 +11189,20 @@ begin
                       if Stditem.NeedIdentify = 1 then
                         AddGameLog(PlayObject, LOG_ITEMDURACHANGE, StdItem.Name, UserShopSellItem.UserItem.MakeIndex,
                           UserShopSellItem.UserItem.Dura, m_sCharName,
-                          '-', IntToStr(nCount), '°ÚÌ¯', UserShopSellItem.UserItem);
+                          '-', IntToStr(nCount), 'æ‘†æ‘Š', UserShopSellItem.UserItem);
 
                       PlayObject.SendDefMsg(PlayObject, SM_USERSHOPITEMCHANGE, UserShopSellItem.UserItem.MakeIndex,
                         UserShopSellItem.UserItem.Dura, nCount, 1, m_sCharname);
                     end;
 
                     if nID = 2 then begin
-                      if boSuperposition then begin //¹ºÂòµş¼ÓÎïÆ·ÖØĞÂÈ¡ID
+                      if boSuperposition then begin //è´­ä¹°å åŠ ç‰©å“é‡æ–°å–ID
                         UserItem.MakeIndex := GetItemNumber();
                         sCount := IntToStr(UserItem.MakeIndex) + '/' + IntToStr(nCount);
                       end;
                       if Stditem.NeedIdentify = 1 then begin
                         AddGameLog(Self, LOG_ADDITEM, StdItem.Name, UserItem.MakeIndex,
-                          nCount, PlayObject.m_sCharName, '0', '0', '°ÚÌ¯', UserItem);
+                          nCount, PlayObject.m_sCharName, '0', '0', 'æ‘†æ‘Š', UserItem);
                       end;
                     end
                     else begin
@@ -11170,28 +11214,28 @@ begin
                     if UserShopSellItem.boGameGold then begin
                       if g_boGameLogGameGold then begin
                         AddGameLog(Self, LOG_GAMEGOLDCHANGED, sSTRING_GAMEGOLD, 0, m_nGameGold,
-                          PlayObject.m_sCharName, '-', IntToStr(nMoney), '°ÚÌ¯', nil);
+                          PlayObject.m_sCharName, '-', IntToStr(nMoney), 'æ‘†æ‘Š', nil);
                         AddGameLog(PlayObject, LOG_GAMEGOLDCHANGED, sSTRING_GAMEGOLD, 0, PlayObject.m_nGameGold +
-                          PlayObject.m_nShopGameGold, m_sCharName, '+', IntToStr(nMoneyEx), '°ÚÌ¯', nil);
+                          PlayObject.m_nShopGameGold, m_sCharName, '+', IntToStr(nMoneyEx), 'æ‘†æ‘Š', nil);
                       end;
                     end
                     else begin
                       if g_boGameLogGold then begin
                         AddGameLog(Self, LOG_GOLDCHANGED, sSTRING_GOLDNAME, 0, m_nGold, PlayObject.m_sCharName,
-                          '-', IntToStr(nMoney), '°ÚÌ¯', nil);
+                          '-', IntToStr(nMoney), 'æ‘†æ‘Š', nil);
                         AddGameLog(PlayObject, LOG_GOLDCHANGED, sSTRING_GOLDNAME, 0, PlayObject.m_nGold +
                           PlayObject.m_nShopGold,
-                          m_sCharName, '+', IntToStr(nMoneyEx), '°ÚÌ¯', nil);
+                          m_sCharName, '+', IntToStr(nMoneyEx), 'æ‘†æ‘Š', nil);
                       end;
                     end;
                     PlayObject.SendDefMsg(PlayObject, SM_USERSHOPGOLDCHANGE, PlayObject.m_nShopGold,
                       LoWord(PlayObject.m_nShopGameGold), HiWord(PlayObject.m_nShopGameGold), 0, '');
-                    nBack := 5; //¹ºÂò³É¹¦
-                    PlayObject.m_dwSaveRcdTick := 0; //Jason ĞÂÔö½»Ò×Íê³ÉÁ¢¼È±£´æÊı¾İ
-                    m_dwSaveRcdTick := 0; //Jason ĞÂÔö½»Ò×Íê³ÉÁ¢¼È±£´æÊı¾İ
+                    nBack := 5; //è´­ä¹°æˆåŠŸ
+                    PlayObject.m_dwSaveRcdTick := 0; //Jason æ–°å¢äº¤æ˜“å®Œæˆç«‹æ—¢ä¿å­˜æ•°æ®
+                    m_dwSaveRcdTick := 0; //Jason æ–°å¢äº¤æ˜“å®Œæˆç«‹æ—¢ä¿å­˜æ•°æ®
                   end
                   else begin
-                    nBack := 4; //±³°ü¿Õ¼äÒÑÂú
+                    nBack := 4; //èƒŒåŒ…ç©ºé—´å·²æ»¡
                     Dispose(UserItem);
                   end;
                 end;
@@ -11200,7 +11244,7 @@ begin
             end;
           end;
         end
-        else begin //³öÊÛ
+        else begin //å‡ºå”®
           nBack := 11;
           for i := PlayObject.m_ShopBuyItemList.Count - 1 downto 0 do begin
             UserShopBuyItem := PlayObject.m_ShopBuyItemList[i];
@@ -11229,12 +11273,12 @@ begin
                   if UserShopBuyItem.boGameGold then begin
                     pGold := @PlayObject.m_nShopGameGold;
                     pPlayGold := @m_nGameGold;
-                    nBack := 12; //µã¾í²»¹»
+                    nBack := 12; //ç‚¹å·ä¸å¤Ÿ
                   end
                   else begin
                     pGold := @PlayObject.m_nShopGold;
                     pPlayGold := @m_nGold;
-                    nBack := 13; //½ğ±Ò²»¹»
+                    nBack := 13; //é‡‘å¸ä¸å¤Ÿ
                   end;
                   if pGold^ >= nMoney then begin
                     New(UserItem32);
@@ -11242,7 +11286,7 @@ begin
                     if boSuperposition then
                       UserItem32.Dura := nCount;
 
-                    nID := PlayObject.AddItemToBag(UserItem32, StdItem, boSuperposition, m_sCharName, '°ÚÌ¯', AddUserItem);
+                    nID := PlayObject.AddItemToBag(UserItem32, StdItem, boSuperposition, m_sCharName, 'æ‘†æ‘Š', AddUserItem);
                     if nID <> -1 then begin
                       Dec(pGold^, nMoney);
                       nMoneyEx := nMoney;
@@ -11255,24 +11299,24 @@ begin
                       if UserShopBuyItem.boGameGold then begin
                         if g_boGameLogGameGold then begin
                           AddGameLog(PlayObject, LOG_GAMEGOLDCHANGED, sSTRING_GAMEGOLD, 0, PlayObject.m_nGameGold +
-                            PlayObject.m_nShopGameGold, m_sCharName, '-', IntToStr(nMoney), '°ÚÌ¯', nil);
+                            PlayObject.m_nShopGameGold, m_sCharName, '-', IntToStr(nMoney), 'æ‘†æ‘Š', nil);
                           AddGameLog(Self, LOG_GAMEGOLDCHANGED, sSTRING_GAMEGOLD, 0, m_nGameGold,
-                            PlayObject.m_sCharName, '+', IntToStr(nMoneyEx), '°ÚÌ¯', nil);
+                            PlayObject.m_sCharName, '+', IntToStr(nMoneyEx), 'æ‘†æ‘Š', nil);
                         end;
                       end
                       else begin
                         if g_boGameLogGold then begin
                           AddGameLog(PlayObject, LOG_GOLDCHANGED, sSTRING_GOLDNAME, 0, PlayObject.m_nGold +
-                            PlayObject.m_nShopGold, m_sCharName, '-', IntToStr(nMoney), '°ÚÌ¯', nil);
+                            PlayObject.m_nShopGold, m_sCharName, '-', IntToStr(nMoney), 'æ‘†æ‘Š', nil);
                           AddGameLog(Self, LOG_GOLDCHANGED, sSTRING_GOLDNAME, 0, m_nGold, PlayObject.m_sCharName,
-                            '+', IntToStr(nMoneyEx), '°ÚÌ¯', nil);
+                            '+', IntToStr(nMoneyEx), 'æ‘†æ‘Š', nil);
                         end;
                       end;
 
                       if (not boSuperposition) or (nCount >= UserItem.Dura) then begin
                         if Stditem.NeedIdentify = 1 then
                           AddGameLog(Self, LOG_DELITEM, StdItem.Name, UserItem.MakeIndex,
-                            nCount, PlayObject.m_sCharName, '0', '0', '°ÚÌ¯', UserItem);
+                            nCount, PlayObject.m_sCharName, '0', '0', 'æ‘†æ‘Š', UserItem);
                         sCount := IntToStr(ProcessMsg.wParam) + '/0';
                         Dispose(UserItem);
                         m_ItemList.Delete(II);
@@ -11281,7 +11325,7 @@ begin
                         Dec(UserItem.Dura, nCount);
                         if Stditem.NeedIdentify = 1 then
                           AddGameLog(Self, LOG_ITEMDURACHANGE, StdItem.Name, UserItem.MakeIndex,
-                            UserItem.Dura, PlayObject.m_sCharName, '-', IntToStr(nCount), '°ÚÌ¯', UserItem);
+                            UserItem.Dura, PlayObject.m_sCharName, '-', IntToStr(nCount), 'æ‘†æ‘Š', UserItem);
                         sCount := IntToStr(ProcessMsg.wParam) + '/' + IntToStr(nCount);
                         if nID = 2 then begin
                           UserItem32.MakeIndex := GetItemNumber();
@@ -11291,7 +11335,7 @@ begin
                         PlayObject.SendAddItem(UserItem32);
                         if Stditem.NeedIdentify = 1 then begin
                           AddGameLog(PlayObject, LOG_ADDITEM, StdItem.Name, UserItem32.MakeIndex,
-                            nCount, m_sCharName, '0', '0', '°ÚÌ¯', UserItem32);
+                            nCount, m_sCharName, '0', '0', 'æ‘†æ‘Š', UserItem32);
                         end;
                       end
                       else begin
@@ -11311,9 +11355,9 @@ begin
                           UserShopBuyItem.wCount, ProcessMsg.wParam, 2, m_sCharname);
                       end;
 
-                      nBack := 15; //³öÊÛ³É¹¦
-                      PlayObject.m_dwSaveRcdTick := 0; //Jason ĞÂÔö½»Ò×Íê³ÉÁ¢¼È±£´æÊı¾İ
-                      m_dwSaveRcdTick := 0; //Jason ĞÂÔö½»Ò×Íê³ÉÁ¢¼È±£´æÊı¾İ
+                      nBack := 15; //å‡ºå”®æˆåŠŸ
+                      PlayObject.m_dwSaveRcdTick := 0; //Jason æ–°å¢äº¤æ˜“å®Œæˆç«‹æ—¢ä¿å­˜æ•°æ®
+                      m_dwSaveRcdTick := 0; //Jason æ–°å¢äº¤æ˜“å®Œæˆç«‹æ—¢ä¿å­˜æ•°æ®
                     end
                     else begin
                       nBack := 14;
@@ -11330,7 +11374,7 @@ begin
         SendDefMessage(SM_BUYUSERSHOP, m_nGold, LoWord(m_nGameGold), HiWord(m_nGameGold), nBack, sCount);
       end;
       PlayObject.CheckShopingClose();
-      //ĞÂÔö¼ì²â°ÚÌ¯ÂôÍê×Ô¶¯ÊÕÌ¯£¡
+      //æ–°å¢æ£€æµ‹æ‘†æ‘Šå–å®Œè‡ªåŠ¨æ”¶æ‘Šï¼
     end;
   except
     on E: Exception do begin
@@ -11343,7 +11387,7 @@ end;
 procedure TPlayObject.ClientSay(ProcessMsg: pTProcessMessage; var boResult: Boolean);
 begin
   if not m_boMapApoise then
-    exit; //Èç¹û¿Í»§¶ËµØÍ¼Î´×¼±¸ºÃ,²»ÔÊĞí
+    exit; //å¦‚æœå®¢æˆ·ç«¯åœ°å›¾æœªå‡†å¤‡å¥½,ä¸å…è®¸
   if ProcessMsg.sMsg <> '' then begin
     ProcessUserLineMsg(ProcessMsg.sMsg);
   end;
@@ -12113,7 +12157,7 @@ begin
         end;
         SetLastHiter(TBaseObject(ProcessMsg.nParam3) {AttackBaseObject});
         {
-        //·´¸´»î
+        //åå¤æ´»
         if TBaseObject(ProcessMsg.nParam3).m_boUnRevival then
           m_boRevival:=False;
         }
@@ -12418,14 +12462,14 @@ var
   //  nMsgCount: Integer;
 begin
   if not m_boMapApoise then
-    exit; //Èç¹û¿Í»§¶ËµØÍ¼Î´×¼±¸ºÃ,²»ÔÊĞí
+    exit; //å¦‚æœå®¢æˆ·ç«¯åœ°å›¾æœªå‡†å¤‡å¥½,ä¸å…è®¸
   if m_boDealing then
     DealCancel();
-  //ÉèÖÃÎåĞĞ»î¶¯Ê±¼ä
+  //è®¾ç½®äº”è¡Œæ´»åŠ¨æ—¶é—´
   //m_dwIsGetWuXinExpTime := GetTickCount + g_Config.dwGetWuXinExpTick;
   if (m_boMagicHitDelay and (not ProcessMsg.boLateDelivery)) then begin
     Inc(m_nMagicHitCount, g_Config.nMaxSpellMsgCount * 2);
-    CheckSpeedCount(m_nMagicHitCount, 'Ä§·¨[¶à±¶]');
+    CheckSpeedCount(m_nMagicHitCount, 'é­”æ³•[å¤šå€]');
     exit;
   end;
   if ClientSpellXY(ProcessMsg.wIdent, ProcessMsg.wParam, ProcessMsg.nParam1, ProcessMsg.nParam2,
@@ -12441,11 +12485,11 @@ begin
     end
     else begin
       //Inc(m_dwMagicHitTime, dwDelayTime * 2);
-      CheckSpeedCount(m_nMagicHitCount, 'Ä§·¨');
+      CheckSpeedCount(m_nMagicHitCount, 'é­”æ³•');
       SetUserTime(dwDelayTime * 2);
       m_boMagicHitDelay := True;
       if m_boTestSpeedMode then
-        SysMsg(format('²Ù×÷ÑÓ³Ù MagicHit Count: %d Time: %d', [m_nMagicHitCount, dwDelayTime]), c_Red, t_Hint);
+        SysMsg(format('æ“ä½œå»¶è¿Ÿ MagicHit Count: %d Time: %d', [m_nMagicHitCount, dwDelayTime]), c_Red, t_Hint);
       SendDelayMsg(Self, ProcessMsg.wIdent, ProcessMsg.wParam, ProcessMsg.nParam1, ProcessMsg.nParam2,
         ProcessMsg.nParam3, '', dwDelayTime * 2);
       boResult := False;
@@ -12460,18 +12504,18 @@ begin
         if m_nOverSpeedCount > g_Config.nOverSpeedKickCount then begin
           if g_Config.boKickOverSpeed then begin
             SysMsg(g_sKickClientUserMsg
-              {'ÇëÎğÊ¹ÓÃ·Ç·¨Èí¼ş.'}, c_Red,
+              {'è¯·å‹¿ä½¿ç”¨éæ³•è½¯ä»¶.'}, c_Red,
               t_Hint);
             m_boEmergencyClose := True;
             m_boPlayOffLine := False;
           end;
           if g_Config.boViewHackMessage then begin
-            //MainOutMessage('[Ä§·¨³¬ËÙ] ' + m_sCharName + ' Time: ' + IntToStr(dwDelayTime) + ' Count: '+ IntToStr(nMsgCount));
+            //MainOutMessage('[é­”æ³•è¶…é€Ÿ] ' + m_sCharName + ' Time: ' + IntToStr(dwDelayTime) + ' Count: '+ IntToStr(nMsgCount));
             MainOutMessage(format(g_sSpellOverSpeed, [m_sCharName,
               dwDelayTime, nMsgCount]));
           end;
         end;
-        //Èç¹û³¬ËÙÔò·¢ËÍ¹¥»÷Ê§°ÜĞÅÏ¢
+        //å¦‚æœè¶…é€Ÿåˆ™å‘é€æ”»å‡»å¤±è´¥ä¿¡æ¯
         SendActionFail();
       end
       else begin
@@ -12479,12 +12523,12 @@ begin
           (g_Config.btSpeedControlMode = 1) and m_boFilterAction then begin
           SendActionFail();
           if m_boTestSpeedMode then
-            SysMsg(format('ËÙ¶ÈÒì³£ Ident: %d Time: %d',
+            SysMsg(format('é€Ÿåº¦å¼‚å¸¸ Ident: %d Time: %d',
               [ProcessMsg.wIdent, dwDelayTime]), c_Red, t_Hint);
         end
         else begin
           if m_boTestSpeedMode then
-            SysMsg(format('²Ù×÷ÑÓ³Ù Ident: %d Time: %d', [ProcessMsg.wIdent, dwDelayTime]), c_Red, t_Hint);
+            SysMsg(format('æ“ä½œå»¶è¿Ÿ Ident: %d Time: %d', [ProcessMsg.wIdent, dwDelayTime]), c_Red, t_Hint);
           SendDelayMsg(Self, ProcessMsg.wIdent, ProcessMsg.wParam, ProcessMsg.nParam1, ProcessMsg.nParam2,
             ProcessMsg.nParam3, '', dwDelayTime);
           boResult := False;
@@ -12497,19 +12541,19 @@ end;
 procedure TPlayObject.CheckSpeedCount(var nCount: Integer; sHitName: string);
 begin
   if nCount >= g_Config.nOverSpeedKickCount then begin
-    SpeedCloseFunc; //¼ÓËÙ´¥·¢
+    SpeedCloseFunc; //åŠ é€Ÿè§¦å‘
     if g_Config.boKickOverSpeed then begin
-      SendDefMsg(g_ManageNPC, SM_MENU_OK, Integer(Self), 0, 0, 0, '[¶Ï¿ªÁ¬½Ó]: ÄúµÄÓÎÏ·ËÙ¶È²»ÎÈ¶¨,Óë·şÎñÆ÷¶Ï¿ªÁ¬½Ó!\Èç¹ûÄú¿ªÁË¼ÓËÙÈí¼ş£¬Çë¹Ø±Õ£¡');
+      SendDefMsg(g_ManageNPC, SM_MENU_OK, Integer(Self), 0, 0, 0, '[æ–­å¼€è¿æ¥]: æ‚¨çš„æ¸¸æˆé€Ÿåº¦ä¸ç¨³å®š,ä¸æœåŠ¡å™¨æ–­å¼€è¿æ¥!\å¦‚æœæ‚¨å¼€äº†åŠ é€Ÿè½¯ä»¶ï¼Œè¯·å…³é—­ï¼');
       m_boEmergencyClose := True;
     end;
     if g_Config.boViewHackMessage2 then
-      MainOutMessage(Format('[³¬ËÙ]  Ãû³Æ:%s IPµØÖ·:%s ÏîÄ¿:%s ²Î¿¼:[×ªÏò:%d ×ßÂ·:%d ÅÜ²½:%d ¹¥»÷:%d Ä§·¨:%d ÍÚÈ¡:%d]',
+      MainOutMessage(Format('[è¶…é€Ÿ]  åç§°:%s IPåœ°å€:%s é¡¹ç›®:%s å‚è€ƒ:[è½¬å‘:%d èµ°è·¯:%d è·‘æ­¥:%d æ”»å‡»:%d é­”æ³•:%d æŒ–å–:%d]',
         [m_sCharName, m_sIPaddr, sHitName, m_nTurnCount, m_nWalkCount, m_nRunCount, m_nHitCount, m_nMagicHitCount, m_nButchCount]));
 
   end;
   if g_Config.boViewHackMessage then begin
     MainOutMessage(Format(
-      '[³¬ËÙÌáÊ¾] Ãû³Æ:%s IPµØÖ·:%s ÏîÄ¿:%s ²Î¿¼:[×ªÏò:%d ×ßÂ·:%d ÅÜ²½:%d ¹¥»÷:%d Ä§·¨:%d ÍÚÈ¡:%d]',
+      '[è¶…é€Ÿæç¤º] åç§°:%s IPåœ°å€:%s é¡¹ç›®:%s å‚è€ƒ:[è½¬å‘:%d èµ°è·¯:%d è·‘æ­¥:%d æ”»å‡»:%d é­”æ³•:%d æŒ–å–:%d]',
       [m_sCharName, m_sIPaddr, sHitName, m_nTurnCount, m_nWalkCount, m_nRunCount, m_nHitCount, m_nMagicHitCount, m_nButchCount]));
   end;
 end;
@@ -12520,12 +12564,12 @@ var
   //  nMsgCount: Integer;
 begin
   if not m_boMapApoise then
-    exit; //Èç¹û¿Í»§¶ËµØÍ¼Î´×¼±¸ºÃ,²»ÔÊĞí   g_Config.boViewHackMessage
+    exit; //å¦‚æœå®¢æˆ·ç«¯åœ°å›¾æœªå‡†å¤‡å¥½,ä¸å…è®¸   g_Config.boViewHackMessage
   if m_boDealing then
     DealCancel();
   if (m_boButchDelay and (not ProcessMsg.boLateDelivery)) then begin
     Inc(m_nButchCount, g_Config.nMaxButchMsgCount * 2);
-    CheckSpeedCount(m_nButchCount, 'ÍÚÈ¡[¶à±¶]');
+    CheckSpeedCount(m_nButchCount, 'æŒ–å–[å¤šå€]');
     exit;
   end;
   if ClientSitDownHit(ProcessMsg.nParam2, ProcessMsg.nParam3, ProcessMsg.nParam1,
@@ -12538,10 +12582,10 @@ begin
       SendActionFail();
     end
     else begin
-      CheckSpeedCount(m_nButchCount, 'ÍÚÈ¡');
+      CheckSpeedCount(m_nButchCount, 'æŒ–å–');
       SetUserTime(dwDelayTime * 2);
       if m_boTestSpeedMode then
-        SysMsg(format('²Ù×÷ÑÓ³Ù Butch Count: %d Time: %d', [m_nButchCount, dwDelayTime]), c_Red, t_Hint);
+        SysMsg(format('æ“ä½œå»¶è¿Ÿ Butch Count: %d Time: %d', [m_nButchCount, dwDelayTime]), c_Red, t_Hint);
       SendDelayMsg(Self, ProcessMsg.wIdent, ProcessMsg.wParam,
         ProcessMsg.nParam1, ProcessMsg.nParam2, ProcessMsg.nParam3,
         '', dwDelayTime * 2);
@@ -12556,14 +12600,14 @@ var
   //  nMsgCount: Integer;
 begin
   if (not m_boMapApoise) then
-    exit; //Èç¹û¿Í»§¶ËµØÍ¼Î´×¼±¸ºÃ,²»ÔÊĞí
+    exit; //å¦‚æœå®¢æˆ·ç«¯åœ°å›¾æœªå‡†å¤‡å¥½,ä¸å…è®¸
   if m_boDealing then
     DealCancel();
-  //ÉèÖÃÎåĞĞ»î¶¯Ê±¼ä
+  //è®¾ç½®äº”è¡Œæ´»åŠ¨æ—¶é—´
   //m_dwIsGetWuXinExpTime := GetTickCount + g_Config.dwGetWuXinExpTick;
   if (m_boHitDelay and (not ProcessMsg.boLateDelivery)) then begin
     Inc(m_nHitCount, g_Config.nMaxHitMsgCount * 2);
-    CheckSpeedCount(m_nHitCount, '¹¥»÷[¶à±¶]');
+    CheckSpeedCount(m_nHitCount, 'æ”»å‡»[å¤šå€]');
     exit;
   end;
   if ClientHitXY(ProcessMsg.wIdent {ident}, ProcessMsg.nParam1 {x},
@@ -12579,11 +12623,11 @@ begin
     end
     else begin
       //Inc(m_dwHitTime, dwDelayTime * 2);
-      CheckSpeedCount(m_nHitCount, '¹¥»÷');
+      CheckSpeedCount(m_nHitCount, 'æ”»å‡»');
       SetUserTime(dwDelayTime * 2);
       m_boHitDelay := True;
       if m_boTestSpeedMode then
-        SysMsg(format('²Ù×÷ÑÓ³Ù Hit Count: %d Time: %d', [m_nHitCount, dwDelayTime]), c_Red, t_Hint);
+        SysMsg(format('æ“ä½œå»¶è¿Ÿ Hit Count: %d Time: %d', [m_nHitCount, dwDelayTime]), c_Red, t_Hint);
       SendDelayMsg(Self, ProcessMsg.wIdent, ProcessMsg.wParam,
         ProcessMsg.nParam1, ProcessMsg.nParam2, ProcessMsg.nParam3, '',
         dwDelayTime * 2);
@@ -12599,18 +12643,18 @@ begin
         if m_nOverSpeedCount > g_Config.nOverSpeedKickCount then begin
           if g_Config.boKickOverSpeed then begin
             SysMsg(g_sKickClientUserMsg
-              {'ÇëÎğÊ¹ÓÃ·Ç·¨Èí¼ş.'}, c_Red,
+              {'è¯·å‹¿ä½¿ç”¨éæ³•è½¯ä»¶.'}, c_Red,
               t_Hint);
             m_boEmergencyClose := True;
             m_boPlayOffLine := False;
           end;
           if g_Config.boViewHackMessage then begin
-            //MainOutMessage('[¹¥»÷³¬ËÙ] ' + m_sCharName + ' Time: ' + IntToStr(dwDelayTime) + ' Count: '+ IntToStr(nMsgCount));
+            //MainOutMessage('[æ”»å‡»è¶…é€Ÿ] ' + m_sCharName + ' Time: ' + IntToStr(dwDelayTime) + ' Count: '+ IntToStr(nMsgCount));
             MainOutMessage(format(g_sHitOverSpeed, [m_sCharName,
               dwDelayTime, nMsgCount]));
           end;
         end;
-        //Èç¹û³¬ËÙÔò·¢ËÍ¹¥»÷Ê§°ÜĞÅÏ¢
+        //å¦‚æœè¶…é€Ÿåˆ™å‘é€æ”»å‡»å¤±è´¥ä¿¡æ¯
         SendActionFail();
       end
       else begin
@@ -12618,13 +12662,13 @@ begin
           (g_Config.btSpeedControlMode = 1) and m_boFilterAction then begin
           SendActionGood();
           if m_boTestSpeedMode then
-            SysMsg(format('ËÙ¶ÈÒì³£ Ident: %d Time: %d',
+            SysMsg(format('é€Ÿåº¦å¼‚å¸¸ Ident: %d Time: %d',
               [ProcessMsg.wIdent, dwDelayTime]), c_Red, t_Hint);
         end
         else begin
           if m_boTestSpeedMode then begin
-            //SysMsg(format('²Ù×÷ÑÓ³Ù Ident: %d Time: %d',[ProcessMsg.wIdent,dwDelayTime]),c_Red,t_Hint);
-            SysMsg('²Ù×÷ÑÓ³Ù Ident: ' + IntToStr(ProcessMsg.wIdent) +
+            //SysMsg(format('æ“ä½œå»¶è¿Ÿ Ident: %d Time: %d',[ProcessMsg.wIdent,dwDelayTime]),c_Red,t_Hint);
+            SysMsg('æ“ä½œå»¶è¿Ÿ Ident: ' + IntToStr(ProcessMsg.wIdent) +
               ' Time: ' + IntToStr(dwDelayTime), c_Red, t_Hint);
           end;
           SendDelayMsg(Self, ProcessMsg.wIdent, ProcessMsg.wParam,
@@ -12646,7 +12690,7 @@ begin
   exit;
   (*
   if not m_boMapApoise then
-    exit; //Èç¹û¿Í»§¶ËµØÍ¼Î´×¼±¸ºÃ,²»ÔÊĞíÒÆ¶¯
+    exit; //å¦‚æœå®¢æˆ·ç«¯åœ°å›¾æœªå‡†å¤‡å¥½,ä¸å…è®¸ç§»åŠ¨
   if ClientLeapXY(ProcessMsg.wIdent, ProcessMsg.nParam1 {x},
     ProcessMsg.nParam2 {y}, ProcessMsg.nParam3, dwDelayTime) then begin
     m_dwActionTick := GetTickCount;
@@ -12663,18 +12707,18 @@ begin
         if m_nOverSpeedCount > g_Config.nOverSpeedKickCount then begin
           if g_Config.boKickOverSpeed then begin
             SysMsg(g_sKickClientUserMsg
-              {'ÇëÎğÊ¹ÓÃ·Ç·¨Èí¼ş.'}, c_Red,
+              {'è¯·å‹¿ä½¿ç”¨éæ³•è½¯ä»¶.'}, c_Red,
               t_Hint);
             m_boEmergencyClose := True;
             m_boPlayOffLine := False;
           end;
           if g_Config.boViewHackMessage then begin
-            //MainOutMessage('[ÅÜ²½³¬ËÙ] ' + m_sCharName + ' Time: ' + IntToStr(dwDelayTime) + ' Count: '+ IntToStr(nMsgCount));
+            //MainOutMessage('[è·‘æ­¥è¶…é€Ÿ] ' + m_sCharName + ' Time: ' + IntToStr(dwDelayTime) + ' Count: '+ IntToStr(nMsgCount));
             MainOutMessage(format(g_sRunOverSpeed, [m_sCharName,
               dwDelayTime, nMsgCount]));
           end;
         end;
-        //Èç¹û³¬ËÙÔò·¢ËÍ¹¥»÷Ê§°ÜĞÅÏ¢
+        //å¦‚æœè¶…é€Ÿåˆ™å‘é€æ”»å‡»å¤±è´¥ä¿¡æ¯
         SendActionFail();
       end
       else begin
@@ -12682,12 +12726,12 @@ begin
           (g_Config.btSpeedControlMode = 1) and m_boFilterAction then begin
           SendActionFail();
           if m_boTestSpeedMode then
-            SysMsg(format('ËÙ¶ÈÒì³£ Ident: %d Time: %d',
+            SysMsg(format('é€Ÿåº¦å¼‚å¸¸ Ident: %d Time: %d',
               [ProcessMsg.wIdent, dwDelayTime]), c_Red, t_Hint);
         end
         else begin
           if m_boTestSpeedMode then
-            SysMsg(format('²Ù×÷ÑÓ³Ù Ident: %d Time: %d',
+            SysMsg(format('æ“ä½œå»¶è¿Ÿ Ident: %d Time: %d',
               [ProcessMsg.wIdent, dwDelayTime]), c_Red, t_Hint);
           SendDelayMsg(Self, ProcessMsg.wIdent, ProcessMsg.wParam,
             ProcessMsg.nParam1, ProcessMsg.nParam2, CM_RUN, '',
@@ -12705,12 +12749,12 @@ var
   //  nMsgCount: Integer;
 begin
   if (not m_boMapApoise) then
-    exit; //Èç¹û¿Í»§¶ËµØÍ¼Î´×¼±¸ºÃ,²»ÔÊĞíÒÆ¶¯
+    exit; //å¦‚æœå®¢æˆ·ç«¯åœ°å›¾æœªå‡†å¤‡å¥½,ä¸å…è®¸ç§»åŠ¨
   if m_boDealing then
     DealCancel();
   if (m_boRunDelay and (not ProcessMsg.boLateDelivery)) then begin
     Inc(m_nRunCount, g_Config.nMaxRunMsgCount * 2);
-    CheckSpeedCount(m_nRunCount, 'ÅÜ²½[¶à±¶]');
+    CheckSpeedCount(m_nRunCount, 'è·‘æ­¥[å¤šå€]');
     exit;
   end;
 
@@ -12727,11 +12771,11 @@ begin
     else begin
       //m_dwRunTime := GetTickCount + (g_Config.dwRunIntervalTime - dwDelayTime);
       //Inc(m_dwRunTime, dwDelayTime * 2);
-      CheckSpeedCount(m_nRunCount, 'ÅÜ²½');
+      CheckSpeedCount(m_nRunCount, 'è·‘æ­¥');
       SetUserTime(dwDelayTime * 2);
       m_boRunDelay := True;
       if m_boTestSpeedMode then
-        SysMsg(format('²Ù×÷ÑÓ³Ù Run Count: %d Time: %d', [m_nRunCount, dwDelayTime]), c_Red, t_Hint);
+        SysMsg(format('æ“ä½œå»¶è¿Ÿ Run Count: %d Time: %d', [m_nRunCount, dwDelayTime]), c_Red, t_Hint);
       SendDelayMsg(Self, ProcessMsg.wIdent, ProcessMsg.wParam,
         ProcessMsg.nParam1, ProcessMsg.nParam2, CM_RUN, '',
         dwDelayTime * 2);
@@ -12743,18 +12787,18 @@ begin
       if m_nOverSpeedCount > g_Config.nOverSpeedKickCount then begin
         if g_Config.boKickOverSpeed then begin
           SysMsg(g_sKickClientUserMsg
-            {'ÇëÎğÊ¹ÓÃ·Ç·¨Èí¼ş.'}, c_Red,
+            {'è¯·å‹¿ä½¿ç”¨éæ³•è½¯ä»¶.'}, c_Red,
             t_Hint);
           m_boEmergencyClose := True;
           m_boPlayOffLine := False;
         end;
         if g_Config.boViewHackMessage then begin
-          //MainOutMessage('[ÅÜ²½³¬ËÙ] ' + m_sCharName + ' Time: ' + IntToStr(dwDelayTime) + ' Count: '+ IntToStr(nMsgCount));
+          //MainOutMessage('[è·‘æ­¥è¶…é€Ÿ] ' + m_sCharName + ' Time: ' + IntToStr(dwDelayTime) + ' Count: '+ IntToStr(nMsgCount));
           MainOutMessage(format(g_sRunOverSpeed, [m_sCharName,
             dwDelayTime, nMsgCount]));
         end;
       end;
-      //Èç¹û³¬ËÙÔò·¢ËÍ¹¥»÷Ê§°ÜĞÅÏ¢
+      //å¦‚æœè¶…é€Ÿåˆ™å‘é€æ”»å‡»å¤±è´¥ä¿¡æ¯
       SendActionFail();
     end
     else begin
@@ -12762,12 +12806,12 @@ begin
         (g_Config.btSpeedControlMode = 1) and m_boFilterAction then begin
         SendActionFail();
         if g_Config.boViewHackMessage then
-          SysMsg(format('ËÙ¶ÈÒì³£ Ident: %d Time: %d',
+          SysMsg(format('é€Ÿåº¦å¼‚å¸¸ Ident: %d Time: %d',
             [ProcessMsg.wIdent, dwDelayTime]), c_Red, t_Hint);
       end
       else begin
         if g_Config.boViewHackMessage then
-          SysMsg(format('²Ù×÷ÑÓ³Ù Ident: %d Time: %d',
+          SysMsg(format('æ“ä½œå»¶è¿Ÿ Ident: %d Time: %d',
             [ProcessMsg.wIdent, dwDelayTime]), c_Red, t_Hint);
         SendDelayMsg(Self, ProcessMsg.wIdent, ProcessMsg.wParam,
           ProcessMsg.nParam1, ProcessMsg.nParam2, CM_RUN, '',
@@ -12785,12 +12829,12 @@ var
   //  nMsgCount: Integer;
 begin
   if (not m_boMapApoise) then
-    exit; //Èç¹û¿Í»§¶ËµØÍ¼Î´×¼±¸ºÃ,²»ÔÊĞíÒÆ¶¯
+    exit; //å¦‚æœå®¢æˆ·ç«¯åœ°å›¾æœªå‡†å¤‡å¥½,ä¸å…è®¸ç§»åŠ¨
   if m_boDealing then
     DealCancel();
   if (m_boRunDelay and (not ProcessMsg.boLateDelivery)) then begin
     Inc(m_nRunCount, g_Config.nMaxRunMsgCount * 2);
-    CheckSpeedCount(m_nRunCount, 'ÅÜ²½[¶à±¶]');
+    CheckSpeedCount(m_nRunCount, 'è·‘æ­¥[å¤šå€]');
     exit;
   end;
 
@@ -12807,11 +12851,11 @@ begin
     else begin
       //m_dwRunTime := GetTickCount + (g_Config.dwRunIntervalTime - dwDelayTime);
       //Inc(m_dwRunTime, dwDelayTime * 2);
-      CheckSpeedCount(m_nRunCount, 'ÅÜ²½');
+      CheckSpeedCount(m_nRunCount, 'è·‘æ­¥');
       SetUserTime(dwDelayTime * 2);
       m_boRunDelay := True;
       if m_boTestSpeedMode then
-        SysMsg(format('²Ù×÷ÑÓ³Ù Run Count: %d Time: %d', [m_nRunCount, dwDelayTime]), c_Red, t_Hint);
+        SysMsg(format('æ“ä½œå»¶è¿Ÿ Run Count: %d Time: %d', [m_nRunCount, dwDelayTime]), c_Red, t_Hint);
       SendDelayMsg(Self, ProcessMsg.wIdent, ProcessMsg.wParam,
         ProcessMsg.nParam1, ProcessMsg.nParam2, CM_RUN, '',
         dwDelayTime * 2);
@@ -12823,18 +12867,18 @@ begin
       if m_nOverSpeedCount > g_Config.nOverSpeedKickCount then begin
         if g_Config.boKickOverSpeed then begin
           SysMsg(g_sKickClientUserMsg
-            {'ÇëÎğÊ¹ÓÃ·Ç·¨Èí¼ş.'}, c_Red,
+            {'è¯·å‹¿ä½¿ç”¨éæ³•è½¯ä»¶.'}, c_Red,
             t_Hint);
           m_boEmergencyClose := True;
           m_boPlayOffLine := False;
         end;
         if g_Config.boViewHackMessage then begin
-          //MainOutMessage('[ÅÜ²½³¬ËÙ] ' + m_sCharName + ' Time: ' + IntToStr(dwDelayTime) + ' Count: '+ IntToStr(nMsgCount));
+          //MainOutMessage('[è·‘æ­¥è¶…é€Ÿ] ' + m_sCharName + ' Time: ' + IntToStr(dwDelayTime) + ' Count: '+ IntToStr(nMsgCount));
           MainOutMessage(format(g_sRunOverSpeed, [m_sCharName,
             dwDelayTime, nMsgCount]));
         end;
       end;
-      //Èç¹û³¬ËÙÔò·¢ËÍ¹¥»÷Ê§°ÜĞÅÏ¢
+      //å¦‚æœè¶…é€Ÿåˆ™å‘é€æ”»å‡»å¤±è´¥ä¿¡æ¯
       SendActionFail();
     end
     else begin
@@ -12842,12 +12886,12 @@ begin
         (g_Config.btSpeedControlMode = 1) and m_boFilterAction then begin
         SendActionFail();
         if g_Config.boViewHackMessage then
-          SysMsg(format('ËÙ¶ÈÒì³£ Ident: %d Time: %d',
+          SysMsg(format('é€Ÿåº¦å¼‚å¸¸ Ident: %d Time: %d',
             [ProcessMsg.wIdent, dwDelayTime]), c_Red, t_Hint);
       end
       else begin
         if g_Config.boViewHackMessage then
-          SysMsg(format('²Ù×÷ÑÓ³Ù Ident: %d Time: %d',
+          SysMsg(format('æ“ä½œå»¶è¿Ÿ Ident: %d Time: %d',
             [ProcessMsg.wIdent, dwDelayTime]), c_Red, t_Hint);
         SendDelayMsg(Self, ProcessMsg.wIdent, ProcessMsg.wParam,
           ProcessMsg.nParam1, ProcessMsg.nParam2, CM_RUN, '',
@@ -12864,7 +12908,7 @@ begin
   exit;         }
   (*
   if not m_boMapApoise then
-    exit; //Èç¹û¿Í»§¶ËµØÍ¼Î´×¼±¸ºÃ,²»ÔÊĞíÒÆ¶¯
+    exit; //å¦‚æœå®¢æˆ·ç«¯åœ°å›¾æœªå‡†å¤‡å¥½,ä¸å…è®¸ç§»åŠ¨
   if ClientHorseRunXY(ProcessMsg.wIdent, ProcessMsg.nParam1 {x},
     ProcessMsg.nParam2 {y}, ProcessMsg.boLateDelivery, dwDelayTime) then begin
     m_dwActionTick := GetTickCount;
@@ -12883,27 +12927,27 @@ begin
         if m_nOverSpeedCount > g_Config.nOverSpeedKickCount then begin
           if g_Config.boKickOverSpeed then begin
             SysMsg(g_sKickClientUserMsg
-              {'ÇëÎğÊ¹ÓÃ·Ç·¨Èí¼ş.'}, c_Red,
+              {'è¯·å‹¿ä½¿ç”¨éæ³•è½¯ä»¶.'}, c_Red,
               t_Hint);
             m_boEmergencyClose := True;
             m_boPlayOffLine := False;
           end;
           if g_Config.boViewHackMessage then begin
-            //MainOutMessage('[ÅÜ²½³¬ËÙ] ' + m_sCharName + ' Time: ' + IntToStr(dwDelayTime) + ' Count: '+ IntToStr(nMsgCount));
+            //MainOutMessage('[è·‘æ­¥è¶…é€Ÿ] ' + m_sCharName + ' Time: ' + IntToStr(dwDelayTime) + ' Count: '+ IntToStr(nMsgCount));
             MainOutMessage(format(g_sRunOverSpeed, [m_sCharName,
               dwDelayTime, nMsgCount]));
           end;
         end;
-        //Èç¹û³¬ËÙÔò·¢ËÍ¹¥»÷Ê§°ÜĞÅÏ¢
+        //å¦‚æœè¶…é€Ÿåˆ™å‘é€æ”»å‡»å¤±è´¥ä¿¡æ¯
         SendActionFail();
         if m_boTestSpeedMode then
-          SysMsg(format('ËÙ¶ÈÒì³£ Ident: %d Time: %d',
+          SysMsg(format('é€Ÿåº¦å¼‚å¸¸ Ident: %d Time: %d',
             [ProcessMsg.wIdent,
             dwDelayTime]), c_Red, t_Hint);
       end
       else begin
         if m_boTestSpeedMode then
-          SysMsg(format('²Ù×÷ÑÓ³Ù Ident: %d Time: %d',
+          SysMsg(format('æ“ä½œå»¶è¿Ÿ Ident: %d Time: %d',
             [ProcessMsg.wIdent,
             dwDelayTime]), c_Red, t_Hint);
         SendDelayMsg(Self, ProcessMsg.wIdent, ProcessMsg.wParam,
@@ -12919,15 +12963,15 @@ procedure TPlayObject.ClientWalk(ProcessMsg: pTProcessMessage; var boResult: Boo
 var
   dwDelayTime: LongWord;
   //  nMsgCount: Integer;
-begin //Èç¹ûÕıÔÚ·¢ËÍÑÓÊ±ÏûÏ¢,Ôò¹ıÂËÒ»ÇĞ¿Í»§¶ËÀ´Ô´ÏûÏ¢
+begin //å¦‚æœæ­£åœ¨å‘é€å»¶æ—¶æ¶ˆæ¯,åˆ™è¿‡æ»¤ä¸€åˆ‡å®¢æˆ·ç«¯æ¥æºæ¶ˆæ¯
   if (not m_boMapApoise) then
     exit;
-  //ÒÆ¶¯
+  //ç§»åŠ¨
   if m_boDealing then
     DealCancel();
   if (m_boWalkDelay and (not ProcessMsg.boLateDelivery)) then begin
     Inc(m_nWalkCount, g_Config.nMaxWalkMsgCount * 2);
-    CheckSpeedCount(m_nWalkCount, '×ßÂ·[¶à±¶]');
+    CheckSpeedCount(m_nWalkCount, 'èµ°è·¯[å¤šå€]');
     exit;
   end;
 
@@ -12943,10 +12987,10 @@ begin //Èç¹ûÕıÔÚ·¢ËÍÑÓÊ±ÏûÏ¢,Ôò¹ıÂËÒ»ÇĞ¿Í»§¶ËÀ´Ô´ÏûÏ¢
     end
     else begin
       //Inc(m_dwWalkTime, dwDelayTime * 2);
-      CheckSpeedCount(m_nWalkCount, '×ßÂ·');
+      CheckSpeedCount(m_nWalkCount, 'èµ°è·¯');
       SetUserTime(dwDelayTime * 2);
       if m_boTestSpeedMode then
-        SysMsg(format('²Ù×÷ÑÓ³Ù Walk Count: %d Time: %d', [m_nWalkCount, dwDelayTime]), c_Red, t_Hint);
+        SysMsg(format('æ“ä½œå»¶è¿Ÿ Walk Count: %d Time: %d', [m_nWalkCount, dwDelayTime]), c_Red, t_Hint);
       SendDelayMsg(Self, ProcessMsg.wIdent, ProcessMsg.wParam,
         ProcessMsg.nParam1, ProcessMsg.nParam2, ProcessMsg.nParam3,
         '', dwDelayTime * 2);
@@ -12958,21 +13002,21 @@ begin //Èç¹ûÕıÔÚ·¢ËÍÑÓÊ±ÏûÏ¢,Ôò¹ıÂËÒ»ÇĞ¿Í»§¶ËÀ´Ô´ÏûÏ¢
        if m_nOverSpeedCount > g_Config.nOverSpeedKickCount then begin
          if g_Config.boKickOverSpeed then begin
            SysMsg(g_sKickClientUserMsg
-             {'ÇëÎğÊ¹ÓÃ·Ç·¨Èí¼ş.'}, c_Red,
+             {'è¯·å‹¿ä½¿ç”¨éæ³•è½¯ä»¶.'}, c_Red,
              t_Hint);
            m_boEmergencyClose := True;
            m_boPlayOffLine := False;
          end;
          if g_Config.boViewHackMessage then begin
-           //MainOutMessage('[ĞĞ×ß³¬ËÙ] ' + m_sCharName + ' Time: ' + IntToStr(dwDelayTime) + ' Count: '+ IntToStr(nMsgCount));
+           //MainOutMessage('[è¡Œèµ°è¶…é€Ÿ] ' + m_sCharName + ' Time: ' + IntToStr(dwDelayTime) + ' Count: '+ IntToStr(nMsgCount));
            MainOutMessage(format(g_sWalkOverSpeed, [m_sCharName,
              dwDelayTime, nMsgCount]));
          end;
        end;
-       //Èç¹û³¬ËÙÔò·¢ËÍ¹¥»÷Ê§°ÜĞÅÏ¢
+       //å¦‚æœè¶…é€Ÿåˆ™å‘é€æ”»å‡»å¤±è´¥ä¿¡æ¯
        SendActionFail();
        if m_boTestSpeedMode then
-         SysMsg(format('ËÙ¶ÈÒì³£ Ident: %d Time: %d',
+         SysMsg(format('é€Ÿåº¦å¼‚å¸¸ Ident: %d Time: %d',
            [ProcessMsg.wIdent,
            dwDelayTime]), c_Red, t_Hint);
      end
@@ -12981,13 +13025,13 @@ begin //Èç¹ûÕıÔÚ·¢ËÍÑÓÊ±ÏûÏ¢,Ôò¹ıÂËÒ»ÇĞ¿Í»§¶ËÀ´Ô´ÏûÏ¢
          (g_Config.btSpeedControlMode = 1) and m_boFilterAction then begin
          SendActionFail();
          if m_boTestSpeedMode then
-           SysMsg(format('ËÙ¶ÈÒì³£ Ident: %d Time: %d',
+           SysMsg(format('é€Ÿåº¦å¼‚å¸¸ Ident: %d Time: %d',
              [ProcessMsg.wIdent, dwDelayTime]), c_Red, t_Hint);
        end
        else begin
 
          if m_boTestSpeedMode then
-           SysMsg(format('²Ù×÷ÑÓ³Ù Ident: %d Time: %d',
+           SysMsg(format('æ“ä½œå»¶è¿Ÿ Ident: %d Time: %d',
              [ProcessMsg.wIdent, dwDelayTime]), c_Red, t_Hint);
          SendDelayMsg(Self, ProcessMsg.wIdent, ProcessMsg.wParam,
            ProcessMsg.nParam1, ProcessMsg.nParam2, ProcessMsg.nParam3,
@@ -13011,7 +13055,7 @@ begin
     DealCancel();
   if (m_boTurnDelay and (not ProcessMsg.boLateDelivery)) then begin
     Inc(m_nTurnCount, g_Config.nMaxTurnMsgCount * 2);
-    CheckSpeedCount(m_nTurnCount, '×ªÏò[¶à±¶]');
+    CheckSpeedCount(m_nTurnCount, 'è½¬å‘[å¤šå€]');
     exit;
   end;
 
@@ -13026,10 +13070,10 @@ begin
     end
     else begin
       //Inc(m_dwTurnTime, dwDelayTime * 2);
-      CheckSpeedCount(m_nTurnCount, '×ªÏò');
+      CheckSpeedCount(m_nTurnCount, 'è½¬å‘');
       SetUserTime(dwDelayTime * 2);
       if m_boTestSpeedMode then
-        SysMsg(format('²Ù×÷ÑÓ³Ù Turn Count: %d Time: %d', [m_nTurnCount, dwDelayTime]), c_Red, t_Hint);
+        SysMsg(format('æ“ä½œå»¶è¿Ÿ Turn Count: %d Time: %d', [m_nTurnCount, dwDelayTime]), c_Red, t_Hint);
       SendDelayMsg(Self, ProcessMsg.wIdent, ProcessMsg.wParam,
         ProcessMsg.nParam1, ProcessMsg.nParam2, ProcessMsg.nParam3,
         '', dwDelayTime * 2);
@@ -13045,25 +13089,25 @@ begin
         if m_nOverSpeedCount > g_Config.nOverSpeedKickCount then begin
           if g_Config.boKickOverSpeed then begin
             SysMsg(g_sKickClientUserMsg
-              {'ÇëÎğÊ¹ÓÃ·Ç·¨Èí¼ş.'}, c_Red,
+              {'è¯·å‹¿ä½¿ç”¨éæ³•è½¯ä»¶.'}, c_Red,
               t_Hint);
             m_boEmergencyClose := True;
             m_boPlayOffLine := False;
           end;
           if g_Config.boViewHackMessage then begin
-            //MainOutMessage('[ÓÎÏ·³¬ËÙ] ' + m_sCharName + ' Time: ' + IntToStr(dwDelayTime) + ' Count: '+ IntToStr(nMsgCount));
+            //MainOutMessage('[æ¸¸æˆè¶…é€Ÿ] ' + m_sCharName + ' Time: ' + IntToStr(dwDelayTime) + ' Count: '+ IntToStr(nMsgCount));
             MainOutMessage(format(g_sBunOverSpeed, [m_sCharName,
               dwDelayTime, nMsgCount]));
           end;
         end;
-        //Èç¹û³¬ËÙÔò·¢ËÍ¹¥»÷Ê§°ÜĞÅÏ¢
+        //å¦‚æœè¶…é€Ÿåˆ™å‘é€æ”»å‡»å¤±è´¥ä¿¡æ¯
         SendActionFail();
       end
       else begin
         if dwDelayTime < g_Config.dwDropOverSpeed then begin
           SendActionGood();
           if m_boTestSpeedMode then
-            SysMsg(format('ËÙ¶ÈÒì³£ Ident: %d Time: %d',
+            SysMsg(format('é€Ÿåº¦å¼‚å¸¸ Ident: %d Time: %d',
               [ProcessMsg.wIdent, dwDelayTime]), c_Red, t_Hint);
         end
         else begin
@@ -13093,8 +13137,8 @@ begin
     if TGuild(m_MyGuild).IsAllyGuild(Guild) then begin
       TGuild(m_MyGuild).DelAllyGuild(Guild);
       Guild.DelAllyGuild(TGuild(m_MyGuild));
-      TGuild(m_MyGuild).SendGuildMsg(Guild.m_sGuildName + ' ÓëÄúĞĞ»áÁªÃË½â³ı³É¹¦.');
-      Guild.SendGuildMsg(TGuild(m_MyGuild).m_sGuildName + ' ½â³ıÁËÓëÄúĞĞ»áµÄÁªÃË.');
+      TGuild(m_MyGuild).SendGuildMsg(Guild.m_sGuildName + ' ä¸æ‚¨è¡Œä¼šè”ç›Ÿè§£é™¤æˆåŠŸ.');
+      Guild.SendGuildMsg(TGuild(m_MyGuild).m_sGuildName + ' è§£é™¤äº†ä¸æ‚¨è¡Œä¼šçš„è”ç›Ÿ.');
       TGuild(m_MyGuild).RefMemberName();
       Guild.RefMemberName();
 
@@ -13178,9 +13222,9 @@ begin
                 Dec(UserItem.Dura, nUniteIndex);
                 if (Stditem.NeedIdentify = 1) then begin
                   AddGameLog(Self, LOG_ITEMDURACHANGE, Stditem.Name, UserItem.MakeIndex, UserItem.Dura, '0',
-                    '-', IntToStr(nUniteIndex), '²ğ·Ö', UserItem);
+                    '-', IntToStr(nUniteIndex), 'æ‹†åˆ†', UserItem);
                   AddGameLog(Self, LOG_ADDITEM, Stditem.Name, UserItem32.MakeIndex, UserItem32.Dura, '0',
-                    '0', '0', '²ğ·Ö', UserItem32);
+                    '0', '0', 'æ‹†åˆ†', UserItem32);
                 end;
                 m_DefMsg := MakeDefaultMsg(SM_CHANGEITEMDURA_OK, nMasterIndex, UserItem.Dura, UserItem.DuraMax,
                   btUnite);
@@ -13229,9 +13273,9 @@ begin
           nMaxDura := UserItemMaster.DuraMax;
           if (Stditem.NeedIdentify = 1) then begin
             AddGameLog(Self, LOG_ITEMDURACHANGE, Stditem.Name, UserItemMaster.MakeIndex, UserItemMaster.Dura, '0',
-              '+', IntToStr(UserItem32.Dura), 'ºÏ²¢', UserItemMaster);
+              '+', IntToStr(UserItem32.Dura), 'åˆå¹¶', UserItemMaster);
             AddGameLog(Self, LOG_DELITEM, Stditem.Name, UserItem32.MakeIndex, UserItem32.Dura, '0',
-              '0', '0', 'ºÏ²¢', UserItem32);
+              '0', '0', 'åˆå¹¶', UserItem32);
           end;
           Dispose(UserItem32);
           UserItem32 := nil;
@@ -13245,9 +13289,9 @@ begin
             Dec(UserItem32.Dura, nCount);
             if (Stditem.NeedIdentify = 1) then begin
               AddGameLog(Self, LOG_ITEMDURACHANGE, Stditem.Name, UserItem32.MakeIndex, UserItem32.Dura, '0',
-                '-', IntToStr(nCount), 'ºÏ²¢', UserItem32);
+                '-', IntToStr(nCount), 'åˆå¹¶', UserItem32);
               AddGameLog(Self, LOG_ITEMDURACHANGE, Stditem.Name, UserItemMaster.MakeIndex, UserItemMaster.Dura, '0',
-                '+', IntToStr(nCount), 'ºÏ²¢', UserItemMaster);
+                '+', IntToStr(nCount), 'åˆå¹¶', UserItemMaster);
             end;
             nCount := UserItem32.Dura;
           end
@@ -13291,14 +13335,14 @@ begin
         if m_nGold >= g_Config.nBuildGuildPrice then begin
           UserItem := CheckItems(g_Config.sWomaHorn);
           if UserItem = nil then begin
-            nCode := -3; //'ÄãÃ»ÓĞ×¼±¸ºÃĞèÒªµÄÈ«²¿ÎïÆ·¡£'
+            nCode := -3; //'ä½ æ²¡æœ‰å‡†å¤‡å¥½éœ€è¦çš„å…¨éƒ¨ç‰©å“ã€‚'
           end;
         end
         else
-          nCode := -2; //'È±ÉÙ´´½¨·ÑÓÃ¡£'
+          nCode := -2; //'ç¼ºå°‘åˆ›å»ºè´¹ç”¨ã€‚'
       end
       else
-        nCode := -1; //'ÄúÒÑ¾­¼ÓÈëÆäËüĞĞ»á¡£'
+        nCode := -1; //'æ‚¨å·²ç»åŠ å…¥å…¶å®ƒè¡Œä¼šã€‚'
     end;
     if (nCode = 0) then begin
       if g_GuildManager.AddGuild(sGuildName, Self) then begin
@@ -13326,7 +13370,7 @@ begin
   SendDefMessage(SM_BUILDGUILD_FAIL, nCode, 0, 0, 0, '');
 end;
 
-{Ö´ĞĞÉ±¹Ö´¥·¢}
+{æ‰§è¡Œæ€æ€ªè§¦å‘}
 
 function TPlayObject.KillMonsterFunc(BaseObject: TBaseObject): Boolean;
 begin
@@ -13374,7 +13418,7 @@ begin
   if PlayObject.m_Abil.Level - m_Abil.Level > g_Config.nHumanLevelDiffer then begin
     if not PlayObject.IsGoodKilling(Self) then begin
       PlayObject.IncPkPoint(g_Config.nKillHumanAddPKPoint {100});
-      PlayObject.SysMsg(g_sYouMurderedMsg {'Äã·¸ÁËÄ±É±×ï.'}, c_Red, t_Hint);
+      PlayObject.SysMsg(g_sYouMurderedMsg {'ä½ çŠ¯äº†è°‹æ€ç½ª.'}, c_Red, t_Hint);
       SysMsg(format(g_sYouKilledByMsg, [m_LastHiter.m_sCharName]), c_Red, t_Hint);
       PlayObject.AddBodyLuck(-g_Config.nKillHumanDecLuckPoint {500});
       if PKLevel < 1 then
@@ -13382,7 +13426,7 @@ begin
           PlayObject.MakeWeaponUnlock;
     end
     else begin
-      PlayObject.SysMsg(g_sYouProtectedByLawOfDefense {'[ÄãÊÜµ½Õıµ±¹æÔò±£»¤¡£]'}, c_Green, t_Hint);
+      PlayObject.SysMsg(g_sYouProtectedByLawOfDefense {'[ä½ å—åˆ°æ­£å½“è§„åˆ™ä¿æŠ¤ã€‚]'}, c_Green, t_Hint);
     end;
     Exit;
   end;
@@ -13439,7 +13483,7 @@ begin
   end;
 end;
 
-//´¥·¢º¯Êı
+//è§¦å‘å‡½æ•°
 
 function TPlayObject.DieGotoLable(): Boolean;
 begin
@@ -13468,15 +13512,15 @@ begin
       m_sString[0] := m_LastHiter.m_sCharName;
       m_nInteger[0] := m_LastHiter.m_WAbil.Level;
     end;
-    Result := DieFunc(); //ËÀÍö´¥·¢
+    Result := DieFunc(); //æ­»äº¡è§¦å‘
   end;
 end;
 
-//½âÉ¢¶ÓÎé
+//è§£æ•£é˜Ÿä¼
 
 function TPlayObject.CancelGroup: Boolean;
 {resourcestring
-  sCanceGrop = 'ÄãµÄĞ¡×é±»½âÉ¢ÁË.';       }
+  sCanceGrop = 'ä½ çš„å°ç»„è¢«è§£æ•£äº†.';       }
 begin
   Result := True;
   if m_GroupMembers.Count <= 1 then begin
@@ -13784,7 +13828,7 @@ begin
   if bo35 then begin
     GetFrontPosition(nX, nY);
     SendRefMsg(RM_RUSHKUNG, m_btDirection, nX, nY, 0, '');
-    SysMsg(sMateDoTooweak {³å×²Á¦²»¹».}, c_Red, t_Hint);
+    SysMsg(sMateDoTooweak {å†²æ’åŠ›ä¸å¤Ÿ.}, c_Red, t_Hint);
   end;
   if n28 > 0 then begin
     if n24 < 0 then
@@ -13796,7 +13840,7 @@ begin
   end;
 end;
 
-//Ê¹ÓÃ¼¼ÄÜ
+//ä½¿ç”¨æŠ€èƒ½
 
 function TPlayObject.DoSpell(UserMagic: pTUserMagic; nTargetX, nTargetY: Integer; BaseObject: TBaseObject): Boolean;
 var
@@ -13824,7 +13868,7 @@ begin
   end;
 end;
 
-//ÍÚ¿ó
+//æŒ–çŸ¿
 
 function TPlayObject.PileStones(nX, nY: Integer): Boolean;
 var
@@ -13894,13 +13938,13 @@ begin
   Result := False;
 {$IF Var_Free = 1}
   if nWhere = U_House then begin
-    //Ãâ·Ñ°æÎŞ·¨Ê¹ÓÃ×øÆï¹¦ÄÜ£¡
+    //å…è´¹ç‰ˆæ— æ³•ä½¿ç”¨åéª‘åŠŸèƒ½ï¼
     SysMsg(frmMain.enmsg.DecryptStr('6eurQ1pkbOyZIRyY0SbI0xSEOKoQNW7PozjYRGBTBxTNBTi7'), c_Red, t_Hint); //enmsg
     exit;
   end;
 {$IFEND}
   if CheckItemBindMode(UserItem, bm_Unknown) then begin
-    SysMsg('Î´¿ª¹â×°±¸²»ÔÊĞí´©´÷£¬ÇëÕÒ¶ÍÔìÊ¦¿ª¹â£¡', c_Red, t_Hint);
+    SysMsg('æœªå¼€å…‰è£…å¤‡ä¸å…è®¸ç©¿æˆ´ï¼Œè¯·æ‰¾é”»é€ å¸ˆå¼€å…‰ï¼', c_Red, t_Hint);
     exit;
   end;
   if nWhere in [16..20] then begin
@@ -13911,12 +13955,12 @@ begin
               Result := True;
             end
             else begin
-              SysMsg('×øÆïµÈ¼¶²»¹»£¬ÎŞ·¨×°±¸£¡', c_Red, t_Hint);
+              SysMsg('åéª‘ç­‰çº§ä¸å¤Ÿï¼Œæ— æ³•è£…å¤‡ï¼', c_Red, t_Hint);
             end;
           end;
       end;
     end else
-      SysMsg('±ØĞèÏÈÅä´÷ÂíÅÆºó²ÅÄÜ¸ø×øÆï×°±¸ÎïÆ·£¡', c_Red, t_Hint);
+      SysMsg('å¿…éœ€å…ˆé…æˆ´é©¬ç‰Œåæ‰èƒ½ç»™åéª‘è£…å¤‡ç‰©å“ï¼', c_Red, t_Hint);
   end else begin
     if (StdItem.StdMode2 = 10) and (m_btGender <> 0) then begin
       SysMsg(sWearNotOfWoMan, c_Red, t_Hint);
@@ -14181,7 +14225,7 @@ begin
             end;
           end;
         end;
-      20: begin //³ÇÖ÷×¨ÓÃ
+      20: begin //åŸä¸»ä¸“ç”¨
           if IsGuildMaster and (g_CastleManager.IsCastleMember(Self) <> nil) then
             Result := True
           else
@@ -14251,7 +14295,7 @@ begin
           Dec(UserItem.Dura);
           if StdItem.NeedIdentify = 1 then
             AddGameLog(Self, LOG_ITEMDURACHANGE, Stditem.Name, UserItem.MakeIndex, UserItem.Dura,
-              '0', '-', '1', 'Ê¹ÓÃ', UserItem);
+              '0', '-', '1', 'ä½¿ç”¨', UserItem);
           Result := False;
         end
         else
@@ -14265,7 +14309,7 @@ begin
             Result := False;
             if StdItem.NeedIdentify = 1 then
               AddGameLog(Self, LOG_ITEMDURACHANGE, Stditem.Name, UserItem.MakeIndex, UserItem.Dura,
-                '0', '-', '1000', 'Ê¹ÓÃ', UserItem);
+                '0', '-', '1000', 'ä½¿ç”¨', UserItem);
           end
           else
             Result := True;
@@ -14287,7 +14331,7 @@ begin
             Dec(UserItem.Dura, 1000);
             if StdItem.NeedIdentify = 1 then
               AddGameLog(Self, LOG_ITEMDURACHANGE, Stditem.Name, UserItem.MakeIndex, UserItem.Dura,
-                '0', '-', '1000', 'Ê¹ÓÃ', UserItem);
+                '0', '-', '1000', 'ä½¿ç”¨', UserItem);
             Result := False;
           end
           else
@@ -14325,7 +14369,7 @@ begin
             ItCount := Round(ItCount / 10);
             if StdItem.NeedIdentify = 1 then
               AddGameLog(Self, LOG_ITEMDURACHANGE, Stditem.Name, UserItem.MakeIndex, ItCount,
-                '0', '-', IntToStr(UserItem.Dura - ItCount), 'Ê¹ÓÃ', UserItem);
+                '0', '-', IntToStr(UserItem.Dura - ItCount), 'ä½¿ç”¨', UserItem);
             UserItem.Dura := ItCount;
             Result := False;
           end
@@ -14339,7 +14383,7 @@ begin
               Dec(UserItem.Dura, 1000);
               if StdItem.NeedIdentify = 1 then
                 AddGameLog(Self, LOG_ITEMDURACHANGE, Stditem.Name, UserItem.MakeIndex, UserItem.Dura,
-                  '0', '-', '1000', 'Ê¹ÓÃ', UserItem);
+                  '0', '-', '1000', 'ä½¿ç”¨', UserItem);
               Result := False;
             end
             else
@@ -14377,11 +14421,11 @@ begin
           Result := False;
           if m_MyGuild <> nil then begin
             TGuild(m_MyGuild).IncBuildPoint(StdItem.Source);
-            TGuild(m_MyGuild).SendGuildMsg('[' + m_sCharName + ']Ôö¼ÓĞĞ»á½¨ÉèÖµ ' + IntToStr(StdItem.Source) + 'µã.');
+            TGuild(m_MyGuild).SendGuildMsg('[' + m_sCharName + ']å¢åŠ è¡Œä¼šå»ºè®¾å€¼ ' + IntToStr(StdItem.Source) + 'ç‚¹.');
             Result := True;
           end
           else
-            SysMsg('Ö»ÓĞĞĞ»á³ÉÔ±²ÅÄÜÊ¹ÓÃ.', c_Red, t_Hint);
+            SysMsg('åªæœ‰è¡Œä¼šæˆå‘˜æ‰èƒ½ä½¿ç”¨.', c_Red, t_Hint);
         end
         else if StdItem.Shape = 14 then begin
           Result := False;
@@ -14392,7 +14436,7 @@ begin
             Result := True;
           end
           else
-            SysMsg('ÄãµÄ×ÔÈ»³É³¤µã²»×ã£¡', c_Red, t_Hint);
+            SysMsg('ä½ çš„è‡ªç„¶æˆé•¿ç‚¹ä¸è¶³ï¼', c_Red, t_Hint);
         end
         else if StdItem.Shape = 13 then begin
           Result := UserItem.Value.boBind;
@@ -14415,7 +14459,7 @@ begin
             m_boDC := True;
             m_wStatusArrValue[0 {0x218}] := StdItem.nDC;
             m_dwStatusArrTimeOutTick[0 {0x220}] := GetTickCount + StdItem.nMAC2 * 1000;
-            SysMsg('¹¥»÷Á¦Ôö¼Ó' + IntToStr(StdItem.nMAC2) + 'Ãë', c_Green, t_Hint);
+            SysMsg('æ”»å‡»åŠ›å¢åŠ ' + IntToStr(StdItem.nMAC2) + 'ç§’', c_Green, t_Hint);
             ChangeStatusMode(STATUS_DC, True);
             bo06 := True;
           end;
@@ -14423,7 +14467,7 @@ begin
             m_boMC := True;
             m_wStatusArrValue[1 {0x219}] := StdItem.nMC;
             m_dwStatusArrTimeOutTick[1 {0x224}] := GetTickCount + StdItem.nMAC2 * 1000;
-            SysMsg('Ä§·¨Á¦Ôö¼Ó' + IntToStr(StdItem.nMAC2) + 'Ãë', c_Green, t_Hint);
+            SysMsg('é­”æ³•åŠ›å¢åŠ ' + IntToStr(StdItem.nMAC2) + 'ç§’', c_Green, t_Hint);
             ChangeStatusMode(STATUS_MC, True);
             bo06 := True;
           end;
@@ -14431,7 +14475,7 @@ begin
             m_boSC := True;
             m_wStatusArrValue[2 {0x21A}] := StdItem.nSC;
             m_dwStatusArrTimeOutTick[2 {0x228}] := GetTickCount + StdItem.nMAC2 * 1000;
-            SysMsg('µÀÊõÔö¼Ó' + IntToStr(StdItem.nMAC2) + 'Ãë', c_Green, t_Hint);
+            SysMsg('é“æœ¯å¢åŠ ' + IntToStr(StdItem.nMAC2) + 'ç§’', c_Green, t_Hint);
             ChangeStatusMode(STATUS_SC, True);
             bo06 := True;
           end;
@@ -14439,14 +14483,14 @@ begin
             m_boHitSpeed := True;
             m_wStatusArrValue[3 ] := StdItem.nAC2;
             m_dwStatusArrTimeOutTick[3 ] := GetTickCount + StdItem.nMAC2 * 1000;
-            SysMsg('¹¥»÷ËÙ¶ÈÔö¼Ó' + IntToStr(StdItem.nMAC2) + 'Ãë', c_Green, t_Hint);
+            SysMsg('æ”»å‡»é€Ÿåº¦å¢åŠ ' + IntToStr(StdItem.nMAC2) + 'ç§’', c_Green, t_Hint);
             bo06 := True;
           end; 
           if StdItem.nAC > 0 then begin
             m_boAC := True;
             m_wStatusArrValue[4 {0x21C}] := StdItem.nAC;
             m_dwStatusArrTimeOutTick[4 {0x230}] := GetTickCount + StdItem.nMAC2 * 1000;
-            SysMsg('ÉúÃüÖµÔö¼Ó' + IntToStr(StdItem.nMAC2) + 'Ãë', c_Green, t_Hint);
+            SysMsg('ç”Ÿå‘½å€¼å¢åŠ ' + IntToStr(StdItem.nMAC2) + 'ç§’', c_Green, t_Hint);
             ChangeStatusMode(STATUS_HP, True);
             bo06 := True;
           end;
@@ -14454,7 +14498,7 @@ begin
             m_boMAC := True;
             m_wStatusArrValue[5 {0x21D}] := StdItem.nMAC;
             m_dwStatusArrTimeOutTick[5 {0x234}] := GetTickCount + StdItem.nMAC2 * 1000;
-            SysMsg('Ä§·¨ÖµÔö¼Ó' + IntToStr(StdItem.nMAC2) + 'Ãë', c_Green, t_Hint);
+            SysMsg('é­”æ³•å€¼å¢åŠ ' + IntToStr(StdItem.nMAC2) + 'ç§’', c_Green, t_Hint);
             ChangeStatusMode(STATUS_MP, True);
             bo06 := True;
           end;
@@ -14538,7 +14582,7 @@ begin
           Result := True;
         end
         else
-          SysMsg('µ±Ç°µØÍ¼²»ÔÊĞíÊ¹ÓÃ.', c_Red, t_Hint);
+          SysMsg('å½“å‰åœ°å›¾ä¸å…è®¸ä½¿ç”¨.', c_Red, t_Hint);
       end;
     3: begin
         SendRefMsg(RM_SPACEMOVE_FIRE, 0, 0, 0, 0, '');
@@ -14567,12 +14611,12 @@ begin
               BaseObjectMove(Castle.m_sHomeMap, IntToStr(Castle.GetHomeX), IntToStr(Castle.GetHomeY));
             end
             else begin
-              SysMsg('ÎŞĞ§', c_Red, t_Hint);
+              SysMsg('æ— æ•ˆ', c_Red, t_Hint);
             end;
             Result := True;
           end
           else begin
-            SysMsg('´Ë´¦ÎŞ·¨Ê¹ÓÃ', c_Red, t_Hint);
+            SysMsg('æ­¤å¤„æ— æ³•ä½¿ç”¨', c_Red, t_Hint);
           end;
         end;
       end;
@@ -14611,7 +14655,7 @@ begin
     m_boTimeRecall := False;
   end;
 end;
-//Ê¹ÓÃ×£¸£ÓÍ
+//ä½¿ç”¨ç¥ç¦æ²¹
 
 function TPlayObject.WeaptonMakeLuck: Boolean;
 var
@@ -14634,24 +14678,24 @@ begin
     boMakeLuck := False;
     if m_UseItems[U_WEAPON].Value.btValue[tb_UnLuck] > 0 then begin
       Dec(m_UseItems[U_WEAPON].Value.btValue[tb_UnLuck]);
-      SysMsg(g_sWeaptonMakeLuck {'ÎäÆ÷±»¼ÓĞÒÔËÁË...'}, c_Green, t_Hint);
+      SysMsg(g_sWeaptonMakeLuck {'æ­¦å™¨è¢«åŠ å¹¸è¿äº†...'}, c_Green, t_Hint);
       boMakeLuck := True;
     end
     else if m_UseItems[U_WEAPON].Value.btValue[tb_Luck] < g_Config.nWeaponMakeLuckPoint1 {1} then begin
       Inc(m_UseItems[U_WEAPON].Value.btValue[tb_Luck]);
-      SysMsg(g_sWeaptonMakeLuck {'ÎäÆ÷±»¼ÓĞÒÔËÁË...'}, c_Green, t_Hint);
+      SysMsg(g_sWeaptonMakeLuck {'æ­¦å™¨è¢«åŠ å¹¸è¿äº†...'}, c_Green, t_Hint);
       boMakeLuck := True;
     end
     else if (m_UseItems[U_WEAPON].Value.btValue[tb_Luck] < g_Config.nWeaponMakeLuckPoint2 {3}) and
       (Random(nRand + g_Config.nWeaponMakeLuckPoint2Rate {6}) = 1) then begin
       Inc(m_UseItems[U_WEAPON].Value.btValue[tb_Luck]);
-      SysMsg(g_sWeaptonMakeLuck {'ÎäÆ÷±»¼ÓĞÒÔËÁË...'}, c_Green, t_Hint);
+      SysMsg(g_sWeaptonMakeLuck {'æ­¦å™¨è¢«åŠ å¹¸è¿äº†...'}, c_Green, t_Hint);
       boMakeLuck := True;
     end
     else if (m_UseItems[U_WEAPON].Value.btValue[tb_Luck] < g_Config.nWeaponMakeLuckPoint3 {7}) and
       (Random(nRand * g_Config.nWeaponMakeLuckPoint3Rate {10 + 30}) = 1) then begin
       Inc(m_UseItems[U_WEAPON].Value.btValue[tb_Luck]);
-      SysMsg(g_sWeaptonMakeLuck {'ÎäÆ÷±»¼ÓĞÒÔËÁË...'}, c_Green, t_Hint);
+      SysMsg(g_sWeaptonMakeLuck {'æ­¦å™¨è¢«åŠ å¹¸è¿äº†...'}, c_Green, t_Hint);
       boMakeLuck := True;
     end;
     if m_btRaceServer = RC_PLAYOBJECT then begin
@@ -14660,7 +14704,7 @@ begin
       SendSubAbility;
     end;
     if not boMakeLuck then
-      SysMsg(g_sWeaptonNotMakeLuck {'ÎŞĞ§'}, c_Green, t_Hint)
+      SysMsg(g_sWeaptonNotMakeLuck {'æ— æ•ˆ'}, c_Green, t_Hint)
     else
       SendUpdateItem(@m_UseItems[U_WEAPON]);
   end;
@@ -14683,7 +14727,7 @@ begin
     Inc(UserItem.Dura, nDura);
     DuraChange(U_WEAPON, m_UseItems[U_WEAPON].Dura, m_UseItems[U_WEAPON].DuraMax);
     //SendMsg(Self, RM_aDURACHANGE, 1, UserItem.Dura, UserItem.DuraMax, 0, '');
-    SysMsg(g_sWeaponRepairSuccess {'ÎäÆ÷ĞŞ¸´³É¹¦...'}, c_Green, t_Hint);
+    SysMsg(g_sWeaponRepairSuccess {'æ­¦å™¨ä¿®å¤æˆåŠŸ...'}, c_Green, t_Hint);
     Result := True;
   end;
 end;
@@ -14692,7 +14736,7 @@ function TPlayObject.MakeOffLine(): Boolean;
 var
   I: Integer;
 begin
-  Result := False; //ÍÆÌ¯×´Ì¬²»ÔÊĞíÍÑ»ú
+  Result := False; //æ¨æ‘ŠçŠ¶æ€ä¸å…è®¸è„±æœº
   if (not m_boSafeOffLine) { and (not m_boShoping) } then begin
     if (g_Config.boSafeOffLine and InSafeZone and (m_Abil.Level >= g_Config.nSafeOffLineLevel)) or
       (g_Config.boShopSafeOffLine and InSafeZone and m_boShoping) or
@@ -14722,7 +14766,7 @@ begin
   m_UseItems[U_WEAPON].Dura := m_UseItems[U_WEAPON].DuraMax;
   DuraChange(U_WEAPON, m_UseItems[U_WEAPON].Dura, m_UseItems[U_WEAPON].DuraMax);
   //SendMsg(Self, RM_aDURACHANGE, 1, m_UseItems[U_WEAPON].Dura, m_UseItems[U_WEAPON].DuraMax, 0, '');
-  SysMsg(g_sWeaponRepairSuccess {'ÎäÆ÷ĞŞ¸´³É¹¦...'}, c_Green, t_Hint);
+  SysMsg(g_sWeaponRepairSuccess {'æ­¦å™¨ä¿®å¤æˆåŠŸ...'}, c_Green, t_Hint);
   Result := True;
 end;
 
@@ -14823,17 +14867,17 @@ begin
   end;
   if nGold > 0 then begin
     case nWinLevel of //
-      1: SysMsg(g_sWinLottery1Msg {'×£ºØÄú£¬ÖĞÁËÒ»µÈ½±¡£'}, c_Green,
+      1: SysMsg(g_sWinLottery1Msg {'ç¥è´ºæ‚¨ï¼Œä¸­äº†ä¸€ç­‰å¥–ã€‚'}, c_Green,
           t_Hint);
-      2: SysMsg(g_sWinLottery2Msg {'×£ºØÄú£¬ÖĞÁË¶şµÈ½±¡£'}, c_Green,
+      2: SysMsg(g_sWinLottery2Msg {'ç¥è´ºæ‚¨ï¼Œä¸­äº†äºŒç­‰å¥–ã€‚'}, c_Green,
           t_Hint);
-      3: SysMsg(g_sWinLottery3Msg {'×£ºØÄú£¬ÖĞÁËÈıµÈ½±¡£'}, c_Green,
+      3: SysMsg(g_sWinLottery3Msg {'ç¥è´ºæ‚¨ï¼Œä¸­äº†ä¸‰ç­‰å¥–ã€‚'}, c_Green,
           t_Hint);
-      4: SysMsg(g_sWinLottery4Msg {'×£ºØÄú£¬ÖĞÁËËÄµÈ½±¡£'}, c_Green,
+      4: SysMsg(g_sWinLottery4Msg {'ç¥è´ºæ‚¨ï¼Œä¸­äº†å››ç­‰å¥–ã€‚'}, c_Green,
           t_Hint);
-      5: SysMsg(g_sWinLottery5Msg {'×£ºØÄú£¬ÖĞÁËÎåµÈ½±¡£'}, c_Green,
+      5: SysMsg(g_sWinLottery5Msg {'ç¥è´ºæ‚¨ï¼Œä¸­äº†äº”ç­‰å¥–ã€‚'}, c_Green,
           t_Hint);
-      6: SysMsg(g_sWinLottery6Msg {'×£ºØÄú£¬ÖĞÁËÁùµÈ½±¡£'}, c_Green,
+      6: SysMsg(g_sWinLottery6Msg {'ç¥è´ºæ‚¨ï¼Œä¸­äº†å…­ç­‰å¥–ã€‚'}, c_Green,
           t_Hint);
     end;
     if IncGold(nGold) then begin
@@ -14846,7 +14890,7 @@ begin
   end
   else begin
     Inc(g_Config.nNoWinLotteryCount, 500);
-    SysMsg(g_sNotWinLotteryMsg {'µÈÏÂ´Î»ú»á°É.'}, c_Red, t_Hint);
+    SysMsg(g_sNotWinLotteryMsg {'ç­‰ä¸‹æ¬¡æœºä¼šå§.'}, c_Red, t_Hint);
   end;
   Result := True;
 end;
@@ -14990,16 +15034,16 @@ procedure TPlayObject.ChangeGroup(PlayObject: TPlayObject);
 begin
   m_GroupOwner := PlayObject;
   SendMsg(Self, RM_GROUPMESSAGE, 0, g_Config.nGroupMsgFColor,
-    g_Config.nGroupMsgBColor, 0, PlayObject.m_sCharName + ' ³ÉÎªĞÂµÄ×é³¤.');
+    g_Config.nGroupMsgBColor, 0, PlayObject.m_sCharName + ' æˆä¸ºæ–°çš„ç»„é•¿.');
 end;
-//¼ÓÈë¶ÓÎé
+//åŠ å…¥é˜Ÿä¼
 
 procedure TPlayObject.JoinGroup(PlayObject: TPlayObject);
 {resourcestring
   ItemClass1 =
-    '¶ÓÎéÎïÆ··ÖÅäÄ£Ê½Îª[¹²ÏíËæ»ú·ÖÅä],ÈÎºÎ¶ÓÔ±¼ñÈ¡ÎïÆ·½«ÓÉËùÓĞ¶ÓÔ±Ëæ»ú»ñµÃ(½ğ±ÒÆ½·Ö)';
+    'é˜Ÿä¼ç‰©å“åˆ†é…æ¨¡å¼ä¸º[å…±äº«éšæœºåˆ†é…],ä»»ä½•é˜Ÿå‘˜æ¡å–ç‰©å“å°†ç”±æ‰€æœ‰é˜Ÿå‘˜éšæœºè·å¾—(é‡‘å¸å¹³åˆ†)';
   ItemClass2 =
-    '¶ÓÎéÎïÆ··ÖÅäÄ£Ê½Îª[Ä¬ÈÏ×ÔÓÉ·ÖÅä],¶ÓÔ±¼ñÈ¡ÎïÆ·ÓÉ×Ô¼º»ñµÃ';     }
+    'é˜Ÿä¼ç‰©å“åˆ†é…æ¨¡å¼ä¸º[é»˜è®¤è‡ªç”±åˆ†é…],é˜Ÿå‘˜æ¡å–ç‰©å“ç”±è‡ªå·±è·å¾—';     }
 var
   ClientGroup: TClientGroup;
 begin
@@ -15016,7 +15060,7 @@ begin
   ClientGroup.btJob := m_btJob;
   ClientGroup.btSex := m_btGender;
   SendGroupSocket(Self, SM_GROUPADDMEM_OK, Integer(Self), 0, 0, 0, EncodeBuffer(@ClientGroup, SizeOf(ClientGroup)));
-  {SendGroupText(m_sCharName + ' ¼ÓÈëĞ¡×é.');
+  {SendGroupText(m_sCharName + ' åŠ å…¥å°ç»„.');
   if PlayObject.m_GroupClass then
     SysMsg(ItemClass1, c_Red, t_Hint)
   else
@@ -15047,7 +15091,7 @@ begin
     m_dwStatusArrTimeOutTick[2 {0x228}] := GetTickCount + LongWord(n14 * 1000);
     m_boSC := True;
     m_wStatusArrValue[2 {0x218}] := MakeLong(LoWord(m_WAbil.SC), HiWord(m_WAbil.SC) - 2 - (m_Abil.Level div 7));
-    SysMsg('µÀÊõÔö¼Ó' + IntToStr(m_wStatusArrValue[2 {0x218}] + 2) + 'µã ' + IntToStr(n14) + 'Ãë', c_Green, t_Hint);
+    SysMsg('é“æœ¯å¢åŠ ' + IntToStr(m_wStatusArrValue[2 {0x218}] + 2) + 'ç‚¹ ' + IntToStr(n14) + 'ç§’', c_Green, t_Hint);
     ChangeStatusMode(STATUS_SC, True);
     RecalcAbilitys();
     SendAbility;
@@ -15077,8 +15121,8 @@ begin
       m_ItemList.Add(UserItem);
       //WeightChanged();
       SendAddItem(UserItem);
-      MapEventCheck(OS_HEAVYHIT, g_Config.sGoldStone); //ÍÚ¿óµØÍ¼ÊÂ¼ş´¥·¢
-      EventCheck(OS_HEAVYHIT, g_Config.sGoldStone); //ÍÚ¿óµØÍ¼ÊÂ¼ş´¥·¢
+      MapEventCheck(OS_HEAVYHIT, g_Config.sGoldStone); //æŒ–çŸ¿åœ°å›¾äº‹ä»¶è§¦å‘
+      EventCheck(OS_HEAVYHIT, g_Config.sGoldStone); //æŒ–çŸ¿åœ°å›¾äº‹ä»¶è§¦å‘
     end
     else
       DisPose(UserItem);
@@ -15091,8 +15135,8 @@ begin
       m_ItemList.Add(UserItem);
       //WeightChanged();
       SendAddItem(UserItem);
-      MapEventCheck(OS_HEAVYHIT, g_Config.sSilverStone); //ÍÚ¿óµØÍ¼ÊÂ¼ş´¥·¢
-      EventCheck(OS_HEAVYHIT, g_Config.sSilverStone); //ÍÚ¿óµØÍ¼ÊÂ¼ş´¥·¢
+      MapEventCheck(OS_HEAVYHIT, g_Config.sSilverStone); //æŒ–çŸ¿åœ°å›¾äº‹ä»¶è§¦å‘
+      EventCheck(OS_HEAVYHIT, g_Config.sSilverStone); //æŒ–çŸ¿åœ°å›¾äº‹ä»¶è§¦å‘
     end
     else
       DisPose(UserItem);
@@ -15105,8 +15149,8 @@ begin
       m_ItemList.Add(UserItem);
       //WeightChanged();
       SendAddItem(UserItem);
-      MapEventCheck(OS_HEAVYHIT, g_Config.sCopperStone); //ÍÚ¿óµØÍ¼ÊÂ¼ş´¥·¢
-      EventCheck(OS_HEAVYHIT, g_Config.sCopperStone); //ÍÚ¿óµØÍ¼ÊÂ¼ş´¥·¢
+      MapEventCheck(OS_HEAVYHIT, g_Config.sCopperStone); //æŒ–çŸ¿åœ°å›¾äº‹ä»¶è§¦å‘
+      EventCheck(OS_HEAVYHIT, g_Config.sCopperStone); //æŒ–çŸ¿åœ°å›¾äº‹ä»¶è§¦å‘
     end
     else
       DisPose(UserItem);
@@ -15119,8 +15163,8 @@ begin
       m_ItemList.Add(UserItem);
       //WeightChanged();
       SendAddItem(UserItem);
-      MapEventCheck(OS_HEAVYHIT, g_Config.sBlackStone); //ÍÚ¿óµØÍ¼ÊÂ¼ş´¥·¢
-      EventCheck(OS_HEAVYHIT, g_Config.sBlackStone); //ÍÚ¿óµØÍ¼ÊÂ¼ş´¥·¢
+      MapEventCheck(OS_HEAVYHIT, g_Config.sBlackStone); //æŒ–çŸ¿åœ°å›¾äº‹ä»¶è§¦å‘
+      EventCheck(OS_HEAVYHIT, g_Config.sBlackStone); //æŒ–çŸ¿åœ°å›¾äº‹ä»¶è§¦å‘
     end
     else
       DisPose(UserItem);
@@ -15132,8 +15176,8 @@ begin
     m_ItemList.Add(UserItem);
     //WeightChanged();
     SendAddItem(UserItem);
-    MapEventCheck(OS_HEAVYHIT, g_Config.sSteelStone); //ÍÚ¿óµØÍ¼ÊÂ¼ş´¥·¢
-    EventCheck(OS_HEAVYHIT, g_Config.sSteelStone); //ÍÚ¿óµØÍ¼ÊÂ¼ş´¥·¢
+    MapEventCheck(OS_HEAVYHIT, g_Config.sSteelStone); //æŒ–çŸ¿åœ°å›¾äº‹ä»¶è§¦å‘
+    EventCheck(OS_HEAVYHIT, g_Config.sSteelStone); //æŒ–çŸ¿åœ°å›¾äº‹ä»¶è§¦å‘
   end
   else
     DisPose(UserItem);
@@ -15232,7 +15276,7 @@ begin
     if TGuild(m_MyGuild).LevelUp then
       ClientOpenGuildDlg(ProcessMsg, boResult)
     else
-      SendDefMessage(SM_MENU_OK, Integer(Self), 0, 0, 0, '[ÌáÊ¾ĞÅÏ¢]£ºĞĞ»áÉı¼¶Ê§°Ü£¡');
+      SendDefMessage(SM_MENU_OK, Integer(Self), 0, 0, 0, '[æç¤ºä¿¡æ¯]ï¼šè¡Œä¼šå‡çº§å¤±è´¥ï¼');
   end;
 end;
 
@@ -15246,22 +15290,22 @@ begin
   if m_boGhost or (not m_boDeath) then
     exit;
   case ProcessMsg.nParam1 of
-    1: begin //½ÓÊÜÖÎÁÆ
+    1: begin //æ¥å—æ²»ç–—
         if m_PEnvir.m_boNotReAlive then begin
-          SendDefMsg(g_ManageNPC, SM_MENU_OK, Integer(Self), 0, 0, 0, 'µ±Ç°µØÍ¼²»ÔÊĞíÔ­µØ¸´»î£¡');
+          SendDefMsg(g_ManageNPC, SM_MENU_OK, Integer(Self), 0, 0, 0, 'å½“å‰åœ°å›¾ä¸å…è®¸åŸåœ°å¤æ´»ï¼');
           Exit;
         end;
         if m_boDoctorAlive and (not m_boAliveing) then begin
           m_boAliveing := True;
-          SendDefMessage(SM_SHOWBAR, 4, 0, CM_ALIVE, 10, 'ÕıÔÚ½ÓÊÜÖÎÁÆ...');
+          SendDefMessage(SM_SHOWBAR, 4, 0, CM_ALIVE, 10, 'æ­£åœ¨æ¥å—æ²»ç–—...');
           m_dwAliveTick := GetTickCount + 10 * 1000;
           m_nAliveHP := Round(m_WAbil.MaxHP * (m_btDoctorAliveLevel / 6));
           m_btAliveType := 1;
         end;
       end;
-    2: begin //Ô­µØÖÎÁÆ
+    2: begin //åŸåœ°æ²»ç–—
         if m_PEnvir.m_boNotReAlive then begin
-          SendDefMsg(g_ManageNPC, SM_MENU_OK, Integer(Self), 0, 0, 0, 'µ±Ç°µØÍ¼²»ÔÊĞíÔ­µØ¸´»î£¡');
+          SendDefMsg(g_ManageNPC, SM_MENU_OK, Integer(Self), 0, 0, 0, 'å½“å‰åœ°å›¾ä¸å…è®¸åŸåœ°å¤æ´»ï¼');
           Exit;
         end;
         if (not m_boAliveing) then begin
@@ -15272,11 +15316,11 @@ begin
               if (StdItem <> nil) and (StdItem.StdMode = tm_Revive) then begin
                 m_ItemList.Delete(I);
                 m_boAliveing := True;
-                SendDefMessage(SM_SHOWBAR, 4, 0, CM_ALIVE, 10, 'ÕıÔÚ½ÓÊÜÖÎÁÆ...');
+                SendDefMessage(SM_SHOWBAR, 4, 0, CM_ALIVE, 10, 'æ­£åœ¨æ¥å—æ²»ç–—...');
                 m_dwAliveTick := GetTickCount + 10 * 1000;
                 m_nAliveHP := Round(m_WAbil.MaxHP * 0.60);
                 if (Stditem.NeedIdentify = 1) then
-                  AddGameLog(Self, LOG_DELITEM, Stditem.Name, UserItem.MakeIndex, UserItem.Dura, '', '0', '0', '¸´»î', UserItem);
+                  AddGameLog(Self, LOG_DELITEM, Stditem.Name, UserItem.MakeIndex, UserItem.Dura, '', '0', '0', 'å¤æ´»', UserItem);
                 SendDelItems(UserItem);
                 Dispose(UserItem);
                 m_btAliveType := 2;
@@ -15284,10 +15328,10 @@ begin
               end;
             end;
           end;
-          SysMsg('¸´»îÊ§°Ü£¬ÄãÉíÉÏÃ»ÓĞÖ¸¶¨ÎïÆ·.', c_Red, t_Hint);
+          SysMsg('å¤æ´»å¤±è´¥ï¼Œä½ èº«ä¸Šæ²¡æœ‰æŒ‡å®šç‰©å“.', c_Red, t_Hint);
         end;
       end;
-    3: begin //»Ø³ÇÖÎÁÆ
+    3: begin //å›åŸæ²»ç–—
         if not m_boAliveing then begin
           m_boDeath := False;
           Castle := g_CastleManager.InCastleWarArea(Self);
@@ -15312,7 +15356,7 @@ begin
           NpcGotoLable(g_FunctionNPC, g_FunctionNPC.FGotoLable[NPLAYREVIVE], False);
         end;
       end;
-    4: begin //ÕıÊ½¸´»î
+    4: begin //æ­£å¼å¤æ´»
         if m_PEnvir.m_boNotReAlive then begin
           Exit;
         end;
@@ -15328,9 +15372,9 @@ begin
         end;
       end;
   end;
-  {m_boAliveing: Boolean; //×¼±¸¸´»î
-      m_dwAliveTick: LongWord; //¸´»îÊ±¼ä
-      m_boDoctorAlive: Boolean; //¼¼ÄÜ¸´»î}
+  {m_boAliveing: Boolean; //å‡†å¤‡å¤æ´»
+      m_dwAliveTick: LongWord; //å¤æ´»æ—¶é—´
+      m_boDoctorAlive: Boolean; //æŠ€èƒ½å¤æ´»}
 end;
 
 procedure TPlayObject.ClientTakeOnOffAddBag(ProcessMsg: pTProcessMessage; var boResult: Boolean);
@@ -15340,7 +15384,7 @@ var
   i: integer;
 begin
   if ProcessMsg.nParam2 in [Low(m_AppendBagItems)..High(m_AppendBagItems)] then begin
-    if ProcessMsg.nParam1 = 0 then begin //È¡ÏÂ
+    if ProcessMsg.nParam1 = 0 then begin //å–ä¸‹
       if m_AppendBagItems[ProcessMsg.nParam2].wIndex > 0 then begin
         Stditem := UserEngine.GetStdItem(m_AppendBagItems[ProcessMsg.nParam2].wIndex);
         if (m_nMaxItemListCount - GetAppendBagCount(Stditem.Shape)) > m_ItemList.Count then begin
@@ -15355,7 +15399,7 @@ begin
           SendDefMessage(SM_TAKEOFFADDBAG_FAIL, 0, 0, 0, 0, '');
       end;
     end
-    else begin //´©ÉÏ
+    else begin //ç©¿ä¸Š
       if m_AppendBagItems[ProcessMsg.nParam2].wIndex = 0 then begin
         for I := m_ItemList.Count - 1 downto 0 do begin
           UserItem := m_ItemList[i];
@@ -15681,7 +15725,7 @@ begin
           with UserEngine do begin
             for I := 0 to m_PlayObjectList.Count - 1 do begin
               if TPlayObject(m_PlayObjectList.Objects[I]).m_boSafeOffLine then
-                sSENDMSG := sSENDMSG + EncodeString(m_PlayObjectList[I] + '(ÀëÏß)/' + IntToStr(Integer(m_PlayObjectList.Objects[I]))) + #13
+                sSENDMSG := sSENDMSG + EncodeString(m_PlayObjectList[I] + '(ç¦»çº¿)/' + IntToStr(Integer(m_PlayObjectList.Objects[I]))) + #13
               else
                 sSENDMSG := sSENDMSG + EncodeString(m_PlayObjectList[I] + '/' + IntToStr(Integer(m_PlayObjectList.Objects[I]))) + #13;
             end;
@@ -16077,7 +16121,7 @@ begin
               '0', '0', 'OpenBox', UserItem);
           Result := True;
           if StdItem.Rule.Rule[RULE_BOX] then begin
-            sSendMsg := '¹§Ï²£º[#6FFFF/8#6#7' + m_sCharName + '#7#5] ¿ªÆô±¦Ïä»ñµÃ ';
+            sSendMsg := 'æ­å–œï¼š[#6FFFF/8#6#7' + m_sCharName + '#7#5] å¼€å¯å®ç®±è·å¾— ';
             sSendMsg := sSendMsg + '{' + IntToStr(SetSayItem(UserItem)) + '/';
             sSendMsg := sSendMsg + IntToStr(UserItem.wIndex) + '/';
             sSendMsg := sSendMsg + IntToStr(UserItem.MakeIndex) + '}';
@@ -16090,8 +16134,8 @@ begin
     bit_Exp: begin
         GetExp(m_BoxGetItem.Item.MakeIndex);
         if m_BoxGetItem.Item.MakeIndex > 99999 then begin
-          sSendMsg := '¹§Ï²£º[#6FFFF/8#6#7' + m_sCharName + '#7#5] ¿ªÆô±¦Ïä»ñµÃ #6FFFF/8#6';
-          sSendMsg := sSendMsg + '¾­ÑéÖµ(' + IntToStr(m_BoxGetItem.Item.MakeIndex) + ')#5';
+          sSendMsg := 'æ­å–œï¼š[#6FFFF/8#6#7' + m_sCharName + '#7#5] å¼€å¯å®ç®±è·å¾— #6FFFF/8#6';
+          sSendMsg := sSendMsg + 'ç»éªŒå€¼(' + IntToStr(m_BoxGetItem.Item.MakeIndex) + ')#5';
           UserEngine.SendBroadCastMsg(sSendMsg, t_Hint);
         end;
         Result := True;
@@ -16103,7 +16147,7 @@ begin
           AddGameLog(Self, LOG_GOLDCHANGED, sSTRING_GOLDNAME, 0, m_nGold, '',
             '+', IntToStr(m_BoxGetItem.Item.MakeIndex), 'OpenBox', nil);
         if m_BoxGetItem.Item.MakeIndex > 99999 then begin
-          sSendMsg := '¹§Ï²£º[#6FFFF/8#6#7' + m_sCharName + '#7#5] ¿ªÆô±¦Ïä»ñµÃ #6FFFF/8#6';
+          sSendMsg := 'æ­å–œï¼š[#6FFFF/8#6#7' + m_sCharName + '#7#5] å¼€å¯å®ç®±è·å¾— #6FFFF/8#6';
           sSendMsg := sSendMsg + sSTRING_GOLDNAME + '(' + IntToStr(m_BoxGetItem.Item.MakeIndex) + ')#5';
           UserEngine.SendBroadCastMsg(sSendMsg, t_Hint);
         end;
@@ -16124,7 +16168,7 @@ begin
             IntToStr(m_BoxGetItem.Item.MakeIndex), 'OpenBox', nil);
         GameGoldChanged;
         if m_BoxGetItem.Item.MakeIndex > 0 then begin
-          sSendMsg := '¹§Ï²£º[#6FFFF/8#6#7' + m_sCharName + '#7#5] ¿ªÆô±¦Ïä»ñµÃ #6FFFF/8#6';
+          sSendMsg := 'æ­å–œï¼š[#6FFFF/8#6#7' + m_sCharName + '#7#5] å¼€å¯å®ç®±è·å¾— #6FFFF/8#6';
           sSendMsg := sSendMsg + g_Config.sGameGoldName + '(' + IntToStr(m_BoxGetItem.Item.MakeIndex) + ')#5';
           UserEngine.SendBroadCastMsg(sSendMsg, t_Hint);
         end;
@@ -16150,7 +16194,7 @@ begin
         if (m_BoxGetItem.ItemType = bit_Item) then begin
           if not IsEnoughBag then begin
             m_BoxGetItem := OldGetItem;
-            SysMsg('ÄúµÄ±³°ü¿Õ¼ä²»×ã£¬¿ªÆôÊ§°Ü£¡', c_Red, t_hint);
+            SysMsg('æ‚¨çš„èƒŒåŒ…ç©ºé—´ä¸è¶³ï¼Œå¼€å¯å¤±è´¥ï¼', c_Red, t_hint);
             Exit;
           end;
         end;
@@ -16178,7 +16222,7 @@ begin
       end;
     end
     else
-      SysMsg('¿ªÆô±¦ÏäÊ§°Ü£¬ÏµÍ³´íÎó£¡', c_Red, t_Hint);
+      SysMsg('å¼€å¯å®ç®±å¤±è´¥ï¼Œç³»ç»Ÿé”™è¯¯ï¼', c_Red, t_Hint);
   except
     on E: Exception do begin
       MainOutMessage('[Exception] TPlayObject.OpenBox');
@@ -16327,7 +16371,7 @@ var
 begin
  Result := False;
  dwDelayTime := 0;
- //¼ì²éÈËÎïÍäÑüÍ£ÁôÊ±¼ä
+ //æ£€æŸ¥äººç‰©å¼¯è…°åœç•™æ—¶é—´
  if not g_Config.boDisableStruck then begin
    dwCheckTime := GetTickCount - m_dwStruckTick;
    if g_Config.dwStruckTime > dwCheckTime then begin
@@ -16337,14 +16381,14 @@ begin
    end;
  end;
 
- //¼ì²é¶ş¸ö²»Í¬²Ù×÷Ö®¼äËùĞè¼ä¸ôÊ±¼ä
+ //æ£€æŸ¥äºŒä¸ªä¸åŒæ“ä½œä¹‹é—´æ‰€éœ€é—´éš”æ—¶é—´
  dwCheckTime := GetTickCount - m_dwActionTick;
 
  if m_boTestSpeedMode then begin
-   SysMsg('¼ä¸ô: ' + IntToStr(dwCheckTime), c_Blue, t_Notice);
+   SysMsg('é—´éš”: ' + IntToStr(dwCheckTime), c_Blue, t_Notice);
  end;
 
- //µ±¶ş´Î²Ù×÷Ò»ÑùÊ±£¬Ôò½« boFirst ÉèÖÃÎª Õæ £¬ÍË³öÓÉµ÷ÓÃº¯Êı±¾Éí¼ì²é¶ş¸öÏàÍ¬²Ù×÷Ö®¼äµÄ¼ä¸ôÊ±¼ä
+ //å½“äºŒæ¬¡æ“ä½œä¸€æ ·æ—¶ï¼Œåˆ™å°† boFirst è®¾ç½®ä¸º çœŸ ï¼Œé€€å‡ºç”±è°ƒç”¨å‡½æ•°æœ¬èº«æ£€æŸ¥äºŒä¸ªç›¸åŒæ“ä½œä¹‹é—´çš„é—´éš”æ—¶é—´
  if m_wOldIdent = wIdent then begin
    Result := True;
    Exit;
@@ -16357,55 +16401,55 @@ begin
  dwActionIntervalTime := m_dwActionIntervalTime;
  case wIdent of
    CM_LONGHIT: begin
-       //ÅÜÎ»´ÌÉ±
+       //è·‘ä½åˆºæ€
        if g_Config.boControlRunLongHit and (m_wOldIdent = CM_RUN) and
          (m_btOldDir <> m_btDirection) then begin
          dwActionIntervalTime := m_dwRunLongHitIntervalTime;
        end;
      end;
    CM_HIT: begin
-       //×ßÎ»¹¥»÷
+       //èµ°ä½æ”»å‡»
        if g_Config.boControlWalkHit and (m_wOldIdent = CM_WALK) and (m_btOldDir
          <> m_btDirection) then begin
          dwActionIntervalTime := m_dwWalkHitIntervalTime;
        end;
-       //ÅÜÎ»¹¥»÷
+       //è·‘ä½æ”»å‡»
        if g_Config.boControlRunHit and (m_wOldIdent = CM_RUN) and (m_btOldDir
          <> m_btDirection) then begin
          dwActionIntervalTime := m_dwRunHitIntervalTime;
        end;
      end;
    CM_RUN: begin
-       //ÅÜÎ»´ÌÉ±
+       //è·‘ä½åˆºæ€
        if g_Config.boControlRunLongHit and (m_wOldIdent = CM_LONGHIT) and
          (m_btOldDir <> m_btDirection) then begin
          dwActionIntervalTime := m_dwRunLongHitIntervalTime;
        end;
-       //ÅÜÎ»¹¥»÷
+       //è·‘ä½æ”»å‡»
        if g_Config.boControlRunHit and (m_wOldIdent = CM_HIT) and (m_btOldDir
          <> m_btDirection) then begin
          dwActionIntervalTime := m_dwRunHitIntervalTime;
        end;
-       //ÅÜÎ»Ä§·¨
+       //è·‘ä½é­”æ³•
        if g_Config.boControlRunMagic and (m_wOldIdent = CM_SPELL) and
          (m_btOldDir <> m_btDirection) then begin
          dwActionIntervalTime := m_dwRunMagicIntervalTime;
        end;
      end;
    CM_WALK: begin
-       //×ßÎ»¹¥»÷
+       //èµ°ä½æ”»å‡»
        if g_Config.boControlWalkHit and (m_wOldIdent = CM_HIT) and (m_btOldDir
          <> m_btDirection) then begin
          dwActionIntervalTime := m_dwWalkHitIntervalTime;
        end;
-       //ÅÜÎ»´ÌÉ±
+       //è·‘ä½åˆºæ€
        if g_Config.boControlRunLongHit and (m_wOldIdent = CM_LONGHIT) and
          (m_btOldDir <> m_btDirection) then begin
          dwActionIntervalTime := m_dwRunLongHitIntervalTime;
        end;
      end;
    CM_SPELL: begin
-       //ÅÜÎ»Ä§·¨
+       //è·‘ä½é­”æ³•
        if g_Config.boControlRunMagic and (m_wOldIdent = CM_RUN) and (m_btOldDir
          <> m_btDirection) then begin
          dwActionIntervalTime := m_dwRunMagicIntervalTime;
@@ -16413,7 +16457,7 @@ begin
      end;
  end;
 
- //½«¼¸¸ö¹¥»÷²Ù×÷ºÏ²¢³ÉÒ»¸ö¹¥»÷²Ù×÷´úÂë
+ //å°†å‡ ä¸ªæ”»å‡»æ“ä½œåˆå¹¶æˆä¸€ä¸ªæ”»å‡»æ“ä½œä»£ç 
  if (wIdent = CM_HIT) or
    (wIdent = CM_HEAVYHIT) or
    (wIdent = CM_BIGHIT) or
@@ -16454,7 +16498,7 @@ begin
  m_CanJmpScriptLableList.Clear;
  m_CanJmpScriptLableList.Add(sLabel);
 end;    }
-//È¡µÃµ±Ç°½Å±¾¿ÉÒÔÌø×ªµÄ±êÇ©
+//å–å¾—å½“å‰è„šæœ¬å¯ä»¥è·³è½¬çš„æ ‡ç­¾
 
 procedure TPlayObject.GetScriptLabel(sMsg: string);
 var
@@ -16615,7 +16659,7 @@ begin
   nCheckCode := 0;
   if (not m_boMapApoise) or m_boSafeOffLine or (m_nGateIdx = -1) then begin
     ClearViewRange;
-    exit; //Èç¹û¿Í»§¶ËµØÍ¼Î´×¼±¸ºÃ,Ôò²»Ë¢ĞÂ
+    exit; //å¦‚æœå®¢æˆ·ç«¯åœ°å›¾æœªå‡†å¤‡å¥½,åˆ™ä¸åˆ·æ–°
   end;
   try
     nCheckCode := 2;
@@ -16653,7 +16697,7 @@ begin
           nIdx := 0;
           while (True) do begin
             nCheckCode := 11;
-            if (MapCellInfo.ObjList <> nil) and (MapCellInfo.ObjList.Count <= 0) then begin //200-11-1 Ôö¼Ó
+            if (MapCellInfo.ObjList <> nil) and (MapCellInfo.ObjList.Count <= 0) then begin //200-11-1 å¢åŠ 
               FreeAndNil(MapCellInfo.ObjList);
               break;
             end;
@@ -16664,7 +16708,7 @@ begin
             if OSObject <> nil then begin
               nCheckCode := 13;
               {try
-                btType := OSObject.btType; //2006-10-14 ·ÀÖ¹ÄÚ´æ³ö´í
+                btType := OSObject.btType; //2006-10-14 é˜²æ­¢å†…å­˜å‡ºé”™
               except
                 MapCellInfo.ObjList.Delete(nIdx);
                 Continue;
@@ -16683,9 +16727,9 @@ begin
                 nCheckCode := 15;
                 BaseObject := TBaseObject(OSObject.CellObj);
                 if BaseObject <> nil then begin
-                  //¸üĞÂÔÚµØÍ¼ÉÏµÄÊ±¼ä
+                  //æ›´æ–°åœ¨åœ°å›¾ä¸Šçš„æ—¶é—´
                   if BaseObject = Self then begin
-                    //Èç¹ûÈËÎï×ø±êÓëµØÍ¼ĞÅÏ¢×ø±ê²»Ò»ÖÂ,ÔòÉ¾³ıĞÅÏ¢
+                    //å¦‚æœäººç‰©åæ ‡ä¸åœ°å›¾ä¿¡æ¯åæ ‡ä¸ä¸€è‡´,åˆ™åˆ é™¤ä¿¡æ¯
                     if (m_nCurrX = n18) and (m_nCurrY = n1C) then begin
                       OSObject.dwAddTime := GetTickCount;
                       m_dwVerifyTick := GetTickCount();
@@ -16722,7 +16766,7 @@ begin
                   if (pTMapItem(OSObject.CellObj).btIdx <> m_PEnvir.m_btFBIndex) or ((GetTickCount - OSObject.dwAddTime) >
                     g_Config.dwClearDropOnFloorItemTime) then begin
                     DisPose(pTMapItem(OSObject.CellObj));
-                    //·ÀÖ¹Õ¼ÓÃÄÚ´æ²»ÊÍ·ÅÏÖÏó
+                    //é˜²æ­¢å ç”¨å†…å­˜ä¸é‡Šæ”¾ç°è±¡
                     DisPose(OSObject);
                     MapCellInfo.ObjList.Delete(nIdx);
                     if MapCellInfo.ObjList.Count <= 0 then begin
@@ -16804,7 +16848,7 @@ begin
       nCheckCode := 42;
       nCheckCode := 43;
       {try
-        nVisibleFlag := VisibleBaseObject.nVisibleFlag; //2006-10-14 ·ÀÖ¹ÄÚ´æ³ö´í
+        nVisibleFlag := VisibleBaseObject.nVisibleFlag; //2006-10-14 é˜²æ­¢å†…å­˜å‡ºé”™
       except
         m_VisibleActors.Delete(n18);
         Continue;
@@ -16815,7 +16859,7 @@ begin
           nCheckCode := 44;
           nCheckCode := 45;
           {if not BaseObject.m_boFixedHideMode and (not BaseObject.m_boGhost) then
-            begin //01/21 ĞŞ¸Ä·ÀÖ¹ÈËÎïÍË³öÊ±·¢ËÍÖØ¸´µÄÏûÏ¢Õ¼ÓÃ´ø¿í£¬ÈËÎï½øÈëÒşÉíÄ£Ê½Ê±ÈËÎï²»ÏûÊ§ÎÊÌâ
+            begin //01/21 ä¿®æ”¹é˜²æ­¢äººç‰©é€€å‡ºæ—¶å‘é€é‡å¤çš„æ¶ˆæ¯å ç”¨å¸¦å®½ï¼Œäººç‰©è¿›å…¥éšèº«æ¨¡å¼æ—¶äººç‰©ä¸æ¶ˆå¤±é—®é¢˜
             nCheckCode := 46; }
           SendMsg(BaseObject, RM_DISAPPEAR, 0, 0, 0, 0, '');
           //end;
@@ -16898,7 +16942,7 @@ begin
       VisibleMapItem := m_VisibleItems.Items[i];
       nCheckCode := 100;
       {try
-        nVisibleFlag := VisibleMapItem.nVisibleFlag; //2006-10-14 ·ÀÖ¹ÄÚ´æ³ö´í
+        nVisibleFlag := VisibleMapItem.nVisibleFlag; //2006-10-14 é˜²æ­¢å†…å­˜å‡ºé”™
       except
         m_VisibleItems.Delete(i);
         Continue;
@@ -16929,7 +16973,7 @@ begin
       MapEvent := m_VisibleEvents.Items[i];
       nCheckCode := 104;
       {try
-        nVisibleFlag := MapEvent.nVisibleFlag; //2006-10-14 ·ÀÖ¹ÄÚ´æ³ö´í
+        nVisibleFlag := MapEvent.nVisibleFlag; //2006-10-14 é˜²æ­¢å†…å­˜å‡ºé”™
       except
         m_VisibleEvents.Delete(i);
         Continue;
@@ -16984,16 +17028,16 @@ try
   end;
   if m_sMasterName <> '' then begin
     if m_boMaster then begin
-      sMasterName:= m_sMasterName + 'µÄÊ¦¸µ';
+      sMasterName:= m_sMasterName + 'çš„å¸ˆå‚…';
     end else begin
-      sMasterName:= m_sMasterName + 'µÄÍ½µÜ';
+      sMasterName:= m_sMasterName + 'çš„å¾’å¼Ÿ';
     end;
   end;
   if m_sDearName <> '' then begin
     if m_btGender = 0 then begin
-      sDearName:= m_sDearName + 'µÄÀÏ¹«';
+      sDearName:= m_sDearName + 'çš„è€å…¬';
     end else begin
-      sDearName:= m_sDearName + 'µÄÀÏÆÅ';
+      sDearName:= m_sDearName + 'çš„è€å©†';
     end;
   end;
   sShowName:=sGuildName;
@@ -17041,10 +17085,10 @@ begin
       end
       else begin
         //Castle := g_CastleManager.InCastleWarArea(Self);
-        //01/25 ¶à³Ç±¤
+        //01/25 å¤šåŸå ¡
         //ar and (m_boInFreePKArea or UserCastle.InCastleWarArea(m_PEnvir,m_nCurrX,m_nCurrY))) then begin
         //if g_Config.boShowGuildName or (((Castle <> nil) and Castle.m_boUnderWar) or m_boInFreePKArea) then begin
-        //È¡ÏûÊÇ·ñÏÔÊ¾ĞĞ»á·âºÅ¼ì²â
+        //å–æ¶ˆæ˜¯å¦æ˜¾ç¤ºè¡Œä¼šå°å·æ£€æµ‹
         sGuildName := AnsiReplaceText(g_sNoCastleGuildName, '%guildname', '#' + TGuild(m_MyGuild).m_sGuildName + '#');
         sGuildName := AnsiReplaceText(sGuildName, '%rankname', '!' + m_sGuildRankName + '!');
         //end;
@@ -17078,10 +17122,10 @@ begin
 
     if m_sDearName <> '' then begin
       if m_btGender = 0 then begin
-        sDearName := format(g_sManDearName, [m_sDearName]); // + 'µÄÀÏ¹«';
+        sDearName := format(g_sManDearName, [m_sDearName]); // + 'çš„è€å…¬';
       end
       else begin
-        sDearName := format(g_sWoManDearName, [m_sDearName]); // + 'µÄÀÏÆÅ';
+        sDearName := format(g_sWoManDearName, [m_sDearName]); // + 'çš„è€å©†';
       end;
     end;
     sShowName := AnsiReplaceText(g_sHumanShowName, '%chrname', sCharName);
@@ -17167,23 +17211,23 @@ end;
 procedure TPlayObject.SetFriend(NameBaseObject: TPlayObject);
 begin
   if InFriendList(NameBaseObject.m_sCharName) then begin
-    SysMsg('[#7' + NameBaseObject.m_sCharName + '#7] ÒÑ¾­ÔÚÄãµÄºÃÓÑÁĞ±íµ±ÖĞ.', c_Red);
-    NameBaseObject.SysMsg('ÄãÒÑ¾­´æÔÚÓÚ [#7' + m_sCharName + '#7] µÄºÃÓÑÁĞ±íµ±ÖĞ.', c_Red);
+    SysMsg('[#7' + NameBaseObject.m_sCharName + '#7] å·²ç»åœ¨ä½ çš„å¥½å‹åˆ—è¡¨å½“ä¸­.', c_Red);
+    NameBaseObject.SysMsg('ä½ å·²ç»å­˜åœ¨äº [#7' + m_sCharName + '#7] çš„å¥½å‹åˆ—è¡¨å½“ä¸­.', c_Red);
     exit;
   end;
   if NameBaseObject.InFriendList(m_sCharName) then begin
-    NameBaseObject.SysMsg('[#7' + m_sCharName + '#7] ÒÑ¾­´æÔÚÓÚÄãµÄºÃÓÑÁĞ±íµ±ÖĞ.', c_Red);
-    SysMsg('ÄãÒÑ¾­´æÔÚÓÚ [#7' + NameBaseObject.m_sCharName + '#7] µÄºÃÓÑÁĞ±íµ±ÖĞ.', c_Red);
+    NameBaseObject.SysMsg('[#7' + m_sCharName + '#7] å·²ç»å­˜åœ¨äºä½ çš„å¥½å‹åˆ—è¡¨å½“ä¸­.', c_Red);
+    SysMsg('ä½ å·²ç»å­˜åœ¨äº [#7' + NameBaseObject.m_sCharName + '#7] çš„å¥½å‹åˆ—è¡¨å½“ä¸­.', c_Red);
     exit;
   end;
   if m_FriendList.Count >= MAXFRIENDS then begin
-    SysMsg('ÄãµÄºÃÓÑÁĞ±íÒÑÂú.', c_Red);
-    NameBaseObject.SysMsg('[#7' + m_sCharName + '#7] µÄºÃÓÑÁĞ±íÒÑÂú.', c_Red);
+    SysMsg('ä½ çš„å¥½å‹åˆ—è¡¨å·²æ»¡.', c_Red);
+    NameBaseObject.SysMsg('[#7' + m_sCharName + '#7] çš„å¥½å‹åˆ—è¡¨å·²æ»¡.', c_Red);
     exit;
   end;
   if NameBaseObject.m_FriendList.Count >= MAXFRIENDS then begin
-    NameBaseObject.SysMsg('ÄãµÄºÃÓÑÁĞ±íÒÑÂú.', c_Red);
-    SysMsg('[#7' + NameBaseObject.m_sCharName + '#7] µÄºÃÓÑÁĞ±íÒÑÂú.', c_Red);
+    NameBaseObject.SysMsg('ä½ çš„å¥½å‹åˆ—è¡¨å·²æ»¡.', c_Red);
+    SysMsg('[#7' + NameBaseObject.m_sCharName + '#7] çš„å¥½å‹åˆ—è¡¨å·²æ»¡.', c_Red);
     exit;
   end;
   m_FriendList.AddObject(NameBaseObject.m_sCharName, TObject(NameBaseObject.m_nDBIndex));
@@ -17191,8 +17235,8 @@ begin
 
   SendDefMsg(Self, SM_FRIEND_LOGIN, NameBaseObject.m_nDBIndex, 1, 0, 2, NameBaseObject.m_sCharName);
   NameBaseObject.SendDefMsg(NameBaseObject, SM_FRIEND_LOGIN, m_nDBIndex, 1, 0, 2, m_sCharName);
-  SysMsg('[#7' + NameBaseObject.m_sCharName + '#7] ÒÑ¼ÓÎªºÃÓÑ.', c_Red);
-  NameBaseObject.SysMsg('[#7' + m_sCharName + '#7] ÒÑ¼ÓÎªºÃÓÑ.', c_Red);
+  SysMsg('[#7' + NameBaseObject.m_sCharName + '#7] å·²åŠ ä¸ºå¥½å‹.', c_Red);
+  NameBaseObject.SysMsg('[#7' + m_sCharName + '#7] å·²åŠ ä¸ºå¥½å‹.', c_Red);
 end;
 
 procedure TPlayObject.CheckFriend();
@@ -17209,7 +17253,7 @@ begin
         sname := PChar(g_UnFriendList.Objects[I]);
         for ii := m_FriendList.Count - 1 downto 0 do begin
           if CompareText(sname, m_FriendList[Ii]) = 0 then begin
-            SysMsg('[#7' + sname + '#7] ÒÑ¾­½«Äã´ÓºÃÓÑÁĞ±íµ±ÖĞÉ¾³ı.', c_Red);
+            SysMsg('[#7' + sname + '#7] å·²ç»å°†ä½ ä»å¥½å‹åˆ—è¡¨å½“ä¸­åˆ é™¤.', c_Red);
             m_FriendList.Delete(ii);
             break;
           end;
@@ -17379,12 +17423,12 @@ begin
           Human.DiamondChanged;
           if g_boGameLogCreditPoint then begin
             AddGameLog(Human, LOG_CREDITPOINT, sSTRING_CREDITPOINT, 0, Human.m_nCreditPoint, m_sCharName,
-              '+', IntToStr(g_Config.nMasterOKCreditPoint), 'ÊÕÍ½', nil);
+              '+', IntToStr(g_Config.nMasterOKCreditPoint), 'æ”¶å¾’', nil);
           end;
         end;
       end
       else begin
-        //Èç¹ûÊ¦¸¸²»ÔÚÏßÔò±£´æµ½¼ÇÂ¼±íÖĞ
+        //å¦‚æœå¸ˆçˆ¶ä¸åœ¨çº¿åˆ™ä¿å­˜åˆ°è®°å½•è¡¨ä¸­
         g_UnMasterList.Lock;
         try
           sSayMsg := m_sCharName;
@@ -17409,7 +17453,7 @@ var
   boRefShowName: Boolean;
   Hum: TPlayObject;
 begin
-  //´¦ÀíÇ¿ĞĞÍÑÀëÊ¦Í½¹ØÏµ
+  //å¤„ç†å¼ºè¡Œè„±ç¦»å¸ˆå¾’å…³ç³»
   boIsfound := False;
   boRefShowName := False;
   if g_UnForceMasterList.Count > 0 then begin
@@ -17449,7 +17493,7 @@ begin
 
   UnMaster;
 
-  //´¦Àí³öÊ¦¼ÇÂ¼
+  //å¤„ç†å‡ºå¸ˆè®°å½•
   boIsfound := False;
   g_UnMasterList.Lock;
   try
@@ -17467,7 +17511,7 @@ begin
                   DiamondChanged;
                   if g_boGameLogCreditPoint then begin
                     AddGameLog(Self, LOG_CREDITPOINT, sSTRING_CREDITPOINT, 0, m_nCreditPoint, sSayMsg,
-                      '+', IntToStr(g_Config.nMasterOKCreditPoint), 'ÊÕÍ½', nil);
+                      '+', IntToStr(g_Config.nMasterOKCreditPoint), 'æ”¶å¾’', nil);
                   end;
                 end;
               end;
@@ -17495,7 +17539,7 @@ begin
   if m_MasterList.Count <= 0 then
     Exit;
   if m_boMaster then begin
-    //Ê¦¸¸ÉÏÏßÍ¨Öª
+    //å¸ˆçˆ¶ä¸Šçº¿é€šçŸ¥
     //boIsfound := True;
     for I := m_MasterList.Count - 1 downto 0 do begin
       m_MasterList.Objects[I] := UserEngine.GetPlayObject(m_MasterList[I]);
@@ -17529,7 +17573,7 @@ begin
        //SysMsg(g_sMasterNotOnlineMsg, c_Red, t_Hint);
   end
   else begin
-    //Í½µÜÉÏÏßÍ¨Öª
+    //å¾’å¼Ÿä¸Šçº¿é€šçŸ¥
     m_MasterList.Objects[0] := UserEngine.GetPlayObject(m_MasterList[0]);
     if m_MasterList.Objects[0] <> nil then begin
       Hum := TPlayObject(m_MasterList.Objects[0]);
@@ -17609,7 +17653,7 @@ begin
       g_HighSCHuman := nil;
     if (g_HighOnlineHuman = Self) then
       g_HighOnlineHuman := nil;   }
-    //ÈËÎïÏÂÏßºóÍ¨ÖªÅäÅ¼£¬²¢°Ñ¶Ô·½µÄÏà¹Ø¼ÇÂ¼Çå¿Õ
+    //äººç‰©ä¸‹çº¿åé€šçŸ¥é…å¶ï¼Œå¹¶æŠŠå¯¹æ–¹çš„ç›¸å…³è®°å½•æ¸…ç©º
     for i := m_FriendList.Count - 1 downto 0 do begin
       nDBIndex := Integer(m_FriendList.Objects[i]);
       Human := GetLoginPlay(nDBIndex);
@@ -17808,14 +17852,14 @@ resourcestring
 begin
   DelList := nil;
   if m_boAngryRing or m_boNoDropItem then
-    Exit; //²»ËÀ½äÖ¸
+    Exit; //ä¸æ­»æˆ’æŒ‡
 
   boDropall := False;
   DropWide := 4;
   if g_Config.boDieRedScatterBagAll and (PKLevel >= 2) then begin
     boDropall := True;
   end;
-  //·ÇºìÃûµô1/3 //ºìÃûÈ«µô
+  //éçº¢åæ‰1/3 //çº¢åå…¨æ‰
   try
     for i := m_ItemList.Count - 1 downto 0 do begin
       if m_ItemList.Count <= 0 then
@@ -17834,7 +17878,7 @@ begin
                 DelList := TStringList.Create;
               DelList.AddObject(IntToStr(UserItem.wIndex), TObject(UserItem.MakeIndex));
             end;
-            DisPose(UserItem); //ĞŞ¸Ä
+            DisPose(UserItem); //ä¿®æ”¹
             m_ItemList.Delete(i);
           end;
         end;
@@ -17873,7 +17917,7 @@ begin
       end;
     end
     else begin
-      SysMsg('#7' + PlayObject.m_sCharName + '#7 ÕÙ»½Ê§°Ü.', c_Red, t_Hint);
+      SysMsg('#7' + PlayObject.m_sCharName + '#7 å¬å”¤å¤±è´¥.', c_Red, t_Hint);
     end;
   end;
 end;
@@ -17884,20 +17928,20 @@ var
   //WarGuild: pTWarGuild;
 begin
   if not IsGuildMaster then begin
-    SendDefMessage(SM_MENU_OK, Integer(Self), 0, 0, 0, 'Ö»ÓĞĞĞ»áÕÆÃÅÈË²ÅÄÜÉêÇë.');
-    //SysMsg('Ö»ÓĞĞĞ»áÕÆÃÅÈË²ÅÄÜÉêÇë£¡', c_Red, t_Hint);
+    SendDefMessage(SM_MENU_OK, Integer(Self), 0, 0, 0, 'åªæœ‰è¡Œä¼šæŒé—¨äººæ‰èƒ½ç”³è¯·.');
+    //SysMsg('åªæœ‰è¡Œä¼šæŒé—¨äººæ‰èƒ½ç”³è¯·ï¼', c_Red, t_Hint);
     Exit;
   end;
   Guild := g_GuildManager.FindGuild(sGuildName);
   if (Guild = nil) then begin
-    //SysMsg(sGuildName + ' ĞĞ»á²»´æÔÚ£¡', c_Red, t_Hint);
-    SendDefMessage(SM_MENU_OK, Integer(Self), 0, 0, 0, 'ĞĞ»á[' + sGuildName + ']²»´æÔÚ.');
+    //SysMsg(sGuildName + ' è¡Œä¼šä¸å­˜åœ¨ï¼', c_Red, t_Hint);
+    SendDefMessage(SM_MENU_OK, Integer(Self), 0, 0, 0, 'è¡Œä¼š[' + sGuildName + ']ä¸å­˜åœ¨.');
     Exit;
   end;
   //WarGuild :=
   if TGuild(m_MyGuild).AddWarGuild(Guild) = nil then begin
-    SendDefMessage(SM_MENU_OK, Integer(Self), 0, 0, 0, '²»ÄÜÓëÁªÃËĞĞ»á·¢ÉúÕ½Õù£¬ÇëÏÈÈ¡ÏûÁªÃË.');
-    //SysMsg('²»ÄÜÓëÁªÃËĞĞ»á·¢ÉúÕ½Õù£¬ÇëÏÈÈ¡ÏûÁªÃË£¡', c_Red, t_Hint);
+    SendDefMessage(SM_MENU_OK, Integer(Self), 0, 0, 0, 'ä¸èƒ½ä¸è”ç›Ÿè¡Œä¼šå‘ç”Ÿæˆ˜äº‰ï¼Œè¯·å…ˆå–æ¶ˆè”ç›Ÿ.');
+    //SysMsg('ä¸èƒ½ä¸è”ç›Ÿè¡Œä¼šå‘ç”Ÿæˆ˜äº‰ï¼Œè¯·å…ˆå–æ¶ˆè”ç›Ÿï¼', c_Red, t_Hint);
     Exit;
   end
   else
@@ -17940,7 +17984,7 @@ procedure TPlayObject.AttackDir(TargeTBaseObject: TBaseObject; wHitMode: Word; n
         SendRefMsg(RM_BREAKWEAPON, 0, 0, 0, 0, '');
         StdItem := UserEngine.GetStdItem(UseItems.wIndex);
         if (StdItem <> nil) and (StdItem.NeedIdentify = 1) then
-          AddGameLog(Self, LOG_DELITEM, StdItem.Name, UseItems.MakeIndex, UseItems.Dura, '', '0', 'ÆÆËé', 'ÎäÆ÷Éı¼¶', @UseItems);
+          AddGameLog(Self, LOG_DELITEM, StdItem.Name, UseItems.MakeIndex, UseItems.Dura, '', '0', 'ç ´ç¢', 'æ­¦å™¨å‡çº§', @UseItems);
 
         FeatureChanged();
         RecalcAbilitys();
@@ -17954,7 +17998,7 @@ procedure TPlayObject.AttackDir(TargeTBaseObject: TBaseObject; wHitMode: Word; n
         StdItem := UserEngine.GetStdItem(UseItems.wIndex);
         //004C2B14
         if (StdItem <> nil) and (StdItem.NeedIdentify = 1) then
-          AddGameLog(Self, LOG_DELITEM, StdItem.Name, UseItems.MakeIndex, UseItems.Dura, '', '0', 'ÆÆËé', 'ÎäÆ÷Éı¼¶', @UseItems);
+          AddGameLog(Self, LOG_DELITEM, StdItem.Name, UseItems.MakeIndex, UseItems.Dura, '', '0', 'ç ´ç¢', 'æ­¦å™¨å‡çº§', @UseItems);
 
         RecalcAbilitys();
         SendAbility;
@@ -17981,7 +18025,7 @@ var
 begin
   nCheckCode := 0;
   try
-    if (wHitMode = 5) and (m_MagicArr[SKILL_BANWOL] <> nil) then begin //°ëÔÂ
+    if (wHitMode = 5) and (m_MagicArr[SKILL_BANWOL] <> nil) then begin //åŠæœˆ
       if m_WAbil.MP > 0 then begin
         nCheckCode := 1;
         DamageSpell(GetSpellPoint(m_MagicArr[SKILL_BANWOL]));
@@ -18024,16 +18068,16 @@ begin
       0: wIdent := SM_HIT;
       1: wIdent := SM_HEAVYHIT;
       2: wIdent := SM_BIGHIT;
-      3: if boPowerHit then begin//¹¥É±
+      3: if boPowerHit then begin//æ”»æ€
           wIdent := SM_POWERHIT;
         end;
-      4: if m_MagicArr[SKILL_ERGUM] <> nil then begin //´ÌÉ±
+      4: if m_MagicArr[SKILL_ERGUM] <> nil then begin //åˆºæ€
           wIdent := SM_LONGHIT;
         end;
-      5: if m_MagicArr[SKILL_BANWOL] <> nil then begin //°ëÔÂ
+      5: if m_MagicArr[SKILL_BANWOL] <> nil then begin //åŠæœˆ
           wIdent := SM_WIDEHIT;
         end;
-      7: if boFireHit then begin//ÁÒ»ğ
+      7: if boFireHit then begin//çƒˆç«
           wIdent := SM_FIREHIT;
         end;
       11: if m_boOnHorse then
@@ -18042,19 +18086,19 @@ begin
             if m_boLongIceHitIsLong then wIdent := SM_LONGICEHIT_L
             else wIdent := SM_LONGICEHIT_S;
         end;
-      56: if bo56Hit then begin //ÖğÈÕ½£·¨
+      56: if bo56Hit then begin //é€æ—¥å‰‘æ³•
           wIdent := SM_56;
         end;
-      110: if bo110Hit then begin //Èı¾øÉ±
+      110: if bo110Hit then begin //ä¸‰ç»æ€
           wIdent := SM_110;
         end;
-      112: if bo112Hit then begin //¶ÏÔÀÕ¶
+      112: if bo112Hit then begin //æ–­å²³æ–©
           wIdent := SM_112;
         end;
-      113: if bo113Hit then begin //ºáÉ¨Ç§¾ü
+      113: if bo113Hit then begin //æ¨ªæ‰«åƒå†›
           wIdent := SM_113;
         end;
-      122: if bo122Hit then begin //´©´Ì½£·¨
+      122: if bo122Hit then begin //ç©¿åˆºå‰‘æ³•
           wIdent := SM_122;
         end;
     end;
@@ -18072,7 +18116,7 @@ end;
 
 function TPlayObject._Attack(var wHitMode: Word; AttackTarget: TBaseObject): Boolean;
 
-//¹¥»÷½ÇÉ«
+//æ”»å‡»è§’è‰²
   function DirectAttack(BaseObject: TBaseObject; nSecPwr: Integer; boAttack: Boolean = False): Boolean;
   begin
     Result := False;
@@ -18103,7 +18147,7 @@ function TPlayObject._Attack(var wHitMode: Word; AttackTarget: TBaseObject): Boo
     end;
   end;
 
-  //´ÌÉ±Ç°ÃæÒ»¸öÎ»ÖÃµÄ¹¥»÷
+  //åˆºæ€å‰é¢ä¸€ä¸ªä½ç½®çš„æ”»å‡»
   function SwordLongAttack(nSecPwr: Integer; nRate: Byte; boDecAC: Boolean; boAttack: Boolean = False): Boolean;
   var
     nX, nY, I: Integer;
@@ -18131,7 +18175,7 @@ function TPlayObject._Attack(var wHitMode: Word; AttackTarget: TBaseObject): Boo
     end;
   end;
 
-  //°ëÔÂ¹¥»÷ (ÒÑ¸ÄÎª±§ÔÂ£¬È«ÉíÖÜ±ß¹¥»÷)
+  //åŠæœˆæ”»å‡» (å·²æ”¹ä¸ºæŠ±æœˆï¼Œå…¨èº«å‘¨è¾¹æ”»å‡»)
   function SwordWideAttack(nSecPwr: Integer; nRate: Byte; boDecAC: Boolean): Boolean;
   var
     nX, nY: Integer;
@@ -18214,7 +18258,7 @@ function TPlayObject._Attack(var wHitMode: Word; AttackTarget: TBaseObject): Boo
      end;
    end;  }
 
-   //±§ÔÂÍäµ¶
+   //æŠ±æœˆå¼¯åˆ€
   { function CrsWideAttack(nSecPwr: Integer): Boolean;
    var
      nC, n10: Integer;
@@ -18263,17 +18307,17 @@ begin
         nMagID := SKILL_YEDO;
         MagicQuest(nil, SKILL_YEDO, mfs_Self);
       end
-      else if (wHitMode = 7) and m_boFireHitSkill then begin //ÁÒ»ğ½£·¨
+      else if (wHitMode = 7) and m_boFireHitSkill then begin //çƒˆç«å‰‘æ³•
         m_boFireHitSkill := False;
         if m_MagicArr[SKILL_FIRESWORD] <> nil then begin
           m_MagicArr[SKILL_FIRESWORD].dwInterval := GetTickCount + m_MagicArr[SKILL_FIRESWORD].MagicInfo.nInterval;
           nMagID := SKILL_FIRESWORD;
           MagicQuest(nil, SKILL_FIRESWORD, mfs_Self);
         end;
-        //m_dwLatestFireHitTick := GetTickCount(); //Jacky ½ûÖ¹Ë«ÁÒ»ğ
+        //m_dwLatestFireHitTick := GetTickCount(); //Jacky ç¦æ­¢åŒçƒˆç«
         nPower := nPower + ROUND(nPower / 100 * (m_nHitDouble * 10));
       end
-      else if (wHitMode = 110) and m_bo110HitSkill then begin //Èı¾øÉ±
+      else if (wHitMode = 110) and m_bo110HitSkill then begin //ä¸‰ç»æ€
         m_bo110HitSkill := False;
         if m_MagicArr[SKILL_110] <> nil then begin
           m_MagicArr[SKILL_110].dwInterval := GetTickCount + m_MagicArr[SKILL_110].MagicInfo.nInterval;
@@ -18294,7 +18338,7 @@ begin
         nMagID := SKILL_YEDO;
         MagicQuest(nil, SKILL_YEDO, mfs_Self);
       end
-      else {//·ÀÖ¹¿³¿Õµ¶µ¶ÁÒ»ğ} if (wHitMode = 7) and m_boFireHitSkill then begin
+      else {//é˜²æ­¢ç ç©ºåˆ€åˆ€çƒˆç«} if (wHitMode = 7) and m_boFireHitSkill then begin
         m_boFireHitSkill := False;
         if m_MagicArr[SKILL_FIRESWORD] <> nil then begin
           m_MagicArr[SKILL_FIRESWORD].dwInterval := GetTickCount + m_MagicArr[SKILL_FIRESWORD].MagicInfo.nInterval;
@@ -18302,9 +18346,9 @@ begin
           MagicQuest(nil, SKILL_FIRESWORD, mfs_Self);
         end;
         nPower := nPower + ROUND(nPower / 100 * (m_nHitDouble * 10));
-        //m_dwLatestFireHitTick := GetTickCount(); //½ûÖ¹Ë«ÁÒ»ğ
+        //m_dwLatestFireHitTick := GetTickCount(); //ç¦æ­¢åŒçƒˆç«
       end
-      else if (wHitMode = 110) and m_bo110HitSkill then begin //Èı¾øÉ±
+      else if (wHitMode = 110) and m_bo110HitSkill then begin //ä¸‰ç»æ€
         m_bo110HitSkill := False;
         if m_MagicArr[SKILL_110] <> nil then begin
           m_MagicArr[SKILL_110].dwInterval := GetTickCount + m_MagicArr[SKILL_110].MagicInfo.nInterval;
@@ -18315,13 +18359,13 @@ begin
     end;
     nCheckCode := 1;
     nSecPwr := 0;
-    if (wHitMode = 11) and m_boOnHorse then begin // ÆïÂí¹¥»÷
+    if (wHitMode = 11) and m_boOnHorse then begin // éª‘é©¬æ”»å‡»
       nSecPwr := nPower;
       if nSecPwr > 0 then begin
         SwordLongAttack(nSecPwr, 2, False);
       end;
     end else
-    if (wHitMode = 4) and (m_MagicArr[SKILL_ERGUM] <> nil) then begin // ´ÌÉ±
+    if (wHitMode = 4) and (m_MagicArr[SKILL_ERGUM] <> nil) then begin // åˆºæ€
       nCheckCode := 11;                                      
       if m_MagicArr[SKILL_ERGUM] <> nil then begin
         nCheckCode := 12;
@@ -18338,7 +18382,7 @@ begin
         nCheckCode := 111;
       end;
     end
-    else if (wHitMode = 5) and (m_MagicArr[SKILL_BANWOL] <> nil) then begin //°ëÔÂ
+    else if (wHitMode = 5) and (m_MagicArr[SKILL_BANWOL] <> nil) then begin //åŠæœˆ
       nCheckCode := 2;
       if m_MagicArr[SKILL_BANWOL] <> nil then begin
         nMagID := SKILL_BANWOL;
@@ -18348,7 +18392,7 @@ begin
       if nSecPwr > 0 then
         SwordWideAttack(nSecPwr, 1, False);
     end
-    else if (wHitMode = 43) and m_boLongIceHit then begin //¿ªÌìÕ¶
+    else if (wHitMode = 43) and m_boLongIceHit then begin //å¼€å¤©æ–©
       nCheckCode := 5611;
       m_boLongIceHit := False;
       nPower := nPower + ROUND(nPower / 100 * (m_nLongIceHitDouble * 10));
@@ -18366,7 +18410,7 @@ begin
         nCheckCode := 56111;
       end;
     end
-    else if (wHitMode = 56) and m_bo56HitSkill then begin //ÖğÈÕ½£·¨
+    else if (wHitMode = 56) and m_bo56HitSkill then begin //é€æ—¥å‰‘æ³•
       nCheckCode := 5611;
       m_bo56HitSkill := False;
       if m_MagicArr[SKILL_56] <> nil then begin
@@ -18383,7 +18427,7 @@ begin
         nCheckCode := 56111;
       end;
     end
-    else if (wHitMode = 112) and m_bo112HitSkill then begin //¶ÏÔÀÕ¶
+    else if (wHitMode = 112) and m_bo112HitSkill then begin //æ–­å²³æ–©
       nCheckCode := 1122;
       m_bo112HitSkill := False;
       nDelayTime := 300;
@@ -18397,7 +18441,7 @@ begin
       if nSecPwr > 0 then
         SwordLongAttack(nSecPwr, 3, True);
     end
-    else if (wHitMode = 113) and m_bo113HitSkill then begin //ºáÉ¨Ç§¾ü
+    else if (wHitMode = 113) and m_bo113HitSkill then begin //æ¨ªæ‰«åƒå†›
       nCheckCode := 1132;
       m_bo113HitSkill := False;
       if m_MagicArr[SKILL_113] <> nil then begin
@@ -18410,7 +18454,7 @@ begin
       if nSecPwr > 0 then
         SwordWideAttack(nSecPwr, 2, True);
     end
-    else if (wHitMode = 122) and m_bo122HitSkill then begin //´©´Ì½£·¨
+    else if (wHitMode = 122) and m_bo122HitSkill then begin //ç©¿åˆºå‰‘æ³•
       nCheckCode := 1222;
       m_bo122HitSkill := False;
       if m_MagicArr[SKILL_122] <> nil then begin
@@ -18453,14 +18497,14 @@ begin
         AttackTarget.m_WAbil.HP, AttackTarget.m_WAbil.MaxHP, Integer(Self), '', nDelayTime);
       nCheckCode := 603;
 
-      //Âé±Ô
+      //éº»ç—¹
       if not AttackTarget.m_boUnParalysis and m_boParalysis and
         (Random(AttackTarget.m_btAntiPoison + g_Config.nAttackPosionRate {5}) = 0) then begin
         nCheckCode := 604;
         AttackTarget.MakePosion(POISON_STONE, g_Config.nAttackPosionTime {5}, 0);
       end;
       nCheckCode := 605;
-      //ºçÄ§£¬ÎüÑª
+      //è™¹é­”ï¼Œå¸è¡€
       if m_nHongMoSuite > 0 then begin
         m_db3B0 := nPower / 1.E2 * m_nHongMoSuite;
         if m_db3B0 >= 2.0 then begin
@@ -18471,7 +18515,7 @@ begin
       end;
       nCheckCode := 606;
 
-      //»ù±¾½£Êõ
+      //åŸºæœ¬å‰‘æœ¯
       if (m_MagicArr[SKILL_ONESWORD] <> nil) and (m_MagicArr[SKILL_ONESWORD].btLevel < 3) and
         (m_MagicArr[SKILL_ONESWORD].MagicInfo.TrainLevel[m_MagicArr[SKILL_ONESWORD].btLevel] <= m_Abil.Level) then begin
         nCheckCode := 607;
@@ -18486,7 +18530,7 @@ begin
         nCheckCode := 610;
       end;
 
-      //¾«ÉñÁ¦Õ½·¨
+      //ç²¾ç¥åŠ›æˆ˜æ³•
       if (m_MagicArr[SKILL_ILKWANG] <> nil) and (m_MagicArr[SKILL_ILKWANG].btLevel < 3) and
         (m_MagicArr[SKILL_ILKWANG].MagicInfo.TrainLevel[m_MagicArr[SKILL_ILKWANG].btLevel] <= m_Abil.Level) then begin
         nCheckCode := 607;
@@ -18666,12 +18710,12 @@ begin
     if UserMagic.wMagIdx in [Low(m_MagicArr)..High(m_MagicArr)] then begin
       m_MagicArr[UserMagic.wMagIdx] := UserMagic;
       case UserMagic.wMagIdx of
-        SKILL_ONESWORD: begin //¾«ÉñÁ¦Õ½·¨
+        SKILL_ONESWORD: begin //ç²¾ç¥åŠ›æˆ˜æ³•
             if UserMagic.btLevel > 0 then begin
               m_btHitPoint := m_btHitPoint + ROUND(9 / 3 * UserMagic.btLevel);
             end;
           end;
-        SKILL_YEDO: begin //¹¥É±½£·¨
+        SKILL_YEDO: begin //æ”»æ€å‰‘æ³•
             if UserMagic.btLevel > 0 then begin
               m_btHitPoint := m_btHitPoint + ROUND(3 / 3 * UserMagic.btLevel);
             end;
@@ -18679,13 +18723,13 @@ begin
             m_btAttackSkillCount := 7 - UserMagic.btLevel;
             m_btAttackSkillPointCount := Random(m_btAttackSkillCount);
           end;
-        SKILL_FIRESWORD: begin //ÁÒ»ğ½£·¨
+        SKILL_FIRESWORD: begin //çƒˆç«å‰‘æ³•
             m_nHitDouble := 4 + UserMagic.btLevel * 4;
           end;
-        SKILL_LONGICEHIT: begin //¿ªÌìÕ¶
+        SKILL_LONGICEHIT: begin //å¼€å¤©æ–©
             m_nLongIceHitDouble := 4 + UserMagic.btLevel * 3;
           end;
-        SKILL_ILKWANG: begin //»ù±¾½£·¨
+        SKILL_ILKWANG: begin //åŸºæœ¬å‰‘æ³•
             if UserMagic.btLevel > 0 then begin
               m_btHitPoint := m_btHitPoint + ROUND(8 / 3 * UserMagic.btLevel);
             end;
@@ -18769,7 +18813,7 @@ begin
         if (not boClient) or (m_UseItems[U_House].HorseItems[hWhere].MakeIndex = nItemIdx) then begin
           StdItem := UserEngine.GetStdItem(m_UseItems[U_House].HorseItems[hWhere].wIndex);
           if (StdItem = nil) or (StdItem.Rule.Rule[RULE_NOTAKEOFF] and not boForce) then begin
-            SysMsg(g_sCanotTakeOffItem {'ÎŞ·¨È¡ÏÂÎïÆ·.'}, c_Red, t_Hint);
+            SysMsg(g_sCanotTakeOffItem {'æ— æ³•å–ä¸‹ç‰©å“.'}, c_Red, t_Hint);
             n10 := -4;
             goto FailExit;
           end;
@@ -18791,7 +18835,7 @@ begin
             if boClient then
               SendDefMessage(SM_TAKEOFF_OK, GetFeatureToLong, GetFeatureEx, 0, 0, '');
             Result := True;
-            //·¢ËÍÍÑ×°±¸ÓÃÕâ¸öÒ²¿ÉÒÔ
+            //å‘é€è„±è£…å¤‡ç”¨è¿™ä¸ªä¹Ÿå¯ä»¥
             FeatureChanged();
             n10 := 1;
           end
@@ -18801,14 +18845,14 @@ begin
           end;
         end;
       end else
-        SysMsg(g_sCanotTakeOffItem {'ÎŞ·¨È¡ÏÂÎïÆ·.'}, c_Red, t_Hint);
+        SysMsg(g_sCanotTakeOffItem {'æ— æ³•å–ä¸‹ç‰©å“.'}, c_Red, t_Hint);
       //m_UseItems[U_House].HorseItems[hWhere]
     end else
     if m_UseItems[btWhere].wIndex > 0 then begin
       if (not boClient) or (m_UseItems[btWhere].MakeIndex = nItemIdx) then begin
         StdItem := UserEngine.GetStdItem(m_UseItems[btWhere].wIndex);
         if (StdItem = nil) or (StdItem.Rule.Rule[RULE_NOTAKEOFF] and not boForce) then begin
-          SysMsg(g_sCanotTakeOffItem {'ÎŞ·¨È¡ÏÂÎïÆ·.'}, c_Red, t_Hint);
+          SysMsg(g_sCanotTakeOffItem {'æ— æ³•å–ä¸‹ç‰©å“.'}, c_Red, t_Hint);
           n10 := -4;
           goto FailExit;
         end;
@@ -18833,7 +18877,7 @@ begin
           if boClient then
             SendDefMessage(SM_TAKEOFF_OK, GetFeatureToLong, GetFeatureEx, 0, 0, '');
           Result := True;
-          //·¢ËÍÍÑ×°±¸ÓÃÕâ¸öÒ²¿ÉÒÔ
+          //å‘é€è„±è£…å¤‡ç”¨è¿™ä¸ªä¹Ÿå¯ä»¥
           FeatureChanged();
           n10 := 1;
         end

@@ -2,7 +2,7 @@ unit Magic;
 
 interface
 uses
-  Windows, Classes, Grobal2, ObjBase, SysUtils, ObjPlay;
+  Windows, Classes, Grobal2, ObjBase, SysUtils, ObjPlay, BuffManager;
 type
   TMagicManager = class
   private
@@ -53,7 +53,7 @@ type
     function MagGroupLightening(PlayObject: TPlayObject; UserMagic: pTUserMagic;
       nTargetX, nTargetY: Integer; TargeTBaseObject: TBaseObject; var boSpellFire:
       Boolean): Boolean;
-    function MagGroupAmyounsul(PlayObject: TPlayObject {ĞŞ¸Ä TBaseObject};
+    function MagGroupAmyounsul(PlayObject: TPlayObject {ä¿®æ”¹ TBaseObject};
       UserMagic: pTUserMagic; nTargetX, nTargetY: Integer; TargeTBaseObject:
       TBaseObject): Boolean;
     function MagGroupDeDing(PlayObject: TPlayObject; UserMagic: pTUserMagic;
@@ -69,7 +69,7 @@ type
       nTargetY, nMagicLevel: Integer): Boolean;
     {function MagMakeSlave_(PlayObject: TPlayObject; UserMagic: pTUserMagic;
       sMonName: string; nCount, nHumLevel, nMonLevel: Integer): Boolean;  }
-    function MagLightening(PlayObject: TPlayObject {ĞŞ¸Ä TBaseObject};
+    function MagLightening(PlayObject: TPlayObject {ä¿®æ”¹ TBaseObject};
       UserMagic: pTUserMagic; nTargetX, nTargetY: Integer; TargeTBaseObject:
       TBaseObject): Boolean;
     function MagMakeSuperFireCross(PlayObject: TPlayObject; nDamage, nHTime, nX,
@@ -87,7 +87,7 @@ type
       TBaseObject): Boolean;
     function MagMakeLighting(PlayObject: TPlayObject; UserMagic: pTUserMagic;
       nTargetX, nTargetY: Integer; var TargeTBaseObject: TBaseObject): Boolean;
-    function MagMakeFireCharm(PlayObject: TBaseObject { ĞŞ¸Ä TBaseObject};
+    function MagMakeFireCharm(PlayObject: TBaseObject { ä¿®æ”¹ TBaseObject};
       UserMagic: pTUserMagic; nTargetX, nTargetY: Integer; var TargeTBaseObject:
       TBaseObject; boMove: Boolean): Boolean;
     function MagMakeFireCharmEx(PlayObject: TBaseObject; UserMagic: pTUserMagic; nTargetX, nTargetY, nPower: Integer;
@@ -113,8 +113,8 @@ function MPow(UserMagic: pTUserMagic): Integer;
 function GetPower(nPower: Integer; UserMagic: pTUserMagic): Integer;
 function GetPower13(nInt: Integer; UserMagic: pTUserMagic): Integer;
 function GetRPow(wInt: Integer): Word;
-function CheckAmulet(PlayObject: TBaseObject { ĞŞ¸Ä TBaseObject}; nCount: Integer; nType: Integer): Boolean;
-procedure UseAmulet(PlayObject: TBaseObject { ĞŞ¸Ä TBaseObject}; nCount: Integer; nType: Integer);
+function CheckAmulet(PlayObject: TBaseObject { ä¿®æ”¹ TBaseObject}; nCount: Integer; nType: Integer): Boolean;
+procedure UseAmulet(PlayObject: TBaseObject { ä¿®æ”¹ TBaseObject}; nCount: Integer; nType: Integer);
 function GetAmuletType(PlayObject: TBaseObject): Byte;
 
 implementation
@@ -164,9 +164,9 @@ begin
     end;
   end;
 end;
-//nType ÎªÖ¸¶¨ÀàĞÍ 1 Îª»¤Éí·û 2 Îª¶¾Ò©
+//nType ä¸ºæŒ‡å®šç±»å‹ 1 ä¸ºæŠ¤èº«ç¬¦ 2 ä¸ºæ¯’è¯
 
-function CheckAmulet(PlayObject: TBaseObject {ĞŞ¸Ä TBaseObject}; nCount: Integer; nType: Integer): Boolean;
+function CheckAmulet(PlayObject: TBaseObject {ä¿®æ”¹ TBaseObject}; nCount: Integer; nType: Integer): Boolean;
 var
   AmuletStdItem: pTStdItem;
 begin
@@ -191,7 +191,7 @@ begin
     end;
   end;
 end;
-//nType ÎªÖ¸¶¨ÀàĞÍ 1 Îª»¤Éí·û 2 Îª¶¾Ò©
+//nType ä¸ºæŒ‡å®šç±»å‹ 1 ä¸ºæŠ¤èº«ç¬¦ 2 ä¸ºæ¯’è¯
 
 procedure UseAmulet(PlayObject: TBaseObject; nCount: Integer; nType: Integer);
 begin
@@ -302,7 +302,7 @@ begin
     TargeTBaseObject := nil;
 end;
 
-{»ğÇò}
+{ç«çƒ}
 
 function TMagicManager.MagMakeFireball(PlayObject: TPlayObject;
   UserMagic: pTUserMagic; nTargetX, nTargetY: Integer;
@@ -350,7 +350,7 @@ begin
     TargeTBaseObject := nil;
 end;
 
-{ÖÎÓúÊõ}
+{æ²»æ„ˆæœ¯}
 
 function TMagicManager.MagTreatment(PlayObject: TPlayObject;
   UserMagic: pTUserMagic; var nTargetX, nTargetY: Integer;
@@ -394,7 +394,7 @@ begin
   end;
 end;
 
-{µØÓò»ğ}
+{åœ°åŸŸç«}
 
 function TMagicManager.MagMakeHellFire(PlayObject: TPlayObject;
   UserMagic: pTUserMagic; nTargetX, nTargetY: Integer;
@@ -426,7 +426,7 @@ begin
   end;
 end;
 
-{¼²¹âµçÓ°}
+{ç–¾å…‰ç”µå½±}
 
 function TMagicManager.MagMakeQuickLighting(PlayObject: TPlayObject;
   UserMagic: pTUserMagic; var nTargetX, nTargetY: Integer;
@@ -460,7 +460,7 @@ begin
   end;
 end;
 
-{À×µçÊõ}
+{é›·ç”µæœ¯}
 
 function TMagicManager.MagMakeLighting(PlayObject: TPlayObject;
   UserMagic: pTUserMagic; nTargetX, nTargetY: Integer;
@@ -504,10 +504,10 @@ begin
     TargeTBaseObject := nil;
 end;
 
-{Áé»ê»ğ·û}
+{çµé­‚ç«ç¬¦}
 
 function TMagicManager.MagMakeFireCharm(PlayObject: TBaseObject;
-  {ĞŞ¸Ä TBaseObject}
+  {ä¿®æ”¹ TBaseObject}
   UserMagic: pTUserMagic; nTargetX, nTargetY: Integer;
   var TargeTBaseObject: TBaseObject; boMove: Boolean): Boolean;
 var
@@ -612,7 +612,7 @@ begin
     TargeTBaseObject := nil;
 end;
 
-{ÊÉÑªÊõ      }
+{å™¬è¡€æœ¯      }
 
 function TMagicManager.MagVampire(PlayObject: TPlayObject; UserMagic: pTUserMagic; nTargetX, nTargetY: Integer;
   var TargeTBaseObject: TBaseObject): Boolean;
@@ -647,7 +647,7 @@ begin
   end;
 end;
 
-{ÃğÌì»ğ}
+{ç­å¤©ç«}
 
 function TMagicManager.MagMakeFireDay(PlayObject: TPlayObject;
   UserMagic: pTUserMagic; nTargetX, nTargetY: Integer;
@@ -690,7 +690,7 @@ begin
     TargeTBaseObject := nil;
 end;
 
-{½â¶¾Êõ}
+{è§£æ¯’æœ¯}
 
 function TMagicManager.MagMakeUnTreatment(PlayObject: TPlayObject;
   UserMagic: pTUserMagic; nTargetX, nTargetY: Integer;
@@ -721,7 +721,7 @@ begin
   end;
 end;
 
-{¸´»îÊõ}
+{å¤æ´»æœ¯}
 
 function TMagicManager.MagMakeLivePlayObject(PlayObject: TPlayObject; UserMagic:
   pTUserMagic; TargeTBaseObject: TBaseObject): Boolean;
@@ -738,7 +738,7 @@ begin
   end;
 end;
 
-{ÇÜÁúÊÖ}
+{æ“’é¾™æ‰‹}
 
 function TMagicManager.MagMakeArrestObject(PlayObject: TPlayObject; UserMagic:
   pTUserMagic; TargeTBaseObject: TBaseObject): Boolean;
@@ -757,7 +757,7 @@ begin
     end;
   end;
 end;
-{ÒÆĞĞ»»Î»}
+{ç§»è¡Œæ¢ä½}
 
 function TMagicManager.MagChangePosition(PlayObject: TPlayObject; nTargetX,
   nTargetY: Integer; TargeTBaseObject: TBaseObject): Boolean;
@@ -777,7 +777,7 @@ begin
   end;
 end;
 (*
-function TMagicManager.IsWarrSkill(wMagIdx: Integer): Boolean; //ÊÇ·ñÊÇÕ½Ê¿¼¼ÄÜ
+function TMagicManager.IsWarrSkill(wMagIdx: Integer): Boolean; //æ˜¯å¦æ˜¯æˆ˜å£«æŠ€èƒ½
 begin
   Result := False;
   if wMagIdx in [SKILL_ONESWORD {3}, SKILL_ILKWANG {4}, SKILL_YEDO {7},
@@ -827,7 +827,7 @@ var
       Random(UserMagic.MagicInfo.btDefMaxPower -
       UserMagic.MagicInfo.btDefPower)));
   end;
-  function GetRPow(wInt: Integer): Word; //È¡ÉËº¦ÖĞ¼äËæ»úÖµ
+  function GetRPow(wInt: Integer): Word; //å–ä¼¤å®³ä¸­é—´éšæœºå€¼
   begin
     if HiWord(wInt) > LoWord(wInt) then begin
       Result := Random(HiWord(wInt) - LoWord(wInt) + 1) + LoWord(wInt);
@@ -848,14 +848,63 @@ var
 begin
   Result := False;
   boMove := False;
-  //¼ì²éÊÇ·ñÕ½Ê¿¼¼ÄÜ
+  //æ£€æŸ¥æ˜¯å¦æˆ˜å£«æŠ€èƒ½
   //if IsWarrSkill(UserMagic.wMagIdx) then Exit;
-  //³¬³öÄ§·¨¹¥»÷·¶Î§
+  //è¶…å‡ºé­”æ³•æ”»å‡»èŒƒå›´
   if (TargeTBaseObject <> nil) and ((abs(PlayObject.m_nCurrX - nTargetX) > g_Config.nMagicAttackRage) or
     (abs(PlayObject.m_nCurrY - nTargetY) > g_Config.nMagicAttackRage)) then begin
     Exit;
   end;
-  //·¢ËÍ¼¼ÄÜ¿ªÊ¼Ğ§¹û
+
+  // === æ–°å¢: GCDå†·å´æ£€æŸ¥ ===
+  if PlayObject.m_nGlobalGCDTime > 0 then
+  begin
+    if (GetTickCount - PlayObject.m_dwGlobalGCDTick) < PlayObject.m_nGlobalGCDTime then
+    begin
+      PlayObject.SysMsg('æŠ€èƒ½å†·å´ä¸­ï¼Œè¯·ç¨åå†è¯•!', 0);
+      Exit;
+    end;
+  end;
+  // æ£€æŸ¥å•ä¸ªæŠ€èƒ½GCD
+  if PlayObject.m_GCDList <> nil then
+  begin
+    // GCDæ£€æŸ¥ç”±å…·ä½“æŠ€èƒ½å¤„ç†ï¼Œæ­¤å¤„ä»…åšå…¨å±€GCDæ£€æŸ¥
+  end;
+
+  // === æ–°å¢: æ²‰é»˜/å†°å†»Debuffæ£€æŸ¥ ===
+  if g_BuffManager <> nil then
+  begin
+    if g_BuffManager.HasBuff(PlayObject, DEBUFF_TYPE_SILENCE) then
+    begin
+      PlayObject.SysMsg('ä½ è¢«æ²‰é»˜äº†ï¼Œæ— æ³•ä½¿ç”¨æŠ€èƒ½!', 0);
+      Exit;
+    end;
+    if g_BuffManager.HasBuff(PlayObject, DEBUFF_TYPE_FREEZE) then
+    begin
+      PlayObject.SysMsg('ä½ è¢«å†°å†»äº†ï¼Œæ— æ³•è¡ŒåŠ¨!', 0);
+      Exit;
+    end;
+    if g_BuffManager.HasBuff(PlayObject, DEBUFF_TYPE_CONFUSE) then
+    begin
+      PlayObject.SysMsg('ä½ é™·å…¥äº†æ··ä¹±çŠ¶æ€!', 0);
+      // æ··ä¹±çŠ¶æ€ï¼šéšæœºé€‰æ‹©ç›®æ ‡
+      if Random(2) = 0 then
+        TargeTBaseObject := nil;
+    end;
+    if g_BuffManager.HasBuff(PlayObject, DEBUFF_TYPE_FEAR) then
+    begin
+      PlayObject.SysMsg('ä½ é™·å…¥äº†ææƒ§çŠ¶æ€!', 0);
+      Exit;
+    end;
+  end;
+
+  // === æ–°å¢: è®¾ç½®æŠ€èƒ½GCD ===
+  if UserMagic.MagicInfo.nGlobalCD > 0 then
+  begin
+    PlayObject.m_nGlobalGCDTime := UserMagic.MagicInfo.nGlobalCD;
+    PlayObject.m_dwGlobalGCDTick := GetTickCount;
+  end;
+  //å‘é€æŠ€èƒ½å¼€å§‹æ•ˆæœ
   PlayObject.MagicQuest(nil, UserMagic.wMagIdx, mfs_Self);
   if not ((UserMagic.wMagIdx = SKILL_AMYOUNSUL) or (UserMagic.wMagIdx = SKILL_GROUPAMYOUNSUL)) then
     PlayObject.SendRefMsg(RM_SPELL, UserMagic.MagicInfo.btEffect, nTargetX, nTargetY,
@@ -880,8 +929,8 @@ begin
   //  nPower := 0;
     //if (PlayObject.m_nSoftVersionDateEx = 0) and (PlayObject.m_dwClientTick = 0) and (UserMagic.MagicInfo.wMagicId > 40) then Exit;
   case UserMagic.MagicInfo.wMagicId of //
-    SKILL_FIREBALL {1}, //»ğÇòÊõ
-    SKILL_FIREBALL2 {5}: begin //´ó»ğÇò
+    SKILL_FIREBALL {1}, //ç«çƒæœ¯
+    SKILL_FIREBALL2 {5}: begin //å¤§ç«çƒ
         if MagMakeFireball(PlayObject,
           UserMagic,
           nTargetX,
@@ -889,7 +938,7 @@ begin
           TargeTBaseObject) then
           boTrain := True;
       end;
-    SKILL_HEALLING {2}: begin //ÖÎÓúÊõ
+    SKILL_HEALLING {2}: begin //æ²»æ„ˆæœ¯
         if MagTreatment(PlayObject,
           UserMagic,
           nTargetX,
@@ -897,7 +946,7 @@ begin
           TargeTBaseObject) then
           boTrain := True;
       end;
-    SKILL_AMYOUNSUL {6}: begin //Ê©¶¾Êõ
+    SKILL_AMYOUNSUL {6}: begin //æ–½æ¯’æœ¯
         btAmuletType := GetAmuletType(PlayObject);
         boSpellFire := False;
         if btAmuletType = 2 then
@@ -916,11 +965,11 @@ begin
         else
           boSpellFail := True;
       end;
-    SKILL_FIREWIND {8}: begin //¿¹¾Ü»ğ»·  00493754
+    SKILL_FIREWIND {8}: begin //æŠ—æ‹’ç«ç¯  00493754
         if MagPushArround(PlayObject, UserMagic.wMagIdx, UserMagic.btLevel) > 0 then
           boTrain := True;
       end;
-    SKILL_FIRE {9}: begin //µØÓü»ğ 00493778
+    SKILL_FIRE {9}: begin //åœ°ç‹±ç« 00493778
         if MagMakeHellFire(PlayObject,
           UserMagic,
           nTargetX,
@@ -929,7 +978,7 @@ begin
           boTrain := True;
 
       end;
-    SKILL_SHOOTLIGHTEN {10}: begin //¼²¹âµçÓ° 0049386A
+    SKILL_SHOOTLIGHTEN {10}: begin //ç–¾å…‰ç”µå½± 0049386A
         if MagMakeQuickLighting(PlayObject,
           UserMagic,
           nTargetX,
@@ -937,7 +986,7 @@ begin
           TargeTBaseObject) then
           boTrain := True;
       end;
-    SKILL_LIGHTENING {11}: begin //À×µçÊõ 0049395C
+    SKILL_LIGHTENING {11}: begin //é›·ç”µæœ¯ 0049395C
         if MagMakeLighting(PlayObject,
           UserMagic,
           nTargetX,
@@ -945,20 +994,20 @@ begin
           TargeTBaseObject) then
           boTrain := True;
       end;
-    SKILL_FIRECHARM {13}, //Áé»ê»ğ·û
-    SKILL_HANGMAJINBUB {14}, //ÓÄÁé¶Ü
-    SKILL_DEJIWONHO {15}, //ÉñÊ¥Õ½¼×Êõ
-    SKILL_HOLYSHIELD {16}, //À§Ä§Öä
-    SKILL_SKELLETON {17}, //ÕÙ»½÷¼÷Ã
-    SKILL_CLOAK {18}, //ÒşÉíÊõ
-    SKILL_BIGCLOAK {19}, //¼¯ÌåÒşÉíÊõ
-    SKILL_52 ,           //×çÖäÊõ
-    SKILL_67: begin //004940BC  //ÁÑÉñ·û
+    SKILL_FIRECHARM {13}, //çµé­‚ç«ç¬¦
+    SKILL_HANGMAJINBUB {14}, //å¹½çµç›¾
+    SKILL_DEJIWONHO {15}, //ç¥åœ£æˆ˜ç”²æœ¯
+    SKILL_HOLYSHIELD {16}, //å›°é­”å’’
+    SKILL_SKELLETON {17}, //å¬å”¤éª·é«…
+    SKILL_CLOAK {18}, //éšèº«æœ¯
+    SKILL_BIGCLOAK {19}, //é›†ä½“éšèº«æœ¯
+    SKILL_52 ,           //è¯…å’’æœ¯
+    SKILL_67: begin //004940BC  //è£‚ç¥ç¬¦
         boSpellFail := True;
         if CheckAmulet(PlayObject, 1, 1) then begin
           UseAmulet(PlayObject, 1, 1);
           case UserMagic.MagicInfo.wMagicId of //
-            SKILL_FIRECHARM{13}: begin //Áé»ê»ğ·û 0049415F
+            SKILL_FIRECHARM{13}: begin //çµé­‚ç«ç¬¦ 0049415F
                 if MagMakeFireCharm(PlayObject,
                   UserMagic,
                   nTargetX,
@@ -966,7 +1015,7 @@ begin
                   TargeTBaseObject, False) then
                   boTrain := True;
               end;
-            SKILL_67 {13}: begin //Áé»ê»ğ·û 0049415F
+            SKILL_67 {13}: begin //çµé­‚ç«ç¬¦ 0049415F
                 if MagMakeFireCharm(PlayObject,
                   UserMagic,
                   nTargetX,
@@ -974,38 +1023,38 @@ begin
                   TargeTBaseObject, True) then
                   boTrain := True;
               end;
-            SKILL_HANGMAJINBUB {14}: begin //ÓÄÁé¶Ü 00494277
+            SKILL_HANGMAJINBUB {14}: begin //å¹½çµç›¾ 00494277
                 nPower := PlayObject.GetAttackPower(GetPower13(60) + LoWord(PlayObject.m_WAbil.SC) * 10,
                   SmallInt(HiWord(PlayObject.m_WAbil.SC) - LoWord(PlayObject.m_WAbil.SC)) + 1);
                 if PlayObject.MagMakeDefenceArea(nTargetX, nTargetY, 3, nPower, UserMagic.wMagIdx, 1, True) > 0 then
                   boTrain := True;
               end;
-            SKILL_DEJIWONHO {15}: begin //ÉñÊ¥Õ½¼×Êõ 004942E5
+            SKILL_DEJIWONHO {15}: begin //ç¥åœ£æˆ˜ç”²æœ¯ 004942E5
                 nPower := PlayObject.GetAttackPower(GetPower13(60) + LoWord(PlayObject.m_WAbil.SC) * 10,
                   SmallInt(HiWord(PlayObject.m_WAbil.SC) - LoWord(PlayObject.m_WAbil.SC)) + 1);
                 if PlayObject.MagMakeDefenceArea(nTargetX, nTargetY, 3, nPower, UserMagic.wMagIdx, 0, True) > 0 then
                   boTrain := True;
               end;
-            SKILL_HOLYSHIELD {16}: begin //À¦Ä§Öä 00494353
+            SKILL_HOLYSHIELD {16}: begin //æ†é­”å’’ 00494353
                 if MagMakeHolyCurtain(PlayObject, GetPower13(40) + GetRPow(PlayObject.m_WAbil.SC) * 3, nTargetX, nTargetY) > 0 then
                   boTrain := True;
               end;
-            SKILL_SKELLETON {17}: begin //ÕÙ»½÷¼÷Ã 004943A2
+            SKILL_SKELLETON {17}: begin //å¬å”¤éª·é«… 004943A2
                 if MagMakeSlave(PlayObject, UserMagic) then begin
                   boTrain := True;
                 end;
               end;
-            SKILL_CLOAK {18}: begin //ÒşÉíÊõ
+            SKILL_CLOAK {18}: begin //éšèº«æœ¯
                 if MagMakePrivateTransparent(PlayObject, GetPower13(30) +
                   GetRPow(PlayObject.m_WAbil.SC) * 3) then
                   boTrain := True;
               end;
-            SKILL_BIGCLOAK {19}: begin //¼¯ÌåÒşÉíÊõ
+            SKILL_BIGCLOAK {19}: begin //é›†ä½“éšèº«æœ¯
                 if MagMakeGroupTransparent(PlayObject, nTargetX, nTargetY,
                   GetPower13(30) + GetRPow(PlayObject.m_WAbil.SC) * 3, UserMagic.wMagIdx) then
                   boTrain := True;
               end;
-            SKILL_52: begin //×çÖäÊõ
+            SKILL_52: begin //è¯…å’’æœ¯
                 nPower := PlayObject.GetAttackPower(GetPower13(20) +
                   LoWord(PlayObject.m_WAbil.SC) * 2,
                   SmallInt(HiWord(PlayObject.m_WAbil.SC) -
@@ -1013,7 +1062,7 @@ begin
                 if PlayObject.MagMakeAbilityArea(nTargetX, nTargetY, 3, nPower, UserMagic.wMagIdx, 0, False) > 0 then
                   boTrain := True;
               end;
-            {SKILL_57: begin //¸´»îÊõ
+            {SKILL_57: begin //å¤æ´»æœ¯
                 if MagMakeLivePlayObject(PlayObject, UserMagic, TargeTBaseObject)
                   then
                   boTrain := True;
@@ -1023,14 +1072,14 @@ begin
           sub_4934B4(PlayObject);
         end;
       end;
-    SKILL_TAMMING {20}: begin //ÓÕ»óÖ®¹â 00493A51
+    SKILL_TAMMING {20}: begin //è¯±æƒ‘ä¹‹å…‰ 00493A51
         if (TargeTBaseObject <> nil) and PlayObject.IsProperTarget(TargeTBaseObject) then begin
           if MagTamming(PlayObject, TargeTBaseObject, nTargetX, nTargetY,
             UserMagic.btLevel) then
             boTrain := True;
         end;
       end;
-    SKILL_SPACEMOVE {21}: begin //Ë²Ï¢ÒÆ¶¯ 00493ADD
+    SKILL_SPACEMOVE {21}: begin //ç¬æ¯ç§»åŠ¨ 00493ADD
         PlayObject.SendRefMsg(RM_MAGICFIRE, 0,
           MakeWord(UserMagic.MagicInfo.btEffectType,
           UserMagic.MagicInfo.btEffect), MakeLong(nTargetX, nTargetY),
@@ -1039,19 +1088,19 @@ begin
         if MagSaceMove(PlayObject, UserMagic.btLevel) then
           boTrain := True;
       end;
-    SKILL_EARTHFIRE {22}: begin //»ğÇ½  00493B40
+    SKILL_EARTHFIRE {22}: begin //ç«å¢™  00493B40
         nPower := PlayObject.GetAttackPower(GetPower(MPow(UserMagic)) + LoWord(PlayObject.m_WAbil.MC),
           SmallInt(HiWord(PlayObject.m_WAbil.MC) - LoWord(PlayObject.m_WAbil.MC)) + 1, False);
         nDelayTime := GetPower(10) + (Word(GetRPow(PlayObject.m_WAbil.MC)) shr 1);
 
-        //2006-11-12 »ğÇ½ÍşÁ¦ºÍÊ±¼äµÄ±¶Êı
+        //2006-11-12 ç«å¢™å¨åŠ›å’Œæ—¶é—´çš„å€æ•°
         nPower := ROUND(nPower * (g_Config.nFirePowerRate / 100));
         nDelayTime := ROUND(nDelayTime * (g_Config.nFireDelayTimeRate / 100));
 
         if MagMakeFireCross(PlayObject, nPower, nDelayTime, nTargetX, nTargetY) > 0 then
           boTrain := True;
       end;
-    SKILL_FIREBOOM {23}: begin //±¬ÁÑ»ğÑæ
+    SKILL_FIREBOOM {23}: begin //çˆ†è£‚ç«ç„°
         if MagBigExplosion(PlayObject,
           PlayObject.GetAttackPower(GetPower(MPow(UserMagic)) + LoWord(PlayObject.m_WAbil.MC),
           SmallInt(HiWord(PlayObject.m_WAbil.MC) - LoWord(PlayObject.m_WAbil.MC)) + 1),
@@ -1060,14 +1109,14 @@ begin
           g_Config.nFireBoomRage {1}, UserMagic.wMagIdx) then
           boTrain := True;
       end;
-    SKILL_LIGHTFLOWER {24}: begin //µØÓüÀ×¹â
+    SKILL_LIGHTFLOWER {24}: begin //åœ°ç‹±é›·å…‰
         if MagElecBlizzard(PlayObject,
           PlayObject.GetAttackPower(GetPower(MPow(UserMagic)) +
           LoWord(PlayObject.m_WAbil.MC), SmallInt(HiWord(PlayObject.m_WAbil.MC) -
           LoWord(PlayObject.m_WAbil.MC)) + 1), UserMagic.wMagIdx) then
           boTrain := True;
       end;
-    SKILL_SHOWHP {28}: begin //ĞÄÁéÆôÊ¾
+    SKILL_SHOWHP {28}: begin //å¿ƒçµå¯ç¤º
         if (TargeTBaseObject <> nil) and not TargeTBaseObject.m_boShowHP then begin
           if Random(6) <= (UserMagic.btLevel + 3) then begin
             TargeTBaseObject.m_dwShowHPTick := GetTickCount();
@@ -1079,13 +1128,13 @@ begin
           end;
         end;
       end;
-    SKILL_BIGHEALLING {29}: begin //ÈºÌåÖÎÁÆÊõ
+    SKILL_BIGHEALLING {29}: begin //ç¾¤ä½“æ²»ç–—æœ¯
         nPower := PlayObject.GetAttackPower(GetPower(MPow(UserMagic)) + LoWord(PlayObject.m_WAbil.SC) * 2,
           SmallInt(HiWord(PlayObject.m_WAbil.SC) - LoWord(PlayObject.m_WAbil.SC)) * 2 + 1);
         if MagBigHealing(PlayObject, nPower, nTargetX, nTargetY, UserMagic.wMagIdx) then
           boTrain := True;
       end;
-    SKILL_SINSU {30}: begin //ÕÙ»½ÉñÊŞ
+    SKILL_SINSU {30}: begin //å¬å”¤ç¥å…½
         boSpellFail := True;
         if CheckAmulet(PlayObject, 5, 1) then begin
           UseAmulet(PlayObject, 5, 1);
@@ -1096,7 +1145,7 @@ begin
           boSpellFail := False;
         end;
       end;
-    SKILL_SHIELD {31}: begin //Ä§·¨¶Ü
+    SKILL_SHIELD {31}: begin //é­”æ³•ç›¾
         boSpellFail := True;
         if PlayObject.m_wStatusTimeArr[STATE_BUBBLEDEFENCEUPEX] = 0 then begin
           boSpellFail := False;
@@ -1104,7 +1153,7 @@ begin
             boTrain := True;
         end;
       end;
-    SKILL_KILLUNDEAD {32}: begin //Ê¥ÑÔÊõ
+    SKILL_KILLUNDEAD {32}: begin //åœ£è¨€æœ¯
         if TargeTBaseObject <> nil then begin
           if PlayObject.IsProperTarget(TargeTBaseObject) then begin
             if MagTurnUndead(PlayObject, TargeTBaseObject, nTargetX, nTargetY, UserMagic.btLevel) then
@@ -1112,7 +1161,7 @@ begin
           end;
         end;
       end;
-    SKILL_SNOWWIND {33}: begin //±ùÅØÏø
+    SKILL_SNOWWIND {33}: begin //å†°å’†å“®
         if MagBigExplosion(PlayObject,
           PlayObject.GetAttackPower(GetPower(MPow(UserMagic)) + LoWord(PlayObject.m_WAbil.MC),
           SmallInt(HiWord(PlayObject.m_WAbil.MC) - LoWord(PlayObject.m_WAbil.MC)) + 1),
@@ -1121,7 +1170,7 @@ begin
           g_Config.nSnowWindRange {1}, UserMagic.wMagIdx) then
           boTrain := True;
       end;
-    SKILL_UNAMYOUNSUL {34}: begin //½â¶¾Êõ
+    SKILL_UNAMYOUNSUL {34}: begin //è§£æ¯’æœ¯
         if MagMakeUnTreatment(PlayObject,
           UserMagic,
           nTargetX,
@@ -1129,12 +1178,12 @@ begin
           TargeTBaseObject) then
           boTrain := True;
       end;
-    SKILL_WINDTEBO {35}: //ÀÏÊ¨×Óºğ
+    SKILL_WINDTEBO {35}: //è€ç‹®å­å¼
       //if MagWindTebo(PlayObject, UserMagic) then
         //boTrain := True;
                  ;
-    //±ùÑæ
-    SKILL_MABE {36}: begin //»ğÑæ±ù
+    //å†°ç„°
+    SKILL_MABE {36}: begin //ç«ç„°å†°
         with PlayObject do begin
           nPower := GetAttackPower(GetPower(MPow(UserMagic)) + LoWord(m_WAbil.SC),
             SmallInt(HiWord(m_WAbil.SC) - LoWord(m_WAbil.SC)) + 1);
@@ -1142,12 +1191,12 @@ begin
         if MabMabe(PlayObject, TargeTBaseObject, nPower, UserMagic.btLevel, nTargetX, nTargetY, UserMagic.wMagIdx) then
           boTrain := True;
       end;
-    SKILL_GROUPLIGHTENING {37 ÈºÌåÀ×µçÊõ}: begin
+    SKILL_GROUPLIGHTENING {37 ç¾¤ä½“é›·ç”µæœ¯}: begin
         if MagGroupLightening(PlayObject, UserMagic, nTargetX, nTargetY,
           TargeTBaseObject, boSpellFire) then
           boTrain := True;
       end;
-    SKILL_GROUPAMYOUNSUL {38 ÈºÌåÊ©¶¾Êõ}: begin
+    SKILL_GROUPAMYOUNSUL {38 ç¾¤ä½“æ–½æ¯’æœ¯}: begin
         btAmuletType := GetAmuletType(PlayObject);
         boSpellFire := False;
         if btAmuletType = 2 then
@@ -1165,40 +1214,46 @@ begin
             Integer(TargeTBaseObject),
             '');
       end;
-    SKILL_GROUPDEDING {39 µØ¶¤}: begin
+    SKILL_GROUPDEDING {39 åœ°é’‰}: begin
        // if (GetTickCount - PlayObject.m_dwDedingUseTick) > LongWord(g_Config.nDedingUseTime * 1000) then begin
           //PlayObject.m_dwDedingUseTick := GetTickCount;
        if MagGroupDeDing(PlayObject, UserMagic, nTargetX, nTargetY, TargeTBaseObject) then
           boTrain := True;
         //end;
       end;
-    SKILL_41: begin //Ê¨×Óºğ
+    SKILL_41: begin //ç‹®å­å¼
         if MagGroupMb(PlayObject, UserMagic, nTargetX, nTargetY, TargeTBaseObject) then
           boTrain := True;
       end;
-    SKILL_42: begin //ÁúÓ°½£·¨
+    SKILL_42: begin //é¾™å½±å‰‘æ³•
         if MagWideAttack(PlayObject, UserMagic) then
           boTrain := True;
       end;
-    //·¨Ê¦
-    SKILL_44: begin //½á±ùÕÆ
+    //æ³•å¸ˆ
+    SKILL_44: begin //ç»“å†°æŒ
         if MagHbFireBall(PlayObject, UserMagic, nTargetX, nTargetY,
           PlayObject.GetAttackPower(GetPower(MPow(UserMagic)) + LoWord(PlayObject.m_WAbil.MC),
           SmallInt(HiWord(PlayObject.m_WAbil.MC) - LoWord(PlayObject.m_WAbil.MC)) + 1),
           TargeTBaseObject) then
           boTrain := True;
+        // === æ–°å¢: ç»“å†°æŒé™„åŠ å†°å†»Debuff ===
+        if (g_BuffManager <> nil) and (TargeTBaseObject <> nil) and boTrain then
+        begin
+          g_BuffManager.AddBuff(TargeTBaseObject, DEBUFF_TYPE_FREEZE,
+            3000 + UserMagic.btLevel * 1000, 0, 0, PlayObject.m_nHandle);
+        end;
       end;
-    SKILL_45: begin //ÃğÌì»ğ
+    SKILL_45: begin //ç­å¤©ç«
         if MagMakeFireDay(PlayObject, UserMagic, nTargetX, nTargetY, TargeTBaseObject) then
           boTrain := True;
       end;
-    SKILL_46: begin //·ÖÉíÊõ
+    SKILL_46: begin //åˆ†èº«æœ¯
         {if MagMakeSelf(PlayObject, TargeTBaseObject, UserMagic) then begin
 
         end;  }
         boTrain := True;
       end;
-    SKILL_47: begin //»ğÁúÆøÑæ
+    SKILL_47: begin //ç«é¾™æ°”ç„°
         if MagBigExplosion(PlayObject,
           PlayObject.GetAttackPower(GetPower(MPow(UserMagic)) + LoWord(PlayObject.m_WAbil.MC),
           SmallInt(HiWord(PlayObject.m_WAbil.MC) - LoWord(PlayObject.m_WAbil.MC)) + 1),
@@ -1207,37 +1262,54 @@ begin
           g_Config.nFireBoomRage {1}, UserMagic.wMagIdx) then
           boTrain := True;
       end;
-    //µÀÊ¿
-    SKILL_48: begin //Æø¹¦²¨
+    //é“å£«
+    SKILL_48: begin //æ°”åŠŸæ³¢
         if MagPushArround(PlayObject, UserMagic.wMagIdx, UserMagic.btLevel) > 0 then
           boTrain := True;
       end;
-    SKILL_49: begin //¾»»¯Êõ
+    SKILL_49: begin //å‡€åŒ–æœ¯
         boTrain := True;
+        // === æ–°å¢: å‡€åŒ–æœ¯ç§»é™¤æ‰€æœ‰Debuff ===
+        if (TargeTBaseObject <> nil) and (g_BuffManager <> nil) then
+        begin
+          g_BuffManager.RemoveAllDebuffs(TargeTBaseObject);
+          TargeTBaseObject.SysMsg('ä½ èº«ä¸Šçš„è´Ÿé¢çŠ¶æ€è¢«å‡€åŒ–äº†!', 0);
+        end
+        else if (g_BuffManager <> nil) then
+        begin
+          g_BuffManager.RemoveAllDebuffs(PlayObject);
+          PlayObject.SysMsg('è´Ÿé¢çŠ¶æ€å·²æ¸…é™¤!', 0);
+        end;
       end;
-    SKILL_50: begin //ÎŞ¼«ÕæÆø
+    SKILL_50: begin //æ— æçœŸæ°”
         if PlayObject.AbilityUp(UserMagic) then
           boTrain := True;
+        // === æ–°å¢: æ— æçœŸæ°”é™„åŠ æ”»å‡»BUFF ===
+        if (g_BuffManager <> nil) and boTrain then
+        begin
+          g_BuffManager.AddBuff(PlayObject, BUFF_TYPE_ATK_UP,
+            30000, 10 + UserMagic.btLevel * 5, 0, 0);
+        end;
       end;
-    SKILL_51: begin //ì«·çÆÆ
+    SKILL_51: begin //é£“é£ç ´
         if MagGroupFengPo(PlayObject, UserMagic, nTargetX, nTargetY, TargeTBaseObject) then
           boTrain := True;
       end;
-    SKILL_53: begin //ÊÉÑªÊõ
+    SKILL_53: begin //å™¬è¡€æœ¯
         if MagVampire(PlayObject, UserMagic, nTargetX, nTargetY, TargeTBaseObject) then
           boTrain := True;
       end;
-    SKILL_54: begin //÷¼÷ÃÖä
+    SKILL_54: begin //éª·é«…å’’
         if PlayObject.IsProperTargetSKILL_54(TargeTBaseObject) then begin
           if MagTamming2(PlayObject, TargeTBaseObject, nTargetX, nTargetY, UserMagic.btLevel) then
             boTrain := True;
         end;
       end;
-    SKILL_55: begin //ÇÜÁúÊÖ
+    SKILL_55: begin //æ“’é¾™æ‰‹
         if MagMakeArrestObject(PlayObject, UserMagic, TargeTBaseObject) then
           boTrain := True;
       end;
-    {SKILL_56: begin //ÒÆĞĞ»»Î»
+    {SKILL_56: begin //ç§»è¡Œæ¢ä½
         if MagChangePosition(PlayObject, nTargetX, nTargetY, TargeTBaseObject) then
           boTrain := True;
       end;   }
@@ -1251,7 +1323,7 @@ begin
           UserMagic.wMagIdx) then
           boTrain := True;
       end;
-    SKILL_58: begin //À¶Ñª¶Ü
+    SKILL_58: begin //è“è¡€ç›¾
         boSpellFail := True;
         if PlayObject.m_wStatusTimeArr[STATE_BUBBLEDEFENCEUP] = 0 then begin
           boSpellFail := False;
@@ -1260,10 +1332,10 @@ begin
             boTrain := True;
         end;
       end;
-    SKILL_59: begin //Ğı·ç±ùÈĞ
+    SKILL_59: begin //æ—‹é£å†°åˆƒ
         boTrain := True;
       end;
-    SKILL_60: begin //¸´»î
+    SKILL_60: begin //å¤æ´»
         if (TargeTBaseObject <> nil) and TargeTBaseObject.m_boDeath and
           PlayObject.IsProperFriend(TargeTBaseObject) and
           (TargeTBaseObject.m_btRaceServer = RC_PLAYOBJECT) and
@@ -1278,16 +1350,16 @@ begin
           boTrain := True;
         end;
       end;
-    SKILL_61: begin //Èº¹¥
+    SKILL_61: begin //ç¾¤æ”»
         boTrain := True;
       end;
-    SKILL_62: begin //¼ÓÑª
+    SKILL_62: begin //åŠ è¡€
         if PlayObject.m_PEnvir.GetEvent(nTargetX, nTargetY) = nil then begin
           g_EventManager.AddEvent(TFireBurnEvent.Create(PlayObject, nTargetX, nTargetY, ET_INCHP, 10 * 1000, 100));
         end; //00492E3E
         boTrain := True;
       end;
-    SKILL_63: begin   //ÒÆĞÎ»»Î»
+    SKILL_63: begin   //ç§»å½¢æ¢ä½
         //if PlayObject.m_PEnvir.CanWalk(nTargetX, nTargetY) then
         MapFlag := [];
         if g_Config.boSkill63RunHum then MapFlag := MapFlag + [wf_Hum];
@@ -1309,7 +1381,7 @@ begin
           end;
         end;
       end;
-    SKILL_65: begin //ÕÙ»½ÔÂÁé
+    SKILL_65: begin //å¬å”¤æœˆçµ
         if MagMakeMoonSlave(PlayObject, UserMagic) then begin
             boTrain := True;
           end;
@@ -1449,10 +1521,10 @@ begin
             boTrain := True;
         end;
       end;
-    SKILL_123: begin //Å­Æø±¬·¢
+    SKILL_123: begin //æ€’æ°”çˆ†å‘
 
       end;
-    SKILL_124: begin //ÒĞÌì±ÙµØ
+    SKILL_124: begin //å€šå¤©è¾Ÿåœ°
         nPower := 0;
         nTargetX := PlayObject.m_nCurrX;
         nTargetY := PlayObject.m_nCurrY;
@@ -1607,7 +1679,7 @@ begin
       end
       else begin
         if not (TargeTBaseObject.m_btLifeAttrib = LA_UNDEAD) then
-          TargeTBaseObject.OpenCrazyMode(Random(20) + 10); //±äºì
+          TargeTBaseObject.OpenCrazyMode(Random(20) + 10); //å˜çº¢
       end;
     end;
   end;
@@ -1681,7 +1753,7 @@ begin
           end
           else begin //00492674
             if not (TargeTBaseObject.m_btLifeAttrib = LA_UNDEAD) then
-              TargeTBaseObject.OpenCrazyMode(Random(20) + 10); //±äºì
+              TargeTBaseObject.OpenCrazyMode(Random(20) + 10); //å˜çº¢
           end;
         end; //004926B0
       end
@@ -1811,7 +1883,7 @@ begin
 end;
 
 function TMagicManager.MagGroupAmyounsul(PlayObject: TPlayObject
-  { ĞŞ¸Ä TBaseObject};
+  { ä¿®æ”¹ TBaseObject};
   UserMagic: pTUserMagic; nTargetX, nTargetY: Integer;
   TargeTBaseObject: TBaseObject): Boolean;
   {procedure sub_4934B4;
@@ -1845,7 +1917,7 @@ begin
             1: begin
                 nPower := GetPower13(40, UserMagic) + GetRPow(PlayObject.m_WAbil.SC) * 2;
                 BaseObject.SendDelayMsg(PlayObject, RM_POISON, POISON_DECHEALTH
-                  {ÖĞ¶¾ÀàĞÍ - ÂÌ¶¾}, nPower, Integer(PlayObject),
+                  {ä¸­æ¯’ç±»å‹ - ç»¿æ¯’}, nPower, Integer(PlayObject),
                   ROUND(UserMagic.btLevel / 3 * (nPower /
                   g_Config.nAmyOunsulPoint)) {UserMagic.btLevel}, '', 1000);
                 BaseObject.MagicQuest(PlayObject, UserMagic.wMagIdx, mfs_TagEx);
@@ -1853,7 +1925,7 @@ begin
             2: begin
                 nPower := GetPower13(30, UserMagic) + GetRPow(PlayObject.m_WAbil.SC) * 2;
                 BaseObject.SendDelayMsg(PlayObject, RM_POISON,
-                  POISON_DAMAGEARMOR {ÖĞ¶¾ÀàĞÍ - ºì¶¾}, nPower,
+                  POISON_DAMAGEARMOR {ä¸­æ¯’ç±»å‹ - çº¢æ¯’}, nPower,
                   Integer(PlayObject), ROUND(UserMagic.btLevel / 3 * (nPower /
                   g_Config.nAmyOunsulPoint)) {UserMagic.btLevel}, '', 1000);
                 BaseObject.MagicQuest(PlayObject, UserMagic.wMagIdx, mfs_TagEx);
@@ -1960,7 +2032,7 @@ begin
   BaseObjectList.Free;
 end;
 
-function TMagicManager.MagLightening(PlayObject: TPlayObject {ĞŞ¸Ä TBaseObject};
+function TMagicManager.MagLightening(PlayObject: TPlayObject {ä¿®æ”¹ TBaseObject};
   UserMagic: pTUserMagic; nTargetX, nTargetY: Integer;
   TargeTBaseObject: TBaseObject): Boolean;
 var
@@ -1988,7 +2060,7 @@ var
       Result := LoWord(wInt);
   end;
 
-begin //Ê©¶¾Êõ
+begin //æ–½æ¯’æœ¯
   Result := False;
   //boSpellFail := True;
   if TargeTBaseObject = nil then
@@ -2003,7 +2075,7 @@ begin //Ê©¶¾Êõ
             1: begin
                 nPower := GetPower13(40) + GetRPow(PlayObject.m_WAbil.SC) * 2;
                 TargeTBaseObject.SendDelayMsg(PlayObject, RM_POISON,
-                  POISON_DECHEALTH {ÖĞ¶¾ÀàĞÍ - ÂÌ¶¾}, nPower, Integer(PlayObject),
+                  POISON_DECHEALTH {ä¸­æ¯’ç±»å‹ - ç»¿æ¯’}, nPower, Integer(PlayObject),
                   ROUND(UserMagic.btLevel / 3 * (nPower /
                   g_Config.nAmyOunsulPoint)) {UserMagic.btLevel}, '', 800);
                 TargeTBaseObject.MagicQuest(PlayObject, UserMagic.wMagIdx, mfs_TagEx);
@@ -2011,7 +2083,7 @@ begin //Ê©¶¾Êõ
             2: begin
                 nPower := GetPower13(30) + GetRPow(PlayObject.m_WAbil.SC) * 2;
                 TargeTBaseObject.SendDelayMsg(PlayObject, RM_POISON,
-                  POISON_DAMAGEARMOR {ÖĞ¶¾ÀàĞÍ - ºì¶¾}, nPower,
+                  POISON_DAMAGEARMOR {ä¸­æ¯’ç±»å‹ - çº¢æ¯’}, nPower,
                   Integer(PlayObject), ROUND(UserMagic.btLevel / 3 * (nPower /
                   g_Config.nAmyOunsulPoint)) {UserMagic.btLevel}, '', 800);
                 TargeTBaseObject.MagicQuest(PlayObject, UserMagic.wMagIdx, mfs_TagEx);
@@ -2102,7 +2174,7 @@ begin
   end;
 end;
 
-//²úÉúÈÎÒâĞÎ×´µÄ»ğ
+//äº§ç”Ÿä»»æ„å½¢çŠ¶çš„ç«
 
 function TMagicManager.MagMakeSuperFireCross(PlayObject: TPlayObject; nDamage,
   nHTime, nX, nY: Integer; nCount: Integer): Integer;
@@ -2288,15 +2360,15 @@ begin
   end;
 end;
 
-//»ğÇ½
+//ç«å¢™
 
 function TMagicManager.MagMakeFireCross(PlayObject: TPlayObject; nDamage,
   nHTime, nX, nY: Integer): Integer; //00492C9C
 var
   FireBurnEvent: TFireBurnEvent;
 resourcestring
-  sDisableInSafeZoneFireCross = '°²È«Çø²»ÔÊĞíÊ¹ÓÃ...';
-  sDisableInSafeZoneFireCross1 = 'µ±Ç°µØÍ¼²»ÔÊĞíÊ¹ÓÃ...';
+  sDisableInSafeZoneFireCross = 'å®‰å…¨åŒºä¸å…è®¸ä½¿ç”¨...';
+  sDisableInSafeZoneFireCross1 = 'å½“å‰åœ°å›¾ä¸å…è®¸ä½¿ç”¨...';
 begin
   Result := 0;
   if g_Config.boDisableInSafeZoneFireCross and
@@ -2374,7 +2446,7 @@ begin
               MakePoisonInfo.nY := nY;
               MakePoisonInfo.nRate := 3;
               MakePoisonInfo.boFastParalysis := g_Config.boSkill70MbFastParalysis;
-              TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_STONE {ÖĞ¶¾ÀàĞÍ - Âé±Ô}, nTime, Integer(MakePoisonInfo), 0, '', 600);
+              TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_STONE {ä¸­æ¯’ç±»å‹ - éº»ç—¹}, nTime, Integer(MakePoisonInfo), 0, '', 600);
              end;
           end else begin
             if (TargeTBaseObject.m_Master <> nil) and (TargeTBaseObject.m_Master.m_btRaceServer = RC_PLAYOBJECT) then begin
@@ -2385,7 +2457,7 @@ begin
                 MakePoisonInfo.nY := nY;
                 MakePoisonInfo.nRate := 3;
                 MakePoisonInfo.boFastParalysis := g_Config.boSkill70MbFastParalysis;
-                TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_STONE {ÖĞ¶¾ÀàĞÍ - Âé±Ô}, nTime, Integer(MakePoisonInfo), 0, '', 600);
+                TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_STONE {ä¸­æ¯’ç±»å‹ - éº»ç—¹}, nTime, Integer(MakePoisonInfo), 0, '', 600);
               end;
             end else begin
               if g_Config.boSkill70MbAttackMon then begin
@@ -2395,7 +2467,7 @@ begin
                 MakePoisonInfo.nY := nY;
                 MakePoisonInfo.nRate := 3;
                 MakePoisonInfo.boFastParalysis := g_Config.boSkill70MbFastParalysis;
-                TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_STONE {ÖĞ¶¾ÀàĞÍ - Âé±Ô}, nTime, Integer(MakePoisonInfo), 0, '', 600);
+                TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_STONE {ä¸­æ¯’ç±»å‹ - éº»ç—¹}, nTime, Integer(MakePoisonInfo), 0, '', 600);
               end;
             end;
           end;
@@ -2438,7 +2510,7 @@ begin
             MakePoisonInfo.nY := nY;
             MakePoisonInfo.nRate := 3;
             MakePoisonInfo.boFastParalysis := g_Config.boSkill71MbFastParalysis;
-            TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_STONE {ÖĞ¶¾ÀàĞÍ - Âé±Ô}, nTime, Integer(MakePoisonInfo), 0, '', 600);
+            TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_STONE {ä¸­æ¯’ç±»å‹ - éº»ç—¹}, nTime, Integer(MakePoisonInfo), 0, '', 600);
            end;
         end else begin
           if (TargeTBaseObject.m_Master <> nil) and (TargeTBaseObject.m_Master.m_btRaceServer = RC_PLAYOBJECT) then begin
@@ -2449,7 +2521,7 @@ begin
               MakePoisonInfo.nY := nY;
               MakePoisonInfo.nRate := 3;
               MakePoisonInfo.boFastParalysis := g_Config.boSkill71MbFastParalysis;
-              TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_STONE {ÖĞ¶¾ÀàĞÍ - Âé±Ô}, nTime, Integer(MakePoisonInfo), 0, '', 600);
+              TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_STONE {ä¸­æ¯’ç±»å‹ - éº»ç—¹}, nTime, Integer(MakePoisonInfo), 0, '', 600);
             end;
           end else begin
             if g_Config.boSkill71MbAttackMon then begin
@@ -2459,7 +2531,7 @@ begin
               MakePoisonInfo.nY := nY;
               MakePoisonInfo.nRate := 3;
               MakePoisonInfo.boFastParalysis := g_Config.boSkill71MbFastParalysis;
-              TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_STONE {ÖĞ¶¾ÀàĞÍ - Âé±Ô}, nTime, Integer(MakePoisonInfo), 0, '', 600);
+              TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_STONE {ä¸­æ¯’ç±»å‹ - éº»ç—¹}, nTime, Integer(MakePoisonInfo), 0, '', 600);
             end;
           end;
         end;
@@ -2500,7 +2572,7 @@ begin
         MakePoisonInfo.nX := nX;
         MakePoisonInfo.nY := nY;
         MakePoisonInfo.nRate := 3;
-        TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_DAMAGEARMOR {ÖĞ¶¾ÀàĞÍ - ºì¶¾}, nPower, Integer(MakePoisonInfo),
+        TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_DAMAGEARMOR {ä¸­æ¯’ç±»å‹ - çº¢æ¯’}, nPower, Integer(MakePoisonInfo),
           ROUND(UserMagic.btLevel / 3 * (nPower / g_Config.nAmyOunsulPoint)) {UserMagic.btLevel}, '', 1200);
       end;
       if g_Config.boSkill72DecHealth then begin
@@ -2510,7 +2582,7 @@ begin
         MakePoisonInfo.nX := nX;
         MakePoisonInfo.nY := nY;
         MakePoisonInfo.nRate := 3;
-        TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_DECHEALTH {ÖĞ¶¾ÀàĞÍ - ÂÌ¶¾}, nPower, Integer(MakePoisonInfo),
+        TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_DECHEALTH {ä¸­æ¯’ç±»å‹ - ç»¿æ¯’}, nPower, Integer(MakePoisonInfo),
           ROUND(UserMagic.btLevel / 3 * (nPower / g_Config.nAmyOunsulPoint)) {UserMagic.btLevel}, '', 1200);
       end;
 
@@ -2523,7 +2595,7 @@ begin
             MakePoisonInfo.nY := nY;
             MakePoisonInfo.nRate := 3;
             MakePoisonInfo.boFastParalysis := g_Config.boSkill72MbFastParalysis;
-            TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_STONE {ÖĞ¶¾ÀàĞÍ - Âé±Ô}, nTime, Integer(MakePoisonInfo), 0, '', 1200);
+            TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_STONE {ä¸­æ¯’ç±»å‹ - éº»ç—¹}, nTime, Integer(MakePoisonInfo), 0, '', 1200);
            end;
         end else begin
           if (TargeTBaseObject.m_Master <> nil) and (TargeTBaseObject.m_Master.m_btRaceServer = RC_PLAYOBJECT) then begin
@@ -2534,7 +2606,7 @@ begin
               MakePoisonInfo.nY := nY;
               MakePoisonInfo.nRate := 3;
               MakePoisonInfo.boFastParalysis := g_Config.boSkill72MbFastParalysis;
-              TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_STONE {ÖĞ¶¾ÀàĞÍ - Âé±Ô}, nTime, Integer(MakePoisonInfo), 0, '', 1200);
+              TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_STONE {ä¸­æ¯’ç±»å‹ - éº»ç—¹}, nTime, Integer(MakePoisonInfo), 0, '', 1200);
             end;
           end else begin
             if g_Config.boSkill72MbAttackMon then begin
@@ -2544,7 +2616,7 @@ begin
               MakePoisonInfo.nY := nY;
               MakePoisonInfo.nRate := 3;
               MakePoisonInfo.boFastParalysis := g_Config.boSkill72MbFastParalysis;
-              TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_STONE {ÖĞ¶¾ÀàĞÍ - Âé±Ô}, nTime, Integer(MakePoisonInfo), 0, '', 1200);
+              TargeTBaseObject.SendDelayMsg(PlayObject, RM_MAKEPOISON, POISON_STONE {ä¸­æ¯’ç±»å‹ - éº»ç—¹}, nTime, Integer(MakePoisonInfo), 0, '', 1200);
             end;
           end;
 
@@ -2775,16 +2847,16 @@ begin
   BaseObjectList.Free;
 end;
 //=====================================================================================
-//Ãû³Æ£º
-//¹¦ÄÜ£º
-//²ÎÊı£º
-//     BaseObject       Ä§·¨·¢ÆğÈË
-//     TargeTBaseObject ÊÜ¹¥»÷½ÇÉ«
-//     nPower           Ä§·¨Á¦´óĞ¡
-//     nLevel           ¼¼ÄÜĞŞÁ¶µÈ¼¶
-//     nTargetX         Ä¿±ê×ù±êX
-//     nTargetY         Ä¿±ê×ù±êY
-//·µ»ØÖµ£º
+//åç§°ï¼š
+//åŠŸèƒ½ï¼š
+//å‚æ•°ï¼š
+//     BaseObject       é­”æ³•å‘èµ·äºº
+//     TargeTBaseObject å—æ”»å‡»è§’è‰²
+//     nPower           é­”æ³•åŠ›å¤§å°
+//     nLevel           æŠ€èƒ½ä¿®ç‚¼ç­‰çº§
+//     nTargetX         ç›®æ ‡åº§æ ‡X
+//     nTargetY         ç›®æ ‡åº§æ ‡Y
+//è¿”å›å€¼ï¼š
 //=====================================================================================
 
 function TMagicManager.MabMabe(BaseObject, TargeTBaseObject: TBaseObject;
@@ -2824,9 +2896,9 @@ begin
               //BaseObject.SendMsg(BaseObject, RM_DELAYMAGIC, nPower, MakeLong(nTargetX, nTargetY), 2, Integer(TargeTBaseObject), '');
               if not TargeTBaseObject.m_boUnParalysis then
                 TargeTBaseObject.SendDelayMsg(BaseObject, RM_POISON, POISON_STONE
-                  {ÖĞ¶¾ÀàĞÍ - Âé±Ô}, nPower div g_Config.nMabMabeHitMabeTimeRate
+                  {ä¸­æ¯’ç±»å‹ - éº»ç—¹}, nPower div g_Config.nMabMabeHitMabeTimeRate
                   {20}+ Random(nLevel), Integer(BaseObject), nLevel, '', 650);
-              //TargeTBaseObject.SendDelayMsg(BaseObject, RM_POISON, POISON_STONE {ÖĞ¶¾ÀàĞÍ - Âé±Ô}, nPower div g_Config.nMabMabeHitMabeTimeRate {20} + Random(nLevel), Integer(BaseObject), nLevel, '', 10);
+              //TargeTBaseObject.SendDelayMsg(BaseObject, RM_POISON, POISON_STONE {ä¸­æ¯’ç±»å‹ - éº»ç—¹}, nPower div g_Config.nMabMabeHitMabeTimeRate {20} + Random(nLevel), Integer(BaseObject), nLevel, '', 10);
             end;
             Result := True;
           end;

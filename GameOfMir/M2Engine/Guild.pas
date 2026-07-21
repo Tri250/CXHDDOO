@@ -32,13 +32,13 @@ type
     m_NoticeList: TStringList;
     m_GuildWarList: TStringList;
     m_GuildAllList: TStringList;
-    m_RankList: TList; // ְλ�б�
+    m_RankList: TList; // 职位列表
 
     m_sChiefName: string;
-    m_sCreateGuildName: string;  //�лᴴʼ��
-    m_dwCreateGuildTime: TDateTime; //�лᴴ��ʱ��
+    m_sCreateGuildName: string;  //行会创始人
+    m_dwCreateGuildTime: TDateTime; //行会创建时间
     m_dwCallGuildTime: TDateTime;
-    m_btMaxMemberCount: Byte; //�л���Ա����
+    m_btMaxMemberCount: Byte; //行会人员数量
     m_btKillMonExpRate: Byte;
     m_btKillMonAttackRate: Byte;
     m_AttackCastle: TObject;
@@ -60,14 +60,30 @@ type
     m_boInfoRead: Boolean;
     m_dwRunTick: LongWord;
   private
-    m_btGuildLevel: Byte; //�л�ȼ�
-    m_nMoneyCount: Integer; //�л��ʽ�
-    m_nBuildPoint: Integer; //������
-    m_nActivityPoint: Integer; //������
-    m_nStabilityPoint: Integer; //������
-    m_nFlourishingPoint: Integer; //���ٶ�
-    m_nMaxActivityPoint: Integer; //���������
+    m_btGuildLevel: Byte; //行会等级
+    m_nMoneyCount: Integer; //行会资金
+    m_nBuildPoint: Integer; //建筑度
+    m_nActivityPoint: Integer; //人气度
+    m_nStabilityPoint: Integer; //安定度
+    m_nFlourishingPoint: Integer; //繁荣度
+    m_nMaxActivityPoint: Integer; //最高人气度
     m_nKillMobCount: Integer;
+
+    // === 新增: 行会科技树字段 ===
+    m_GuildTechList: TList;              // 行会科技列表(TGuildTech)
+    m_boTechChanged: Boolean;            // 科技是否变更
+    m_nTechUpgradeCount: Integer;        // 科技升级次数
+
+    // === 新增: 行会仓库字段 ===
+    m_GuildStorageList: TList;           // 行会仓库物品列表(TUserItem)
+    m_boStorageChanged: Boolean;         // 仓库是否变更
+    m_nStorageGold: Integer;             // 行会仓库金币
+    m_nStorageMaxSlots: Integer;         // 行会仓库最大容量
+    m_boStoragePublic: Boolean;          // 行会仓库是否公开给盟友
+
+    // === 新增: 行会活动积分 ===
+    m_nGuildActivityScore: Integer;     // 行会活动积分
+    m_dwLastActivityTime: LongWord;     // 上次活动时间
     procedure ClearRank(var RankList: TList);
     function LoadGuildFile(sGuildFileName: string): Boolean;
     procedure SaveGuildFile(sFileName: string);
@@ -143,6 +159,29 @@ type
     property nFlourishingPoint: Integer read m_nFlourishingPoint write SetFlourishingPoint;
     property btLevel: Byte read m_btGuildLevel write SetGuildLevel;
     property nMaxActivityPoint: Integer read m_nMaxActivityPoint;
+
+    // === 新增: 行会科技树方法 ===
+    procedure InitGuildTechs;                    // 初始化科技树
+    function UpgradeTech(nTechID: Word): Boolean; // 升级科技
+    function GetTechLevel(nTechID: Word): Integer; // 获取科技等级
+    function GetTechEffect(nTechID: Word): Integer; // 获取科技效果值
+    function GetTechList: TList;                 // 获取科技列表
+    procedure CalcTechModifiers(var AddAbility: TAddAbility); // 计算科技属性加成
+    procedure SendTechInfo(PlayObject: TPlayObject); // 发送科技信息给客户端
+    procedure CheckTechUpgrade;                  // 检查科技升级完成
+
+    // === 新增: 行会仓库方法 ===
+    function AddStorageItem(UserItem: pTUserItem): Boolean;  // 存入物品
+    function RemoveStorageItem(nSlot: Integer): pTUserItem;  // 取出物品
+    function GetStorageItem(nSlot: Integer): pTUserItem;     // 查看物品
+    function GetStorageItemCount: Integer;                   // 获取物品数量
+    function GetStorageUsedSlots: Integer;                   // 获取已用槽位
+    procedure InitStorage;                                    // 初始化仓库
+    procedure SaveStorage;                                    // 保存仓库
+    procedure LoadStorage;                                    // 加载仓库
+    procedure SendStorageInfo(PlayObject: TPlayObject);       // 发送仓库信息
+    function CanAccessStorage(PlayObject: TPlayObject): Boolean; // 检查访问权限
+    function DonateStorageGold(PlayObject: TPlayObject; nAmount: Integer): Boolean; // 捐献金币
   end;
 
   TGuildManager = class
@@ -236,7 +275,7 @@ begin
           WarGuild := pTWarGuild(m_GuildWarList.Objects[I]);
           WarGuild.dwWarTick := GetTickCount();
           WarGuild.dwWarTime := g_Config.dwGuildWarTime;
-          SendGuildMsg('��[' + Guild.m_sGuildName + ']�л�ս��������' + IntToStr(g_Config.dwGuildWarTime div 1000 div 60) + '���ӡ�');
+          SendGuildMsg('与[' + Guild.m_sGuildName + ']行会战争将持续' + IntToStr(g_Config.dwGuildWarTime div 1000 div 60) + '分钟。');
           break;
         end;
       end;
@@ -247,7 +286,7 @@ begin
         WarGuild.dwWarTick := GetTickCount();
         WarGuild.dwWarTime := g_Config.dwGuildWarTime {10800000};
         m_GuildWarList.AddObject(Guild.m_sGuildName, TObject(WarGuild));
-        SendGuildMsg('��[' + Guild.m_sGuildName + ']�л�ս����ʼ(' + IntToStr(g_Config.dwGuildWarTime div 1000 div 60) + '����)');
+        SendGuildMsg('与[' + Guild.m_sGuildName + ']行会战争开始(' + IntToStr(g_Config.dwGuildWarTime div 1000 div 60) + '分钟)');
         RefMemberName();
         IncSocietyIndex;
       end;
@@ -309,17 +348,17 @@ begin
 
   m_dwRunTick := GetTickCount + 60 * 60 * 1000;
 
-  m_sCreateGuildName := '';  //�лᴴʼ��
-  m_dwCreateGuildTime := Now; //�лᴴ��ʱ��
+  m_sCreateGuildName := '';  //行会创始人
+  m_dwCreateGuildTime := Now; //行会创建时间
   m_btGuildLevel := 0;
-  m_btMaxMemberCount := g_Config.nDefGuildMemberLimit; //�л���Ա����
+  m_btMaxMemberCount := g_Config.nDefGuildMemberLimit; //行会人员数量
   m_btKillMonExpRate := 0;
   m_btKillMonAttackRate := 0;
-  m_nMoneyCount := 0; //�л��ʽ�
-  m_nBuildPoint := 0; //������
-  m_nActivityPoint := 0; //������
-  m_nStabilityPoint := 0; //������
-  m_nFlourishingPoint := 0; //���ٶ�
+  m_nMoneyCount := 0; //行会资金
+  m_nBuildPoint := 0; //建筑度
+  m_nActivityPoint := 0; //人气度
+  m_nStabilityPoint := 0; //安定度
+  m_nFlourishingPoint := 0; //繁荣度
   m_nMaxActivityPoint := 0;
   m_nKillMobCount := 0;
   m_boChanged := False;
@@ -453,7 +492,7 @@ end;
 
 procedure TGuild.DelWarGuild(Guild: TGuild);
 begin
-  SendGuildMsg('��[' + Guild.m_sGuildName + ']�л�ս������');
+  SendGuildMsg('与[' + Guild.m_sGuildName + ']行会战争结束');
 end;
 
 destructor TGuild.Destroy;
@@ -524,7 +563,7 @@ begin
       DecStabilityPoint(GuildExp.nStabilityPoint);
       IncLevel(1);
       RefGuildMemberMaxCount;
-      SendGuildMsg('�л�ɹ���������' + IntToStr(m_btGuildLevel) + '��.');
+      SendGuildMsg('行会成功升级到了' + IntToStr(m_btGuildLevel) + '级.');
       Result := True;
     end;
   end;
@@ -541,12 +580,12 @@ var
 begin
   Result := 0;
   case nWork of
-    0: begin  //����
+    0: begin  //存入
       if (nGold > 9999) and (PlayObject.m_nGold >= nGold) then begin
         IncMoneyCount(nGold);
         Dec(PlayObject.m_nGold, nGold);
         PlayObject.GoldChanged;
-        SendGuildMsg('[' + PlayObject.m_sCharName + ']�����л��ʽ� ' + IntToStr(nGold) + '��ң�');
+        SendGuildMsg('[' + PlayObject.m_sCharName + ']存入行会资金 ' + IntToStr(nGold) + '金币！');
       end else
         Result := 2;
     end;
@@ -583,7 +622,7 @@ begin
                 if IntegerChange(SendObject.m_nGold, nPlayGold, INT_ADD) then
                   SendObject.GoldChanged;
                 SendObject.SendMsg(SendObject, RM_GUILDMESSAGE, 0, g_Config.nGuildMsgFColor, g_Config.nGuildMsgBColor,
-                    0, '��ϲ���߳�Աÿ�˻��' + IntToStr(nPlayGold) + '��ҽ�����');
+                    0, '恭喜在线成员每人获得' + IntToStr(nPlayGold) + '金币奖励！');
               end;
             end else
               Result := 3;
@@ -632,7 +671,7 @@ begin
   Inc(m_nKillMobCount);
   if m_nKillMobCount >= 100 then begin
     m_nKillMobCount := 0;
-    IncFlourishingPoint(1);  //ÿ����100���������һ���лᷱ��ֵ
+    IncFlourishingPoint(1);  //每消灭100个怪物，增加一点行会繁荣值
   end;
 end;
 
@@ -819,7 +858,7 @@ begin
   try
     SaveList.SaveToFile(sFileName);
   except
-    MainOutMessage('�����л���Ϣʧ��. ' + sFileName);
+    MainOutMessage('保存行会信息失败. ' + sFileName);
   end;
   SaveList.Free;
 end;
@@ -1145,7 +1184,7 @@ begin
   m_btGuildLevel := nLevel;
   IncInfoIndex;
   RefGuildMemberMaxCount;
-  SendGuildMsg('�л�ɹ���������' + IntToStr(m_btGuildLevel) + '��.');
+  SendGuildMsg('行会成功升级到了' + IntToStr(m_btGuildLevel) + '级.');
 end;
 
 procedure TGuild.SetMoneyCount(const Value: Integer);
@@ -1265,11 +1304,11 @@ begin
     sRankData := GetValidStr3(sRankData, sRankInfo, [#$0D]);
     sRankInfo := Trim(sRankInfo);
     if sRankInfo = '' then Continue;
-    if sRankInfo[1] = '#' then begin //ȡ��ְ�Ƶ�����
+    if sRankInfo[1] = '#' then begin //取得职称的名称
       sRankInfo := Copy(sRankInfo, 2, Length(sRankInfo) - 1);
       sRankInfo := GetValidStr3(sRankInfo, sRankNo, [' ', '<']);
       sRankInfo := GetValidStr3(sRankInfo, sRankName, ['<', '>']);
-      if Length(sRankName) > 16 then //Jacky ����ְ�Ƶĳ���
+      if Length(sRankName) > 16 then //Jacky 限制职称的长度
         sRankName := Copy(sRankName, 1, 16);
       sRankName := Trim(sRankName);
       if GuildRank <> nil then begin
@@ -1278,22 +1317,22 @@ begin
       sRankName := Trim(sRankName);
       nRankNo := StrToIntDef(sRankNo, -1);
       if sRankName = '' then begin
-        Result := -3; //RankName ����Ϊ��
+        Result := -3; //RankName 不能为空
         ClearRankList(GuildRankList, False);
         Exit;
       end else
       if not CheckCorpsChr(sRankName) then begin
-        Result := -8; //RankName �а��������ַ�
+        Result := -8; //RankName 中包含特殊字符
         ClearRankList(GuildRankList, False);
         Exit;
       end else
       if not (nRankNo in [1..99]) then begin
-        Result := -11; //RankName ���ְλ���Ƿ�Ƿ�
+        Result := -11; //RankName 检查职位号是否非法
         ClearRankList(GuildRankList, False);
         Exit;
       end else
       if RankArr[nRankNo] then begin
-        Result := -7; //RankName ���ְλ���Ƿ�Ƿ�
+        Result := -7; //RankName 检查职位号是否非法
         ClearRankList(GuildRankList, False);
         Exit;
       end;
@@ -1307,7 +1346,7 @@ begin
 
     if GuildRank = nil then Continue;
 
-    while (True) do begin //����Ա���Ƽ���ְ�Ʊ���
+    while (True) do begin //将成员名称加入职称表里
       if sRankInfo = '' then break;
       sRankInfo := GetValidStr3(sRankInfo, sMemberName, [' ', ',']);
       if sMemberName <> '' then begin
@@ -1322,22 +1361,22 @@ begin
     GuildRankList.Add(GuildRank);
   end;
   if nAdminCount < 1 then begin
-    Result := -5; //RankName �����������
+    Result := -5; //RankName 检查掌门数量
     ClearRankList(GuildRankList, False);
     Exit;
   end;
   if nAdminCount > 1 then begin
-    Result := -4; //RankName �����������
+    Result := -4; //RankName 检查掌门数量
     ClearRankList(GuildRankList, False);
     Exit;
   end;
   if nAdmin2Count > 2 then begin
-    Result := -9; //RankName ��鸱��������
+    Result := -9; //RankName 检查副掌门数量
     ClearRankList(GuildRankList, False);
     Exit;
   end;
 
-  //У���Ա�б��Ƿ��иı䣬���δ�޸����˳�
+  //校验成员列表是否有改变，如果未修改则退出
   //boCheckChange := False;
   if m_RankList.Count = GuildRankList.Count then begin
     boCheckChange := True;
@@ -1349,7 +1388,7 @@ begin
         (GuildRank.MembersList.Count = NewGuildRank.MembersList.Count) then begin
         for II := 0 to GuildRank.MembersList.Count - 1 do begin
           if GuildRank.MembersList.Strings[II] <> NewGuildRank.MembersList.Strings[II] then begin
-            boCheckChange := False; //����иı�������ΪFALSE
+            boCheckChange := False; //如果有改变则将其置为FALSE
             break;
           end;
         end;
@@ -1362,13 +1401,13 @@ begin
       end;
     end;
     if boCheckChange then begin
-      Result := -1;       //δ�����ı�,ֱ���˳�
+      Result := -1;       //未发生改变,直接退出
       ClearRankList(GuildRankList, False);
       Exit;
     end;
   end;
 
-  //����±����������Ƿ���ɱ���ͬ
+  //检查新表人物数量是否与旧表相同
   n28 := 0;
   for I := 0 to m_RankList.Count - 1 do begin
     GuildRank := m_RankList.Items[I];
@@ -1380,7 +1419,7 @@ begin
     Exit;
   end;
 
-  //���ְλ���Ƿ��ظ����Ƿ�
+  //检查职位号是否重复及非法
   {for I := 0 to GuildRankList.Count - 1 do begin
     n28 := pTNewGuildRank(GuildRankList.Items[I]).nRankNo;
     for III := I + 1 to GuildRankList.Count - 1 do begin
@@ -1392,7 +1431,7 @@ begin
     end;
   end;   }
 
-  //����л��������Ƿ�����
+  //检查行会掌门人是否在线
   {n28 := 0;
   for I := 0 to GuildRankList.Count - 1 do begin
     GuildRank := pTNewGuildRank(GuildRankList.Items[I]);
@@ -1415,13 +1454,13 @@ begin
     GuildRank := pTNewGuildRank(GuildRankList.Items[I]);
     if GuildRank.nRankNo = 1 then begin
       Inc(n40, GuildRank.MembersList.Count);
-      if n40 > 1 then begin   //�����������
+      if n40 > 1 then begin   //检查掌门数量
         Result := -4;
         ClearRankList(GuildRankList, False);
         Exit;
       end;
     end else
-    if (GuildRank.nRankNo = 2) or (GuildRank.nRankNo = 3) then begin  //��鸱��������
+    if (GuildRank.nRankNo = 2) or (GuildRank.nRankNo = 3) then begin  //检查副掌门数量
       Inc(n3C, GuildRank.MembersList.Count);
       if n3C > 2 then begin
         Result := -9;
@@ -1429,7 +1468,7 @@ begin
         Exit;
       end;
     end else
-    if (GuildRank.nRankNo in [4..13]) then begin   //��鳤������
+    if (GuildRank.nRankNo in [4..13]) then begin   //检查长老数量
       Inc(n28);
       if n28 > 10 then begin
         Result := -10;
@@ -1462,21 +1501,21 @@ begin
         if boCheckChange then break;
       end;
       if not boCheckChange then begin
-        Result := -6;         //�±���ɾ���˳�Ա
+        Result := -6;         //新表中删除了成员
         ClearRankList(GuildRankList, False);
         Exit;
       end;
     end;
   end;
   if nMemberCount <> 0 then begin
-    Result := -6;         //�±���ɾ���˳�Ա
+    Result := -6;         //新表中删除了成员
     ClearRankList(GuildRankList, False);
     Exit;
   end;
 
   ClearRankList(m_RankList, False);
   m_RankList := GuildRankList;
-  //������������ְλ��
+  //更新在线人物职位表
   for I := 0 to m_RankList.Count - 1 do begin
     GuildRank := m_RankList.Items[I];
     for II := 0 to GuildRank.MembersList.Count - 1 do begin
@@ -1585,13 +1624,13 @@ begin
     for I := m_GuildList.Count - 1 downto 0 do begin
       Guild := m_GuildList.Items[I];
       if not Guild.LoadGuild() then begin
-        MainOutMessage(Guild.m_sGuildName + ' ��ȡ����.');
+        MainOutMessage(Guild.m_sGuildName + ' 读取出错.');
         Guild.Free;
         m_GuildList.Delete(I);
       end else
       if Guild.m_nActivityPoint <= 0 then begin
         Guild.DeleteGuild;
-        MainOutMessage(Guild.m_sGuildName + ' ��ǿ�ƽ�ɢ.');
+        MainOutMessage(Guild.m_sGuildName + ' 已强制解散.');
         Guild.Free;
         m_GuildList.Delete(I);
       end else
@@ -1604,10 +1643,10 @@ begin
       SetLength(Guild.m_AllyArr, _MAX(m_GuildList.Count * 2, 500));
       Guild.initialize;
     end;
-    MainOutMessage('�Ѷ�ȡ ' + IntToStr(m_GuildList.Count) + '���л���Ϣ...');
+    MainOutMessage('已读取 ' + IntToStr(m_GuildList.Count) + '个行会信息...');
   end
   else begin
-    MainOutMessage('�л���Ϣ�ļ�δ�ҵ�.');
+    MainOutMessage('行会信息文件未找到.');
   end;
 end;
 
@@ -1640,7 +1679,7 @@ begin
   for I := m_GuildList.Count - 1 downto 0 do begin
     Guild := TGuild(m_GuildList.Items[I]);
     boChange := False;
-    //����л�ս���Ƿ�ʱ����
+    //检测行会战争是否到时间了
     for II := Guild.m_GuildWarList.Count - 1 downto 0 do begin
       WarGuild := pTWarGuild(Guild.m_GuildWarList.Objects[II]);
       if (GetTickCount - WarGuild.dwWarTick) > WarGuild.dwWarTime then begin
@@ -1680,9 +1719,575 @@ begin
   try
     SaveList.SaveToFile(g_Config.sGuildFile);
   except
-    MainOutMessage('�л���Ϣ����ʧ��.');
+    MainOutMessage('行会信息保存失败.');
   end;
   SaveList.Free;
+end;
+
+// === 新增: 行会科技树方法实现 ===
+
+procedure TGuild.InitGuildTechs;
+var
+  Tech: pTGuildTech;
+begin
+  if m_GuildTechList <> nil then
+  begin
+    while m_GuildTechList.Count > 0 do
+    begin
+      Dispose(pTGuildTech(m_GuildTechList[0]));
+      m_GuildTechList.Delete(0);
+    end;
+  end
+  else
+    m_GuildTechList := TList.Create;
+
+  // 战斗科技
+  New(Tech);
+  FillChar(Tech^, SizeOf(TGuildTech), #0);
+  Tech.nTechID := 1;
+  Tech.sTechName := '攻击强化';
+  Tech.TechType := gttCombat;
+  Tech.nMaxLevel := 10;
+  Tech.nCurrentLevel := 0;
+  Tech.nUpgradeCost := 100000;
+  Tech.nUpgradeBuildPoint := 100;
+  Tech.nUpgradeStability := 50;
+  Tech.nUpgradeTime := 3600;
+  Tech.sDescription := '提升行会成员攻击力';
+  Tech.sEffect := '每级提升1%攻击力';
+  Tech.EffectValue[0] := 1; Tech.EffectValue[1] := 2; Tech.EffectValue[2] := 3;
+  Tech.EffectValue[3] := 5; Tech.EffectValue[4] := 7;
+  m_GuildTechList.Add(Tech);
+
+  New(Tech);
+  FillChar(Tech^, SizeOf(TGuildTech), #0);
+  Tech.nTechID := 2;
+  Tech.sTechName := '防御强化';
+  Tech.TechType := gttDefense;
+  Tech.nMaxLevel := 10;
+  Tech.nCurrentLevel := 0;
+  Tech.nUpgradeCost := 100000;
+  Tech.nUpgradeBuildPoint := 100;
+  Tech.nUpgradeStability := 50;
+  Tech.nUpgradeTime := 3600;
+  Tech.sDescription := '提升行会成员防御力';
+  Tech.sEffect := '每级提升1%防御力';
+  Tech.EffectValue[0] := 1; Tech.EffectValue[1] := 2; Tech.EffectValue[2] := 3;
+  Tech.EffectValue[3] := 5; Tech.EffectValue[4] := 7;
+  m_GuildTechList.Add(Tech);
+
+  New(Tech);
+  FillChar(Tech^, SizeOf(TGuildTech), #0);
+  Tech.nTechID := 3;
+  Tech.sTechName := '生命强化';
+  Tech.TechType := gttCombat;
+  Tech.nMaxLevel := 10;
+  Tech.nCurrentLevel := 0;
+  Tech.nUpgradeCost := 150000;
+  Tech.nUpgradeBuildPoint := 150;
+  Tech.nUpgradeStability := 80;
+  Tech.nUpgradeTime := 7200;
+  Tech.sDescription := '提升行会成员生命值';
+  Tech.sEffect := '每级提升50点生命上限';
+  Tech.EffectValue[0] := 50; Tech.EffectValue[1] := 100; Tech.EffectValue[2] := 150;
+  Tech.EffectValue[3] := 200; Tech.EffectValue[4] := 250;
+  m_GuildTechList.Add(Tech);
+
+  New(Tech);
+  FillChar(Tech^, SizeOf(TGuildTech), #0);
+  Tech.nTechID := 4;
+  Tech.sTechName := '经验加成';
+  Tech.TechType := gttSupport;
+  Tech.nMaxLevel := 5;
+  Tech.nCurrentLevel := 0;
+  Tech.nUpgradeCost := 200000;
+  Tech.nUpgradeBuildPoint := 200;
+  Tech.nUpgradeStability := 100;
+  Tech.nUpgradeTime := 10800;
+  Tech.sDescription := '提升行会成员打怪经验';
+  Tech.sEffect := '每级提升2%经验获取';
+  Tech.EffectValue[0] := 2; Tech.EffectValue[1] := 4; Tech.EffectValue[2] := 6;
+  Tech.EffectValue[3] := 8; Tech.EffectValue[4] := 10;
+  m_GuildTechList.Add(Tech);
+
+  New(Tech);
+  FillChar(Tech^, SizeOf(TGuildTech), #0);
+  Tech.nTechID := 5;
+  Tech.sTechName := '掉率加成';
+  Tech.TechType := gttSupport;
+  Tech.nMaxLevel := 5;
+  Tech.nCurrentLevel := 0;
+  Tech.nUpgradeCost := 300000;
+  Tech.nUpgradeBuildPoint := 300;
+  Tech.nUpgradeStability := 150;
+  Tech.nUpgradeTime := 14400;
+  Tech.sDescription := '提升行会成员物品掉落率';
+  Tech.sEffect := '每级提升1%物品掉落率';
+  Tech.EffectValue[0] := 1; Tech.EffectValue[1] := 2; Tech.EffectValue[2] := 3;
+  Tech.EffectValue[3] := 4; Tech.EffectValue[4] := 5;
+  m_GuildTechList.Add(Tech);
+
+  New(Tech);
+  FillChar(Tech^, SizeOf(TGuildTech), #0);
+  Tech.nTechID := 6;
+  Tech.sTechName := '行会仓库扩容';
+  Tech.TechType := gttProduction;
+  Tech.nMaxLevel := 5;
+  Tech.nCurrentLevel := 0;
+  Tech.nUpgradeCost := 100000;
+  Tech.nUpgradeBuildPoint := 100;
+  Tech.nUpgradeStability := 50;
+  Tech.nUpgradeTime := 3600;
+  Tech.sDescription := '扩大行会仓库容量';
+  Tech.sEffect := '每级增加10个仓库槽位';
+  Tech.EffectValue[0] := 10; Tech.EffectValue[1] := 20; Tech.EffectValue[2] := 30;
+  Tech.EffectValue[3] := 40; Tech.EffectValue[4] := 50;
+  m_GuildTechList.Add(Tech);
+
+  New(Tech);
+  FillChar(Tech^, SizeOf(TGuildTech), #0);
+  Tech.nTechID := 7;
+  Tech.sTechName := 'PK减伤';
+  Tech.TechType := gttDefense;
+  Tech.nMaxLevel := 5;
+  Tech.nCurrentLevel := 0;
+  Tech.nUpgradeCost := 250000;
+  Tech.nUpgradeBuildPoint := 250;
+  Tech.nUpgradeStability := 120;
+  Tech.nUpgradeTime := 10800;
+  Tech.sDescription := '降低行会成员受到的PK伤害';
+  Tech.sEffect := '每级降低2%PK伤害';
+  Tech.EffectValue[0] := 2; Tech.EffectValue[1] := 4; Tech.EffectValue[2] := 6;
+  Tech.EffectValue[3] := 8; Tech.EffectValue[4] := 10;
+  m_GuildTechList.Add(Tech);
+
+  New(Tech);
+  FillChar(Tech^, SizeOf(TGuildTech), #0);
+  Tech.nTechID := 8;
+  Tech.sTechName := '技能冷却缩减';
+  Tech.TechType := gttSpecial;
+  Tech.nMaxLevel := 5;
+  Tech.nCurrentLevel := 0;
+  Tech.nUpgradeCost := 500000;
+  Tech.nUpgradeBuildPoint := 500;
+  Tech.nUpgradeStability := 200;
+  Tech.nUpgradeTime := 21600;
+  Tech.sDescription := '减少行会成员技能冷却时间';
+  Tech.sEffect := '每级降低3%技能冷却时间';
+  Tech.EffectValue[0] := 3; Tech.EffectValue[1] := 6; Tech.EffectValue[2] := 9;
+  Tech.EffectValue[3] := 12; Tech.EffectValue[4] := 15;
+  m_GuildTechList.Add(Tech);
+
+  m_boTechChanged := True;
+end;
+
+function TGuild.UpgradeTech(nTechID: Word): Boolean;
+var
+  i: Integer;
+  Tech: pTGuildTech;
+begin
+  Result := False;
+  if m_GuildTechList = nil then
+    Exit;
+
+  for i := 0 to m_GuildTechList.Count - 1 do
+  begin
+    Tech := pTGuildTech(m_GuildTechList[i]);
+    if Tech.nTechID = nTechID then
+    begin
+      if Tech.nCurrentLevel >= Tech.nMaxLevel then
+        Exit;
+      if Tech.boUpgrading then
+        Exit;
+      if m_nMoneyCount < Tech.nUpgradeCost then
+        Exit;
+      if m_nBuildPoint < Tech.nUpgradeBuildPoint then
+        Exit;
+      if m_nStabilityPoint < Tech.nUpgradeStability then
+        Exit;
+
+      // 消耗资源
+      DecMoneyCount(Tech.nUpgradeCost);
+      DecBuildPoint(Tech.nUpgradeBuildPoint);
+      DecStabilityPoint(Tech.nUpgradeStability);
+
+      // 开始升级
+      Tech.boUpgrading := True;
+      Tech.dwUpgradeStartTime := GetTickCount;
+      m_boTechChanged := True;
+      Inc(m_nTechUpgradeCount);
+      Result := True;
+      Exit;
+    end;
+  end;
+end;
+
+function TGuild.GetTechLevel(nTechID: Word): Integer;
+var
+  i: Integer;
+  Tech: pTGuildTech;
+begin
+  Result := 0;
+  if m_GuildTechList = nil then
+    Exit;
+
+  for i := 0 to m_GuildTechList.Count - 1 do
+  begin
+    Tech := pTGuildTech(m_GuildTechList[i]);
+    if Tech.nTechID = nTechID then
+    begin
+      Result := Tech.nCurrentLevel;
+      Exit;
+    end;
+  end;
+end;
+
+function TGuild.GetTechEffect(nTechID: Word): Integer;
+var
+  i: Integer;
+  Tech: pTGuildTech;
+  nLevel: Integer;
+begin
+  Result := 0;
+  if m_GuildTechList = nil then
+    Exit;
+
+  for i := 0 to m_GuildTechList.Count - 1 do
+  begin
+    Tech := pTGuildTech(m_GuildTechList[i]);
+    if Tech.nTechID = nTechID then
+    begin
+      nLevel := Tech.nCurrentLevel;
+      if (nLevel > 0) and (nLevel <= Tech.nMaxLevel) then
+      begin
+        if nLevel <= 5 then
+          Result := Tech.EffectValue[nLevel - 1]
+        else
+          Result := Tech.EffectValue[4] + (nLevel - 5) * Tech.EffectValue[4];
+      end;
+      Exit;
+    end;
+  end;
+end;
+
+function TGuild.GetTechList: TList;
+begin
+  Result := m_GuildTechList;
+end;
+
+procedure TGuild.CalcTechModifiers(var AddAbility: TAddAbility);
+var
+  nAtkLevel, nDefLevel, nHPLevel, nExpLevel, nDropLevel, nPKDefLevel, nCDLevel: Integer;
+begin
+  if m_GuildTechList = nil then
+    Exit;
+
+  nAtkLevel := GetTechLevel(1);
+  nDefLevel := GetTechLevel(2);
+  nHPLevel := GetTechLevel(3);
+  nExpLevel := GetTechLevel(4);
+  nDropLevel := GetTechLevel(5);
+  nPKDefLevel := GetTechLevel(7);
+  nCDLevel := GetTechLevel(8);
+
+  // 攻击强化
+  if nAtkLevel > 0 then
+  begin
+    Inc(AddAbility.DC, (nAtkLevel * 1) * 100);
+    Inc(AddAbility.MC, (nAtkLevel * 1) * 100);
+    Inc(AddAbility.SC, (nAtkLevel * 1) * 100);
+  end;
+
+  // 防御强化
+  if nDefLevel > 0 then
+  begin
+    Inc(AddAbility.AC, (nDefLevel * 1) * 100);
+    Inc(AddAbility.MAC, (nDefLevel * 1) * 100);
+  end;
+
+  // 生命强化
+  if nHPLevel > 0 then
+    Inc(AddAbility.HP, nHPLevel * 50);
+
+  // 经验加成
+  if nExpLevel > 0 then
+    Inc(AddAbility.btExpRate, nExpLevel * 2);
+
+  // 掉率加成
+  if nDropLevel > 0 then
+    Inc(AddAbility.btDropRate, nDropLevel * 1);
+
+  // PK减伤
+  if nPKDefLevel > 0 then
+    Inc(AddAbility.btPKDefense, nPKDefLevel * 2);
+
+  // 技能冷却缩减
+  if nCDLevel > 0 then
+    Inc(AddAbility.btSkillCDReduction, nCDLevel * 3);
+end;
+
+procedure TGuild.SendTechInfo(PlayObject: TPlayObject);
+var
+  i: Integer;
+  Tech: pTGuildTech;
+  sMsg: string;
+begin
+  if (m_GuildTechList = nil) or (PlayObject = nil) then
+    Exit;
+
+  for i := 0 to m_GuildTechList.Count - 1 do
+  begin
+    Tech := pTGuildTech(m_GuildTechList[i]);
+    sMsg := EncodeString(IntToStr(Tech.nTechID) + '/' + Tech.sTechName + '/' +
+      IntToStr(Tech.nCurrentLevel) + '/' + IntToStr(Tech.nMaxLevel) + '/' +
+      IntToStr(Ord(Tech.boUpgrading)));
+    PlayObject.SendDefMsg(PlayObject, SM_GUILDTECHINFO, Tech.nTechID,
+      Tech.nCurrentLevel, Tech.nMaxLevel, Ord(Tech.boUpgrading), sMsg);
+  end;
+end;
+
+procedure TGuild.CheckTechUpgrade;
+var
+  i: Integer;
+  Tech: pTGuildTech;
+begin
+  if m_GuildTechList = nil then
+    Exit;
+
+  for i := 0 to m_GuildTechList.Count - 1 do
+  begin
+    Tech := pTGuildTech(m_GuildTechList[i]);
+    if Tech.boUpgrading then
+    begin
+      if (GetTickCount - Tech.dwUpgradeStartTime) >= (Tech.nUpgradeTime * 1000) then
+      begin
+        Tech.boUpgrading := False;
+        Inc(Tech.nCurrentLevel);
+        m_boTechChanged := True;
+        SendGuildMsg(Format('行会科技 [%s] 升级完成! 当前等级: %d/%d',
+          [Tech.sTechName, Tech.nCurrentLevel, Tech.nMaxLevel]));
+      end;
+    end;
+  end;
+end;
+
+// === 新增: 行会仓库方法实现 ===
+
+procedure TGuild.InitStorage;
+begin
+  if m_GuildStorageList = nil then
+    m_GuildStorageList := TList.Create;
+  m_nStorageMaxSlots := 50; // 基础50槽位
+  m_nStorageGold := 0;
+  m_boStoragePublic := False;
+  m_boStorageChanged := False;
+end;
+
+function TGuild.AddStorageItem(UserItem: pTUserItem): Boolean;
+var
+  pItem: pTUserItem;
+begin
+  Result := False;
+  if m_GuildStorageList = nil then
+    InitStorage;
+  if m_GuildStorageList.Count >= m_nStorageMaxSlots then
+    Exit;
+
+  New(pItem);
+  pItem^ := UserItem^;
+  m_GuildStorageList.Add(pItem);
+  m_boStorageChanged := True;
+  Result := True;
+end;
+
+function TGuild.RemoveStorageItem(nSlot: Integer): pTUserItem;
+begin
+  Result := nil;
+  if m_GuildStorageList = nil then
+    Exit;
+  if (nSlot < 0) or (nSlot >= m_GuildStorageList.Count) then
+    Exit;
+
+  Result := pTUserItem(m_GuildStorageList[nSlot]);
+  m_GuildStorageList.Delete(nSlot);
+  m_boStorageChanged := True;
+end;
+
+function TGuild.GetStorageItem(nSlot: Integer): pTUserItem;
+begin
+  Result := nil;
+  if m_GuildStorageList = nil then
+    Exit;
+  if (nSlot < 0) or (nSlot >= m_GuildStorageList.Count) then
+    Exit;
+  Result := pTUserItem(m_GuildStorageList[nSlot]);
+end;
+
+function TGuild.GetStorageItemCount: Integer;
+begin
+  if m_GuildStorageList = nil then
+    Result := 0
+  else
+    Result := m_GuildStorageList.Count;
+end;
+
+function TGuild.GetStorageUsedSlots: Integer;
+begin
+  Result := GetStorageItemCount;
+end;
+
+procedure TGuild.SaveStorage;
+var
+  SaveList: TStringList;
+  i: Integer;
+  Item: pTUserItem;
+  sFileName: string;
+  sLine: string;
+begin
+  if (m_GuildStorageList = nil) or (not m_boStorageChanged) then
+    Exit;
+
+  SaveList := TStringList.Create;
+  try
+    SaveList.Add(IntToStr(m_nStorageMaxSlots));
+    SaveList.Add(IntToStr(m_nStorageGold));
+    SaveList.Add(IntToStr(Ord(m_boStoragePublic)));
+    for i := 0 to m_GuildStorageList.Count - 1 do
+    begin
+      Item := pTUserItem(m_GuildStorageList[i]);
+      sLine := Format('%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d',
+        [Item.wIndex, Item.Dura, Item.DuraMax, Item.Value[0], Item.Value[1],
+         Item.Value[2], Item.Value[3], Item.Value[4], Item.Value[5], Item.Value[6],
+         Item.Value[7]]);
+      SaveList.Add(sLine);
+    end;
+    sFileName := g_Config.sEnvirDir + 'GuildStorage\' + m_sGuildName + '.txt';
+    ForceDirectories(ExtractFilePath(sFileName));
+    SaveList.SaveToFile(sFileName);
+    m_boStorageChanged := False;
+  except
+    MainOutMessage('行会仓库保存失败: ' + m_sGuildName);
+  end;
+  SaveList.Free;
+end;
+
+procedure TGuild.LoadStorage;
+var
+  LoadList: TStringList;
+  i: Integer;
+  Item: pTUserItem;
+  sFileName: string;
+  sLine: string;
+  Params: TStringList;
+begin
+  if m_GuildStorageList <> nil then
+  begin
+    while m_GuildStorageList.Count > 0 do
+    begin
+      Dispose(pTUserItem(m_GuildStorageList[0]));
+      m_GuildStorageList.Delete(0);
+    end;
+  end
+  else
+    m_GuildStorageList := TList.Create;
+
+  sFileName := g_Config.sEnvirDir + 'GuildStorage\' + m_sGuildName + '.txt';
+  if not FileExists(sFileName) then
+  begin
+    InitStorage;
+    Exit;
+  end;
+
+  LoadList := TStringList.Create;
+  Params := TStringList.Create;
+  try
+    LoadList.LoadFromFile(sFileName);
+    if LoadList.Count >= 3 then
+    begin
+      m_nStorageMaxSlots := StrToIntDef(LoadList[0], 50);
+      m_nStorageGold := StrToIntDef(LoadList[1], 0);
+      m_boStoragePublic := StrToIntDef(LoadList[2], 0) = 1;
+
+      for i := 3 to LoadList.Count - 1 do
+      begin
+        sLine := LoadList[i];
+        Params.CommaText := sLine;
+        if Params.Count >= 11 then
+        begin
+          New(Item);
+          FillChar(Item^, SizeOf(TUserItem), #0);
+          Item.wIndex := StrToIntDef(Params[0], 0);
+          Item.Dura := StrToIntDef(Params[1], 0);
+          Item.DuraMax := StrToIntDef(Params[2], 0);
+          Item.Value[0] := StrToIntDef(Params[3], 0);
+          Item.Value[1] := StrToIntDef(Params[4], 0);
+          Item.Value[2] := StrToIntDef(Params[5], 0);
+          Item.Value[3] := StrToIntDef(Params[6], 0);
+          Item.Value[4] := StrToIntDef(Params[7], 0);
+          Item.Value[5] := StrToIntDef(Params[8], 0);
+          Item.Value[6] := StrToIntDef(Params[9], 0);
+          Item.Value[7] := StrToIntDef(Params[10], 0);
+          m_GuildStorageList.Add(Item);
+        end;
+      end;
+    end
+    else
+      InitStorage;
+  except
+    MainOutMessage('行会仓库加载失败: ' + m_sGuildName);
+    InitStorage;
+  end;
+  Params.Free;
+  LoadList.Free;
+  m_boStorageChanged := False;
+end;
+
+procedure TGuild.SendStorageInfo(PlayObject: TPlayObject);
+var
+  i: Integer;
+  Item: pTUserItem;
+  sMsg: string;
+begin
+  if (m_GuildStorageList = nil) or (PlayObject = nil) then
+    Exit;
+
+  sMsg := EncodeString(Format('行会仓库 [%s] (%d/%d) 金币: %d',
+    [m_sGuildName, m_GuildStorageList.Count, m_nStorageMaxSlots, m_nStorageGold]));
+  PlayObject.SendDefMsg(PlayObject, SM_GUILDSTORAGE, m_GuildStorageList.Count,
+    m_nStorageMaxSlots, m_nStorageGold, 0, sMsg);
+
+  for i := 0 to m_GuildStorageList.Count - 1 do
+  begin
+    Item := pTUserItem(m_GuildStorageList[i]);
+    sMsg := EncodeString(Format('%d/%d/%d/%d/%d', [i, Item.wIndex, Item.Dura, Item.DuraMax, Item.Value[0]]));
+    PlayObject.SendDefMsg(PlayObject, SM_GUILDSTORAGE, i, Item.wIndex, Item.Dura, Item.DuraMax, sMsg);
+  end;
+end;
+
+function TGuild.CanAccessStorage(PlayObject: TPlayObject): Boolean;
+begin
+  Result := False;
+  if PlayObject = nil then
+    Exit;
+  Result := IsMember(PlayObject.m_sCharName);
+end;
+
+function TGuild.DonateStorageGold(PlayObject: TPlayObject; nAmount: Integer): Boolean;
+begin
+  Result := False;
+  if PlayObject = nil then
+    Exit;
+  if nAmount <= 0 then
+    Exit;
+  if PlayObject.m_nGold < nAmount then
+    Exit;
+
+  Dec(PlayObject.m_nGold, nAmount);
+  Inc(m_nStorageGold, nAmount);
+  m_boStorageChanged := True;
+  PlayObject.SendMsg(PlayObject, RM_MYSTATUS, PlayObject.m_nGold, 0, 0, 0, '');
+  SendGuildMsg(Format('[%s] 向行会仓库捐献了 %d 金币!', [PlayObject.m_sCharName, nAmount]));
+  Result := True;
 end;
 
 end.

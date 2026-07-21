@@ -36,15 +36,15 @@ $40000000
 $80000000  }
   
 
-  g_sProgram = '³ÌĞòÖÆ×÷: Apple';
-  g_sWebSite = '¹Ù·½ÍøÕ¾: http://www.applem2.com';
+  g_sProgram = 'ç¨‹åºåˆ¶ä½œ: Apple';
+  g_sWebSite = 'å®˜æ–¹ç½‘ç«™: http://www.applem2.com';
 
   GROBAL2VER = 20090404;
 
-  GATEMAXSESSION = 1000; //×î´óÓÃ»§Á¬½ÓÊı
+  GATEMAXSESSION = 1000; //æœ€å¤§ç”¨æˆ·è¿æ¥æ•°
 
   PLAYOBJECTINDEXCOUNT = 1000000;
-  //ÓÃ»§Ë÷Òı×î´ó¼ÇÂ¼Êı,Èç¹ûÒÑ´´½¨ÈËÎïÊıÁ¿´óÓÚÕâ¸öÖµ,ÕûÌåÏµÍ³¿ÉÄÜ»á³ö´í
+  //ç”¨æˆ·ç´¢å¼•æœ€å¤§è®°å½•æ•°,å¦‚æœå·²åˆ›å»ºäººç‰©æ•°é‡å¤§äºè¿™ä¸ªå€¼,æ•´ä½“ç³»ç»Ÿå¯èƒ½ä¼šå‡ºé”™
 
   CanStrengthenArr: array[0..6] of Byte = (0, 3, 6, 9, 12, 15, 18);
   CanStrengthenMax: array[0..5] of Byte = (16, 20, 21, 15, 24, 6);
@@ -55,7 +55,7 @@ $80000000  }
   ActorNameLen = 14;
   GuildNameLen = 14;
   DEFBLOCKSIZE = 16;
-  BUFFERSIZE = 30000; //Êı¾İ×î³¤²»³¬¹ı20000
+  BUFFERSIZE = 30000; //æ•°æ®æœ€é•¿ä¸è¶…è¿‡20000
   DATABUFFERSIZE = 20000;
 
   DATA_BUFSIZE = 8192;
@@ -64,13 +64,13 @@ $80000000  }
   BODYLUCKUNIT = 10;
   MAX_STATUS_ATTRIBUTE = 12;
   MAXDEALITEMCOUNT = 12;
-  MAXPULLULATION = 10000 * 60; //×î´ó×ÔÈ»³É³¤µã
-  //MINPULLULATION = 10; //×îĞ¡×ÔÈ»³É³¤µã
+  MAXPULLULATION = 10000 * 60; //æœ€å¤§è‡ªç„¶æˆé•¿ç‚¹
+  //MINPULLULATION = 10; //æœ€å°è‡ªç„¶æˆé•¿ç‚¹
   MIDPULLULATION = 60;
 
   MAXTAXISCOUNT = 100;
 
-  SQLDISPOSETEXT = 'Á¬½ÓÊ§°Ü';
+  SQLDISPOSETEXT = 'è¿æ¥å¤±è´¥';
 
 {$IF Var_Interface = Var_Mir2}
   DEFSAYLISTWIDTH = 386;
@@ -78,9 +78,9 @@ $80000000  }
   DEFSAYLISTWIDTH = 279;
 {$IFEND}
 
-  SAYLISTHEIGHT = 16; //ÁÄÌì¿ò¸ß¶È
-  FACESHOWCOUNT = 10; //±íÇéÁĞ±íÃ¿ĞĞÏÔÊ¾ÊıÁ¿
-  SAYFACEWIDTH = 20; //ÁÄÌì¿ò±íÇé¿í¶È
+  SAYLISTHEIGHT = 16; //èŠå¤©æ¡†é«˜åº¦
+  FACESHOWCOUNT = 10; //è¡¨æƒ…åˆ—è¡¨æ¯è¡Œæ˜¾ç¤ºæ•°é‡
+  SAYFACEWIDTH = 20; //èŠå¤©æ¡†è¡¨æƒ…å®½åº¦
 
   {ALLHUM = 'AllHum.DB';
   WARRHUM = 'WarrHum.DB';
@@ -92,29 +92,29 @@ $80000000  }
   TAOSHERO = 'TaosHero.DB';
   MASTERALL = 'Master.DB';  }
 
-  sSTRING_GOLDNAME = '½ğ±Ò';
-  sSTRING_BINDGOLDNAME = '°ó¶¨½ğ±Ò';
-  sSTRING_GAMEPOINT = 'µã¾í';
-  sSTRING_GAMEGOLD = 'Ôª±¦';
-  sSTRING_GAMEDIAMOND = '»ı·Ö';
-  sSTRING_CREDITPOINT = 'ÉùÍû';
-  sSTRING_CUSTOMVARIABLE = 'ÈËÎï±äÁ¿';
+  sSTRING_GOLDNAME = 'é‡‘å¸';
+  sSTRING_BINDGOLDNAME = 'ç»‘å®šé‡‘å¸';
+  sSTRING_GAMEPOINT = 'ç‚¹å·';
+  sSTRING_GAMEGOLD = 'å…ƒå®';
+  sSTRING_GAMEDIAMOND = 'ç§¯åˆ†';
+  sSTRING_CREDITPOINT = 'å£°æœ›';
+  sSTRING_CUSTOMVARIABLE = 'äººç‰©å˜é‡';
 
-  LOG_PLAYDIE = 0; //ÈËÎïËÀÍö
-  LOG_GOLDCHANGED = 1; //½ğ±Ò¸Ä±ä
-  LOG_BINDGOLDCHANGED = 2; //°ó½ğ¸Ä±ä
-  LOG_GAMEPOINTCHANGED = 3; //µã¾í¸Ä±ä
-  LOG_GAMEGOLDCHANGED = 4; //Ôª±¦¸Ä±ä
-  LOG_GAMEDIAMONDCHANGED = 5; //»ı·Ö¸Ä±ä
-  LOG_ITEMDURACHANGE = 6; //µş¼Ó¸Ä±ä
-  LOG_ADDITEM = 7; //Ôö¼ÓÎïÆ·
-  LOG_DELITEM = 8; //¼õÉÙÎïÆ·
-  LOG_STORAGE = 9; //²Ö¿â´æÈ¡
-  LOG_ITEMLEVEL = 10; //Ç¿»¯¸Ä±ä
-  LOG_UPDATEITEM = 11; //µ÷Õû×°±¸
-  LOG_CREDITPOINT = 12; //ÉùÍû¸Ä±ä
-  LOG_CUSTOMVARIABLE = 13; //'ÈËÎï±äÁ¿'
-  //LOG_EMAIL = 11; //ÓÊ¼şĞÅÏ¢
+  LOG_PLAYDIE = 0; //äººç‰©æ­»äº¡
+  LOG_GOLDCHANGED = 1; //é‡‘å¸æ”¹å˜
+  LOG_BINDGOLDCHANGED = 2; //ç»‘é‡‘æ”¹å˜
+  LOG_GAMEPOINTCHANGED = 3; //ç‚¹å·æ”¹å˜
+  LOG_GAMEGOLDCHANGED = 4; //å…ƒå®æ”¹å˜
+  LOG_GAMEDIAMONDCHANGED = 5; //ç§¯åˆ†æ”¹å˜
+  LOG_ITEMDURACHANGE = 6; //å åŠ æ”¹å˜
+  LOG_ADDITEM = 7; //å¢åŠ ç‰©å“
+  LOG_DELITEM = 8; //å‡å°‘ç‰©å“
+  LOG_STORAGE = 9; //ä»“åº“å­˜å–
+  LOG_ITEMLEVEL = 10; //å¼ºåŒ–æ”¹å˜
+  LOG_UPDATEITEM = 11; //è°ƒæ•´è£…å¤‡
+  LOG_CREDITPOINT = 12; //å£°æœ›æ”¹å˜
+  LOG_CUSTOMVARIABLE = 13; //'äººç‰©å˜é‡'
+  //LOG_EMAIL = 11; //é‚®ä»¶ä¿¡æ¯
 
   INT_ADD = 0;
   INT_DEL = 1;
@@ -134,20 +134,20 @@ $80000000  }
   UKTYPE_ITEM = 1;
   UKTYPE_MAGIC = 2;
 
-  GSP_NOTDEAL = 0;          //¾Ü¾ø½»Ò×
-  GSP_NOTGROUP = 1;         //¾Ü¾ø×é¶Ó
-  GSP_NOTGUILD = 2;         //¾Ü¾ø¼ÓÈëĞĞ»á
-  GSP_NOTFRIENG = 3;        //¾Ü¾ø¼ÓÎªºÃÓÑ
-  GSP_NOTSAYHEAR = 4;       //¾Ü¾ø°××ÖËµ»°
-  GSP_NOTSAYWHISPER = 5;    //¾Ü¾øË½ÁÄ
-  GSP_NOTSAYCRY = 6;        //¾Ü¾øº°»°
-  GSP_NOTSAYGROUP = 7;      //¾Ü¾ø¶ÓÎéÁÄÌì
-  GSP_NOTSAYGUILD = 8;      //¾Ü¾øĞĞ»áÁÄÌì
-  GSP_GROUPCHECK = 9;       //×é¶ÓĞèÒªÑéÖ¤
-  GPS_GROUPRECALL = 10;     //ÌìµØºÏÒ»
-  GSP_GUILDRECALL = 11;     //ĞĞ»áºÏÒ»
-  GSP_HIDEHELMET = 12;      //Òş²ØÍ·¿øÏÔÊ¾
-  GSP_OLDCHANGEMAP = 13;    //¾ÉµÄÇĞ»»µØÍ¼Ä£Ê½
+  GSP_NOTDEAL = 0;          //æ‹’ç»äº¤æ˜“
+  GSP_NOTGROUP = 1;         //æ‹’ç»ç»„é˜Ÿ
+  GSP_NOTGUILD = 2;         //æ‹’ç»åŠ å…¥è¡Œä¼š
+  GSP_NOTFRIENG = 3;        //æ‹’ç»åŠ ä¸ºå¥½å‹
+  GSP_NOTSAYHEAR = 4;       //æ‹’ç»ç™½å­—è¯´è¯
+  GSP_NOTSAYWHISPER = 5;    //æ‹’ç»ç§èŠ
+  GSP_NOTSAYCRY = 6;        //æ‹’ç»å–Šè¯
+  GSP_NOTSAYGROUP = 7;      //æ‹’ç»é˜Ÿä¼èŠå¤©
+  GSP_NOTSAYGUILD = 8;      //æ‹’ç»è¡Œä¼šèŠå¤©
+  GSP_GROUPCHECK = 9;       //ç»„é˜Ÿéœ€è¦éªŒè¯
+  GPS_GROUPRECALL = 10;     //å¤©åœ°åˆä¸€
+  GSP_GUILDRECALL = 11;     //è¡Œä¼šåˆä¸€
+  GSP_HIDEHELMET = 12;      //éšè—å¤´ç›”æ˜¾ç¤º
+  GSP_OLDCHANGEMAP = 13;    //æ—§çš„åˆ‡æ¢åœ°å›¾æ¨¡å¼
 
   DR_UP = 0;
   DR_UPRIGHT = 1;
@@ -189,34 +189,53 @@ $80000000  }
   MAGICEX_AMYOUNSULGROUP = 102;
   //U_VIP = 15;
 
-  POISON_DECHEALTH = 0; //ÖĞ¶¾ÀàĞÍ - ÂÌ¶¾
-  POISON_DAMAGEARMOR = 1; //ÖĞ¶¾ÀàĞÍ - ºì¶¾
+  POISON_DECHEALTH = 0; //ä¸­æ¯’ç±»å‹ - ç»¿æ¯’
+  POISON_DAMAGEARMOR = 1; //ä¸­æ¯’ç±»å‹ - çº¢æ¯’
   //POISON_LOCKSPELL = 2;
   //POISON_DONTMOVE = 4;
-  POISON_STONE = 5; //Âé±Ô
-  POISON_COBWEB = 6; //ÖëÍø
-  STATE_BUBBLEDEFENCEUPEX = 7; //½ğ¸Õ»¤¶Ü
-  STATE_TRANSPARENT = 8; //ÒşÉí
-  STATE_DEFENCEUP = 9; //¼Ó·À(ÉñÊ¥Õ½¼×Êõ)
-  STATE_MAGDEFENCEUP = 10; //¼ÓÄ§(ÓÄÁé¶Ü)
-  STATE_BUBBLEDEFENCEUP = 11; //Ä§·¨¶Ü
+  POISON_STONE = 5; //éº»ç—¹
+  POISON_COBWEB = 6; //è››ç½‘
+  STATE_BUBBLEDEFENCEUPEX = 7; //é‡‘åˆšæŠ¤ç›¾
+  STATE_TRANSPARENT = 8; //éšèº«
+  STATE_DEFENCEUP = 9; //åŠ é˜²(ç¥åœ£æˆ˜ç”²æœ¯)
+  STATE_MAGDEFENCEUP = 10; //åŠ é­”(å¹½çµç›¾)
+  STATE_BUBBLEDEFENCEUP = 11; //é­”æ³•ç›¾
 
-  STATUS_EXP = 0; //¾­Ñé±¶Êı
-  STATUS_POW = 1; //ÉËº¦±¶Êı
-  STATUS_SC  = 2; //µÀÊõ
-  STATUS_AC  = 3; //·ÀÓù
-  STATUS_DC  = 4; //¹¥»÷
-  STATUS_HIDEMODE = 5; //ÒşÉí
-  STATUS_STONE = 6; //Âé±Ô
-  STATUS_MC = 7; //Ä§·¨
-  STATUS_MP = 8; //Ä§·¨Öµ
-  STATUS_MAC = 9; //Ä§Óù
-  STATUS_HP = 10; //ÉúÃüÖµ
-  STATUS_DAMAGEARMOR = 11; //ºì¶¾
-  STATUS_DECHEALTH = 12; //ÂÌ¶¾
-  STATUS_COBWEB = 13; //ÖëÍø
+  STATUS_EXP = 0; //ç»éªŒå€æ•°
+  STATUS_POW = 1; //ä¼¤å®³å€æ•°
+  STATUS_SC  = 2; //é“æœ¯
+  STATUS_AC  = 3; //é˜²å¾¡
+  STATUS_DC  = 4; //æ”»å‡»
+  STATUS_HIDEMODE = 5; //éšèº«
+  STATUS_STONE = 6; //éº»ç—¹
+  STATUS_MC = 7; //é­”æ³•
+  STATUS_MP = 8; //é­”æ³•å€¼
+  STATUS_MAC = 9; //é­”å¾¡
+  STATUS_HP = 10; //ç”Ÿå‘½å€¼
+  STATUS_DAMAGEARMOR = 11; //çº¢æ¯’
+  STATUS_DECHEALTH = 12; //ç»¿æ¯’
+  STATUS_COBWEB = 13; //è››ç½‘
 
-  STATUS_COUNT = 14;
+  STATUS_COUNT = 30;
+
+  // === æ–°å¢ BUFF/DEBUFF çŠ¶æ€å¸¸é‡ ===
+  STATUS_BUFF_START = 14;        // BUFFèµ·å§‹ç´¢å¼•
+  STATUS_BUFF_ATKUP = 14;        // æ”»å‡»åŠ›æå‡
+  STATUS_BUFF_DEFUP = 15;        // é˜²å¾¡åŠ›æå‡
+  STATUS_BUFF_SPEEDUP = 16;      // é€Ÿåº¦æå‡
+  STATUS_BUFF_CRITUP = 17;       // æš´å‡»ç‡æå‡
+  STATUS_BUFF_VAMPIRE = 18;      // å¸è¡€æ•ˆæœ
+  STATUS_BUFF_SHIELD = 19;       // æŠ¤ç›¾æ•ˆæœ
+  STATUS_BUFF_IMMUNE = 20;       // å…ç–«æ§åˆ¶
+  STATUS_BUFF_REFLECT = 21;      // ä¼¤å®³åå¼¹
+  STATUS_BUFF_CONTINUOUSHEAL = 22; // æŒç»­å›è¡€
+  STATUS_BUFF_THORNS = 23;       // è†æ£˜å…‰ç¯
+  STATUS_DEBUFF_SLOW = 24;       // å‡é€Ÿ
+  STATUS_DEBUFF_SILENCE = 25;    // æ²‰é»˜
+  STATUS_DEBUFF_WEAK = 26;       // è™šå¼±
+  STATUS_DEBUFF_BLEED = 27;      // æµè¡€
+  STATUS_DEBUFF_BURN = 28;       // ç¼çƒ§
+  STATUS_DEBUFF_FREEZE = 29;     // å†°å†»
 
   USERMODE_PLAYGAME = 1;
   USERMODE_LOGIN = 2;
@@ -312,7 +331,7 @@ $80000000  }
   MAXAPPENDBAGITEMS = 3;
   MAXFLUTECOUNT = 3;
   LOGICALMAPUNIT = 30;
-  MAXFRIENDS = 30;
+  MAXFRIENDS = 100;
   MAXRETURNITEMSCOUNT = 30;
   MAXEMAILCOUNT = 20;
   MAXPHOTODATASIZE = 4000;
@@ -405,7 +424,7 @@ $80000000  }
   SKILL_40 = 40;
   SKILL_41 = 41;
   SKILL_42 = 42;
-  SKILL_LONGICEHIT = 43; //¿ªÌìÕ¶
+  SKILL_LONGICEHIT = 43; //å¼€å¤©æ–©
   SKILL_44 = 44;
   SKILL_45 = 45;
   SKILL_46 = 46;
@@ -437,7 +456,7 @@ $80000000  }
   SKILL_71 = 71;
   SKILL_72 = 72;
 
-  SKILL_CBO = 100; //Á¬»÷
+  SKILL_CBO = 100; //è¿å‡»
 
   SKILL_110 = 110;
   SKILL_111 = 111;
@@ -797,16 +816,41 @@ $80000000  }
   SM_COMPOUNDITEM = 5364;
   SM_ABILITYMOVESET = 5365;
 
-  //ÒÆ¶¯Ö¸¶¨
+  // === æ–°å¢ç³»ç»Ÿæ¶ˆæ¯å¸¸é‡ ===
+  SM_BUFFUPDATE = 5366;          // BUFFçŠ¶æ€æ›´æ–°
+  SM_BUFFADDEFFECT = 5367;       // BUFFç‰¹æ•ˆæ·»åŠ 
+  SM_BUFFDELEFFECT = 5368;       // BUFFç‰¹æ•ˆç§»é™¤
+  SM_DUNGEONENTER = 5369;        // è¿›å…¥å‰¯æœ¬
+  SM_DUNGEONEXIT = 5370;         // é€€å‡ºå‰¯æœ¬
+  SM_DUNGEONINFO = 5371;         // å‰¯æœ¬ä¿¡æ¯
+  SM_DUNGEONCOUNTDOWN = 5372;    // å‰¯æœ¬å€’è®¡æ—¶
+  SM_ACTIVITYNOTICE = 5373;      // æ´»åŠ¨å…¬å‘Š
+  SM_ACTIVITYSTART = 5374;       // æ´»åŠ¨å¼€å§‹
+  SM_ACTIVITYEND = 5375;         // æ´»åŠ¨ç»“æŸ
+  SM_ACTIVITYRANK = 5376;        // æ´»åŠ¨æ’å
+  SM_MASTERINFO = 5377;          // å¸ˆå¾’ä¿¡æ¯
+  SM_MASTERAPPRENTICE = 5378;    // å¸ˆå¾’å…³ç³»
+  SM_MASTERQUEST = 5379;         // å¸ˆå¾’ä»»åŠ¡
+  SM_AFFIXINFO = 5380;           // è¯ç¼€ä¿¡æ¯
+  SM_AFFIXREFRESH = 5381;        // è¯ç¼€åˆ·æ–°
+  SM_GUILDTECHINFO = 5382;       // è¡Œä¼šç§‘æŠ€ä¿¡æ¯
+  SM_GUILDTECHUPGRADE = 5383;    // è¡Œä¼šç§‘æŠ€å‡çº§
+  SM_GUILDSTORAGE = 5384;        // è¡Œä¼šä»“åº“
+  SM_AUTOFIGHTSTATE = 5385;      // è‡ªåŠ¨æˆ˜æ–—çŠ¶æ€
+  SM_SEASONINFO = 5386;          // èµ›å­£ä¿¡æ¯
+  SM_SEASONRANK = 5387;          // èµ›å­£æ’å
+  SM_SEASONREWARD = 5388;        // èµ›å­£å¥–åŠ±
+
+  //ç§»åŠ¨æŒ‡å®š
   CM_TURN = 1;
   CM_WALK = 2;
   CM_SITDOWN = 3;
   CM_RUN = 4;
   CM_HORSERUN = 5;
   CM_LEAP = 6;
-  //ÒÆ¶¯Ö¸¶¨
+  //ç§»åŠ¨æŒ‡å®š
 
-  //¹¥»÷Ö¸Áî Òª±£³ÖÖ¸ÁîÁ¬Ğø
+  //æ”»å‡»æŒ‡ä»¤ è¦ä¿æŒæŒ‡ä»¤è¿ç»­
   TM_HITSTATE = 7;
   CM_HIT = 7;
   CM_HEAVYHIT = 8;
@@ -825,9 +869,9 @@ $80000000  }
   CM_122 = 21;
   CM_56 = 22;
   TM_HITSTOP = 22;
-  //¹¥»÷Ö¸Áî
+  //æ”»å‡»æŒ‡ä»¤
 
-  //ÒÔÉÏÏî²»Òª¸ü¸Ä
+  //ä»¥ä¸Šé¡¹ä¸è¦æ›´æ”¹
 
   CM_BUTCH = 23;
   CM_SPELL = 24;
@@ -1041,25 +1085,25 @@ $80000000  }
 
   MAXCLIENTSERVERCOUNT = 91 + RG_MAXMSGINDEX;
 
-  EFFECT_DEADLINESS = 10; //±¬»÷
-  EFFECT_VAMPIRE = 11; //ÎüÑª
-  EFFECT_MISSION_ACCEPT = 12; //½ÓÊÜÈÎÎñ
-  EFFECT_MISSION_NEXT = 13; //²½ÖèÍê³É
-  EFFECT_MISSION_COMPLETE = 14; //ÈÎÎñÍê³É
-  EFFECT_DARE_WIN = 15; //ÌôÕ½Ó®ÁË
-  EFFECT_DARE_LOSS = 16; //ÌôÕ½ÊäÁË
-  EFFECT_BEACON_1 = 17;   //ÔİÁô
-  EFFECT_BEACON_2 = 18;   //±¦±¦Éı¼¶
-  EFFECT_BEACON_3 = 19;   //Ë«±¶¾­Ñé
-  EFFECT_BEACON_4 = 20;   //Ò»ĞÄÒ»Òâ
-  EFFECT_BEACON_5 = 21;   //ĞÄĞÄÏàÓ¡
-  EFFECT_BEACON_6 = 22;   //·É»ğÁ÷ĞÇ
-  EFFECT_BEACON_7 = 23;   //ÀËÂşĞÇÓê
-  EFFECT_BEACON_8 = 24;   //ç²ÃÎ»ÃÏë
-  EFFECT_BEACON_9 = 25;   //³¤¿Õ»ğÎè
-  EFFECT_BEACON_10 = 26;   //ÈçÎíËÆÃÎ
-  EFFECT_LEVELUP = 27; //ÈËÎïÉı¼¶
-  EFFECT_SHIELD = 28; //»¤ÌåÉñ¶Ü
+  EFFECT_DEADLINESS = 10; //çˆ†å‡»
+  EFFECT_VAMPIRE = 11; //å¸è¡€
+  EFFECT_MISSION_ACCEPT = 12; //æ¥å—ä»»åŠ¡
+  EFFECT_MISSION_NEXT = 13; //æ­¥éª¤å®Œæˆ
+  EFFECT_MISSION_COMPLETE = 14; //ä»»åŠ¡å®Œæˆ
+  EFFECT_DARE_WIN = 15; //æŒ‘æˆ˜èµ¢äº†
+  EFFECT_DARE_LOSS = 16; //æŒ‘æˆ˜è¾“äº†
+  EFFECT_BEACON_1 = 17;   //æš‚ç•™
+  EFFECT_BEACON_2 = 18;   //å®å®å‡çº§
+  EFFECT_BEACON_3 = 19;   //åŒå€ç»éªŒ
+  EFFECT_BEACON_4 = 20;   //ä¸€å¿ƒä¸€æ„
+  EFFECT_BEACON_5 = 21;   //å¿ƒå¿ƒç›¸å°
+  EFFECT_BEACON_6 = 22;   //é£ç«æµæ˜Ÿ
+  EFFECT_BEACON_7 = 23;   //æµªæ¼«æ˜Ÿé›¨
+  EFFECT_BEACON_8 = 24;   //ç»®æ¢¦å¹»æƒ³
+  EFFECT_BEACON_9 = 25;   //é•¿ç©ºç«èˆ
+  EFFECT_BEACON_10 = 26;   //å¦‚é›¾ä¼¼æ¢¦
+  EFFECT_LEVELUP = 27; //äººç‰©å‡çº§
+  EFFECT_SHIELD = 28; //æŠ¤ä½“ç¥ç›¾
 
   {Effect_75 = 75;
   Effect_76 = 76;
@@ -1110,47 +1154,47 @@ $80000000  }
   tb_SC = 9;
   tb_HP = 10;
   tb_MP = 11;
-  tb_Hit = 12;         //×¼È·
-  tb_Speed = 13;       //Ãô½İ
-  tb_Strong = 14;     //ÎäÆ÷Ç¿¶È
-  tb_AntiMagic = 15;    //Ä§·¨¶ã±Ü
-  tb_PoisonMagic = 16;   //¶¾ÌØ¶ã±Ü
-  tb_HealthRecover = 17;  //ÌåÁ¦»Ö¸´
-  tb_SpellRecover = 18;   //Ä§·¨»Ö¸´
-  tb_PoisonRecover = 19;  //¶¾Îï»Ö¸´
-  tb_Luck = 20;         //ĞÒÔË
-  tb_UnLuck = 21;       //×çÖä
-  tb_AddAttack = 22;     //ÉËº¦¼Ó³É
-  tb_DelDamage = 23;     //ÉËº¦ÎüÊÕ
-  tb_AddWuXinAttack = 24;    //ÎåĞĞ¹¥»÷
-  tb_DelWuXinAttack = 25;    //ÎåĞĞ·ÀÓù
-  tb_Deadliness = 26; //ÖÂÃüÒ»»÷
-  //tb_CompoundLV = 27;  //ºÏ³ÉµÈ¼¶
-  //tb_ItemNameColor = 28;  //×°±¸Ãû³ÆÑÕÉ«
-  //tb_unknown1 = 29;      //É³°Í¿ËÁ¶ÎäÆ÷
+  tb_Hit = 12;         //å‡†ç¡®
+  tb_Speed = 13;       //æ•æ·
+  tb_Strong = 14;     //æ­¦å™¨å¼ºåº¦
+  tb_AntiMagic = 15;    //é­”æ³•èº²é¿
+  tb_PoisonMagic = 16;   //æ¯’ç‰¹èº²é¿
+  tb_HealthRecover = 17;  //ä½“åŠ›æ¢å¤
+  tb_SpellRecover = 18;   //é­”æ³•æ¢å¤
+  tb_PoisonRecover = 19;  //æ¯’ç‰©æ¢å¤
+  tb_Luck = 20;         //å¹¸è¿
+  tb_UnLuck = 21;       //è¯…å’’
+  tb_AddAttack = 22;     //ä¼¤å®³åŠ æˆ
+  tb_DelDamage = 23;     //ä¼¤å®³å¸æ”¶
+  tb_AddWuXinAttack = 24;    //äº”è¡Œæ”»å‡»
+  tb_DelWuXinAttack = 25;    //äº”è¡Œé˜²å¾¡
+  tb_Deadliness = 26; //è‡´å‘½ä¸€å‡»
+  //tb_CompoundLV = 27;  //åˆæˆç­‰çº§
+  //tb_ItemNameColor = 28;  //è£…å¤‡åç§°é¢œè‰²
+  //tb_unknown1 = 29;      //æ²™å·´å…‹ç‚¼æ­¦å™¨
   tb_Count = 27;
-  //tb_HitSpeed = 20;   //¹¥»÷ËÙ¶È
+  //tb_HitSpeed = 20;   //æ”»å‡»é€Ÿåº¦
 
-  {Is_Lock = 0;    tb_WuXin = 22;         //ÎåĞĞÊôĞÔ
-  Is_UnKnow = 1;  tb_StrengthenCount = 28;   //Ç¿»¯ÊıÁ¿
+  {Is_Lock = 0;    tb_WuXin = 22;         //äº”è¡Œå±æ€§
+  Is_UnKnow = 1;  tb_StrengthenCount = 28;   //å¼ºåŒ–æ•°é‡
   Is_Shine = 2;
             
    }
 
-  Ib_NoDeal = 0;    //²»¿É½»Ò×
-  Ib_NoSave = 1;    //²»¿É´æ²Ö
-  Ib_NoRepair = 2;  //²»¿ÉĞŞÀí
-  Ib_NoDrop = 3;    //²»¿É¶ªÆú
-  Ib_NoDown = 4;    //ÓÀ²»µôÂä
-  Ib_NoMake = 5; //²»¿ÉÇ¿»¯
-  Ib_NoSell = 6; //²»¿ÉÂô¸øÉÌµê
-  Ib_DropDestroy = 7;  //¶ªÆúÏûÊ§
+  Ib_NoDeal = 0;    //ä¸å¯äº¤æ˜“
+  Ib_NoSave = 1;    //ä¸å¯å­˜ä»“
+  Ib_NoRepair = 2;  //ä¸å¯ä¿®ç†
+  Ib_NoDrop = 3;    //ä¸å¯ä¸¢å¼ƒ
+  Ib_NoDown = 4;    //æ°¸ä¸æ‰è½
+  Ib_NoMake = 5; //ä¸å¯å¼ºåŒ–
+  Ib_NoSell = 6; //ä¸å¯å–ç»™å•†åº—
+  Ib_DropDestroy = 7;  //ä¸¢å¼ƒæ¶ˆå¤±
 
-  Ib2_Unknown = 0; //Î´¿ª¹â
-  //Ib2_Bind = 1; //ÊÇ·ñÒÑ°ó¶¨
-  //  Ib2_BindGold = 1;   //°ó¶¨½ğ±Ò¹ºÂò
+  Ib2_Unknown = 0; //æœªå¼€å…‰
+  //Ib2_Bind = 1; //æ˜¯å¦å·²ç»‘å®š
+  //  Ib2_BindGold = 1;   //ç»‘å®šé‡‘å¸è´­ä¹°
 
-  II_Publicity = 31; //¹«¿ª
+  II_Publicity = 31; //å…¬å¼€
   II_Show = 30;
   II_PickUp = 29;
   II_Color = 28;
@@ -1158,19 +1202,19 @@ $80000000  }
 
   
 
-  Itas_Ac = 1;      //±¦Ê¯¼Ó·ÀÓù
-  Itas_Mac = 2;     //±¦Ê¯¼ÓÄ§Óù
-  Itas_Dc = 3;      //±¦Ê¯¼Ó¹¥»÷
-  Itas_Mc = 4;      //±¦Ê¯¼ÓÄ§·¨
-  Itas_Sc = 5;      //±¦Ê¯¼ÓµÀÊõ
-  Itas_Hp = 6;      //±¦Ê¯¼ÓÉúÃü
-  Itas_Mp = 7;      //±¦Ê¯¼ÓÄ§·¨Öµ
+  Itas_Ac = 1;      //å®çŸ³åŠ é˜²å¾¡
+  Itas_Mac = 2;     //å®çŸ³åŠ é­”å¾¡
+  Itas_Dc = 3;      //å®çŸ³åŠ æ”»å‡»
+  Itas_Mc = 4;      //å®çŸ³åŠ é­”æ³•
+  Itas_Sc = 5;      //å®çŸ³åŠ é“æœ¯
+  Itas_Hp = 6;      //å®çŸ³åŠ ç”Ÿå‘½
+  Itas_Mp = 7;      //å®çŸ³åŠ é­”æ³•å€¼
 
-  RULE_MAKE = 0; //´òÔìÎïÆ·ÌáÊ¾
-  RULE_DOWNHINT = 1; //µôÂäÌáÊ¾
-  RULE_BOX = 2; //±¦ÏäÌáÊ¾
-  RULE_NOTAKEOFF = 3; //±¦ÏäÌáÊ¾
-  RULE_COUNT = 4;// ×ÜÊıÁ¿
+  RULE_MAKE = 0; //æ‰“é€ ç‰©å“æç¤º
+  RULE_DOWNHINT = 1; //æ‰è½æç¤º
+  RULE_BOX = 2; //å®ç®±æç¤º
+  RULE_NOTAKEOFF = 3; //å®ç®±æç¤º
+  RULE_COUNT = 4;// æ€»æ•°é‡
 
   M2SETUP_SHOWSTRENGTHENINFO = 0;
   M2SETUP_SHOWCBOFORM = 1;
@@ -1308,15 +1352,15 @@ type
     dwCreateTime: TDateTime;
     btGuildLevel: Byte;
     nGuildMoney: Integer;
-    nBuildPoint: Integer; //½¨Öş¶È
-    nFlourishingPoint: Integer; //·±ÈÙ¶È
-    nStabilityPoint: Integer; //°²¶¨¶È
-    nActivityPoint: Integer; //ÈËÆø¶È
+    nBuildPoint: Integer; //å»ºç­‘åº¦
+    nFlourishingPoint: Integer; //ç¹è£åº¦
+    nStabilityPoint: Integer; //å®‰å®šåº¦
+    nActivityPoint: Integer; //äººæ°”åº¦
     nLevelGuildMoney: Integer;
-    nLevelBuildPoint: Integer; //½¨Öş¶È
-    nLevelFlourishingPoint: Integer; //·±ÈÙ¶È
-    nLevelStabilityPoint: Integer; //°²¶¨¶È
-    nLevelActivityPoint: Word; //ÈËÆø¶È
+    nLevelBuildPoint: Integer; //å»ºç­‘åº¦
+    nLevelFlourishingPoint: Integer; //ç¹è£åº¦
+    nLevelStabilityPoint: Integer; //å®‰å®šåº¦
+    nLevelActivityPoint: Word; //äººæ°”åº¦
     btKickMonExp: Byte;
     btKickMonAttack: Byte;
     nMaxActivityPoint: Word;
@@ -1562,10 +1606,10 @@ type
   TItemRule = packed record
     case Integer of
       1:(
-        Rule: array[0..RULE_COUNT - 1] of Boolean; //´òÔìÎïÆ·ÌáÊ¾
+        Rule: array[0..RULE_COUNT - 1] of Boolean; //æ‰“é€ ç‰©å“æç¤º
       );
       2:(
-        nCheck: Integer; //ÓÃÓÚ¼ì²âÊÇ·ñÓĞ¸³Öµ
+        nCheck: Integer; //ç”¨äºæ£€æµ‹æ˜¯å¦æœ‰èµ‹å€¼
       );
   end;
 
@@ -2034,8 +2078,8 @@ type
 
   pTStrengthenInfo = ^TStrengthenInfo;
   TStrengthenInfo = packed record
-    btCanStrengthenCount: Byte; //¿ÉÇ¿»¯´ÎÊı
-    btStrengthenCount: Byte; //ÒÑÇ¿»¯´ÎÊı
+    btCanStrengthenCount: Byte; //å¯å¼ºåŒ–æ¬¡æ•°
+    btStrengthenCount: Byte; //å·²å¼ºåŒ–æ¬¡æ•°
     btStrengthenInfo: array[0..5] of Byte;
   end;
 
@@ -2045,10 +2089,10 @@ type
   TUserItemValue = packed record
     case Integer of
       1: (
-        btWuXin: Byte; //ÎåĞĞÊôĞÔ
-        btFluteCount: Byte; //°¼²ÛÊıÁ¿
-        wFlute: array[0..MAXFLUTECOUNT - 1] of Word; //°¼²Û±¦Ê¯ĞÅÏ¢
-        btValue: TUserItemValueArray;    //ÎïÆ·¸½¼ÓÊôĞÔ
+        btWuXin: Byte; //äº”è¡Œå±æ€§
+        btFluteCount: Byte; //å‡¹æ§½æ•°é‡
+        wFlute: array[0..MAXFLUTECOUNT - 1] of Word; //å‡¹æ§½å®çŸ³ä¿¡æ¯
+        btValue: TUserItemValueArray;    //ç‰©å“é™„åŠ å±æ€§
         StrengthenInfo: TStrengthenInfo;
       );
       2: (
@@ -2060,8 +2104,8 @@ type
       );
   end;
 
-   //tb_WuXin = 22;         //ÎåĞĞÊôĞÔ
-  //Is_UnKnow = 1;  tb_StrengthenCount = 28;   //Ç¿»¯ÊıÁ¿
+   //tb_WuXin = 22;         //äº”è¡Œå±æ€§
+  //Is_UnKnow = 1;  tb_StrengthenCount = 28;   //å¼ºåŒ–æ•°é‡
 
   {pTOldUserItem = ^TOldUserItem;
   TOldUserItem = packed record
@@ -2133,7 +2177,7 @@ type
         DuraMax: Word;
         EffectValue: TUserItemEffectValue;
         Value: TUserItemValue;
-        ComLevel: Byte; //ºÏ³ÉµÈ¼¶
+        ComLevel: Byte; //åˆæˆç­‰çº§
         temp1: array[0..48] of Byte;
       );
       2:(
@@ -2549,8 +2593,8 @@ type
 
   pTUserOptionSetup = ^TUserOptionSetup;
   TUserOptionSetup = packed record
-    nOptionSetup: LongWord; //32ÏîÉèÖÃ
-    nExpFiltrateCount: Word; //¹ıÂË×îµÍÊıÁ¿
+    nOptionSetup: LongWord; //32é¡¹è®¾ç½®
+    nExpFiltrateCount: Word; //è¿‡æ»¤æœ€ä½æ•°é‡
     nHpProtectCount: Word;
     dwHpProtectTime: Byte;
     nMpProtectCount: Word;
@@ -2684,7 +2728,7 @@ type
     nGameDiamond: Integer;
     nGameGird: Integer;
     nPKPoint: Integer;
-    nPullulation: Integer;     //×ÔÈ»³É³¤µã
+    nPullulation: Integer;     //è‡ªç„¶æˆé•¿ç‚¹
 
     btAttatckMode: byte;
     nIncHealth: byte; //
@@ -2708,7 +2752,7 @@ type
     nExpRate: Integer;
     nExpTime: LongWord;
     dwUpLoadPhotoTime: TDateTime;
-    UserRealityInfo: TUserRealityInfo; //ÓÃ»§ÕæÊµĞÅÏ¢
+    UserRealityInfo: TUserRealityInfo; //ç”¨æˆ·çœŸå®ä¿¡æ¯
     UserKeySetup: TUserKeySetup;
     QuestFlag: TQuestFlag;
     MissionFlag: TMissionFlag;
@@ -2716,8 +2760,8 @@ type
     MissionArithmometer: TMissionArithmometer;
     MissionIndex: TMissionIndex;
 
-    ReturnItems: THumanReturnItems; //»Ø¹ºÎïÆ·        4
-    AppendBagItems: THumanAppendBagItems; //¶îÍâ±³°ü   3
+    ReturnItems: THumanReturnItems; //å›è´­ç‰©å“        4
+    AppendBagItems: THumanAppendBagItems; //é¢å¤–èƒŒåŒ…   3
     HumItems: THumanUseItems;                        //16
     BagItems: TBagItems;                            //105
 
@@ -3189,6 +3233,276 @@ type
 
   TIconInfoShows = array [Low(TIconInfos) .. High(TIconInfos)] of TIconInfoShow;
 
+  // === æ–°å¢ BUFF/Debuff æ•°æ®ç»“æ„ ===
+  TBuffType = (btBuff, btDebuff);
+
+  pTBuffInfo = ^TBuffInfo;
+  TBuffInfo = packed record
+    nBuffID: Word;              // BUFFå”¯ä¸€ID
+    nBuffType: Word;            // BUFFç±»å‹ç¼–å·
+    sBuffName: string[20];      // BUFFåç§°
+    BuffType: TBuffType;        // BUFFæˆ–Debuff
+    nDuration: LongWord;        // å‰©ä½™æŒç»­æ—¶é—´(ms)
+    nMaxDuration: LongWord;     // æœ€å¤§æŒç»­æ—¶é—´
+    nInterval: LongWord;        // tické—´éš”(ms)
+    dwLastTick: LongWord;       // ä¸Šæ¬¡tickæ—¶é—´
+    nValue: Integer;            // æ•°å€¼å‚æ•°
+    nValue2: Integer;           // æ•°å€¼å‚æ•°2
+    nSourceObj: Integer;        // æ¥æºå¯¹è±¡ID
+    nEffectID: Word;            // ç‰¹æ•ˆID
+    nOverlay: Byte;             // å åŠ å±‚æ•°
+    nMaxOverlay: Byte;          // æœ€å¤§å åŠ å±‚æ•°
+    boPermanent: Boolean;       // æ˜¯å¦æ°¸ä¹…BUFF
+    boRemoveOnDeath: Boolean;   // æ­»äº¡æ˜¯å¦ç§»é™¤
+  end;
+
+  TBuffList = packed record
+    Buffs: array[0..31] of TBuffInfo;
+    nCount: Integer;
+  end;
+  pTBuffList = ^TBuffList;
+
+  // === æ–°å¢ GCDå†·å´æ•°æ®ç»“æ„ ===
+  pTGCDInfo = ^TGCDInfo;
+  TGCDInfo = packed record
+    nSkillID: Word;             // æŠ€èƒ½ID
+    dwLastCastTime: LongWord;   // ä¸Šæ¬¡æ–½æ”¾æ—¶é—´
+    nGCDTime: LongWord;         // GCDæ—¶é—´(ms)
+    nGlobalGCDTime: LongWord;   // å…¨å±€GCDæ—¶é—´(ms)
+  end;
+
+  // === æ–°å¢ éšæœºè¯ç¼€æ•°æ®ç»“æ„ ===
+  TAffixQuality = (aqCommon, aqRare, aqEpic, aqLegendary);
+
+  pTAffixEntry = ^TAffixEntry;
+  TAffixEntry = packed record
+    nAffixID: Word;             // è¯ç¼€ID
+    sAffixName: string[20];     // è¯ç¼€åç§°
+    nQuality: Byte;             // å“è´¨ç­‰çº§ 0-3
+    nAttrType: Byte;            // å±æ€§ç±»å‹ 0=DC,1=MC,2=SC,3=AC,4=MAC,5=HP,6=MP,7=HitSpeed,8=Deadliness,9=Vampire
+    nMinValue: Integer;         // æœ€å°å±æ€§å€¼
+    nMaxValue: Integer;         // æœ€å¤§å±æ€§å€¼
+    nWeight: Integer;           // å‡ºç°æƒé‡
+    nEquipType: Byte;           // è£…å¤‡ç±»å‹é™åˆ¶ 0=å…¨éƒ¨,1=æ­¦å™¨,2=è¡£æœ,3=é¦–é¥°,4=å¤´ç›”
+    nLevelMin: Integer;         // è£…å¤‡ç­‰çº§ä¸‹é™
+    nLevelMax: Integer;         // è£…å¤‡ç­‰çº§ä¸Šé™
+  end;
+
+  pTAffixGroup = ^TAffixGroup;
+  TAffixGroup = packed record
+    sGroupName: string[20];     // è¯ç¼€ç»„åç§°
+    AffixList: TList;           // è¯ç¼€åˆ—è¡¨
+    nMinAffix: Integer;         // æœ€å°‘è¯ç¼€æ•°
+    nMaxAffix: Integer;         // æœ€å¤šè¯ç¼€æ•°
+  end;
+
+  pTItemAffix = ^TItemAffix;
+  TItemAffix = packed record
+    nAffixID: Word;             // è¯ç¼€ID
+    nQuality: Byte;             // å“è´¨
+    nAttrType: Byte;            // å±æ€§ç±»å‹
+    nValue: Integer;            // å±æ€§å€¼
+    bLocked: Boolean;           // æ˜¯å¦é”å®š
+  end;
+
+  // === æ–°å¢ å‰¯æœ¬ç³»ç»Ÿæ•°æ®ç»“æ„ ===
+  TDungeonType = (dtNormal, dtElite, dtHero, dtRaid);
+
+  pTDungeonTemplate = ^TDungeonTemplate;
+  TDungeonTemplate = packed record
+    nDungeonID: Word;           // å‰¯æœ¬ID
+    sDungeonName: string[30];   // å‰¯æœ¬åç§°
+    sMapName: string[16];       // å‰¯æœ¬åœ°å›¾å
+    nMinLevel: Integer;         // æœ€ä½ç­‰çº§
+    nMaxLevel: Integer;         // æœ€é«˜ç­‰çº§
+    nMaxPlayers: Integer;       // æœ€å¤§äººæ•°
+    nMaxTime: LongWord;         // æœ€å¤§æ—¶é—´(ç§’)
+    nDailyLimit: Integer;       // æ¯æ—¥æ¬¡æ•°é™åˆ¶
+    nEnterGold: Integer;        // è¿›å…¥é‡‘å¸æ¶ˆè€—
+    nEnterGameGold: Integer;    // è¿›å…¥å…ƒå®æ¶ˆè€—
+    DungeonType: TDungeonType;  // å‰¯æœ¬ç±»å‹
+    sEnterMap: string[16];      // è¿›å…¥åœ°å›¾
+    nEnterX: Integer;           // è¿›å…¥åæ ‡X
+    nEnterY: Integer;           // è¿›å…¥åæ ‡Y
+    MonGenList: TList;          // æ€ªç‰©ç”Ÿæˆåˆ—è¡¨
+    BossList: TList;            // Bossåˆ—è¡¨
+    RewardList: TList;          // å¥–åŠ±åˆ—è¡¨
+    sScript: string[50];        // å‰¯æœ¬è„šæœ¬
+  end;
+
+  pTDungeonInstance = ^TDungeonInstance;
+  TDungeonInstance = packed record
+    nInstanceID: LongWord;      // å®ä¾‹ID
+    nTemplateID: Word;          // æ¨¡æ¿ID
+    sMapName: string[16];       // å½“å‰åœ°å›¾å
+    nCurrX, nCurrY: Integer;    // å½“å‰åæ ‡
+    dwCreateTime: LongWord;     // åˆ›å»ºæ—¶é—´
+    dwEndTime: LongWord;        // ç»“æŸæ—¶é—´
+    PlayerList: TList;          // ç©å®¶åˆ—è¡¨
+    MonsterList: TList;         // æ€ªç‰©åˆ—è¡¨
+    nState: Integer;            // çŠ¶æ€ 0=ç­‰å¾…,1=è¿›è¡Œä¸­,2=å®Œæˆ,3=å¤±è´¥
+    nProgress: Integer;         // è¿›åº¦ 0-100
+    nCurrentWave: Integer;      // å½“å‰æ³¢æ¬¡
+    nMaxWave: Integer;          // æœ€å¤§æ³¢æ¬¡
+    nKillCount: Integer;        // æ€æ€ªè®¡æ•°
+    nKillTarget: Integer;       // æ€æ€ªç›®æ ‡
+    nBossKillCount: Integer;    // Bosså‡»æ€æ•°
+    nDeathCount: Integer;       // æ­»äº¡æ¬¡æ•°
+    nRewardMultiplier: Integer; // å¥–åŠ±å€ç‡
+  end;
+
+  // === æ–°å¢ æ€ªç‰©AIè¡Œä¸ºæ ‘æ•°æ®ç»“æ„ ===
+  TBehaviorNodeType = (bntSelector, bntSequence, bntCondition, bntAction, bntRandom, bntParallel, bntDecorator);
+
+  pTBehaviorNode = ^TBehaviorNode;
+  TBehaviorNode = packed record
+    nNodeID: Integer;           // èŠ‚ç‚¹ID
+    sNodeName: string[30];      // èŠ‚ç‚¹åç§°
+    NodeType: TBehaviorNodeType;// èŠ‚ç‚¹ç±»å‹
+    sCondition: string[100];    // æ¡ä»¶è¡¨è¾¾å¼
+    sAction: string[100];       // åŠ¨ä½œè¡¨è¾¾å¼
+    nWeight: Integer;           // æƒé‡(éšæœºèŠ‚ç‚¹ä½¿ç”¨)
+    nMaxExecCount: Integer;     // æœ€å¤§æ‰§è¡Œæ¬¡æ•°
+    nCoolDown: LongWord;        // å†·å´æ—¶é—´
+    Children: TList;            // å­èŠ‚ç‚¹åˆ—è¡¨
+  end;
+
+  pTMonsterAIConfig = ^TMonsterAIConfig;
+  TMonsterAIConfig = packed record
+    sMonsterName: string[14];   // æ€ªç‰©åç§°
+    nMonsterID: Integer;        // æ€ªç‰©ID
+    RootNode: pTBehaviorNode;   // è¡Œä¸ºæ ‘æ ¹èŠ‚ç‚¹
+    nAggroRange: Integer;       // è­¦æˆ’èŒƒå›´
+    nChaseRange: Integer;       // è¿½å‡»èŒƒå›´
+    nReturnRange: Integer;      // è¿”å›èŒƒå›´
+    boSmartSkill: Boolean;      // æ™ºèƒ½æŠ€èƒ½ä½¿ç”¨
+    boCallHelp: Boolean;        // å‘¼å”¤åŒä¼´
+    boFleeLowHP: Boolean;       // ä½è¡€é‡é€ƒè·‘
+    nFleeHPPercent: Integer;    // é€ƒè·‘è¡€é‡ç™¾åˆ†æ¯”
+    SkillList: TList;           // æŠ€èƒ½åˆ—è¡¨
+    sOnDeathScript: string[50]; // æ­»äº¡è„šæœ¬
+    sOnSpawnScript: string[50]; // å‡ºç”Ÿè„šæœ¬
+  end;
+
+  // === æ–°å¢ æ´»åŠ¨å¼•æ“æ•°æ®ç»“æ„ ===
+  TActivityType = (atDaily, atWeekly, atTimed, atSpecial);
+
+  pTActivityInfo = ^TActivityInfo;
+  TActivityInfo = packed record
+    nActivityID: Word;          // æ´»åŠ¨ID
+    sActivityName: string[30];  // æ´»åŠ¨åç§°
+    sDescription: string[200];  // æ´»åŠ¨æè¿°
+    ActivityType: TActivityType;// æ´»åŠ¨ç±»å‹
+    sStartTime: string[10];     // å¼€å§‹æ—¶é—´ HH:MM
+    sEndTime: string[10];       // ç»“æŸæ—¶é—´ HH:MM
+    nWeekDay: Byte;             // æ˜ŸæœŸå‡ (0=æ¯å¤©,1-7=å‘¨ä¸€åˆ°å‘¨æ—¥)
+    nMonthDay: Byte;            // æ¯æœˆå‡ å·(0=ä¸é™)
+    nMinLevel: Integer;         // æœ€ä½ç­‰çº§
+    nMaxLevel: Integer;         // æœ€é«˜ç­‰çº§
+    nMinPlayers: Integer;       // æœ€å°‘äººæ•°
+    nMaxPlayers: Integer;       // æœ€å¤§äººæ•°
+    nDuration: LongWord;        // æŒç»­æ—¶é—´(ç§’)
+    nPrepareTime: LongWord;     // å‡†å¤‡æ—¶é—´(ç§’)
+    sMapName: string[16];       // æ´»åŠ¨åœ°å›¾
+    nEnterX, nEnterY: Integer;  // è¿›å…¥åæ ‡
+    sScript: string[50];        // æ´»åŠ¨è„šæœ¬
+    boEnabled: Boolean;         // æ˜¯å¦å¯ç”¨
+    boAutoStart: Boolean;       // æ˜¯å¦è‡ªåŠ¨å¼€å§‹
+    nRewardGold: Integer;       // é‡‘å¸å¥–åŠ±
+    nRewardGameGold: Integer;   // å…ƒå®å¥–åŠ±
+    nRewardExp: Integer;        // ç»éªŒå¥–åŠ±
+    RewardItemList: TList;      // ç‰©å“å¥–åŠ±åˆ—è¡¨
+  end;
+
+  // === æ–°å¢ å¸ˆå¾’ç³»ç»Ÿæ•°æ®ç»“æ„ ===
+  TMasterRelation = (mrNone, mrMaster, mrApprentice, mrBoth);
+
+  pTMasterApprentice = ^TMasterApprentice;
+  TMasterApprentice = packed record
+    sMasterName: string[14];    // å¸ˆå‚…åç§°
+    sApprenticeName: string[14];// å¾’å¼Ÿåç§°
+    dwCreateTime: LongWord;     // å»ºç«‹æ—¶é—´
+    nMasterLevel: Integer;      // å»ºç«‹æ—¶å¸ˆå‚…ç­‰çº§
+    nApprenticeLevel: Integer;  // å»ºç«‹æ—¶å¾’å¼Ÿç­‰çº§
+    nApprenticeCount: Integer;  // å¾’å¼Ÿå·²å‡ºå¸ˆæ•°é‡
+    nMasterExpBonus: Integer;   // å¸ˆå‚…ç»éªŒåŠ æˆ
+    nApprenticeExpBonus: Integer; // å¾’å¼Ÿç»éªŒåŠ æˆ
+    boCompleted: Boolean;       // æ˜¯å¦å·²å‡ºå¸ˆ
+    dwCompleteTime: LongWord;   // å‡ºå¸ˆæ—¶é—´
+    nCompleteLevel: Integer;    // å‡ºå¸ˆç­‰çº§
+    nDailyQuestCount: Integer;  // æ¯æ—¥ä»»åŠ¡å®Œæˆæ•°
+    nMaxDailyQuest: Integer;    // æ¯æ—¥ä»»åŠ¡ä¸Šé™
+    nMentorPoints: Integer;     // å¸ˆå¾’ç‚¹æ•°
+    sLastQuestDate: string[10]; // ä¸Šæ¬¡ä»»åŠ¡æ—¥æœŸ
+  end;
+
+  // === æ–°å¢ è¡Œä¼šç§‘æŠ€æ ‘æ•°æ®ç»“æ„ ===
+  TGuildTechType = (gttCombat, gttDefense, gttSupport, gttProduction, gttSpecial);
+
+  pTGuildTech = ^TGuildTech;
+  TGuildTech = packed record
+    nTechID: Word;              // ç§‘æŠ€ID
+    sTechName: string[30];      // ç§‘æŠ€åç§°
+    TechType: TGuildTechType;   // ç§‘æŠ€ç±»å‹
+    nMaxLevel: Integer;         // æœ€å¤§ç­‰çº§
+    nCurrentLevel: Integer;     // å½“å‰ç­‰çº§
+    nUpgradeCost: Integer;      // å‡çº§æ¶ˆè€—(é‡‘å¸)
+    nUpgradeBuildPoint: Integer;// å‡çº§æ¶ˆè€—(å»ºç­‘åº¦)
+    nUpgradeStability: Integer; // å‡çº§æ¶ˆè€—(å®‰å®šåº¦)
+    nUpgradeTime: LongWord;     // å‡çº§æ—¶é—´(ç§’)
+    dwUpgradeStartTime: LongWord; // å‡çº§å¼€å§‹æ—¶é—´
+    boUpgrading: Boolean;       // æ˜¯å¦æ­£åœ¨å‡çº§
+    sDescription: string[100];  // ç§‘æŠ€æè¿°
+    sEffect: string[100];       // æ•ˆæœæè¿°
+    EffectValue: array[0..4] of Integer; // æ¯çº§æ•ˆæœå€¼
+  end;
+
+  // === æ–°å¢ èµ›å­£ç³»ç»Ÿæ•°æ®ç»“æ„ ===
+  TSeasonState = (ssPreSeason, ssActive, ssPlayoffs, ssOffSeason);
+
+  pTSeasonInfo = ^TSeasonInfo;
+  TSeasonInfo = packed record
+    nSeasonID: Integer;         // èµ›å­£ID
+    sSeasonName: string[30];    // èµ›å­£åç§°
+    SeasonState: TSeasonState;  // èµ›å­£çŠ¶æ€
+    dwStartTime: LongWord;      // å¼€å§‹æ—¶é—´
+    dwEndTime: LongWord;        // ç»“æŸæ—¶é—´
+    nRankingType: Integer;      // æ’åç±»å‹ 0=ç­‰çº§,1=æˆ˜åŠ›,2=PK,3=ç»¼åˆ
+    nMaxRank: Integer;          // æœ€å¤§æ’åæ•°
+    RewardList: TList;          // å¥–åŠ±åˆ—è¡¨
+    sDescription: string[200];  // èµ›å­£æè¿°
+  end;
+
+  // === æ–°å¢ æ–°æ‰‹å¼•å¯¼æ•°æ®ç»“æ„ ===
+  pTGuideStep = ^TGuideStep;
+  TGuideStep = packed record
+    nStepID: Integer;           // æ­¥éª¤ID
+    sStepName: string[30];      // æ­¥éª¤åç§°
+    sDescription: string[200];  // æ­¥éª¤æè¿°
+    nTargetType: Integer;       // ç›®æ ‡ç±»å‹ 0=NPCå¯¹è¯,1=æ€æ€ª,2=æ”¶é›†,3=åˆ°è¾¾,4=ä½¿ç”¨,5=è£…å¤‡
+    sTargetName: string[20];    // ç›®æ ‡åç§°
+    nTargetCount: Integer;      // ç›®æ ‡æ•°é‡
+    sMapName: string[16];       // ç›®æ ‡åœ°å›¾
+    nTargetX, nTargetY: Integer;// ç›®æ ‡åæ ‡
+    nRewardExp: Integer;        // ç»éªŒå¥–åŠ±
+    nRewardGold: Integer;       // é‡‘å¸å¥–åŠ±
+    nRewardItemID: Word;        // ç‰©å“å¥–åŠ±ID
+    nRewardItemCount: Integer;  // ç‰©å“å¥–åŠ±æ•°é‡
+    sNextStep: string[20];      // ä¸‹ä¸€æ­¥éª¤
+    boAuto: Boolean;            // æ˜¯å¦è‡ªåŠ¨å®Œæˆ
+    nEffectID: Integer;         // ç‰¹æ•ˆID
+  end;
+
+  pTNewbieGuide = ^TNewbieGuide;
+  TNewbieGuide = packed record
+    sGuideName: string[30];     // å¼•å¯¼åç§°
+    StepList: TList;            // æ­¥éª¤åˆ—è¡¨
+    nCurrentStep: Integer;      // å½“å‰æ­¥éª¤
+    boCompleted: Boolean;       // æ˜¯å¦å®Œæˆ
+    nTotalRewardExp: Integer;   // æ€»ç»éªŒå¥–åŠ±
+    nTotalRewardGold: Integer;  // æ€»é‡‘å¸å¥–åŠ±
+  end;
+
 function APPRfeature(cfeature: Integer): Word;
 function RACEfeature(cfeature: Integer): Byte;
 function HAIRfeature(cfeature: Integer): Byte;
@@ -3332,7 +3646,7 @@ begin
   else if (StdItem <> nil) {and (StdItem.StdMode2 > 4) } and (StdItem.DuraMax > 0) and (UserItem.DuraMax > 0) then
   begin
     if StdItem.StdMode = tm_Flesh then
-    begin //Èâ
+    begin //è‚‰
       if UserItem.Dura <= UserItem.DuraMax then
       begin
         n20 := (n10 / 2.0 / UserItem.DuraMax * (UserItem.DuraMax - UserItem.Dura));
@@ -3341,8 +3655,8 @@ begin
       else
       begin
         n10 := n10 + ROUND(n10 / UserItem.DuraMax * 2.0 * (UserItem.Dura - UserItem.DuraMax));
-        //ĞŞ¸´ÈâµÄ¼Û¸ñÈç¹ûµ±Ç°³Ö¾Ã´óÓÚ×î´ó³Ö¾ÃUserItem.DuraMax -UserItem.Dura
-        //³ÉÁË¸ºÊı¼Û¸ñ»á±ÈÕı³£µÄ¼õÉÙ
+        //ä¿®å¤è‚‰çš„ä»·æ ¼å¦‚æœå½“å‰æŒä¹…å¤§äºæœ€å¤§æŒä¹…UserItem.DuraMax -UserItem.Dura
+        //æˆäº†è´Ÿæ•°ä»·æ ¼ä¼šæ¯”æ­£å¸¸çš„å‡å°‘
         //n10 := n10 + ROUND(n10 / UserItem.DuraMax * 2.0 * (UserItem.DuraMax - UserItem.Dura));
       end;
     end;
@@ -3358,8 +3672,8 @@ begin
       else
       begin
         n10 := n10 + ROUND(n10 / UserItem.DuraMax * 1.3 * (UserItem.Dura - UserItem.DuraMax));
-        //ĞŞ¸´¿óµÄ¼Û¸ñÈç¹ûµ±Ç°³Ö¾Ã´óÓÚ×î´ó³Ö¾ÃUserItem.DuraMax -UserItem.Dura
-        //³ÉÁË¸ºÊı¼Û¸ñ»á±ÈÕı³£µÄ¼õÉÙ
+        //ä¿®å¤çŸ¿çš„ä»·æ ¼å¦‚æœå½“å‰æŒä¹…å¤§äºæœ€å¤§æŒä¹…UserItem.DuraMax -UserItem.Dura
+        //æˆäº†è´Ÿæ•°ä»·æ ¼ä¼šæ¯”æ­£å¸¸çš„å‡å°‘
         //n10 := n10 + ROUND(n10 / UserItem.DuraMax * 1.3 * (UserItem.DuraMax - UserItem.Dura));
       end;
     end;
@@ -3579,84 +3893,84 @@ function GetMagicType(nMagID: Byte): TMagicMode;
 begin
   Result := [];
   case nMagID of
-    1: Result := [mm_Attack, mm_MagLock]; //»ğÇòÊõ
-    2: Result := [mm_Attack]; //ÖÎÓáÊõ
-    3: Result := [mm_Passiveness]; //»ù±¾½£Êõ
-    4: Result := [mm_Passiveness]; //¾«ÉñÁ¦Õ½·¨
-    5: Result := [mm_Attack, mm_MagLock]; //´ó»ğÇò
-    6: Result := [mm_Attack, mm_MagLock]; //Ê©¶¾Êõ
-    7: Result := [mm_Passiveness]; //¹¥É±½£Êõ
-    8: Result := []; //¿¹¾Ü»ğ»·
-    9: Result := [mm_Attack]; //µØÓü»ğ
-    10: Result := [mm_Attack]; //¼²¹âµçÓ°
-    11: Result := [mm_Attack, mm_MagLock]; //À×µçÊõ
-    12: Result := [mm_Warr, mm_Open]; //´ÌÉ±½£Êõ
-    13: Result := [mm_Attack, mm_MagLock]; //Áé»ê»ğ·û
-    14: Result := [mm_Attack]; //ÓÄÁé¶Ü
-    15: Result := [mm_Attack]; //ÉñÊ¥Õ½¼×Êõ
-    16: Result := [mm_Attack]; //À§Ä§Öä
-    17: Result := []; //ÕÙ»½÷¼÷Ã
-    18: Result := []; //ÒşÉíÊõ
-    19: Result := [mm_Attack]; //¼¯ÌåÒşÉíÊõ
-    20: Result := [mm_Attack, mm_MagLock]; //ÓÕ»óÖ®¹â
-    21: Result := []; //Ë²Ï¢ÒÆ¶¯
-    22: Result := [mm_Attack]; //»ğÇ½
-    23: Result := [mm_Attack]; //±¬ÁÑ»ğÑæ
-    24: Result := []; //µØÓüÀ×¹â
-    25: Result := [mm_Warr, mm_Open]; //°ëÔÂÍäµ¶
-    26: Result := [mm_Warr]; //ÁÒ»ğ½£·¨
-    27: Result := [mm_Warr]; //Ò°Âù³å×²
-    28: Result := [mm_Attack]; //ĞÄÁéÆôÊ¾
-    29: Result := [mm_Attack]; //ÈºÌåÖÎÁÆÊõ
-    30: Result := []; //ÕÙ»½ÉñÊŞ
-    31: Result := []; //Ä§·¨¶Ü
-    32: Result := [mm_Attack, mm_MagLock]; //Ê¥ÑÔÊõ
-    33: Result := [mm_Attack]; //±ùÅØÏø
-    34: Result := [mm_Attack]; //½â¶¾Êõ
-    35: Result := []; //Ê¨×Óºğ
-    36: Result := [mm_Attack, mm_MagLock]; //»ğÑæ±ù
-    37: Result := [mm_Attack]; //ÈºÌåÀ×µçÊõ
-    38: Result := [mm_Attack]; //ÈºÌåÊ©¶¾Êõ
-    39: Result := [mm_Attack, mm_MagLock]; //³¹µØ¶¤
-    42: Result := []; //×İºá½£Êõ
-    43: Result := [mm_Warr]; //¿ªÌìÕ¶
-    44: Result := [mm_Attack, mm_MagLock]; //º®±ùÕÆ
-    45: Result := [mm_Attack, mm_MagLock]; //ÃğÌì»ğ
-    47: Result := [mm_Attack]; //»ğÁúÆøÑæ
-    48: Result := []; //Æø¹¦²¨
-    50: Result := []; //ÎŞ¼«ÕæÆø
-    52: Result := [mm_Attack]; //×çÖäÊõ
-    53: Result := [mm_Attack, mm_MagLock]; //ÊÉÑªÊõ
-    55: Result := [mm_Attack]; //ÇÜÁúÊÖ
-    56: Result := [mm_Warr]; //ÖğÈÕ½£·¨
-    57: Result := [mm_Attack]; //Á÷ĞÇ»ğÓê
-    58: Result := []; //½ğ¸Õ»¤¶Ü
-    60: Result := [mm_Attack]; //¸´»îÊõ
-    62: Result := []; //Ò½ÁÆÕó
-    63: Result := []; //ÒÆĞÎ»»Î»
-    64: Result := [mm_Passiveness]; //»¤ÌåÉñ¶Ü
-    65: Result := []; //ÕÙ»½ÔÂÁé
-    66: Result := [mm_Attack]; //±ùËªÑ©Óê
-    67: Result := [mm_Attack, mm_MagLock]; //ÁÑÉñ·û
-    70: Result := [mm_Attack]; //Ê®²½Ò»É±
-    71: Result := [mm_Attack]; //±ùËªÈºÓê
-    72: Result := [mm_Attack]; //ËÀÍöÖ®ÑÛ
+    1: Result := [mm_Attack, mm_MagLock]; //ç«çƒæœ¯
+    2: Result := [mm_Attack]; //æ²»ä¿æœ¯
+    3: Result := [mm_Passiveness]; //åŸºæœ¬å‰‘æœ¯
+    4: Result := [mm_Passiveness]; //ç²¾ç¥åŠ›æˆ˜æ³•
+    5: Result := [mm_Attack, mm_MagLock]; //å¤§ç«çƒ
+    6: Result := [mm_Attack, mm_MagLock]; //æ–½æ¯’æœ¯
+    7: Result := [mm_Passiveness]; //æ”»æ€å‰‘æœ¯
+    8: Result := []; //æŠ—æ‹’ç«ç¯
+    9: Result := [mm_Attack]; //åœ°ç‹±ç«
+    10: Result := [mm_Attack]; //ç–¾å…‰ç”µå½±
+    11: Result := [mm_Attack, mm_MagLock]; //é›·ç”µæœ¯
+    12: Result := [mm_Warr, mm_Open]; //åˆºæ€å‰‘æœ¯
+    13: Result := [mm_Attack, mm_MagLock]; //çµé­‚ç«ç¬¦
+    14: Result := [mm_Attack]; //å¹½çµç›¾
+    15: Result := [mm_Attack]; //ç¥åœ£æˆ˜ç”²æœ¯
+    16: Result := [mm_Attack]; //å›°é­”å’’
+    17: Result := []; //å¬å”¤éª·é«…
+    18: Result := []; //éšèº«æœ¯
+    19: Result := [mm_Attack]; //é›†ä½“éšèº«æœ¯
+    20: Result := [mm_Attack, mm_MagLock]; //è¯±æƒ‘ä¹‹å…‰
+    21: Result := []; //ç¬æ¯ç§»åŠ¨
+    22: Result := [mm_Attack]; //ç«å¢™
+    23: Result := [mm_Attack]; //çˆ†è£‚ç«ç„°
+    24: Result := []; //åœ°ç‹±é›·å…‰
+    25: Result := [mm_Warr, mm_Open]; //åŠæœˆå¼¯åˆ€
+    26: Result := [mm_Warr]; //çƒˆç«å‰‘æ³•
+    27: Result := [mm_Warr]; //é‡è›®å†²æ’
+    28: Result := [mm_Attack]; //å¿ƒçµå¯ç¤º
+    29: Result := [mm_Attack]; //ç¾¤ä½“æ²»ç–—æœ¯
+    30: Result := []; //å¬å”¤ç¥å…½
+    31: Result := []; //é­”æ³•ç›¾
+    32: Result := [mm_Attack, mm_MagLock]; //åœ£è¨€æœ¯
+    33: Result := [mm_Attack]; //å†°å’†å“®
+    34: Result := [mm_Attack]; //è§£æ¯’æœ¯
+    35: Result := []; //ç‹®å­å¼
+    36: Result := [mm_Attack, mm_MagLock]; //ç«ç„°å†°
+    37: Result := [mm_Attack]; //ç¾¤ä½“é›·ç”µæœ¯
+    38: Result := [mm_Attack]; //ç¾¤ä½“æ–½æ¯’æœ¯
+    39: Result := [mm_Attack, mm_MagLock]; //å½»åœ°é’‰
+    42: Result := []; //çºµæ¨ªå‰‘æœ¯
+    43: Result := [mm_Warr]; //å¼€å¤©æ–©
+    44: Result := [mm_Attack, mm_MagLock]; //å¯’å†°æŒ
+    45: Result := [mm_Attack, mm_MagLock]; //ç­å¤©ç«
+    47: Result := [mm_Attack]; //ç«é¾™æ°”ç„°
+    48: Result := []; //æ°”åŠŸæ³¢
+    50: Result := []; //æ— æçœŸæ°”
+    52: Result := [mm_Attack]; //è¯…å’’æœ¯
+    53: Result := [mm_Attack, mm_MagLock]; //å™¬è¡€æœ¯
+    55: Result := [mm_Attack]; //æ“’é¾™æ‰‹
+    56: Result := [mm_Warr]; //é€æ—¥å‰‘æ³•
+    57: Result := [mm_Attack]; //æµæ˜Ÿç«é›¨
+    58: Result := []; //é‡‘åˆšæŠ¤ç›¾
+    60: Result := [mm_Attack]; //å¤æ´»æœ¯
+    62: Result := []; //åŒ»ç–—é˜µ
+    63: Result := []; //ç§»å½¢æ¢ä½
+    64: Result := [mm_Passiveness]; //æŠ¤ä½“ç¥ç›¾
+    65: Result := []; //å¬å”¤æœˆçµ
+    66: Result := [mm_Attack]; //å†°éœœé›ªé›¨
+    67: Result := [mm_Attack, mm_MagLock]; //è£‚ç¥ç¬¦
+    70: Result := [mm_Attack]; //åæ­¥ä¸€æ€
+    71: Result := [mm_Attack]; //å†°éœœç¾¤é›¨
+    72: Result := [mm_Attack]; //æ­»äº¡ä¹‹çœ¼
     100: Result := [mm_Warr];
-    110: Result := [mm_Warr]; //Èı¾øÉ±
-    111: Result := [mm_Warr]; //×·ĞÄ´Ì
-    112: Result := [mm_Warr]; //¶ÏÔÀÕ¶
-    113: Result := [mm_Warr]; //ºáÉ¨Ç§¾ü
-    114: Result := [mm_Attack, mm_MagLock]; //Ë«ÁúÆÆ
-    115: Result := [mm_Attack, mm_MagLock]; //·ïÎè¼¼
-    116: Result := [mm_Attack, mm_MagLock]; //¾ªÀ×±¬
-    117: Result := [mm_Attack]; //±ùÌìÑ©µØ
-    118: Result := [mm_Attack, mm_MagLock]; //»¢Ğ¥¾ö
-    119: Result := [mm_Attack, mm_MagLock]; //°ËØÔÕÆ
-    120: Result := [mm_Attack, mm_MagLock]; //ÈıÑæÖä
-    121: Result := [mm_Attack]; //Íò½£¹é×Ú
-    122: Result := [mm_Warr]; //´©´Ì½£·¨
-    123: Result := []; //Å­Æø±¬·¢
-    124: Result := []; //ÒĞÌì±ÙµØ
+    110: Result := [mm_Warr]; //ä¸‰ç»æ€
+    111: Result := [mm_Warr]; //è¿½å¿ƒåˆº
+    112: Result := [mm_Warr]; //æ–­å²³æ–©
+    113: Result := [mm_Warr]; //æ¨ªæ‰«åƒå†›
+    114: Result := [mm_Attack, mm_MagLock]; //åŒé¾™ç ´
+    115: Result := [mm_Attack, mm_MagLock]; //å‡¤èˆæŠ€
+    116: Result := [mm_Attack, mm_MagLock]; //æƒŠé›·çˆ†
+    117: Result := [mm_Attack]; //å†°å¤©é›ªåœ°
+    118: Result := [mm_Attack, mm_MagLock]; //è™å•¸å†³
+    119: Result := [mm_Attack, mm_MagLock]; //å…«å¦æŒ
+    120: Result := [mm_Attack, mm_MagLock]; //ä¸‰ç„°å’’
+    121: Result := [mm_Attack]; //ä¸‡å‰‘å½’å®—
+    122: Result := [mm_Warr]; //ç©¿åˆºå‰‘æ³•
+    123: Result := []; //æ€’æ°”çˆ†å‘
+    124: Result := []; //å€šå¤©è¾Ÿåœ°
   end;
 
   //TMagicMode = set of (mm_Attack, mm_Passiveness, mm_Time, mm_Warr);
@@ -3729,7 +4043,7 @@ begin
     38: Result := tm_Nail;
 
     40: Result := tm_Flesh;
-    41: Result := tm_Revive; //»¹»êµ¤
+    41: Result := tm_Revive; //è¿˜é­‚ä¸¹
     42: Result := tm_MakePropSP;
     43: Result := tm_Ore;
     44: Result := tm_MakeProp;
@@ -3796,11 +4110,11 @@ function GetStrengthenItemName(sName: string; nLevel: Byte): string;
 begin
   Result := sName;
   {case nLevel of
-    1..5: Result := '´Ö²ÚµÄ' + sName;
-    6..10: Result := '¾«ÖÆµÄ' + sName;
-    11..15: Result := 'ÎŞÏ¾µÄ' + sName;
-    16..20: Result := 'ÍêÃÀµÄ' + sName;
-    21: Result := '×¿Ô½µÄ' + sName;
+    1..5: Result := 'ç²—ç³™çš„' + sName;
+    6..10: Result := 'ç²¾åˆ¶çš„' + sName;
+    11..15: Result := 'æ— æš‡çš„' + sName;
+    16..20: Result := 'å®Œç¾çš„' + sName;
+    21: Result := 'å“è¶Šçš„' + sName;
   end;  }
 end;
 
@@ -3829,7 +4143,7 @@ function ItemCanDrop(Item: pTUserItem; nRate: Integer): Boolean;
 begin
   Result := False;
   if Item.Value.StrengthenInfo.btStrengthenCount = 18 then begin
-    if Item.Value.StrengthenInfo.btStrengthenInfo[5] = 6 then  //ÓÀ²»µôÂä
+    if Item.Value.StrengthenInfo.btStrengthenInfo[5] = 6 then  //æ°¸ä¸æ‰è½
       exit;
     nRate := nRate + nRate * Round((Item.Value.StrengthenInfo.btStrengthenInfo[5] + 4) / 10);
   end;

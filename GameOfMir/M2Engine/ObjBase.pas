@@ -19,23 +19,23 @@ type
   TBaseObject = class
     m_sMapName: string[16]; //0x04
     m_sCharName: string[14]; //0x15
-    m_nCurrX: Integer; //0x24  ÈËÎïËùÔÚ×ù±êX(4×Ö½Ú)
-    m_nCurrY: Integer; //0x28  ÈËÎïËùÔÚ×ù±êY(4×Ö½Ú)
-    m_btDirection: Byte; //    ÈËÎïËùÔÚ·½Ïò(1×Ö½Ú)
-    m_btGender: Byte; //0x2D  ÈËÎïµÄĞÔ±ğ(1×Ö½Ú)
-    m_btHair: Byte; //0x2E  ÈËÎïµÄÍ··¢(1×Ö½Ú)
-    m_btJob: Byte; //0x2F  ÈËÎïµÄÖ°Òµ(1×Ö½Ú)
-    m_nGold: Integer; //0x30  ÈËÎï½ğ±ÒÊı(4×Ö½Ú)
+    m_nCurrX: Integer; //0x24  äººç‰©æ‰€åœ¨åº§æ ‡X(4å­—èŠ‚)
+    m_nCurrY: Integer; //0x28  äººç‰©æ‰€åœ¨åº§æ ‡Y(4å­—èŠ‚)
+    m_btDirection: Byte; //    äººç‰©æ‰€åœ¨æ–¹å‘(1å­—èŠ‚)
+    m_btGender: Byte; //0x2D  äººç‰©çš„æ€§åˆ«(1å­—èŠ‚)
+    m_btHair: Byte; //0x2E  äººç‰©çš„å¤´å‘(1å­—èŠ‚)
+    m_btJob: Byte; //0x2F  äººç‰©çš„èŒä¸š(1å­—èŠ‚)
+    m_nGold: Integer; //0x30  äººç‰©é‡‘å¸æ•°(4å­—èŠ‚)
     m_Abil: TAbility; //0x34 -> 0x5B
     //m_DBAbil: TAbility;
     m_NakedAddAbil: TNakedAddAbil;
     m_nCharStatus: Integer; //0x5C
-    m_sHomeMap: string[16]; //0x78  //»Ø³ÇµØÍ¼
-    m_nHomeX: Integer; //0x8C  //»Ø³Ç×ù±êX
-    m_nHomeY: Integer; //0x90  //»Ø³Ç×ù±êY
-    m_sDieMap: string[16]; //0x78  //»Ø³ÇµØÍ¼
-    m_nDieX: Integer; //0x8C  //»Ø³Ç×ù±êX
-    m_nDieY: Integer; //0x90  //»Ø³Ç×ù±êY
+    m_sHomeMap: string[16]; //0x78  //å›åŸåœ°å›¾
+    m_nHomeX: Integer; //0x8C  //å›åŸåº§æ ‡X
+    m_nHomeY: Integer; //0x90  //å›åŸåº§æ ‡Y
+    m_sDieMap: string[16]; //0x78  //å›åŸåœ°å›¾
+    m_nDieX: Integer; //0x8C  //å›åŸåº§æ ‡X
+    m_nDieY: Integer; //0x90  //å›åŸåº§æ ‡Y
     //bo94: Boolean; //0x94
     m_boOnHorse: Boolean; //0x95
     m_boCanOnHorse: Boolean;
@@ -50,7 +50,7 @@ type
     nA4: Integer; //0xA4
     nA8: Integer; //0xA8  }
 
-    m_nPkPoint: Word; //0xAC  ÈËÎïµÄPKÖµ(4×Ö½Ú)
+    m_nPkPoint: Word; //0xAC  äººç‰©çš„PKå€¼(4å­—èŠ‚)
 //    btB2: Byte; //0xB2
     //btB3: Byte; //0xB3
     m_nIncHealth: Integer; //0x0B4
@@ -60,7 +60,7 @@ type
     m_nIncMPStoneTime: LongWord;
     m_nFightZoneDieCount: Integer;
 
-    //0x0C0  //ÔÚĞĞ»áÕ¼ÕùµØÍ¼ÖĞËÀÍö´ÎÊı
+    //0x0C0  //åœ¨è¡Œä¼šå äº‰åœ°å›¾ä¸­æ­»äº¡æ¬¡æ•°
   // nC4: Integer;
    //btC8: Byte; //0xC8
     //btC9: Byte; //0xC9
@@ -80,38 +80,38 @@ type
     m_wGuildRcallTime: Word; //0x10C
 
 
-    m_boAllowGroupReCall: Boolean; //0x10E  //ÔÊĞíÌìµØºÏÒ»
-    m_boAllowGuildReCall: Boolean; //0xFC   //ÔÊĞíĞĞ»áºÏÒ»
+    m_boAllowGroupReCall: Boolean; //0x10E  //å…è®¸å¤©åœ°åˆä¸€
+    m_boAllowGuildReCall: Boolean; //0xFC   //å…è®¸è¡Œä¼šåˆä¸€
     m_boOldChangeMapMode: Boolean;
 
-    m_boCheckGroup: Boolean; //0xB0   ×é¶ÓĞèÒªÑéÖ¤
-    m_boAllowGroup: Boolean; //0xB0  ÔÊĞí×é¶Ó
-    m_boAllowGuild: Boolean; //0xB1  ÔÊĞí¼ÓÈëĞĞ»á
-    m_boAllowFrieng: Boolean; //ÔÊĞí¼ÓÎªºÃÓÑ
+    m_boCheckGroup: Boolean; //0xB0   ç»„é˜Ÿéœ€è¦éªŒè¯
+    m_boAllowGroup: Boolean; //0xB0  å…è®¸ç»„é˜Ÿ
+    m_boAllowGuild: Boolean; //0xB1  å…è®¸åŠ å…¥è¡Œä¼š
+    m_boAllowFrieng: Boolean; //å…è®¸åŠ ä¸ºå¥½å‹
 
-    m_boBanHearChat: Boolean; //ÔÊĞí°××ÖÁÄÌì
-    m_boHearWhisper: Boolean; //0x27C  ÔÊĞíË½ÁÄ
-    m_boBanShout: Boolean; //0x27D  ÔÊĞíº°»°
-    m_boBanGuildChat: Boolean; //0x27E  ÔÊĞíĞĞ»áÁÄÌì
-    m_boBanGroupChat: Boolean; //ÔÊĞí¶ÓÎéÁÄÌì
-    m_boAllowDeal: Boolean; //0x27F  ÔÊĞí½»Ò×
+    m_boBanHearChat: Boolean; //å…è®¸ç™½å­—èŠå¤©
+    m_boHearWhisper: Boolean; //0x27C  å…è®¸ç§èŠ
+    m_boBanShout: Boolean; //0x27D  å…è®¸å–Šè¯
+    m_boBanGuildChat: Boolean; //0x27E  å…è®¸è¡Œä¼šèŠå¤©
+    m_boBanGroupChat: Boolean; //å…è®¸é˜Ÿä¼èŠå¤©
+    m_boAllowDeal: Boolean; //0x27F  å…è®¸äº¤æ˜“
 
     //m_QuestUnitOpen: TQuestUnit; //0x10F
     //m_QuestUnit: TQuestUnit; //0x11C
 
 
     m_nCharStatusEx: Integer;
-    m_dwFightExp: LongWord; //0x194   //¹ÖÎï¾­ÑéÖµ
+    m_dwFightExp: LongWord; //0x194   //æ€ªç‰©ç»éªŒå€¼
     m_WAbil: TAbility; //0x198
     m_AddAbil: TAddAbility; //0x1C0
     m_TempAddAbil: TAddAbility;
     m_AddHP: Word;
     m_OldHP: Word;
     m_NotOnHorseHP: Word;
-    m_nViewRange: Integer; //0x1E4   //¿ÉÊÓ·¶Î§´óĞ¡
+    m_nViewRange: Integer; //0x1E4   //å¯è§†èŒƒå›´å¤§å°
     m_wStatusTimeArr: TStatusTime; //0x60
     m_dwStatusArrTick: array[0..MAX_STATUS_ATTRIBUTE - 1] of LongWord; //0x1E8
-    //m_boStatus: Boolean; //ÈËÎïÊôĞÔTRUE =ÉÏÉı FALSE =ÏÂ½µ
+    //m_boStatus: Boolean; //äººç‰©å±æ€§TRUE =ä¸Šå‡ FALSE =ä¸‹é™
     m_boAC: Boolean;
     m_boMAC: Boolean;
     m_boDC: Boolean;
@@ -124,63 +124,63 @@ type
     m_dwStatusArrTimeOutTick: array[0..5] of LongWord;
     // :Tarry220;           //0x220
     m_wAppr: Word; //0x238
-    m_btRaceServer: Byte; //0x23A   //½ÇÉ«ÀàĞÍ
-    m_btRaceImg: Byte; //0x23B   //½ÇÉ«ÍâĞÎ
-    m_btHitPoint: Byte; //0x23C   ÈËÎï¹¥»÷×¼È·¶È(Byte)
+    m_btRaceServer: Byte; //0x23A   //è§’è‰²ç±»å‹
+    m_btRaceImg: Byte; //0x23B   //è§’è‰²å¤–å½¢
+    m_btHitPoint: Byte; //0x23C   äººç‰©æ”»å‡»å‡†ç¡®åº¦(Byte)
     m_btAddAttack: Byte;
     m_btDelDamage: Byte;
     m_btAddWuXinAttack: Byte;
     m_btDelWuXinAttack: Byte;
     m_nHitPlus: ShortInt; //0x23D
     m_nHitDouble: ShortInt; //0x23E
-    m_dwGroupRcallTick: LongWord; //0x240  ¼ÇÒäÊ¹ÓÃ¼ä¸ô(Dword)
-    m_boRecallSuite: Boolean; //0x244  ¼ÇÒäÈ«Ì×
+    m_dwGroupRcallTick: LongWord; //0x240  è®°å¿†ä½¿ç”¨é—´éš”(Dword)
+    m_boRecallSuite: Boolean; //0x244  è®°å¿†å…¨å¥—
     //bo245: Boolean; //0x245
-    m_boTestGa: Boolean; //0x246  //ÊÇ·ñÊäÈëTestga ÃüÁî
-    m_boGsa: Boolean; //0x247  //ÊÇ·ñÊäÈëgsa ÃüÁî
+    m_boTestGa: Boolean; //0x246  //æ˜¯å¦è¾“å…¥Testga å‘½ä»¤
+    m_boGsa: Boolean; //0x247  //æ˜¯å¦è¾“å…¥gsa å‘½ä»¤
     m_nHealthRecover: ShortInt; //0x248
     m_nSpellRecover: ShortInt; //0x249
     m_btAntiPoison: Byte; //0x24A
     m_nPoisonRecover: ShortInt; //0x24B
     m_nAntiMagic: ShortInt; //0x24C
-    m_nLuck: Integer; //0x250  ÈËÎïµÄĞÒÔËÖµLuck
-    m_btDeadliness: Byte; //ÖÂÃüÒ»»÷
+    m_nLuck: Integer; //0x250  äººç‰©çš„å¹¸è¿å€¼Luck
+    m_btDeadliness: Byte; //è‡´å‘½ä¸€å‡»
     m_nPerHealth: Integer; //0x254
     m_nPerHealing: Integer; //0x258
     m_nPerSpell: Integer; //0x25C
     m_dwIncHealthSpellTick: LongWord; //0x260
-    m_btGreenPoisoningPoint: Byte; //0x264  ÖĞÂÌ¶¾½µHPµãÊı
-    m_nGoldMax: Integer; //0x268  ÈËÎïÉíÉÏ×î¶à¿É´ø½ğ±ÒÊı(Dword)
-    m_btSpeedPoint: Byte; //0x26C  ÈËÎïÃô½İ¶È(Byte)
-    m_btPermission: Byte; //0x26D  ÈËÎïÈ¨ÏŞµÈ¼¶
-    m_nHitSpeed: ShortInt; //0x26E  //1-18 ¹¥»÷ËÙ¶È
-    //    m_nHitDunt: Byte; //ÖÂÃüÒ»»÷
+    m_btGreenPoisoningPoint: Byte; //0x264  ä¸­ç»¿æ¯’é™HPç‚¹æ•°
+    m_nGoldMax: Integer; //0x268  äººç‰©èº«ä¸Šæœ€å¤šå¯å¸¦é‡‘å¸æ•°(Dword)
+    m_btSpeedPoint: Byte; //0x26C  äººç‰©æ•æ·åº¦(Byte)
+    m_btPermission: Byte; //0x26D  äººç‰©æƒé™ç­‰çº§
+    m_nHitSpeed: ShortInt; //0x26E  //1-18 æ”»å‡»é€Ÿåº¦
+    //    m_nHitDunt: Byte; //è‡´å‘½ä¸€å‡»
     m_boNotInSafe: Boolean;
     m_btLifeAttrib: Byte; //0x26F
     m_btCoolEye: Byte; //0x270
     m_GroupClass: Boolean;
     m_GroupOwner: TBaseObject; //0x274
-    m_GroupMembers: TStringList; //0x278  ×é³ÉÔ±
-    m_BlockWhisperList: TStringList; //0x280  ½ûÖ¹Ë½ÁÄÈËÔ±ÁĞ±í
+    m_GroupMembers: TStringList; //0x278  ç»„æˆå‘˜
+    m_BlockWhisperList: TStringList; //0x280  ç¦æ­¢ç§èŠäººå‘˜åˆ—è¡¨
     m_dwShoutMsgTick: LongWord; //0x284
-    m_Master: TBaseObject; //0x288  ÊÇ·ñ±»ÕÙ»½(Ö÷ÈË)
+    m_Master: TBaseObject; //0x288  æ˜¯å¦è¢«å¬å”¤(ä¸»äºº)
     //m_AllMaster: TBaseObject;
-    m_dwMasterRoyaltyTick: LongWord; //0x28C  ¹ÖÎïÅÑ±äÊ±¼ä
+    m_dwMasterRoyaltyTick: LongWord; //0x28C  æ€ªç‰©å›å˜æ—¶é—´
     m_dwMasterTick: LongWord; //0x290
-    m_nKillMonCount: Integer; //0x294  É±¹Ö¼ÆÊı
-    m_btSlaveExpLevel: Byte; //0x298  ±¦±¦µÈ¼¶ 1-7
-    m_btSlaveMakeLevel: Byte; //0x299  ÕÙ»½µÈ¼¶
-    m_SlaveList: TList; //0x29C  ÏÂÊôÁĞ±í
+    m_nKillMonCount: Integer; //0x294  æ€æ€ªè®¡æ•°
+    m_btSlaveExpLevel: Byte; //0x298  å®å®ç­‰çº§ 1-7
+    m_btSlaveMakeLevel: Byte; //0x299  å¬å”¤ç­‰çº§
+    m_SlaveList: TList; //0x29C  ä¸‹å±åˆ—è¡¨
     //bt2A0: Byte; //0x2A0
-    m_boSlaveRelax: Boolean; //0x2A0  ±¦±¦¹¥»÷×´Ì¬(ĞİÏ¢/¹¥»÷)(Byte)
-    m_btAttatckMode: Byte; //0x2A1  ÏÂÊô¹¥»÷×´Ì¬
-    m_btNameColor: Byte; //0x2A2  ÈËÎïÃû×ÖµÄÑÕÉ«(Byte)
-    //m_nLight: Integer; //0x2A4  ÁÁ¶È
-    m_boGuildWarArea: Boolean; //0x2A8  ĞĞ»áÕ¼Õù·¶Î§
-    m_Castle: TObject; //0x2AC //ËùÊô³Ç±¤
+    m_boSlaveRelax: Boolean; //0x2A0  å®å®æ”»å‡»çŠ¶æ€(ä¼‘æ¯/æ”»å‡»)(Byte)
+    m_btAttatckMode: Byte; //0x2A1  ä¸‹å±æ”»å‡»çŠ¶æ€
+    m_btNameColor: Byte; //0x2A2  äººç‰©åå­—çš„é¢œè‰²(Byte)
+    //m_nLight: Integer; //0x2A4  äº®åº¦
+    m_boGuildWarArea: Boolean; //0x2A8  è¡Œä¼šå äº‰èŒƒå›´
+    m_Castle: TObject; //0x2AC //æ‰€å±åŸå ¡
     bo2B0: Boolean; //0x2B0
     m_dw2B4Tick: LongWord; //0x2B4
-    m_boSuperMan: Boolean; //0x2B8  ÎŞµĞÄ£Ê½
+    m_boSuperMan: Boolean; //0x2B8  æ— æ•Œæ¨¡å¼
     bo2B9: Boolean; //0x2B9
     bo2BA: Boolean; //0x2BA
     m_boAnimal: Boolean; //0x2BB
@@ -201,8 +201,8 @@ type
     m_dwCrazyModeInterval: LongWord; //0x2E0
     m_boShowHP: Boolean; //0x2E4
     //      nC2E6                   :Integer;      //0x2E6
-    m_dwShowHPTick: LongWord; //0x2E8  ĞÄÁéÆôÊ¾¼ì²éÊ±¼ä(Dword)
-    m_dwShowHPInterval: LongWord; //0x2EC  ĞÄÁéÆôÊ¾ÓĞĞ§Ê±³¤(Dword)
+    m_dwShowHPTick: LongWord; //0x2E8  å¿ƒçµå¯ç¤ºæ£€æŸ¥æ—¶é—´(Dword)
+    m_dwShowHPInterval: LongWord; //0x2EC  å¿ƒçµå¯ç¤ºæœ‰æ•ˆæ—¶é•¿(Dword)
     bo2F0: Boolean; //0x2F0
     m_dwDupObjTick: LongWord; //0x2F4
     m_PEnvir: TEnvirnoment; //0x2F8
@@ -211,7 +211,7 @@ type
     m_dwGhostTick: LongWord; //0x300
     m_boDeath: Boolean; //0x304
     m_dwDeathTick: LongWord; //0x308
-    //    m_btMonsterWeapon: Byte; //0x30C ¹ÖÎïËùÄÃµÄÎäÆ÷
+    //    m_btMonsterWeapon: Byte; //0x30C æ€ªç‰©æ‰€æ‹¿çš„æ­¦å™¨
     m_dwStruckTick: LongWord; //0x310
     m_boWantRefMsg: Boolean; //0x314
     m_boAddtoMapSuccess: Boolean; //0x315
@@ -226,30 +226,30 @@ type
     m_nMissionX: Integer; //0x33C
     m_nMissionY: Integer; //0x340
     m_btMissionDir: Byte;
-    m_boHideMode: Boolean; //0x344  ÒşÉí½äÖ¸(Byte)
+    m_boHideMode: Boolean; //0x344  éšèº«æˆ’æŒ‡(Byte)
     m_boStoneMode: Boolean; //0x345
-    m_boCoolEye: Boolean; //0x346  //ÊÇ·ñ¿ÉÒÔ¿´µ½ÒşÉíÈËÎï
-    m_boUserUnLockDurg: Boolean; //0x347  //ÊÇ·ñÓÃÁËÉñË®
-    m_boTransparent: Boolean; //0x348  //Ä§·¨ÒşÉíÁË
-    m_boAdminMode: Boolean; //0x349  ¹ÜÀíÄ£Ê½(Byte)
-    m_boObMode: Boolean; //0x34A  ÒşÉíÄ£Ê½(Byte)
-    m_boTeleport, m_boTeleportEx: Boolean; //0x34B  ´«ËÍ½äÖ¸(Byte)
-    m_boParalysis: Boolean; //0x34C  Âé±Ô½äÖ¸(Byte)
+    m_boCoolEye: Boolean; //0x346  //æ˜¯å¦å¯ä»¥çœ‹åˆ°éšèº«äººç‰©
+    m_boUserUnLockDurg: Boolean; //0x347  //æ˜¯å¦ç”¨äº†ç¥æ°´
+    m_boTransparent: Boolean; //0x348  //é­”æ³•éšèº«äº†
+    m_boAdminMode: Boolean; //0x349  ç®¡ç†æ¨¡å¼(Byte)
+    m_boObMode: Boolean; //0x34A  éšèº«æ¨¡å¼(Byte)
+    m_boTeleport, m_boTeleportEx: Boolean; //0x34B  ä¼ é€æˆ’æŒ‡(Byte)
+    m_boParalysis: Boolean; //0x34C  éº»ç—¹æˆ’æŒ‡(Byte)
     m_boUnParalysis: Boolean;
-    m_boRevival: Boolean; //0x34D  ¸´»î½äÖ¸(Byte)
-    m_boUnRevival: Boolean; //·À¸´»î
-    m_dwRevivalTick: LongWord; //0x350  ¸´»î½äÖ¸Ê¹ÓÃ¼ä¸ô¼ÆÊı(Dword)
-    m_boFlameRing: Boolean; //0x354  »ğÑæ½äÖ¸(Byte)
-    m_boRecoveryRing: Boolean; //0x355  ÖÎÓú½äÖ¸(Byte)
-    m_boAngryRing: Boolean; //0x356  Î´Öª½äÖ¸(Byte)
-    m_boMagicShield: Boolean; //0x357  »¤Éí½äÖ¸(Byte)
-    m_boUnMagicShield: Boolean; //·À»¤Éí
-    m_boMuscleRing: Boolean; //0x358  »îÁ¦½äÖ¸(Byte)
-    m_boFastTrain: Boolean; //0x359  ¼¼ÇÉÏîÁ´(Byte)
-    m_boProbeNecklace: Boolean; //0x35A  Ì½²âÏîÁ´(Byte)
-    m_boGuildMove: Boolean; //ĞĞ»á´«ËÍ
+    m_boRevival: Boolean; //0x34D  å¤æ´»æˆ’æŒ‡(Byte)
+    m_boUnRevival: Boolean; //é˜²å¤æ´»
+    m_dwRevivalTick: LongWord; //0x350  å¤æ´»æˆ’æŒ‡ä½¿ç”¨é—´éš”è®¡æ•°(Dword)
+    m_boFlameRing: Boolean; //0x354  ç«ç„°æˆ’æŒ‡(Byte)
+    m_boRecoveryRing: Boolean; //0x355  æ²»æ„ˆæˆ’æŒ‡(Byte)
+    m_boAngryRing: Boolean; //0x356  æœªçŸ¥æˆ’æŒ‡(Byte)
+    m_boMagicShield: Boolean; //0x357  æŠ¤èº«æˆ’æŒ‡(Byte)
+    m_boUnMagicShield: Boolean; //é˜²æŠ¤èº«
+    m_boMuscleRing: Boolean; //0x358  æ´»åŠ›æˆ’æŒ‡(Byte)
+    m_boFastTrain: Boolean; //0x359  æŠ€å·§é¡¹é“¾(Byte)
+    m_boProbeNecklace: Boolean; //0x35A  æ¢æµ‹é¡¹é“¾(Byte)
+    m_boGuildMove: Boolean; //è¡Œä¼šä¼ é€
     m_boSupermanItem: Boolean;
-    m_bopirit: Boolean; //Æíµ»
+    m_bopirit: Boolean; //ç¥ˆç¥·
 
     m_boNoDropItem: Boolean;
     m_boNoDropUseItem: Boolean;
@@ -258,15 +258,15 @@ type
 
     m_rExpItem: real;
     m_rPowerItem: real;
-    m_dwPKDieLostExp: LongWord; //PK ËÀÍöµô¾­Ñé£¬²»¹»¾­Ñé¾ÍµôµÈ¼¶
-    m_nPKDieLostLevel: Integer; //PK ËÀÍöµôµÈ¼¶
+    m_dwPKDieLostExp: LongWord; //PK æ­»äº¡æ‰ç»éªŒï¼Œä¸å¤Ÿç»éªŒå°±æ‰ç­‰çº§
+    m_nPKDieLostLevel: Integer; //PK æ­»äº¡æ‰ç­‰çº§
     m_nItemExp: Integer;
     m_nSetItemExp: Integer;
 
-    m_boAbilSeeHealGauge: Boolean; //0x35B  //ĞÄÁéÆôÊ¾
-    m_boAbilMagBubbleDefence: Boolean; //0x35C  //Ä§·¨¶Ü
+    m_boAbilSeeHealGauge: Boolean; //0x35B  //å¿ƒçµå¯ç¤º
+    m_boAbilMagBubbleDefence: Boolean; //0x35C  //é­”æ³•ç›¾
     m_btMagBubbleDefenceLevel: Byte; //0x35D
-    m_boAbilMagShieldDefence: Boolean; //0x35C  //½ğ¸Õ»¤¶Ü
+    m_boAbilMagShieldDefence: Boolean; //0x35C  //é‡‘åˆšæŠ¤ç›¾
     m_btMagShieldDefenceLevel: Byte; //0x35D
 
     m_dwSearchTime: LongWord; //0x360
@@ -274,26 +274,26 @@ type
     m_dwRunTick: LongWord; //0x368
     m_nRunTime: Integer; //0x36C
     m_nHealthTick: Integer;
-    //0x370    //ÌØ±ğÖ¸¶¨Îª ´ËÀàĞÍ  ´Ë´¦ÓÃµ½ 004C7CF8
+    //0x370    //ç‰¹åˆ«æŒ‡å®šä¸º æ­¤ç±»å‹  æ­¤å¤„ç”¨åˆ° 004C7CF8
     m_nSpellTick: Integer; //0x374
     m_TargetCret: TBaseObject; //0x378
     m_dwTargetFocusTick: LongWord; //0x37C
     m_LastHiter: TBaseObject;
-    //0x380  ÈËÎï±»¶Ô·½É±º¦Ê±¶Ô·½Ö¸Õë(Dword)
+    //0x380  äººç‰©è¢«å¯¹æ–¹æ€å®³æ—¶å¯¹æ–¹æŒ‡é’ˆ(Dword)
     m_LastHiterTick: LongWord; //0x384
     m_ExpHitter: TBaseObject; //0x388
     m_ExpHitterTick: LongWord; //0x38C
-    m_dwTeleportTick: LongWord; //0x390  ´«ËÍ½äÖ¸Ê¹ÓÃ¼ä¸ô(Dword)
-    m_dwProbeTick: LongWord; //0x394  Ì½²âÏîÁ´Ê¹ÓÃ¼ä¸ô(Dword)
+    m_dwTeleportTick: LongWord; //0x390  ä¼ é€æˆ’æŒ‡ä½¿ç”¨é—´éš”(Dword)
+    m_dwProbeTick: LongWord; //0x394  æ¢æµ‹é¡¹é“¾ä½¿ç”¨é—´éš”(Dword)
     m_dwMapMoveTick: LongWord; //0x398
-    m_boPKFlag: Boolean; //0x39C  ÈËÎï¹¥»÷±äÉ«±êÖ¾(Byte)
-    m_dwPKTick: LongWord; //0x3A0  ÈËÎï¹¥»÷±äÉ«Ê±¼ä³¤¶È(Dword)
-    m_nMoXieSuite: Integer; //0x3A4  Ä§ÑªÒ»Ì×(Dword)
-    m_nHongMoSuite: Integer; //0x3A8 ºçÄ§Ò»Ì×(Dword)
+    m_boPKFlag: Boolean; //0x39C  äººç‰©æ”»å‡»å˜è‰²æ ‡å¿—(Byte)
+    m_dwPKTick: LongWord; //0x3A0  äººç‰©æ”»å‡»å˜è‰²æ—¶é—´é•¿åº¦(Dword)
+    m_nMoXieSuite: Integer; //0x3A4  é­”è¡€ä¸€å¥—(Dword)
+    m_nHongMoSuite: Integer; //0x3A8 è™¹é­”ä¸€å¥—(Dword)
     m_n3AC: Integer; //0x3AC
     m_db3B0: Double; //0x3B0
-    m_dwPoisoningTick: LongWord; //0x3B8 ÖĞ¶¾´¦Àí¼ä¸ôÊ±¼ä(Dword)
-    m_dwDecPkPointTick: LongWord; //0x3BC  ¼õPKÖµÊ±¼ä(Dword)
+    m_dwPoisoningTick: LongWord; //0x3B8 ä¸­æ¯’å¤„ç†é—´éš”æ—¶é—´(Dword)
+    m_dwDecPkPointTick: LongWord; //0x3BC  å‡PKå€¼æ—¶é—´(Dword)
     m_DecLightItemDrugTick: LongWord; //0x3C0
     m_dwVerifyTick: LongWord; //0x3C4
     m_dwCheckRoyaltyTick: LongWord; //0x3C8
@@ -304,7 +304,7 @@ type
     m_VisibleItems: TList; //0x3DC
     m_VisibleEvents: TList; //0x3E0
     m_SendRefMsgTick: LongWord; //0x3E4
-    m_boInFreePKArea: Boolean; //0x3E8  ÊÇ·ñÔÚ¿ªĞĞ»áÕ½(Byte)
+    m_boInFreePKArea: Boolean; //0x3E8  æ˜¯å¦åœ¨å¼€è¡Œä¼šæˆ˜(Byte)
 //    LIst_3EC: TList; //0x3EC
     dwTick3F0: LongWord; //0x3F0
     dwTick3F4: LongWord; //0x3F4
@@ -312,15 +312,15 @@ type
     m_dwWalkTick: LongWord; //0x3FC
     m_dwSearchEnemyTick: LongWord; //0x400
     m_boNameColorChanged: Boolean; //0x404
-    m_boIsVisibleActive: Boolean; //ÊÇ·ñÔÚ¿ÉÊÓ·¶Î§ÄÚÓĞÈËÎï,¼°±¦±¦                          
-    m_nVisibleActiveCount: Integer; //ÖÜÎ§¿ÉÊÓÈËÎï¼°±¦±¦ÊıÁ¿
+    m_boIsVisibleActive: Boolean; //æ˜¯å¦åœ¨å¯è§†èŒƒå›´å†…æœ‰äººç‰©,åŠå®å®                          
+    m_nVisibleActiveCount: Integer; //å‘¨å›´å¯è§†äººç‰©åŠå®å®æ•°é‡
     m_nProcessRunCount: ShortInt;
     m_VisibleActors: TList; //0x408
-    m_ItemList: TList; //0x40C  ÈËÎï±³°ü(Dword)ÊıÁ¿
-    m_CanDropItemList: TList; //¹ÖÎï¿É±¬ÎïÆ·ÁĞ±í
+    m_ItemList: TList; //0x40C  äººç‰©èƒŒåŒ…(Dword)æ•°é‡
+    m_CanDropItemList: TList; //æ€ªç‰©å¯çˆ†ç‰©å“åˆ—è¡¨
     m_nMaxItemListCount: Integer;
 
-    m_UseItems: THumanUseItems; //Õâ¸öÊÇÉíÉÏ×°±¸µÄ¶¨Òå
+    m_UseItems: THumanUseItems; //è¿™ä¸ªæ˜¯èº«ä¸Šè£…å¤‡çš„å®šä¹‰
     m_SayMsgList: TList;
     m_nWalkSpeed: Integer; //0x4FC
     m_nWalkStep: Integer; //0x500
@@ -331,8 +331,8 @@ type
     m_nNextHitTime: Integer; //0x514
 {    m_MagicOneSwordSkill: pTUserMagic; //0x518
     m_MagicPowerHitSkill: pTUserMagic; //0x51C
-    m_MagicErgumSkill: pTUserMagic; //0x520 ´ÌÉ±½£·¨
-    m_MagicBanwolSkill: pTUserMagic; //0x524 °ëÔÂÍäµ¶
+    m_MagicErgumSkill: pTUserMagic; //0x520 åˆºæ€å‰‘æ³•
+    m_MagicBanwolSkill: pTUserMagic; //0x524 åŠæœˆå¼¯åˆ€
     m_MagicFireSwordSkill: pTUserMagic; //0x528
     m_MagicCrsSkill: pTUserMagic; //0x528
     m_Magic41Skill: pTUserMagic; //0x528
@@ -349,41 +349,41 @@ type
     m_bo43kill: Boolean; //0x52F    }
 
 //    m_dwDoMotaeboTick: LongWord; //0x534
-//    m_boDenyRefStatus: Boolean; //ÊÇ·ñË¢ĞÂÔÚµØÍ¼ÉÏĞÅÏ¢£»
-    m_boAddToMaped: Boolean; //ÊÇ·ñÔö¼ÓµØÍ¼¼ÆÊı
-    m_boDelFormMaped: Boolean; //ÊÇ·ñ´ÓµØÍ¼ÖĞÉ¾³ı¼ÆÊı
+//    m_boDenyRefStatus: Boolean; //æ˜¯å¦åˆ·æ–°åœ¨åœ°å›¾ä¸Šä¿¡æ¯ï¼›
+    m_boAddToMaped: Boolean; //æ˜¯å¦å¢åŠ åœ°å›¾è®¡æ•°
+    m_boDelFormMaped: Boolean; //æ˜¯å¦ä»åœ°å›¾ä¸­åˆ é™¤è®¡æ•°
     m_boAutoChangeColor: Boolean;
     m_dwAutoChangeColorTick: LongWord;
     m_nAutoChangeIdx: Integer;
 
-    m_boFixColor: Boolean; //¹Ì¶¨ÑÕÉ«
+    m_boFixColor: Boolean; //å›ºå®šé¢œè‰²
     m_nFixColorIdx: Integer;
     m_nFixStatus: Integer;
-    m_boFastParalysis: Boolean; //¿ìËÙÂé±Ô£¬ÊÜ¹¥»÷ºóÂé±ÔÁ¢¼´ÏûÊ§
-    m_nFastParalysis: Byte; //¿ìËÙÂé±Ô£¬ÊÜ¹¥»÷ºóÂé±ÔÁ¢¼´ÏûÊ§
+    m_boFastParalysis: Boolean; //å¿«é€Ÿéº»ç—¹ï¼Œå—æ”»å‡»åéº»ç—¹ç«‹å³æ¶ˆå¤±
+    m_nFastParalysis: Byte; //å¿«é€Ÿéº»ç—¹ï¼Œå—æ”»å‡»åéº»ç—¹ç«‹å³æ¶ˆå¤±
     m_dwFireBurnTick: LongWord;
 
     m_DefMsg: TDefaultMessage; //0x550
     m_nSocket: Integer; //0x59C nSocket
     m_nGSocketIdx: Integer;
-    //0x5A0 wGateIndex ÈËÎïÁ¬½Óµ½ÓÎÏ·Íø¹ØSOCKET ID
-    m_nGateIdx: Integer; //0x5A8 nGateIdx   ÈËÎïËùÔÚÍø¹ØºÅ
+    //0x5A0 wGateIndex äººç‰©è¿æ¥åˆ°æ¸¸æˆç½‘å…³SOCKET ID
+    m_nGateIdx: Integer; //0x5A8 nGateIdx   äººç‰©æ‰€åœ¨ç½‘å…³å·
     m_nSoftVersionDate: Integer; //0x5AC
 
-    //m_nCopyHumanLevel: Integer; //¸´ÖÆÈË±²·ÖµÈ¼¶
-    m_dwStationTick: LongWord; //Ôö¼Ó¼ì²âÈËÎïÕ¾Á¢²»¶¯Ê±¼ä
+    //m_nCopyHumanLevel: Integer; //å¤åˆ¶äººè¾ˆåˆ†ç­‰çº§
+    m_dwStationTick: LongWord; //å¢åŠ æ£€æµ‹äººç‰©ç«™ç«‹ä¸åŠ¨æ—¶é—´
     m_dwSayMyInfoTick: LongWord;
 
     m_MapQuestList: TList;
 
-    //BaseÓ¢ĞÛ±äÁ¿
+    //Baseè‹±é›„å˜é‡
 
     m_nGloryPoint: Integer;
     m_boDeliria: Boolean;
     m_TempItemList: TList;
     m_btStartType: Byte;
-    m_btWuXin: Byte; //ÎåĞĞÀàĞÍ
-    m_boMapApoise: Boolean; //¿Í»§¶ËµØÍ¼×¼±¸Íê±Ï
+    m_btWuXin: Byte; //äº”è¡Œç±»å‹
+    m_boMapApoise: Boolean; //å®¢æˆ·ç«¯åœ°å›¾å‡†å¤‡å®Œæ¯•
     m_dwMapApoiseTick: LongWord;
     m_btMapSpaceShow: Byte;
     m_btStrengthenName: Byte;
@@ -402,12 +402,45 @@ type
 
     m_boReliveNoDrop: Boolean;
     //m_MonGen: pTMonGenInfo;
-    //m_boRunAll: Boolean; //²½ĞĞÊÇ·ñÔÊĞí´©ÈË´©¹Ö
+    //m_boRunAll: Boolean; //æ­¥è¡Œæ˜¯å¦å…è®¸ç©¿äººç©¿æ€ª
     //m_Magic: array[0..SKILL_MAX] of pTUserMagic;
+
+    // === æ–°å¢: GCDå†·å´ç³»ç»Ÿå­—æ®µ ===
+    m_GCDList: TList;                   // GCDå†·å´åˆ—è¡¨(TGCDInfo)
+    m_dwGlobalGCDTick: LongWord;        // å…¨å±€GCDè®¡æ—¶
+    m_nGlobalGCDTime: LongWord;         // å…¨å±€GCDæ—¶é—´(ms)
+
+    // === æ–°å¢: BUFFç³»ç»Ÿå­—æ®µ ===
+    m_BuffList: TList;                  // BUFFåˆ—è¡¨(ç”±BuffManagerç®¡ç†)
+
+    // === æ–°å¢: è¯ç¼€ç³»ç»Ÿå­—æ®µ ===
+    m_ItemAffixList: TList;             // è£…å¤‡è¯ç¼€ç¼“å­˜åˆ—è¡¨
+
+    // === æ–°å¢: è‡ªåŠ¨æˆ˜æ–—å­—æ®µ ===
+    m_boAutoFight: Boolean;             // æ˜¯å¦è‡ªåŠ¨æˆ˜æ–—
+    m_dwAutoFightTick: LongWord;         // è‡ªåŠ¨æˆ˜æ–—è®¡æ—¶
+    m_nAutoFightRange: Integer;         // è‡ªåŠ¨æˆ˜æ–—èŒƒå›´
+    m_boAutoUseSkill: Boolean;          // è‡ªåŠ¨ä½¿ç”¨æŠ€èƒ½
+    m_boAutoUseItem: Boolean;           // è‡ªåŠ¨ä½¿ç”¨è¯å“
+    m_nAutoHPPercent: Integer;          // è‡ªåŠ¨åƒè¯HPç™¾åˆ†æ¯”
+    m_nAutoMPPercent: Integer;          // è‡ªåŠ¨åƒè¯MPç™¾åˆ†æ¯”
+
+    // === æ–°å¢: æ–°æ‰‹å¼•å¯¼å­—æ®µ ===
+    m_Guide: TNewbieGuide;              // æ–°æ‰‹å¼•å¯¼æ•°æ®
+    m_boGuideCompleted: Boolean;        // å¼•å¯¼æ˜¯å¦å®Œæˆ
+    m_nGuideProgress: Integer;          // å¼•å¯¼è¿›åº¦
+
+    // === æ–°å¢: èµ›å­£ç³»ç»Ÿå­—æ®µ ===
+    m_nSeasonScore: Integer;            // èµ›å­£ç§¯åˆ†
+    m_nSeasonRank: Integer;             // èµ›å­£æ’å
+    m_nSeasonLevel: Integer;            // èµ›å­£ç­‰çº§
+    m_nSeasonKillCount: Integer;        // èµ›å­£å‡»æ€æ•°
+    m_nSeasonWinCount: Integer;         // èµ›å­£èƒœåœºæ•°
+    m_nSeasonParticipation: Integer;    // èµ›å­£å‚ä¸æ¬¡æ•°
 //    m_btWuXinLevel: Byte;
 //    m_nWuXinExp: LongWord;
 //    m_nWuXinMaxExp: LongWord;
-//    m_dwIsGetWuXinExpTime: LongWord; //ÊÇ·ñÔö¼ÓÎåĞĞ¾­ÑéÊ±¼ä
+//    m_dwIsGetWuXinExpTime: LongWord; //æ˜¯å¦å¢åŠ äº”è¡Œç»éªŒæ—¶é—´
 //    m_nItemKickMonExp: LongWord;
 //    m_dwItemWuXinExpRate: LongWord;
   protected
@@ -654,7 +687,7 @@ type
 
 //{$REGION 'TAnimalObject Class'}
   TAnimalObject = class(TBaseObject)
-    m_nNotProcessCount: Integer; //Î´±»´¦Àí´ÎÊı£¬ÓÃÓÚ¹ÖÎï´¦ÀíÑ­»·
+    m_nNotProcessCount: Integer; //æœªè¢«å¤„ç†æ¬¡æ•°ï¼Œç”¨äºæ€ªç‰©å¤„ç†å¾ªç¯
     m_nTargetX: Integer;
     m_nTargetY: Integer;
     m_boRunAwayMode: Boolean;
@@ -695,7 +728,7 @@ constructor TBaseObject.Create;
 //  i: Integer;
 begin
   m_boDeliria := False;
-  //Ó¢ĞÛ±äÁ¿
+  //è‹±é›„å˜é‡
   m_btWuXin := 0;
   //m_btWuXinLevel := 0;
   m_btStartType := OT_NONE;
@@ -957,9 +990,9 @@ begin
   m_boHitSpeed := True;
   m_boMaxHP := True;
   m_boMaxMP := True;
-  //m_nCopyHumanLevel := 0; //¸´ÖÆÈË×´Ì¬
+  //m_nCopyHumanLevel := 0; //å¤åˆ¶äººçŠ¶æ€
   m_dwSayMyInfoTick := GetTickCount;
-  m_dwStationTick := GetTickCount; //Õ¾µÄÊ±¼ä
+  m_dwStationTick := GetTickCount; //ç«™çš„æ—¶é—´
 
   m_boReliveNoDrop := False;
  end;
@@ -1084,7 +1117,7 @@ begin
   inherited;
 end;
 
-//ÕÕÃûÎï¼õ³Ö¾Ã
+//ç…§åç‰©å‡æŒä¹…
 (*
 procedure TBaseObject.UseLamp;
 var
@@ -1120,7 +1153,7 @@ begin
         SendMsg(Self, RM_LAMPCHANGEDURA, 0, m_UseItems[U_RIGHTHAND].Dura, 0, 0,
           '');
         RecalcAbilitys();
-        //        FeatureChanged(); 01/21 È¡Ïû À¯ÖòÊÇ±¾ÈË²Å¿ÉÒÔ¿´µ½µÄ£¬²»ĞèÒª·¢ËÍ¹ã²¥ĞÅÏ¢
+        //        FeatureChanged(); 01/21 å–æ¶ˆ èœ¡çƒ›æ˜¯æœ¬äººæ‰å¯ä»¥çœ‹åˆ°çš„ï¼Œä¸éœ€è¦å‘é€å¹¿æ’­ä¿¡æ¯
       end
       else
         m_UseItems[U_RIGHTHAND].Dura := nDura;
@@ -1303,7 +1336,7 @@ begin
   end;
 end;
 
-//É¾³ı×é³É
+//åˆ é™¤ç»„æˆ
 
 procedure TBaseObject.DelMember(BaseObject: TBaseObject);
 var
@@ -1434,7 +1467,7 @@ begin
       PlayObject.SendDelItems(@m_UseItems[U_WEAPON]);
       StdItem := UserEngine.GetStdItem(m_UseItems[U_WEAPON].wIndex);
       if (StdItem <> Nil) and (StdItem.NeedIdentify = 1) then
-        AddGameLog(Self, LOG_DELITEM, StdItem.Name, m_UseItems[U_WEAPON].MakeIndex, 0, '0', '0', '0', '³Ö¾Ã', @m_UseItems[U_WEAPON]);
+        AddGameLog(Self, LOG_DELITEM, StdItem.Name, m_UseItems[U_WEAPON].MakeIndex, 0, '0', '0', '0', 'æŒä¹…', @m_UseItems[U_WEAPON]);
     end;
     m_UseItems[U_WEAPON].wIndex := 0;
   end
@@ -1470,13 +1503,13 @@ begin
   AddAbility.HP := _MIN(High(Word), AddAbility.HP + StdItemA.HP);
   AddAbility.MP := _MIN(High(Word), AddAbility.MP + StdItemA.MP);
 
-  Inc(AddAbility.wAddAttack, StdItemA.AddAttack); //×¼È·
-  Inc(AddAbility.wDelDamage, StdItemA.DelDamage); //×¼È·
-  Inc(AddAbility.btDeadliness, StdItemA.Deadliness); //ÖÂÃüÒ»»÷
+  Inc(AddAbility.wAddAttack, StdItemA.AddAttack); //å‡†ç¡®
+  Inc(AddAbility.wDelDamage, StdItemA.DelDamage); //å‡†ç¡®
+  Inc(AddAbility.btDeadliness, StdItemA.Deadliness); //è‡´å‘½ä¸€å‡»
   //if Item.Value.btWuXin > 0 then begin
   if not g_Config.boCloseWuXin then begin
-    Inc(AddAbility.wAddWuXinAttack, StdItemA.AddWuXinAttack); //×¼È·
-    Inc(AddAbility.wDelWuXinAttack, StdItemA.DelWuXinAttack); //×¼È·
+    Inc(AddAbility.wAddWuXinAttack, StdItemA.AddWuXinAttack); //å‡†ç¡®
+    Inc(AddAbility.wDelWuXinAttack, StdItemA.DelWuXinAttack); //å‡†ç¡®
   end;
   //end;
 
@@ -1485,8 +1518,8 @@ begin
   Inc(AddAbility.btAC2Rate, StdItemA.AC2Rate);
   Inc(AddAbility.btMAC2Rate, StdItemA.MAC2Rate);
 
-  Inc(AddAbility.wHitPoint, StdItemA.HitPoint); //×¼È·
-  Inc(AddAbility.wSpeedPoint, StdItemA.SpeedPoint); //×¼È·
+  Inc(AddAbility.wHitPoint, StdItemA.HitPoint); //å‡†ç¡®
+  Inc(AddAbility.wSpeedPoint, StdItemA.SpeedPoint); //å‡†ç¡®
   Inc(AddAbility.wAntiMagic, StdItemA.AntiMagic);
   Inc(AddAbility.wAntiPoison, StdItemA.PoisonMagic);
   Inc(AddAbility.wHealthRecover, StdItemA.HealthRecover);
@@ -1496,16 +1529,16 @@ begin
     Inc(AddAbility.btWeaponStrong, StdItemA.Strong);
   end;
 
-  Inc(AddAbility.btLuck, StdItemA.Luck); //ĞÒÔË
+  Inc(AddAbility.btLuck, StdItemA.Luck); //å¹¸è¿
 
-  {if StdItemA.HitSpeed > 10 then begin //¹¥»÷ËÙ¶È
+  {if StdItemA.HitSpeed > 10 then begin //æ”»å‡»é€Ÿåº¦
     Inc(AddAbility.nHitSpeed, StdItemA.HitSpeed - 10);
   end
   else begin
     Dec(AddAbility.nHitSpeed, StdItemA.HitSpeed);
   end;   }
 
-  {//×°±¸ÎåĞĞÊôĞÔ
+  {//è£…å¤‡äº”è¡Œå±æ€§
   if CheckWuXinConsistent(m_btWuXin, Item.Value.btValue[tb_wuxin]) then begin
     AddAbility.AC2 := _MIN(High(Word), Round(AddAbility.AC2 * (m_btWuXinLevel / 100 + 1)));
     AddAbility.MAC2 := _MIN(High(Word), Round(AddAbility.MAC2 * (m_btWuXinLevel / 100 + 1)));
@@ -1527,31 +1560,31 @@ begin
   Result := BaseObject.GetNamecolor();
   if BaseObject.m_btRaceServer = RC_PLAYOBJECT then begin
 
-    //ÊÇ·ñÔÚ³Ç±¤¸½½ü
+    //æ˜¯å¦åœ¨åŸå ¡é™„è¿‘
     Castle := g_CastleManager.InCastleWarArea(BaseObject);
     if (Castle <> nil) and Castle.m_boUnderWar and m_boInFreePKArea and BaseObject.m_boInFreePKArea then begin
-      Result := g_Config.btInFreePKAreaNameColor; //$DD;  //¹¥³ÇÇøÓò
+      Result := g_Config.btInFreePKAreaNameColor; //$DD;  //æ”»åŸåŒºåŸŸ
       m_boGuildWarArea := True;
       if (m_MyGuild = nil) or (BaseObject.m_MyGuild = nil) then Exit;
       if Castle.IsMasterGuild(TGuild(m_MyGuild)) then begin
         if (m_MyGuild = BaseObject.m_MyGuild) or (TGuild(m_MyGuild).IsAllyGuild(TGuild(BaseObject.m_MyGuild)))
         then begin
-          Result := g_Config.btAllyAndGuildNameColor //$B4; //ÁªÃËĞĞ»á
+          Result := g_Config.btAllyAndGuildNameColor //$B4; //è”ç›Ÿè¡Œä¼š
         end
         else begin //004BF2A8
           if Castle.IsAttackGuild(TGuild(BaseObject.m_MyGuild)) then begin
-            Result := g_Config.btWarGuildNameColor //$45;    //µĞ¶ÔĞĞ»á
+            Result := g_Config.btWarGuildNameColor //$45;    //æ•Œå¯¹è¡Œä¼š
           end;
         end;
       end else
       if Castle.IsAttackGuild(TGuild(m_MyGuild)) then begin
         if (m_MyGuild = BaseObject.m_MyGuild) or (TGuild(m_MyGuild).IsAllyGuild(TGuild(BaseObject.m_MyGuild)))
         then begin
-          Result := g_Config.btAllyAndGuildNameColor //$B4;  //ÁªÃËĞĞ»á
+          Result := g_Config.btAllyAndGuildNameColor //$B4;  //è”ç›Ÿè¡Œä¼š
         end
         else begin
           if Castle.IsMember(BaseObject) then begin
-            Result := g_Config.btWarGuildNameColor //$45;   //µĞ¶ÔĞĞ»á
+            Result := g_Config.btWarGuildNameColor //$45;   //æ•Œå¯¹è¡Œä¼š
           end;
         end;
       end;
@@ -1589,7 +1622,7 @@ begin
   end;
 end;
 
-//ÉíÉÏ×°±¸³Ö¾Ã¸Ä±ä
+//èº«ä¸Šè£…å¤‡æŒä¹…æ”¹å˜
 
 procedure TBaseObject.DuraChange(idx, Dura, DuraMax: Integer);
 begin
@@ -1729,7 +1762,7 @@ begin
   Result := (m_btRaceServer >= RC_ANIMAL) and (m_btRaceServer <> RC_ARCHERGUARD) and (m_Master = nil);
 end;
 
-//Ë¢ÎïµÈ¼¶ÊôĞÔ
+//åˆ·ç‰©ç­‰çº§å±æ€§
 procedure TBaseObject.MonsterRecalcAbilitys;
 var
   n8: Integer;
@@ -1751,9 +1784,9 @@ begin
     m_WAbil.DC := MakeLong(LoWord(m_Abil.DC), ROUND(m_btSlaveExpLevel * 2 +  HiWord(m_Abil.DC)));
     n8 := n8 + ROUND(m_Abil.MaxHP *  0.15) *  m_btSlaveExpLevel;
     m_WAbil.MaxHP := _MIN(ROUND(m_Abil.MaxHP + m_btSlaveExpLevel * 60), n8);
-    //m_WAbil.MAC:=0; 01/20 È¡Ïû´ËĞĞ£¬·ÀÖ¹¹ÖÎïÉı¼¶ºóÄ§·À±ä0
+    //m_WAbil.MAC:=0; 01/20 å–æ¶ˆæ­¤è¡Œï¼Œé˜²æ­¢æ€ªç‰©å‡çº§åé­”é˜²å˜0
   end;
-  //m_btHitPoint:=15; 01/20 È¡Ïû´ËĞĞ£¬·ÀÖ¹¹ÖÎïÉı¼¶ºó×¼È·ÂÊ±ä15
+  //m_btHitPoint:=15; 01/20 å–æ¶ˆæ­¤è¡Œï¼Œé˜²æ­¢æ€ªç‰©å‡çº§åå‡†ç¡®ç‡å˜15
 end;
 
 procedure TBaseObject.HintGotoScript(nScript: Integer);
@@ -1776,9 +1809,9 @@ begin
   end;
 end;
 
-//¼ì²é½ÇÉ«µÄ×ù±êÊÇ·ñÔÚÖ¸¶¨Îó²î·¶Î§ÒÔÄÚ
-//TargeTBaseObject ÎªÒª¼ì²éµÄ½ÇÉ«£¬nX,nY Îª±È½ÏµÄ×ù±ê
-//¼ì²é½ÇÉ«ÊÇ·ñÔÚÖ¸¶¨×ù±êµÄ1x1 ·¶Î§ÒÔÄÚ£¬Èç¹ûÔÚÔò·µ»ØTrue ·ñÔò·µ»Ø False
+//æ£€æŸ¥è§’è‰²çš„åº§æ ‡æ˜¯å¦åœ¨æŒ‡å®šè¯¯å·®èŒƒå›´ä»¥å†…
+//TargeTBaseObject ä¸ºè¦æ£€æŸ¥çš„è§’è‰²ï¼ŒnX,nY ä¸ºæ¯”è¾ƒçš„åº§æ ‡
+//æ£€æŸ¥è§’è‰²æ˜¯å¦åœ¨æŒ‡å®šåº§æ ‡çš„1x1 èŒƒå›´ä»¥å†…ï¼Œå¦‚æœåœ¨åˆ™è¿”å›True å¦åˆ™è¿”å› False
 
 function TBaseObject.CretInNearXY(TargeTBaseObject: TBaseObject; nX, nY: Integer; nRate: Byte = 1): Boolean;
 var
@@ -2273,7 +2306,7 @@ begin
   end;
   //if not m_boMapApoise then exit;
   //if m_boObMode or m_boFixedHideMode then exit;
-  //01/21 Ôö¼Ó£¬Ô­À´Ö±½Ó²»·¢ĞÅÏ¢£¬Èç¹ûÒşÉíÄ£Ê½ÔòÖ»·¢ËÍĞÅÏ¢¸ø×Ô¼º
+  //01/21 å¢åŠ ï¼ŒåŸæ¥ç›´æ¥ä¸å‘ä¿¡æ¯ï¼Œå¦‚æœéšèº«æ¨¡å¼åˆ™åªå‘é€ä¿¡æ¯ç»™è‡ªå·±
   if m_boObMode or m_boFixedHideMode  then begin
     if dwDelay > 0 then SendDelayMsg(Self, wIdent, wParam, nParam1, nParam2, nParam3, sMsg, dwDelay)
     else SendMsg(Self, wIdent, wParam, nParam1, nParam2, nParam3, sMsg);
@@ -2320,7 +2353,7 @@ begin
                             //BaseObject.m_nGroupIdent := m_nGroupIdent;
                             m_VisibleHumanList.Add(BaseObject);
                           end
-                          else if BaseObject.m_boWantRefMsg then begin {Ôö¼Ó·ÖÉíµÄÄ§·¨¶ÜĞ§¹û}
+                          else if BaseObject.m_boWantRefMsg then begin {å¢åŠ åˆ†èº«çš„é­”æ³•ç›¾æ•ˆæœ}
                             if (wIdent = RM_STRUCK) or (wIdent = RM_HEAR) or
                               (wIdent = RM_DEATH) or (wIdent = RM_CHARSTATUSCHANGED) then begin
                               if dwDelay > 0 then
@@ -2389,7 +2422,7 @@ var
 begin
   boIsVisible := False;
   //if (BaseObject.m_btRaceServer = RC_PLAYOBJECT) or (BaseObject.m_Master <> nil) then
-    //m_boIsVisibleActive := True; //Èç¹ûÊÇÈËÎï»ò±¦±¦ÔòÖÃTRUE
+    //m_boIsVisibleActive := True; //å¦‚æœæ˜¯äººç‰©æˆ–å®å®åˆ™ç½®TRUE
   for i := 0 to m_VisibleActors.Count - 1 do begin
     VisibleBaseObject := m_VisibleActors.Items[i];
     if VisibleBaseObject <> nil then begin
@@ -2404,7 +2437,7 @@ begin
   New(VisibleBaseObject);
   VisibleBaseObject.nVisibleFlag := 2;
   VisibleBaseObject.BaseObject := BaseObject;
-  //2009-3-31 ĞŞ¸Ä Ôö¼ÓÖÜÎ§¿ÉÊÓÈËÎï¼°±¦±¦ÊıÁ¿Í³¼Æ
+  //2009-3-31 ä¿®æ”¹ å¢åŠ å‘¨å›´å¯è§†äººç‰©åŠå®å®æ•°é‡ç»Ÿè®¡
   if (m_btRaceServer = RC_PLAYOBJECT) or ((m_Master <> nil) and (m_Master.m_btRaceServer = RC_PLAYOBJECT)) then begin
     VisibleBaseObject.boAddCount := True;
     Inc(BaseObject.m_nVisibleActiveCount);
@@ -2538,7 +2571,7 @@ begin
         DisPose(VisibleBaseObject);
       end;
     end;
-    m_VisibleActors.Clear; //Çå³ıÈËÎïÁĞ±í
+    m_VisibleActors.Clear; //æ¸…é™¤äººç‰©åˆ—è¡¨
     m_VisibleEvents.Clear;
   except
     KickException();
@@ -2578,14 +2611,14 @@ begin
   end;
   nCheckCode := 1;
   n24 := 0;
-  //m_boIsVisibleActive := False; //ÏÈÖÃÎªFALSE
+  //m_boIsVisibleActive := False; //å…ˆç½®ä¸ºFALSE
   try
     m_VisibleHumanList.Clear;
     for i := 0 to m_VisibleItems.Count - 1 do begin
       DisPose(pTVisibleMapItem(m_VisibleItems.Items[i]));
     end;
     m_VisibleItems.Clear;
-    m_VisibleEvents.Clear; //2008-08-20 Çå³ıÎŞÓÃÊÓÏßÁĞ±í
+    m_VisibleEvents.Clear; //2008-08-20 æ¸…é™¤æ— ç”¨è§†çº¿åˆ—è¡¨
   except
     MainOutMessage(format(sExceptionMsg1, [nCheckCode]));
     KickException();
@@ -2618,7 +2651,7 @@ begin
           nIdx := 0;
           while (True) do begin
             nCheckCode := 11;
-            if (MapCellInfo.ObjList <> nil) and (MapCellInfo.ObjList.Count <= 0) then begin //200-11-1 Ôö¼Ó
+            if (MapCellInfo.ObjList <> nil) and (MapCellInfo.ObjList.Count <= 0) then begin //200-11-1 å¢åŠ 
               FreeAndNil(MapCellInfo.ObjList);
               break;
             end;
@@ -2628,7 +2661,7 @@ begin
             if OSObject <> nil then begin
               nCheckCode := 13;
               {try
-                btType := OSObject.btType; //2006-10-14 ·ÀÖ¹ÄÚ´æ³ö´í
+                btType := OSObject.btType; //2006-10-14 é˜²æ­¢å†…å­˜å‡ºé”™
               except
                 MapCellInfo.ObjList.Delete(nIdx);
                 Continue;
@@ -2649,9 +2682,9 @@ begin
                 nCheckCode := 15;
                 BaseObject := TBaseObject(OSObject.CellObj);
                 if BaseObject <> nil then begin
-                  //¸üĞÂÔÚµØÍ¼ÉÏµÄÊ±¼ä
+                  //æ›´æ–°åœ¨åœ°å›¾ä¸Šçš„æ—¶é—´
                   if BaseObject = Self then begin
-                    //Èç¹ûÈËÎï×ø±êÓëµØÍ¼ĞÅÏ¢×ø±ê²»Ò»ÖÂ,ÔòÉ¾³ıĞÅÏ¢
+                    //å¦‚æœäººç‰©åæ ‡ä¸åœ°å›¾ä¿¡æ¯åæ ‡ä¸ä¸€è‡´,åˆ™åˆ é™¤ä¿¡æ¯
                     if (m_nCurrX = n18) and (m_nCurrY = n1C) then begin
                       OSObject.dwAddTime := GetTickCount;
                       m_dwVerifyTick := GetTickCount();
@@ -2679,12 +2712,12 @@ begin
                     end;
                   end;
                 end;
-              end else {if OSObject.btType = OS_MOVINGOBJECT then begin Ôö¼Ó¹ÖÎï¼ìË÷µØÃæ³¬Ê±ÎïÆ·,·ÀÖ¹Õ¼ÓÃÄÚ´æ}
+              end else {if OSObject.btType = OS_MOVINGOBJECT then begin å¢åŠ æ€ªç‰©æ£€ç´¢åœ°é¢è¶…æ—¶ç‰©å“,é˜²æ­¢å ç”¨å†…å­˜}
               if (OSObject.btType = OS_ITEMOBJECT) then begin
                 nCheckCode := 21;
                 if (pTMapItem(OSObject.CellObj).btIdx <> m_PEnvir.m_btFBIndex) or
                   ((GetTickCount - OSObject.dwAddTime) > g_Config.dwClearDropOnFloorItemTime)  then begin
-                  DisPose(pTMapItem(OSObject.CellObj));   //·ÀÖ¹Õ¼ÓÃÄÚ´æ²»ÊÍ·ÅÏÖÏó
+                  DisPose(pTMapItem(OSObject.CellObj));   //é˜²æ­¢å ç”¨å†…å­˜ä¸é‡Šæ”¾ç°è±¡
                   DisPose(OSObject);
                   MapCellInfo.ObjList.Delete(nIdx);
                   if MapCellInfo.ObjList.Count <= 0 then begin
@@ -2720,7 +2753,7 @@ begin
       VisibleBaseObject := m_VisibleActors.Items[n18];
       nCheckCode := 42;
       {try
-//        nVisibleFlag := VisibleBaseObject.nVisibleFlag; //2006-10-14·ÀÖ¹ÄÚ´æ³ö´í
+//        nVisibleFlag := VisibleBaseObject.nVisibleFlag; //2006-10-14é˜²æ­¢å†…å­˜å‡ºé”™
       except
         m_VisibleActors.Delete(n18);
         Continue;
@@ -2767,7 +2800,7 @@ var
 begin
     if (m_btRaceServer = RC_PLAYOBJECT) then begin
       nDress := 0;
-      //ÒÂ·ş
+      //è¡£æœ
       if m_UseItems[U_DRESS].wIndex > 0 then begin
         StdItem := UserEngine.GetStdItem(m_UseItems[U_DRESS].wIndex);
         if StdItem <> nil then begin
@@ -2778,7 +2811,7 @@ begin
       end;
       Inc(nDress, m_btGender);
       nWeapon := 0;
-      //ÎäÆ÷
+      //æ­¦å™¨
       if m_UseItems[U_WEAPON].wIndex > 0 then begin
         StdItem := UserEngine.GetStdItem(m_UseItems[U_WEAPON].wIndex);
         if StdItem <> nil then begin
@@ -2828,7 +2861,7 @@ begin
   end;
 end;
 //==============================
-//È¡µÃ¹ÖÎïËµ»°ĞÅÏ¢ÁĞ±í
+//å–å¾—æ€ªç‰©è¯´è¯ä¿¡æ¯åˆ—è¡¨
 
 procedure TBaseObject.LoadSayMsg();
 var
@@ -2878,7 +2911,7 @@ begin
     m_nCurrY := g_Config.nHomeY;
     PlayObject := TPlayObject(Self);
     PlayObject.m_boEmergencyClose := True;
-    PlayObject.m_boPlayOffLine := False; //¹Ø±ÕÏÂÏß´¥·¢
+    PlayObject.m_boPlayOffLine := False; //å…³é—­ä¸‹çº¿è§¦å‘
   end
   else begin
     m_boDeath := True;
@@ -2910,14 +2943,14 @@ begin
     end;
   end else begin
     if boOnHorse and m_PEnvir.m_boNotHorse then begin
-      SysMsg('µ±Ç°µØÍ¼²»ÔÊĞíÊ¹ÓÃ×øÆï...', c_Red, t_Hint);
+      SysMsg('å½“å‰åœ°å›¾ä¸å…è®¸ä½¿ç”¨åéª‘...', c_Red, t_Hint);
       Exit;
     end;
 
     if boOnHorse and (not m_boCanOnHorse) and (g_Config.nTakeOnHorseUseTime > 1) then begin
       if (m_UseItems[u_House].btAliveTime > 0)  then begin
-        SysMsg('×øÆïÕıÔÚ»Ö¸´£¬ÔİÊ±ÎŞ·¨Æï³Ë£¡', c_Red, t_Hint);
-        //SendDefMessage(SM_SHOWBAR, ProcessMsg.nParam1, 1, CM_CLICKBOX, BaseObject.m_WAbil.MaxHP, 'ÕıÔÚ¿ªÆô±¦Ïä...');
+        SysMsg('åéª‘æ­£åœ¨æ¢å¤ï¼Œæš‚æ—¶æ— æ³•éª‘ä¹˜ï¼', c_Red, t_Hint);
+        //SendDefMessage(SM_SHOWBAR, ProcessMsg.nParam1, 1, CM_CLICKBOX, BaseObject.m_WAbil.MaxHP, 'æ­£åœ¨å¼€å¯å®ç®±...');
         Exit;
       end;
       if (m_UseItems[u_House].wHP <= 0) then
@@ -2926,13 +2959,13 @@ begin
       m_boCanOnHorse := True;
       m_dwCanOnHorseTime := GetTickCount + LongWord(g_Config.nTakeOnHorseUseTime * 1000);
       if m_btRaceServer = RC_PLAYOBJECT then
-        TPlayObject(Self).SendDefMessage(SM_SHOWBAR, Integer(Self), 2, CM_CLICKBOX, g_Config.nTakeOnHorseUseTime, 'ÕıÔÚ×¼±¸×øÆï...');
+        TPlayObject(Self).SendDefMessage(SM_SHOWBAR, Integer(Self), 2, CM_CLICKBOX, g_Config.nTakeOnHorseUseTime, 'æ­£åœ¨å‡†å¤‡åéª‘...');
 
     end else
     if boOnHorse and ((m_boCanOnHorse and (GetTickCount > m_dwCanOnHorseTime)) or (g_Config.nTakeOnHorseUseTime <= 1)) then begin
       if (m_UseItems[u_House].btAliveTime > 0)  then begin
-        SysMsg('×øÆïÕıÔÚ»Ö¸´£¬ÔİÊ±ÎŞ·¨Æï³Ë£¡', c_Red, t_Hint);
-        //SendDefMessage(SM_SHOWBAR, ProcessMsg.nParam1, 1, CM_CLICKBOX, BaseObject.m_WAbil.MaxHP, 'ÕıÔÚ¿ªÆô±¦Ïä...');
+        SysMsg('åéª‘æ­£åœ¨æ¢å¤ï¼Œæš‚æ—¶æ— æ³•éª‘ä¹˜ï¼', c_Red, t_Hint);
+        //SendDefMessage(SM_SHOWBAR, ProcessMsg.nParam1, 1, CM_CLICKBOX, BaseObject.m_WAbil.MaxHP, 'æ­£åœ¨å¼€å¯å®ç®±...');
         Exit;
       end;
 
@@ -3012,14 +3045,14 @@ begin
   end;
 
   
-  //·ÇÍæ¼ÒÇÒÎŞ»ğÇ½²»´¦ÀíµØÍ¼Á¬½ÓµÈÊÂ¼ş
+  //éç©å®¶ä¸”æ— ç«å¢™ä¸å¤„ç†åœ°å›¾è¿æ¥ç­‰äº‹ä»¶
   if (m_btRaceServer <> RC_PLAYOBJECT) and (not m_PEnvir.GetFireBurn(m_nCurrX, m_nCurrY)) and (not m_boNotInSafe) then begin
     SendRefMsg(nIdent, m_btDirection, m_nCurrX, m_nCurrY, 0, '');
     exit;
   end;
 
   OnAction(AT_Walk);
-  //ÉèÖÃÎåĞĞ»î¶¯Ê±¼ä
+  //è®¾ç½®äº”è¡Œæ´»åŠ¨æ—¶é—´
   //m_dwIsGetWuXinExpTime := GetTickCount + g_Config.dwGetWuXinExpTick;
   try
     nCheckCode := 1;
@@ -3096,7 +3129,7 @@ begin
         end;
       end;
     end;
-    //·ÇÍæ¼ÒÇÒÎŞ»ğÇ½²»´¦ÀíµØÍ¼Á¬½ÓµÈÊÂ¼ş
+    //éç©å®¶ä¸”æ— ç«å¢™ä¸å¤„ç†åœ°å›¾è¿æ¥ç­‰äº‹ä»¶
     if (m_btRaceServer <> RC_PLAYOBJECT) then begin
       SendRefMsg(nIdent, m_btDirection, m_nCurrX, m_nCurrY, 0, '');
       exit;
@@ -3137,7 +3170,7 @@ begin
           if (MapEvent.nRate <= 1) or (Random(MapEvent.nRate) = 0) then begin
             if (MapEvent.nFlag = -1) or (TPlayObject(Self).GetQuestFlagStatus(MapEvent.nFlag) = MapEvent.btValue) then begin
               if (not MapEvent.boGroup) or (m_GroupOwner <> nil) then begin
-                //if MapEvent.boEvent then //ÒÆ¶¯µØÍ¼ÊÂ¼ş½â·¢
+                //if MapEvent.boEvent then //ç§»åŠ¨åœ°å›¾äº‹ä»¶è§£å‘
                 NpcGotoLable(g_MapEventNpc, MapEvent.nEvent, False);
               end;
             end;
@@ -3158,7 +3191,7 @@ begin
   end;
 end;
 
-//ÇĞ»»µØÍ¼
+//åˆ‡æ¢åœ°å›¾
 
 function TBaseObject.EnterAnotherMap(Envir: TEnvirnoment; nDMapX, nDMapY: Integer): Boolean;
 var
@@ -3188,7 +3221,7 @@ begin
         with Self as TPlayObject do begin
           if m_boShoping then exit;
 
-          //ĞèÒªÒ»¸ö¶´
+          //éœ€è¦ä¸€ä¸ªæ´
           if (Envir.m_boNEEDHOLE) and (g_EventManager.GetEvent(m_PEnvir, m_nCurrX, m_nCurrY, ET_DIGOUTZOMBI) = nil) then
             Exit;
 
@@ -3235,7 +3268,7 @@ begin
             if m_nCheckChangeMapCount < 100 then Inc(m_nCheckChangeMapCount);
           end;
 
-        //Ë¢ĞÂÈËÎïµ±Ç°ËùÔÚÎ»ÖÃµÄ×´Ì¬
+        //åˆ·æ–°äººç‰©å½“å‰æ‰€åœ¨ä½ç½®çš„çŠ¶æ€
       end
       else begin
         m_PEnvir := OldEnvir;
@@ -3244,9 +3277,9 @@ begin
         m_nCurrY := nOldY;
         m_PEnvir.AddToMap(m_nCurrX, m_nCurrY, OS_MOVINGOBJECT, Self);
         GetStartType();
-        //Ë¢ĞÂÈËÎïµ±Ç°ËùÔÚÎ»ÖÃµÄ×´Ì¬
+        //åˆ·æ–°äººç‰©å½“å‰æ‰€åœ¨ä½ç½®çš„çŠ¶æ€
       end;
-      //¸´Î»Åİµã£¬¼°½ğ±Ò£¬Ê±¼ä
+      //å¤ä½æ³¡ç‚¹ï¼ŒåŠé‡‘å¸ï¼Œæ—¶é—´
       if m_btRaceServer = RC_PLAYOBJECT then begin
         with Self as TPlayObject do begin
           m_dwAutoGetExpTick := GetTickCount();
@@ -3273,7 +3306,7 @@ procedure TBaseObject.ProcessMonSayMsg(sMsg: string);
 var
   sCharName: string;
 begin
-  if m_btRaceServer = RC_PLAYOBJECT then Exit; //ĞŞ¸Ä
+  if m_btRaceServer = RC_PLAYOBJECT then Exit; //ä¿®æ”¹
   sCharName := FilterShowName(m_sCharName);
   SendRefMsg(RM_HEAR, 0, g_Config.nHearMsgFColor, g_Config.nHearMsgBColor, 0, sCharName + #9 + sMsg);
 end;
@@ -3407,7 +3440,7 @@ begin
   end;
 end;
 
-//·¢ËÍ¶ÓÎéÏûÏ¢
+//å‘é€é˜Ÿä¼æ¶ˆæ¯
 
 procedure TBaseObject.SendGroupText(sMsg: string);
 var
@@ -3465,18 +3498,18 @@ begin
     UserItem := BaseObject.m_ItemList.Items[0];
     if (UserItem = nil) then
       break;
-    nBack := AddItemToBag(UserItem, nil, True, BaseObject.m_sCharName, 'ÍÚÈ¡', AddUserItem);
+    nBack := AddItemToBag(UserItem, nil, True, BaseObject.m_sCharName, 'æŒ–å–', AddUserItem);
     if nBack = -1 then
       break;
     if nBack = 2 then begin
       if m_btRaceServer = RC_PLAYOBJECT then begin
         PlayObject := TPlayObject(Self);
-        UserItem.MakeIndex := GetItemNumber(); //¹ÖÎï±¬³öÎïÆ·ºóÔÙÈ¡ÎïÆ·ID,½ÚÔ¼ÎïÆ·IDÏûºÄ
+        UserItem.MakeIndex := GetItemNumber(); //æ€ªç‰©çˆ†å‡ºç‰©å“åå†å–ç‰©å“ID,èŠ‚çº¦ç‰©å“IDæ¶ˆè€—
         PlayObject.SendAddItem(UserItem);
         Stditem := Userengine.GetStdItem(UserItem.wIndex);
         if (Stditem <> nil) and (Stditem.NeedIdentify = 1) then
           AddGameLog(Self, LOG_ADDITEM, StdItem.Name, UserItem.MakeIndex, UserItem.Dura, BaseObject.m_sCharName,
-            '0', '0', 'ÍÚÈ¡', UserItem);
+            '0', '0', 'æŒ–å–', UserItem);
         Result := True;
       end;
     end
@@ -3513,13 +3546,13 @@ begin
           if (SysTime >= StdItemLimit.MonDropLimit.dwTime) then begin
             if (StdItemLimit.MonDropLimit.nMaxCount = 0) or (StdItemLimit.MonDropLimit.nMinCount < StdItemLimit.MonDropLimit.nMaxCount) then begin
               Inc(StdItemLimit.MonDropLimit.nMinCount);
-              UserItem.MakeIndex := GetItemNumber(); //¹ÖÎï±¬³öÎïÆ·ºóÔÙÈ¡ÎïÆ·ID,½ÚÔ¼ÎïÆ·IDÏûºÄ
+              UserItem.MakeIndex := GetItemNumber(); //æ€ªç‰©çˆ†å‡ºç‰©å“åå†å–ç‰©å“ID,èŠ‚çº¦ç‰©å“IDæ¶ˆè€—
               DropItemDown(UserItem, DropWide, True, ItemOfCreat, Self);
               g_boSaveMonDropLimit := True;
             end;
           end;
         end else begin
-          UserItem.MakeIndex := GetItemNumber(); //¹ÖÎï±¬³öÎïÆ·ºóÔÙÈ¡ÎïÆ·ID,½ÚÔ¼ÎïÆ·IDÏûºÄ
+          UserItem.MakeIndex := GetItemNumber(); //æ€ªç‰©çˆ†å‡ºç‰©å“åå†å–ç‰©å“ID,èŠ‚çº¦ç‰©å“IDæ¶ˆè€—
           DropItemDown(UserItem, DropWide, True, ItemOfCreat, Self);
         end;
         DisPose(UserItem);
@@ -3615,12 +3648,12 @@ begin
   m_nIncHealing := 0;
   m_AddHP := 0;
   HintGotoScript(m_nDieScript);
-  //2010-02-06 Ôö¼Ó£¬½«¹ÖÎï¿É±¬ÎïÆ·Ë¢ĞÂ¼ÓÓÚËÀÍöº¯Êıµ±ÖĞ£¬ÒÔ½ÚÔ¼ÄÚ´æ
+  //2010-02-06 å¢åŠ ï¼Œå°†æ€ªç‰©å¯çˆ†ç‰©å“åˆ·æ–°åŠ äºæ­»äº¡å‡½æ•°å½“ä¸­ï¼Œä»¥èŠ‚çº¦å†…å­˜
   if m_boCanGetRandomItems and (m_btRaceServer <> RC_PLAYOBJECT) and (m_CanDropItemList <> nil) then
     UserEngine.MonGetRandomItems(Self, m_CanDropItemList);
 
   try
-    //»ñÈ¡¾­Ñé
+    //è·å–ç»éªŒ
     if (m_btRaceServer <> RC_PLAYOBJECT) and ((m_LastHiter <> nil) or (m_ExpHitter <> nil)) then
     begin
       if (m_ExpHitter <> nil) then
@@ -3638,7 +3671,7 @@ begin
       if (AttackBaseObject <> nil) and (AttackBaseObject.m_btRaceServer = RC_PLAYOBJECT) then
       begin
         TPlayObject(AttackBaseObject).m_sLastKillMonName := m_sCharName;
-        //ÈËÎï»ñÈ¡¾­Ñé
+        //äººç‰©è·å–ç»éªŒ
         tExp := AttackBaseObject.CalcGetExp(m_Abil.Level, m_dwFightExp);
         if not g_Config.boVentureServer then begin
           TPlayObject(AttackBaseObject).GainExp(tExp);
@@ -3679,14 +3712,14 @@ begin
             end;
           end;
         end;
-        if AttackBaseObject.m_MyGuild <> nil then begin //Ôö¼ÓĞĞ»áÉ±¹ÖÊıÁ¿
+        if AttackBaseObject.m_MyGuild <> nil then begin //å¢åŠ è¡Œä¼šæ€æ€ªæ•°é‡
           TGuild(AttackBaseObject.m_MyGuild).IncKillMobCount;
         end;
-        {Ö´ĞĞÉ±¹Ö´¥·¢}
+        {æ‰§è¡Œæ€æ€ªè§¦å‘}
         TPlayObject(AttackBaseObject).KillMonsterFunc(Self);
       end;
     end;
-    //¹ÖÎïËµ»°
+    //æ€ªç‰©è¯´è¯
     if (g_Config.boMonSayMsg) and (m_btRaceServer = RC_PLAYOBJECT) and (m_LastHiter <> nil) then begin
       m_LastHiter.MonsterSayMsg(Self, s_KillHuman);
     end;
@@ -3704,11 +3737,11 @@ begin
 
   try
     boPK := False;
-    //ÅĞ¶ÏÊÇ·ñPK(·ÇÕ½¶·µØÍ¼)
+    //åˆ¤æ–­æ˜¯å¦PK(éæˆ˜æ–—åœ°å›¾)
     if (m_LastHiter <> nil) then AttackBaseObject := m_LastHiter
     else AttackBaseObject := m_ExpHitter;
 
-    {Ö´ĞĞÉ±ÈËºÍËÀÍö´¥·¢}
+    {æ‰§è¡Œæ€äººå’Œæ­»äº¡è§¦å‘}
 
 
     if (not g_Config.boVentureServer) and (not m_PEnvir.m_boFightZone) and (not m_PEnvir.m_boFight3Zone) and (m_btStartType <> OT_SAFEPK) then begin
@@ -3720,22 +3753,22 @@ begin
           end;
         //            if (AttackBaseObject.m_btRaceServer = RC_PLAYOBJECT) then
         if (AttackBaseObject.m_btRaceServer = RC_PLAYOBJECT) or (AttackBaseObject.m_btRaceServer = RC_NPC) then begin
-          {ĞŞ¸ÄÈÕÆÚ2004/07/21£¬ÔÊĞíNPCÉ±ËÀÈËÎï}
+          {ä¿®æ”¹æ—¥æœŸ2004/07/21ï¼Œå…è®¸NPCæ€æ­»äººç‰©}
           boPK := True;
         end;
 
       end;
     end;
-    //ÅĞ¶ÏÎªPK,¼ì²âÊÇ·ñĞĞ»áÕ½Õù»òÕß¹¥³ÇÕ½Õù
+    //åˆ¤æ–­ä¸ºPK,æ£€æµ‹æ˜¯å¦è¡Œä¼šæˆ˜äº‰æˆ–è€…æ”»åŸæˆ˜äº‰
     if boPK and (AttackBaseObject <> nil) then begin
       guildwarkill := False;
       if (m_MyGuild <> nil) and (AttackBaseObject.m_MyGuild <> nil) then begin
-        if GetGuildRelation(Self, AttackBaseObject) = 2 then //ÊÇ·ñĞĞ»áÕ½Õù
+        if GetGuildRelation(Self, AttackBaseObject) = 2 then //æ˜¯å¦è¡Œä¼šæˆ˜äº‰
           guildwarkill := True;
       end;
       Castle := g_CastleManager.InCastleWarArea(Self);
       if ((Castle <> nil) and Castle.m_boUnderWar) or (m_boInFreePKArea) then
-        guildwarkill := True; //ÊÇ·ñ¹¥³ÇÕ½Õù
+        guildwarkill := True; //æ˜¯å¦æ”»åŸæˆ˜äº‰
       {
       if UserCastle.m_boUnderWar then
          if (m_boInFreePKArea) or (UserCastle.InCastleWarArea(m_PEnvir, m_nCurrX, m_nCurrY)) then
@@ -3745,21 +3778,21 @@ begin
       if not guildwarkill then begin
          if not m_LastHiter.IsGoodKilling(self) then begin
             m_LastHiter.IncPkPoint (nKillHumanAddPKPoint{100});
-            m_LastHiter.SysMsg ('Äã·¸ÁËÄ±É±×ï.', c_Red,t_Hint);
-            SysMsg('Äã±» ' + m_LastHiter.m_sCharName + 'É±º¦ÁË.',c_Red,t_Hint);
+            m_LastHiter.SysMsg ('ä½ çŠ¯äº†è°‹æ€ç½ª.', c_Red,t_Hint);
+            SysMsg('ä½ è¢« ' + m_LastHiter.m_sCharName + 'æ€å®³äº†.',c_Red,t_Hint);
             m_LastHiter.AddBodyLuck (-nKillHumanDecLuckPoint{500});
             if PkLevel < 1 then
                if Random(5) = 0 then
                   m_LastHiter.MakeWeaponUnlock;
          end else
-            m_LastHiter.SysMsg ('[ÄãÊÜµ½Õıµ±¹æÔò±£»¤¡£]', c_Green,t_Hint);
+            m_LastHiter.SysMsg ('[ä½ å—åˆ°æ­£å½“è§„åˆ™ä¿æŠ¤ã€‚]', c_Green,t_Hint);
       end;
       *)
       //=================================================================
       //
-      //·ÇÔÊĞíÕ½ÕùÔö¼ÓPKÖµ
+      //éå…è®¸æˆ˜äº‰å¢åŠ PKå€¼
       if not guildwarkill then begin
-        //ÅĞ¶ÏÊÇ·ñÓĞPK¼ÓµÈ¼¶¾­ÑéµÈ
+        //åˆ¤æ–­æ˜¯å¦æœ‰PKåŠ ç­‰çº§ç»éªŒç­‰
         if (g_Config.boKillHumanWinLevel or g_Config.boKillHumanWinExp or m_PEnvir.m_boPKWINLEVEL or m_PEnvir.m_boPKWINEXP) and
           (AttackBaseObject.m_btRaceServer = RC_PLAYOBJECT) then begin
           TPlayObject(Self).PKDie(TPlayObject(AttackBaseObject));
@@ -3767,18 +3800,18 @@ begin
         else begin
           if not AttackBaseObject.IsGoodKilling(Self) then begin
             AttackBaseObject.IncPkPoint(g_Config.nKillHumanAddPKPoint {100});
-            //Ôö¼ÓPKÖµ
-            AttackBaseObject.SysMsg(g_sYouMurderedMsg {'Äã·¸ÁËÄ±É±×ï.'}, c_Red, t_Hint);
+            //å¢åŠ PKå€¼
+            AttackBaseObject.SysMsg(g_sYouMurderedMsg {'ä½ çŠ¯äº†è°‹æ€ç½ª.'}, c_Red, t_Hint);
             SysMsg(format(g_sYouKilledByMsg, [AttackBaseObject.m_sCharName]), c_Red, t_Hint);
             AttackBaseObject.AddBodyLuck(-g_Config.nKillHumanDecLuckPoint {500});
             if PKLevel < 1 then
               if Random(5) = 0 then
-                AttackBaseObject.MakeWeaponUnlock; //ÎäÆ÷¼Ó×çÖä
+                AttackBaseObject.MakeWeaponUnlock; //æ­¦å™¨åŠ è¯…å’’
           end
           else
-            AttackBaseObject.SysMsg(g_sYouProtectedByLawOfDefense {'[ÄãÊÜµ½Õıµ±¹æÔò±£»¤¡£]'}, c_Green, t_Hint);
+            AttackBaseObject.SysMsg(g_sYouProtectedByLawOfDefense {'[ä½ å—åˆ°æ­£å½“è§„åˆ™ä¿æŠ¤ã€‚]'}, c_Green, t_Hint);
         end;
-        //¼ì²é¹¥»÷ÈËÊÇ·ñÓÃÁË×Å¾­Ñé»òµÈ¼¶×°±¸
+        //æ£€æŸ¥æ”»å‡»äººæ˜¯å¦ç”¨äº†ç€ç»éªŒæˆ–ç­‰çº§è£…å¤‡
         if AttackBaseObject.m_btRaceServer = RC_PLAYOBJECT then begin
           if AttackBaseObject.m_dwPKDieLostExp > 0 then begin
             if m_Abil.Exp >= AttackBaseObject.m_dwPKDieLostExp then begin
@@ -3803,7 +3836,7 @@ begin
   end;
 
   try
-    //µô×°±¸´¦Àí
+    //æ‰è£…å¤‡å¤„ç†
     if (m_ExpHitter <> nil) then AttackBaseObject := m_ExpHitter
     else AttackBaseObject := m_LastHiter;
 
@@ -3811,7 +3844,7 @@ begin
       AttackBaseObject := AttackBaseObject.m_Master;
     end;
 
-    //·ÇÈËÎï´¦Àí
+    //éäººç‰©å¤„ç†
     if m_btRaceServer <> RC_PLAYOBJECT then begin
       nCheckCode := 1000;
       if AttackBaseObject <> nil then
@@ -3839,8 +3872,8 @@ begin
       end;
     end
     else begin
-      {ĞŞ¸ÄÈÕÆÚ2004/07/21£¬Ôö¼Ó´ËĞĞ£¬ÔÊĞíÉèÖÃ m_boNoItem ºóÈËÎïËÀÍö²»µôÎïÆ·}
-      //ÈËÎï´¦Àí
+      {ä¿®æ”¹æ—¥æœŸ2004/07/21ï¼Œå¢åŠ æ­¤è¡Œï¼Œå…è®¸è®¾ç½® m_boNoItem åäººç‰©æ­»äº¡ä¸æ‰ç‰©å“}
+      //äººç‰©å¤„ç†
       if (not m_PEnvir.m_boFightZone) and (not m_PEnvir.m_boFight3Zone) and (m_btStartType <> OT_SAFEPK) and (not m_boNoItem)
         and (not TPlayObject(Self).m_boSafeOffLine) then begin
         if AttackBaseObject <> nil then begin
@@ -3868,9 +3901,9 @@ begin
       nCheckCode := 1013;
     end;
     //end;
-    //µô×°±¸´¦Àí½áÊø
+    //æ‰è£…å¤‡å¤„ç†ç»“æŸ
 
-    //ÊÇ·ñĞĞ»áÕ½ÕùµØÍ¼
+    //æ˜¯å¦è¡Œä¼šæˆ˜äº‰åœ°å›¾
     if m_PEnvir.m_boFight3Zone then begin
       Inc(m_nFightZoneDieCount);
       if m_MyGuild <> nil then begin
@@ -3881,7 +3914,7 @@ begin
       if (m_LastHiter <> nil) then begin
         if (m_LastHiter.m_MyGuild <> nil) and (m_MyGuild <> nil) then begin
           TGuild(m_LastHiter.m_MyGuild).TeamFightWhoWinPoint(m_LastHiter.m_sCharName, 100);
-            //matchpoint Áõ°¡, °³ÀÎ¼ºÀû ±â·Ï
+            //matchpoint åˆ˜å•Š, ä¿ºç‰¢å·±åˆ© æ‰åºŸ
           tStr := TGuild(m_LastHiter.m_MyGuild).m_sGuildName + ':' +
             IntToStr(TGuild(m_LastHiter.m_MyGuild).m_nContestPoint) + '  ' +
             TGuild(m_MyGuild).m_sGuildName + ':' +
@@ -3902,9 +3935,9 @@ begin
         tStr := '####';
       if g_boGameLogHumanDie then
         AddGameLog(Self, LOG_PLAYDIE, '0', 0, 0, tStr,
-          'FZ-' + BoolToIntStr(m_PEnvir.m_boFightZone), 'F3Z-' + BoolToIntStr(m_PEnvir.m_boFight3Zone), 'ËÀÍö', nil);
+          'FZ-' + BoolToIntStr(m_PEnvir.m_boFightZone), 'F3Z-' + BoolToIntStr(m_PEnvir.m_boFight3Zone), 'æ­»äº¡', nil);
     end;
-    //¼õÉÙµØÍ¼ÉÏ¹ÖÎï¼ÆÊı
+    //å‡å°‘åœ°å›¾ä¸Šæ€ªç‰©è®¡æ•°
     if (m_Master = nil) and (not m_boDelFormMaped) then begin
       nCheckCode := 1016;
       m_PEnvir.DelObjectCount(Self);
@@ -3982,17 +4015,17 @@ begin
   if (InSafeZone) or (BaseObject.InSafeZone) then
     Result := False;
   if not BaseObject.m_boInFreePKArea then begin
-    //ĞÂÈË±£»¤
+    //æ–°äººä¿æŠ¤
     if g_Config.boPKLevelProtect then begin
-      if (m_Abil.Level > g_Config.nPKProtectLevel) then begin //Èç¹û´óÓÚÖ¸¶¨µÈ¼¶
+      if (m_Abil.Level > g_Config.nPKProtectLevel) then begin //å¦‚æœå¤§äºæŒ‡å®šç­‰çº§
         if not BaseObject.m_boPKFlag and (BaseObject.m_Abil.Level <=
           g_Config.nPKProtectLevel) and (BaseObject.PKLevel < 2) then begin
-          //±»¹¥»÷µÄÈËÎïĞ¡Ö¸¶¨µÈ¼¶Ã»ÓĞºìÃû£¬Ôò²»¿ÉÒÔ¹¥»÷¡£
+          //è¢«æ”»å‡»çš„äººç‰©å°æŒ‡å®šç­‰çº§æ²¡æœ‰çº¢åï¼Œåˆ™ä¸å¯ä»¥æ”»å‡»ã€‚
           Result := False;
           Exit;
         end;
       end;
-      if (m_Abil.Level <= g_Config.nPKProtectLevel) then begin //Èç¹ûĞ¡ÓÚÖ¸¶¨µÈ¼¶
+      if (m_Abil.Level <= g_Config.nPKProtectLevel) then begin //å¦‚æœå°äºæŒ‡å®šç­‰çº§
         if not BaseObject.m_boPKFlag and (BaseObject.m_Abil.Level >
           g_Config.nPKProtectLevel) and (BaseObject.PKLevel < 2) then begin
           Result := False;
@@ -4002,7 +4035,7 @@ begin
     end;
 
     {
-    //´óÓÚÖ¸¶¨¼¶±ğµÄºìÃûÈËÎï²»¿ÉÒÔÉ±Ö¸¶¨¼¶±ğÎ´ºìÃûµÄÈËÎï¡£
+    //å¤§äºæŒ‡å®šçº§åˆ«çš„çº¢åäººç‰©ä¸å¯ä»¥æ€æŒ‡å®šçº§åˆ«æœªçº¢åçš„äººç‰©ã€‚
     if (PKLevel >= 2) and (m_Abil.Level > 10) then begin
       if (BaseObject.m_Abil.Level <= 10) and (BaseObject.PKLevel < 2) then begin
         Result:=False;
@@ -4010,7 +4043,7 @@ begin
       end;
     end;
 
-    //Ğ¡ÓÚÖ¸¶¨¼¶±ğµÄ·ÇºìÃûÈËÎï²»¿ÉÒÔÉ±Ö¸¶¨¼¶±ğºìÃûÈËÎï¡£
+    //å°äºæŒ‡å®šçº§åˆ«çš„éçº¢åäººç‰©ä¸å¯ä»¥æ€æŒ‡å®šçº§åˆ«çº¢åäººç‰©ã€‚
     if (m_Abil.Level <= 10) and (PKLevel < 2) then begin
       if (BaseObject.PKLevel >= 2) and (BaseObject.m_Abil.Level > 10) then begin
         Result:=False;
@@ -4018,7 +4051,7 @@ begin
       end;
     end;
     }
-    //´óÓÚÖ¸¶¨¼¶±ğµÄºìÃûÈËÎï²»¿ÉÒÔÉ±Ö¸¶¨¼¶±ğÎ´ºìÃûµÄÈËÎï¡£
+    //å¤§äºæŒ‡å®šçº§åˆ«çš„çº¢åäººç‰©ä¸å¯ä»¥æ€æŒ‡å®šçº§åˆ«æœªçº¢åçš„äººç‰©ã€‚
     if (PKLevel >= 2) and (m_Abil.Level > g_Config.nRedPKProtectLevel) then begin
       if (BaseObject.m_Abil.Level <= g_Config.nRedPKProtectLevel) and
         (BaseObject.PKLevel < 2) then begin
@@ -4027,7 +4060,7 @@ begin
       end;
     end;
 
-    //Ğ¡ÓÚÖ¸¶¨¼¶±ğµÄ·ÇºìÃûÈËÎï²»¿ÉÒÔÉ±Ö¸¶¨¼¶±ğºìÃûÈËÎï¡£
+    //å°äºæŒ‡å®šçº§åˆ«çš„éçº¢åäººç‰©ä¸å¯ä»¥æ€æŒ‡å®šçº§åˆ«çº¢åäººç‰©ã€‚
     if (m_Abil.Level <= g_Config.nRedPKProtectLevel) and (PKLevel < 2) then begin
       if (BaseObject.PKLevel >= 2) and (BaseObject.m_Abil.Level >
         g_Config.nRedPKProtectLevel) then begin
@@ -4057,7 +4090,7 @@ begin
       if (m_Master.m_LastHiter = BaseObject) or
         (m_Master.m_ExpHitter = BaseObject) or
         (m_Master.m_TargetCret = BaseObject) then
-        Result := True; {±¦±¦¹¥»÷}
+        Result := True; {å®å®æ”»å‡»}
 
       if BaseObject.m_TargetCret <> nil then begin
         if (BaseObject.m_TargetCret = m_Master) or
@@ -4076,7 +4109,7 @@ begin
       end;
 
       if BaseObject.m_Master = m_Master then
-        Result := False; {¼ì²âÊÇ×Ô¼ºµÄ±¦±¦}
+        Result := False; {æ£€æµ‹æ˜¯è‡ªå·±çš„å®å®}
 
       if BaseObject.m_boHolySeize then
         Result := False;
@@ -4084,7 +4117,7 @@ begin
       if m_Master.m_boSlaveRelax then
         Result := False;
 
-      if BaseObject.m_btRaceServer = RC_PLAYOBJECT then begin {¼ì²âÄ¿±êÊÇÈËÎï}
+      if BaseObject.m_btRaceServer = RC_PLAYOBJECT then begin {æ£€æµ‹ç›®æ ‡æ˜¯äººç‰©}
         //if (m_Master.InSafeZone) or (BaseObject.InSafeZone) then begin
         if BaseObject.InSafeZone then
           Result := False;
@@ -4103,7 +4136,7 @@ begin
       Result := True;
   end
   else begin
-    if m_btRaceServer = RC_PLAYOBJECT then begin {Ôö¼Ó·ÖÉí¼ì²â}
+    if m_btRaceServer = RC_PLAYOBJECT then begin {å¢åŠ åˆ†èº«æ£€æµ‹}
       case m_btAttatckMode of
         HAM_ALL {0}: begin
             if (BaseObject.m_btRaceServer < RC_NPC {10}) or
@@ -4219,7 +4252,7 @@ begin
   if Result then begin
     if (m_btRaceServer = RC_PLAYOBJECT) and (BaseObject.m_btRaceServer = RC_PLAYOBJECT) then begin
       Result := IsProtectTarget(BaseObject);
-      {¼ì²âÈËÎïÊÇ·ñ·ûºÏ¹¥»÷ÒªÇó}
+      {æ£€æµ‹äººç‰©æ˜¯å¦ç¬¦åˆæ”»å‡»è¦æ±‚}
     end;
   end;
   if Result then begin
@@ -4229,24 +4262,24 @@ begin
       (BaseObject.m_Master.m_btRaceServer = RC_PLAYOBJECT) then begin
       if BaseObject.m_Master = Self then begin
         if m_btAttatckMode <> HAM_ALL {0} then
-          Result := False; {¼ì²âÊÇ·ñÊÇ×Ô¼ºµÄ±¦±¦}
+          Result := False; {æ£€æµ‹æ˜¯å¦æ˜¯è‡ªå·±çš„å®å®}
       end
       else begin
         if InSafeZone or BaseObject.InSafeZone then
-          Result := False {¼ì²âÊÇ·ñÊÇÔÚ°²È«Çø}
+          Result := False {æ£€æµ‹æ˜¯å¦æ˜¯åœ¨å®‰å…¨åŒº}
         else
           Result := IsAttackTarget(BaseObject.m_Master);
       end;
     end else
     if (BaseObject <> nil) and (BaseObject.m_btRaceServer = RC_CAMION) and (BaseObject.m_Master = nil) then begin
       if InSafeZone or BaseObject.InSafeZone then
-        Result := False; {¼ì²âÊÇ·ñÊÇÔÚ°²È«Çø}
+        Result := False; {æ£€æµ‹æ˜¯å¦æ˜¯åœ¨å®‰å…¨åŒº}
     end;
   end;
 
 end;
 
-//ÇÜÁúÊÖÄ¿±ê¼ì²â
+//æ“’é¾™æ‰‹ç›®æ ‡æ£€æµ‹
 
 function TBaseObject.IsProperTargetSKILL_55(nLevel: Integer; BaseObject:
   TBaseObject): Boolean;
@@ -4275,7 +4308,7 @@ begin
   end;
 end;
 
-//ÒÆĞĞ»»Î»
+//ç§»è¡Œæ¢ä½
 
 function TBaseObject.IsProperTargetSKILL_56(BaseObject: TBaseObject; nTargetX,
   nTargetY: Integer): Boolean;
@@ -4288,7 +4321,7 @@ begin
   end;
 end;
 
-//÷¼÷ÃÖä
+//éª·é«…å’’
 
 function TBaseObject.IsProperTargetSKILL_54(BaseObject: TBaseObject): Boolean;
 begin
@@ -4307,7 +4340,7 @@ begin
   end;
 end;
 
-//¸´»îÊõ
+//å¤æ´»æœ¯
 
 function TBaseObject.IsProperTargetSKILL_57(BaseObject: TBaseObject): Boolean;
 begin
@@ -4318,7 +4351,7 @@ begin
     if TPlayObject(BaseObject).m_boAllowReAlive then
       Result := True
     else
-      SysMsg('¶Ô·½½ûÖ¹¸´»î.', c_Green, t_Hint);
+      SysMsg('å¯¹æ–¹ç¦æ­¢å¤æ´».', c_Green, t_Hint);
   end;
 end;
 
@@ -4403,7 +4436,7 @@ var
   MapCellInfo: pTMapCellinfo;
   OSObject: pTOSObject;
 begin
-  if m_PEnvir = nil then begin //ĞŞÕı»úÆ÷ÈËË¢»ğÇ½µÄ´íÎó Ò¶Ëæ·çÆ®
+  if m_PEnvir = nil then begin //ä¿®æ­£æœºå™¨äººåˆ·ç«å¢™çš„é”™è¯¯ å¶éšé£é£˜
     Result := True;
     Exit;
   end;
@@ -4444,7 +4477,7 @@ var
   OSObject: pTOSObject;
   bo1D: Boolean;
 begin
-  if Envir = nil then begin //ĞŞÕı»úÆ÷ÈËË¢»ğÇ½µÄ´íÎó
+  if Envir = nil then begin //ä¿®æ­£æœºå™¨äººåˆ·ç«å¢™çš„é”™è¯¯
     Result := True;
     Exit;
   end;
@@ -4594,11 +4627,11 @@ begin
     RefNameColor();
   end;
 end;
-//Àë¿ª¶ÓÎé
+//ç¦»å¼€é˜Ÿä¼
 
 procedure TBaseObject.LeaveGroup;
 begin
-  //SendGroupText(m_sCharName + ' ÍË³öĞ¡×é.');
+  //SendGroupText(m_sCharName + ' é€€å‡ºå°ç»„.');
 
   SendDefMsg(Self, SM_GROUPCANCEL, 0, 0, 0, 0, '');
   if m_btRaceServer = RC_PLAYOBJECT then begin
@@ -4704,7 +4737,7 @@ begin
         AttackTarget.m_WAbil.MaxHP, Integer(Self), '', 200);
       nCheckCode := 603;
 
-      //Âé±Ô
+      //éº»ç—¹
       if not AttackTarget.m_boUnParalysis and m_boParalysis and
         (Random(AttackTarget.m_btAntiPoison + g_Config.nAttackPosionRate {5}) = 0) then
       begin
@@ -4712,7 +4745,7 @@ begin
         AttackTarget.MakePosion(POISON_STONE, g_Config.nAttackPosionTime {5}, 0);
       end;
       nCheckCode := 605;
-      //ºçÄ§£¬ÎüÑª
+      //è™¹é­”ï¼Œå¸è¡€
       if m_nHongMoSuite > 0 then begin
         m_db3B0 := nPower / 1.E2 * m_nHongMoSuite;
         if m_db3B0 >= 2.0 then begin
@@ -4897,32 +4930,32 @@ begin
   
   AddRate := 0;
   if AttackBase.m_btRaceServer = RC_PLAYOBJECT then begin
-    Inc(AddRate, AttackBase.m_btAddAttack);  //ÈËÎï¹¥»÷·½¼ÆËãÉËº¦¼Ó³É
-    if (m_btRaceServer <> RC_PLAYOBJECT) then begin  //ÈËÎï¹¥»÷¹ÖÎïÔö¼ÓĞĞ»áÉËº¦¼Ó³É
+    Inc(AddRate, AttackBase.m_btAddAttack);  //äººç‰©æ”»å‡»æ–¹è®¡ç®—ä¼¤å®³åŠ æˆ
+    if (m_btRaceServer <> RC_PLAYOBJECT) then begin  //äººç‰©æ”»å‡»æ€ªç‰©å¢åŠ è¡Œä¼šä¼¤å®³åŠ æˆ
       if (AttackBase.m_MyGuild <> nil) and (TGuild(AttackBase.m_MyGuild).btLevel > 0) then begin
         if (m_Master = nil) or ((m_Master <> nil) and (m_Master.m_btRaceServer <> RC_PLAYOBJECT)) then
-          Inc(AddRate, TGuild(AttackBase.m_MyGuild).m_btKillMonAttackRate);  //ÈËÎï¹¥»÷·½¼ÆËãÉËº¦¼Ó³É
+          Inc(AddRate, TGuild(AttackBase.m_MyGuild).m_btKillMonAttackRate);  //äººç‰©æ”»å‡»æ–¹è®¡ç®—ä¼¤å®³åŠ æˆ
       end;
     end;
   end;
 
-  //ÈËÎï±»¹¥»÷·½¼ÆËãÉËº¦ÎüÊÕ
+  //äººç‰©è¢«æ”»å‡»æ–¹è®¡ç®—ä¼¤å®³å¸æ”¶
   if m_btRaceServer = RC_PLAYOBJECT then Dec(AddRate, m_btDelDamage);
 
   if (not g_Config.boCloseWuXin) and (AttackBase.m_btWuXin <> 0) and (m_btWuXin <> 0) and CheckWuXinRestraint(AttackBase.m_btWuXin, m_btWuXin) then
   begin
 
     if (m_btRaceServer = RC_PLAYOBJECT) and (AttackBase.m_btRaceServer = RC_PLAYOBJECT) then begin
-      //ÈËÎï¹¥»÷ÈËÎï
+      //äººç‰©æ”»å‡»äººç‰©
       if (AttackBase.m_btAddWuXinAttack > m_btDelWuXinAttack) then
         Inc(AddRate, AttackBase.m_btAddWuXinAttack - m_btDelWuXinAttack);
     end else
     if (m_btRaceServer <> RC_PLAYOBJECT) and (AttackBase.m_btRaceServer = RC_PLAYOBJECT) then begin
-      //ÈËÎï¹¥»÷¹ÖÎï
+      //äººç‰©æ”»å‡»æ€ªç‰©
       Inc(AddRate, AttackBase.m_btAddWuXinAttack);
     end else
     if (m_btRaceServer = RC_PLAYOBJECT) and (AttackBase.m_btRaceServer <> RC_PLAYOBJECT) then begin
-      //¹ÖÎï¹¥»÷ÈËÎï
+      //æ€ªç‰©æ”»å‡»äººç‰©
       if (m_btDelWuXinAttack < 100) then Inc(AddRate, 100 - m_btDelWuXinAttack);
     end;
   end;
@@ -4947,7 +4980,7 @@ begin
             StdItem := UserEngine.GetStdItem(m_UseItems[U_House].HorseItems[I].wIndex);
             if (Stditem <> nil) and (StdItem.NeedIdentify = 1) then begin
               UserItem := HorseItemToUserItem(@m_UseItems[U_House].HorseItems[I], StdItem);
-              AddGameLog(Self, LOG_DELITEM, Stditem.Name, UserItem.MakeIndex, 0, '0', '0', 'ÂíÅÆ', '³Ö¾Ã', @UserItem);
+              AddGameLog(Self, LOG_DELITEM, Stditem.Name, UserItem.MakeIndex, 0, '0', '0', 'é©¬ç‰Œ', 'æŒä¹…', @UserItem);
             end;
             m_UseItems[U_House].HorseItems[I].wIndex := 0;
             TPlayObject(Self).SendUpdateItem(@m_UseItems[U_House]);
@@ -4974,7 +5007,7 @@ begin
             PlayObject.SendDelItems(@m_UseItems[i]);
             StdItem := UserEngine.GetStdItem(m_UseItems[i].wIndex);
             if (Stditem <> nil) and (StdItem.NeedIdentify = 1) then
-              AddGameLog(Self, LOG_DELITEM, Stditem.Name, m_UseItems[i].MakeIndex, 0, '0', '0', '0', '³Ö¾Ã', @m_UseItems[i]);
+              AddGameLog(Self, LOG_DELITEM, Stditem.Name, m_UseItems[i].MakeIndex, 0, '0', '0', '0', 'æŒä¹…', @m_UseItems[i]);
             if (i = U_DRESS) or (i = U_WEAPON) then begin
               bo20 := True;
             end;
@@ -5004,19 +5037,19 @@ end;
 function TBaseObject.GeTBaseObjectInfo(): string;
 begin
   Result := m_sCharName + ' ' +
-    'µØÍ¼:' + m_sMapName + '(' + m_PEnvir.sMapDesc + ') ' +
-    '×ù±ê:' + IntToStr(m_nCurrX) + '/' + IntToStr(m_nCurrY) + ' ' +
-    'µÈ¼¶:' + IntToStr(m_Abil.Level) + ' ' +
-    '¾­Ñé:' + IntToStr(m_Abil.Exp) + ' ' +
-    'ÉúÃüÖµ:' + IntToStr(m_WAbil.HP) + '-' + IntToStr(m_WAbil.MaxHP) + ' ' +
-    'Ä§·¨Öµ:' + IntToStr(m_WAbil.MP) + '-' + IntToStr(m_WAbil.MaxMP) + ' ' +
-    '¹¥»÷Á¦:' + IntToStr(LoWord(m_WAbil.DC)) + '-' + IntToStr(HiWord(m_WAbil.DC)) + ' ' +
-    'Ä§·¨Á¦:' + IntToStr(LoWord(m_WAbil.MC)) + '-' + IntToStr(HiWord(m_WAbil.MC)) + ' ' +
-    'µÀÊõ:' + IntToStr(LoWord(m_WAbil.SC)) + '-' + IntToStr(HiWord(m_WAbil.SC)) + ' ' +
-    '·ÀÓùÁ¦:' + IntToStr(LoWord(m_WAbil.AC)) + '-' + IntToStr(HiWord(m_WAbil.AC)) + ' ' +
-    'Ä§·ÀÁ¦:' + IntToStr(LoWord(m_WAbil.MAC)) + '-' + IntToStr(HiWord(m_WAbil.MAC)) + ' ' +
-    '×¼È·:' + IntToStr(m_btHitPoint) + ' ' +
-    'Ãô½İ:' + IntToStr(m_btSpeedPoint);
+    'åœ°å›¾:' + m_sMapName + '(' + m_PEnvir.sMapDesc + ') ' +
+    'åº§æ ‡:' + IntToStr(m_nCurrX) + '/' + IntToStr(m_nCurrY) + ' ' +
+    'ç­‰çº§:' + IntToStr(m_Abil.Level) + ' ' +
+    'ç»éªŒ:' + IntToStr(m_Abil.Exp) + ' ' +
+    'ç”Ÿå‘½å€¼:' + IntToStr(m_WAbil.HP) + '-' + IntToStr(m_WAbil.MaxHP) + ' ' +
+    'é­”æ³•å€¼:' + IntToStr(m_WAbil.MP) + '-' + IntToStr(m_WAbil.MaxMP) + ' ' +
+    'æ”»å‡»åŠ›:' + IntToStr(LoWord(m_WAbil.DC)) + '-' + IntToStr(HiWord(m_WAbil.DC)) + ' ' +
+    'é­”æ³•åŠ›:' + IntToStr(LoWord(m_WAbil.MC)) + '-' + IntToStr(HiWord(m_WAbil.MC)) + ' ' +
+    'é“æœ¯:' + IntToStr(LoWord(m_WAbil.SC)) + '-' + IntToStr(HiWord(m_WAbil.SC)) + ' ' +
+    'é˜²å¾¡åŠ›:' + IntToStr(LoWord(m_WAbil.AC)) + '-' + IntToStr(HiWord(m_WAbil.AC)) + ' ' +
+    'é­”é˜²åŠ›:' + IntToStr(LoWord(m_WAbil.MAC)) + '-' + IntToStr(HiWord(m_WAbil.MAC)) + ' ' +
+    'å‡†ç¡®:' + IntToStr(m_btHitPoint) + ' ' +
+    'æ•æ·:' + IntToStr(m_btSpeedPoint);
 end;
 
 function TBaseObject.GetBackPosition(var nX, nY: Integer): Boolean;
@@ -5092,7 +5125,7 @@ begin
     if nOldCharStatus <> m_nCharStatus then
       StatusChanged();
     if m_btRaceServer = RC_PLAYOBJECT then begin
-      SysMsg(sYouPoisoned {ÖĞ¶¾ÁË.}, c_Red, t_Hint);
+      SysMsg(sYouPoisoned {ä¸­æ¯’äº†.}, c_Red, t_Hint);
     end;
     Result := True;
   end;
@@ -5296,7 +5329,7 @@ begin
     SysMsg(format(g_sDefenceUpTime, [nSec]), c_Green, t_Hint)
   else
     SysMsg(format(g_sDefenceDownTime, [nSec]), c_Green, t_Hint);
-  //SysMsg('·ÀÓùÁ¦Ôö¼Ó' + IntToStr(nSec) + 'Ãë',c_Green,t_Hint);
+  //SysMsg('é˜²å¾¡åŠ›å¢åŠ ' + IntToStr(nSec) + 'ç§’',c_Green,t_Hint);
   RecalcAbilitys();
   SendAbility;
 end;
@@ -5321,13 +5354,13 @@ begin
     SysMsg(format(g_sMagDefenceUpTime, [nSec]), c_Green, t_Hint)
   else
     SysMsg(format(g_sMagDefenceDownTime, [nSec]), c_Green, t_Hint);
-  //  SysMsg('¿¹Ä§·¨Á¦Ôö¼Ó' + IntToStr(nSec) + 'Ãë',c_Green,t_Hint);
+  //  SysMsg('æŠ—é­”æ³•åŠ›å¢åŠ ' + IntToStr(nSec) + 'ç§’',c_Green,t_Hint);
   //m_WABil.MP := 10;
   RecalcAbilitys();
   SendAbility;
 end;
 
-//Ä§·¨¶Ü
+//é­”æ³•ç›¾
 
 function TBaseObject.MagBubbleDefenceUp(nLevel, nSec: Integer; nType: Byte): Boolean;
 var
@@ -5477,27 +5510,27 @@ begin
         if m_wStatusArrValue[0 {0x218}] > 0 then begin
           m_dwStatusArrTimeOutTick[0 {0x220}] := GetTickCount + LongWord(nSec * 1000);
           if m_boDC then
-            SysMsg('¹¥»÷Á¦Ôö¼Ó' + IntToStr(nSec) + 'Ãë', c_Green, t_Hint)
+            SysMsg('æ”»å‡»åŠ›å¢åŠ ' + IntToStr(nSec) + 'ç§’', c_Green, t_Hint)
           else
-            SysMsg('¹¥»÷Á¦¼õÉÙ' + IntToStr(nSec) + 'Ãë', c_Green, t_Hint);
+            SysMsg('æ”»å‡»åŠ›å‡å°‘' + IntToStr(nSec) + 'ç§’', c_Green, t_Hint);
           ChangeStatusMode(STATUS_DC, True);
           bo06 := True;
         end;
         if m_wStatusArrValue[1 {0x219}] > 0 then begin
           m_dwStatusArrTimeOutTick[1 {0x224}] := GetTickCount + LongWord(nSec * 1000);
           if m_boMC then
-            SysMsg('Ä§·¨Á¦Ôö¼Ó' + IntToStr(nSec) + 'Ãë', c_Green, t_Hint)
+            SysMsg('é­”æ³•åŠ›å¢åŠ ' + IntToStr(nSec) + 'ç§’', c_Green, t_Hint)
           else
-            SysMsg('Ä§·¨Á¦¼õÉÙ' + IntToStr(nSec) + 'Ãë', c_Green, t_Hint);
+            SysMsg('é­”æ³•åŠ›å‡å°‘' + IntToStr(nSec) + 'ç§’', c_Green, t_Hint);
           ChangeStatusMode(STATUS_MC, True);
           bo06 := True;
         end;
         if m_wStatusArrValue[2 {0x21A}] > 0 then begin
           m_dwStatusArrTimeOutTick[2 {0x228}] := GetTickCount + LongWord(nSec * 1000);
           if m_boSC then
-            SysMsg('µÀÊõÔö¼Ó' + IntToStr(nSec) + 'Ãë', c_Green, t_Hint)
+            SysMsg('é“æœ¯å¢åŠ ' + IntToStr(nSec) + 'ç§’', c_Green, t_Hint)
           else
-            SysMsg('µÀÊõ¼õÉÙ' + IntToStr(nSec) + 'Ãë', c_Green, t_Hint);
+            SysMsg('é“æœ¯å‡å°‘' + IntToStr(nSec) + 'ç§’', c_Green, t_Hint);
           ChangeStatusMode(STATUS_SC, True);
           bo06 := True;
         end;
@@ -5590,7 +5623,7 @@ function TBaseObject.IsProperFriend(BaseObject: TBaseObject): Boolean;
     I: Integer;
   begin
     Result := False;
-    if cret.m_btRaceServer = RC_PLAYOBJECT then begin //´ë»óÀÌ »ç¶÷ÀÎ °æ¿ì¸¸
+    if cret.m_btRaceServer = RC_PLAYOBJECT then begin //æªæƒ‘æ è¤æ©ç‰¢ ç‰ˆå¿«çˆ¶
       case m_btAttatckMode of
         HAM_ALL: Result := True;
         HAM_PEACE: Result := True;
@@ -5663,7 +5696,7 @@ begin
 
   if m_AttackState = as_Close then Exit;
   if m_AttackState = as_Dare then Exit;
-  {if m_btRaceServer = RC_PLAYMOSTER then begin //·ÖÉí¼ì²â
+  {if m_btRaceServer = RC_PLAYMOSTER then begin //åˆ†èº«æ£€æµ‹
     if m_Master = nil then begin
       if (BaseObject.m_btRaceServer >= RC_ANIMAL) then
         Result := True;
@@ -6003,7 +6036,7 @@ begin
   if (m_WAbil.Weight + nWeight) <= m_WAbil.MaxWeight then
     Result := True;
 end; }
-//ÊÇ·ñ¶ÓÎé³ÉÔ±
+//æ˜¯å¦é˜Ÿä¼æˆå‘˜
 
 function TBaseObject.IsGroupMember(Target: TBaseObject): Boolean;
 var
@@ -6123,7 +6156,7 @@ begin
   MapItem.Count := nGold;
   MapItem.Looks := GetGoldShape(nGold);
   MapItem.OfBaseObject := GoldOfCreat;
-  //Jason ¸ü¸Äµ±ÎïÆ·ËùÓĞÕß²»ÎªÈËÎïÊ±,ÉèÖÃ¸ÃÎïÆ·Îª¹«¹²ÎïÆ·
+  //Jason æ›´æ”¹å½“ç‰©å“æ‰€æœ‰è€…ä¸ä¸ºäººç‰©æ—¶,è®¾ç½®è¯¥ç‰©å“ä¸ºå…¬å…±ç‰©å“
   if (GoldOfCreat <> nil) and (GoldOfCreat.m_btRaceServer <> RC_PLAYOBJECT) then
     MapItem.OfBaseObject := nil;
   MapItem.dwCanPickUpTick := GetTickCount();
@@ -6139,9 +6172,9 @@ begin
     SendRefMsg(RM_ITEMSHOW, MapItem.Looks, Integer(MapItem), nX, nY, MapItem.Name);
     if m_btRaceServer = RC_PLAYOBJECT then begin
       if boFalg then
-        s20 := 'µôÂä'
+        s20 := 'æ‰è½'
       else
-        s20 := '¶ªÆú';
+        s20 := 'ä¸¢å¼ƒ';
       if g_boGameLogGold then
         AddGameLog(Self, LOG_GOLDCHANGED, sSTRING_GOLDNAME, 0, m_nGold, '0', '-', IntToStr(nGold), s20, nil);
     end;
@@ -6244,7 +6277,7 @@ begin
   end;
   if m_btRaceServer = RC_PLAYOBJECT then begin
     with Self as TPlayObject do begin
-      if boDeadliness and (m_btDeadliness > 0) and (Random(100) < m_btDeadliness) then begin       //ÖÂÃüÒ»»÷
+      if boDeadliness and (m_btDeadliness > 0) and (Random(100) < m_btDeadliness) then begin       //è‡´å‘½ä¸€å‡»
         Result := Result * 2;
         SendRefMsg(RM_SHOWEFFECT, Effect_DEADLINESS, Integer(Self), m_nCurrX, m_nCurrY, '');
       end;
@@ -6262,7 +6295,7 @@ begin
   end;
 end;
 
-procedure TBaseObject.DamageHealth(nDamage: Integer); //¼õÑª
+procedure TBaseObject.DamageHealth(nDamage: Integer); //å‡è¡€
 var
   nSpdam: Integer;
 begin
@@ -6326,7 +6359,7 @@ begin
   end;
 end;
 
-function TBaseObject.CharPushedcbo(nDir, nPushCount: Integer): Integer; //³å×²ÈË
+function TBaseObject.CharPushedcbo(nDir, nPushCount: Integer): Integer; //å†²æ’äºº
 var
   i, nX, nY, olddir, nBackDir: Integer;
 begin
@@ -6357,7 +6390,7 @@ begin
     m_btDirection := olddir;
 end;
 
-function TBaseObject.CharPushed(nDir, nPushCount: Integer): Integer; //³å×²ÈË
+function TBaseObject.CharPushed(nDir, nPushCount: Integer): Integer; //å†²æ’äºº
 var
   i, nX, nY, olddir, {oldx, oldy,} nBackDir: Integer;
 begin
@@ -6453,7 +6486,7 @@ begin
     MapItem.btIdx := m_PEnvir.m_btFBIndex;
 
     MapItem.Looks := StdItem.Looks;
-    if StdItem.StdMode = tm_Dice then begin //ÁÖ»çÀ§, ¸ñÀç
+    if StdItem.StdMode = tm_Dice then begin //æ—è¤å›°, æ ¼çŠ
       MapItem.Looks := GetRandomLook(MapItem.Looks, StdItem.Shape);
     end;
     MapItem.AniCount := StdItem.AniCount;
@@ -6473,17 +6506,17 @@ begin
     if pr = MapItem then begin
       SendRefMsg(RM_ITEMSHOW, MapItem.Looks, Integer(MapItem), dx, dy, MapItem.Name);
       if boDieDrop then
-        logcap := 'µôÂä'
+        logcap := 'æ‰è½'
       else
-        logcap := '¶ªÆú';
+        logcap := 'ä¸¢å¼ƒ';
 
       if StdItem.NeedIdentify = 1 then
         AddGameLog(Self, LOG_DELITEM, Stditem.Name, Useritem.MakeIndex, UserItem.Dura, '0',
           '0', BoolToIntStr(m_btRaceServer = RC_PLAYOBJECT), logcap, Useritem);
       if boDieDrop and (StdItem.Rule.Rule[RULE_DOWNHINT]) and (DropCreat <> nil) and (DropCreat.m_btRaceServer <> RC_PLAYOBJECT) then
       begin
-        logcap := '[#6FFFF/8#6´«ÎÅ#5]£º[#6FFFF/8#6' + FilterShowName(DropCreat.m_sCharName) + '#5]ÔÚ[';
-        logcap := logcap + m_PEnvir.sMapDesc + '(' + IntToStr(dx) + ',' + IntToStr(dy) + ')]±»Õ¶É±ÁË£¬µôÂäÁËÒ»¼ş±¦±´ ';
+        logcap := '[#6FFFF/8#6ä¼ é—»#5]ï¼š[#6FFFF/8#6' + FilterShowName(DropCreat.m_sCharName) + '#5]åœ¨[';
+        logcap := logcap + m_PEnvir.sMapDesc + '(' + IntToStr(dx) + ',' + IntToStr(dy) + ')]è¢«æ–©æ€äº†ï¼Œæ‰è½äº†ä¸€ä»¶å®è´ ';
         logcap := logcap + '{' + IntToStr(SetSayItem(UserItem)) + '/';
         logcap := logcap + IntToStr(UserItem.wIndex) + '/';
         logcap := logcap + IntToStr(UserItem.MakeIndex) + '}';
@@ -6533,7 +6566,7 @@ begin
   if (m_Master <> nil) and not m_Master.m_boObMode then begin
     Result := Result + '(' + m_Master.m_sCharName + ')';
   end else begin
-    if g_Config.boShowMonLevel and (not (m_btRaceServer in [RC_BOX, RC_GUARD, 55{Á·¹¦Ê¦}, RC_ARCHERGUARD, 110, 111])) then begin
+    if g_Config.boShowMonLevel and (not (m_btRaceServer in [RC_BOX, RC_GUARD, 55{ç»ƒåŠŸå¸ˆ}, RC_ARCHERGUARD, 110, 111])) then begin
       sShowName := g_Config.sShowMonLevelFormat;
       sShowName := AnsiReplaceText(sShowName, '%d', IntToStr(m_Abil.Level));
       sShowName := AnsiReplaceText(sShowName, '%s', Result);
@@ -6542,7 +6575,7 @@ begin
   end;
 end;
 
-//Ë¢ĞÂÈËÎï×´Ì¬ĞÅÏ¢
+//åˆ·æ–°äººç‰©çŠ¶æ€ä¿¡æ¯
 
 procedure TBaseObject.RecalcAbilitys;
 var
@@ -6668,8 +6701,8 @@ begin
   //m_dwItemWuXinExpRate := 0;
 
   if m_btRaceServer = RC_PLAYOBJECT then begin
-    if g_SetItemsArr <> nil then  //Ì××°ÏµÍ³
-      FillChar(g_SetItemsArr[0], Length(g_SetItemsArr), False);  //Ì××°ÏµÍ³
+    if g_SetItemsArr <> nil then  //å¥—è£…ç³»ç»Ÿ
+      FillChar(g_SetItemsArr[0], Length(g_SetItemsArr), False);  //å¥—è£…ç³»ç»Ÿ
     boSetItem := False;  
     for i := Low(THumanUseItems) to High(THumanUseItems) do begin
       if (m_UseItems[i].wIndex <= 0) or ((m_UseItems[i].Dura <= 0) and (i <> U_HOUSE)) then Continue;
@@ -6677,7 +6710,7 @@ begin
       StdItem := UserEngine.GetStdItem(m_UseItems[i].wIndex);
       if StdItem = nil then Continue;
 
-      //Ì××°ÏµÍ³ begin
+      //å¥—è£…ç³»ç»Ÿ begin
       if (StdItem.SetItemList <> nil) and (g_SetItemsArr <> nil) then begin
         for k := 0 to StdItem.SetItemList.Count - 1 do begin
           nIndex := Integer(StdItem.SetItemList[K]);
@@ -6687,7 +6720,7 @@ begin
           end;
         end;
       end;
-      //Ì××°ÏµÍ³ end
+      //å¥—è£…ç³»ç»Ÿ end
 
       if (sm_ArmingStrong in StdItem.StdModeEx) or (StdItem.StdMode = tm_Light) then begin
         Inc(nStrengthenCount, m_UseItems[i].Value.StrengthenInfo.btStrengthenCount);
@@ -6705,7 +6738,7 @@ begin
           CheckSource := StdItem.Shape;
         end;
 
-        //ĞÂÔö¿ªÊ¼
+        //æ–°å¢å¼€å§‹
         case CheckSource of
           111: begin
               m_wStatusTimeArr[STATE_TRANSPARENT {8 0x70}] := 6 * 10 * 1000;
@@ -6765,71 +6798,71 @@ begin
           143: m_boUnMagicShield := True;
           144: m_boUnRevival := True;
           145: m_boGuildMove := True;
-          150: begin //Âé±Ô»¤Éí
+          150: begin //éº»ç—¹æŠ¤èº«
               m_boParalysis := True;
               m_boMagicShield := True;
             end;
-          151: begin //Âé±Ô»ğÇò
+          151: begin //éº»ç—¹ç«çƒ
               m_boParalysis := True;
               m_boFlameRing := True;
             end;
-          152: begin //Âé±Ô·ÀÓù
+          152: begin //éº»ç—¹é˜²å¾¡
               m_boParalysis := True;
               m_boRecoveryRing := True;
             end;
-          153: begin //Âé±Ô¸ºÔØ
+          153: begin //éº»ç—¹è´Ÿè½½
               m_boParalysis := True;
               m_boMuscleRing := True;
             end;
-          154: begin //»¤Éí»ğÇò
+          154: begin //æŠ¤èº«ç«çƒ
               m_boMagicShield := True;
               m_boFlameRing := True;
             end;
-          155: begin //»¤Éí·ÀÓù
+          155: begin //æŠ¤èº«é˜²å¾¡
               m_boMagicShield := True;
               m_boRecoveryRing := True;
             end;
-          156: begin //»¤Éí¸ºÔØ
+          156: begin //æŠ¤èº«è´Ÿè½½
               m_boMagicShield := True;
               m_boMuscleRing := True;
             end;
-          157: begin //´«ËÍÂé±Ô
+          157: begin //ä¼ é€éº»ç—¹
               m_boTeleport := True;
               m_boParalysis := True;
             end;
-          158: begin //´«ËÍ»¤Éí
+          158: begin //ä¼ é€æŠ¤èº«
               m_boTeleport := True;
               m_boMagicShield := True;
             end;
-          159: begin //´«ËÍÌ½²â
+          159: begin //ä¼ é€æ¢æµ‹
               m_boTeleport := True;
               m_boProbeNecklace := True;
             end;
-          160: begin //´«ËÍ¸´»î
+          160: begin //ä¼ é€å¤æ´»
               m_boTeleport := True;
               m_boRevival := True;
             end;
-          161: begin //Âé±Ô¸´»î
+          161: begin //éº»ç—¹å¤æ´»
               m_boParalysis := True;
               m_boRevival := True;
             end;
-          162: begin //»¤Éí¸´»î
+          162: begin //æŠ¤èº«å¤æ´»
               m_boMagicShield := True;
               m_boRevival := True;
             end;
-          163: begin //·ÀÂé´«ËÍ
+          163: begin //é˜²éº»ä¼ é€
               m_boUnParalysis := True;
               m_boTeleport := True;
             end;
-          {164: begin //·À¶¾´«ËÍ
+          {164: begin //é˜²æ¯’ä¼ é€
               m_boTeleport := True;
             end;}
           170: m_boAngryRing := True;
           171: m_boNoDropItem := True;
           172: m_boNoDropUseItem := True;
-          //PK ËÀÍöµô¾­Ñé
+          //PK æ­»äº¡æ‰ç»éªŒ
           180: m_dwPKDieLostExp := StdItem.DuraMax * g_Config.dwPKDieLostExpRate;
-          181: m_nPKDieLostLevel := StdItem.DuraMax div g_Config.nPKDieLostLevelRate; //PK ËÀÍöµôµÈ¼¶
+          181: m_nPKDieLostLevel := StdItem.DuraMax div g_Config.nPKDieLostLevelRate; //PK æ­»äº¡æ‰ç­‰çº§
           182: begin
               m_boExpItem := True;
               m_rExpItem := m_rExpItem + (m_UseItems[i].DuraMax /
@@ -6842,7 +6875,7 @@ begin
             end;
         end;
       end;
-      //ĞÂÔö½áÊø
+      //æ–°å¢ç»“æŸ
 
       if (i = U_RIGHTHAND) then begin
         if StdItem.Shape > 0 then
@@ -6854,16 +6887,16 @@ begin
         if StdItem.AniCount > 0 then
           m_btDressEffType := StdItem.AniCount;
       end
-      else if i = U_BUJUK then begin //´«ËÍ·û
+      else if i = U_BUJUK then begin //ä¼ é€ç¬¦
         if (StdItem.StdMode = tm_Amulet) and (StdItem.Shape = 6) then begin
           m_boTeleportEx := True;
         end;
       end
-      {else if i = U_VIP then begin //´«ËÍ·û
+      {else if i = U_VIP then begin //ä¼ é€ç¬¦
         m_nItemKickMonExp := StdItem.AniCount;
         m_dwItemWuXinExpRate := StdItem.Source;
       end  }
-      else if i = U_HOUSE then begin //×øÆïĞÅÏ¢
+      else if i = U_HOUSE then begin //åéª‘ä¿¡æ¯
 {$IF Var_Free = 1}
         m_btHorseType := 0;
         m_boHorseHit := False;
@@ -6876,7 +6909,7 @@ begin
 
     end; //for end
 
-    //Ì××°ÏµÍ³ begin
+    //å¥—è£…ç³»ç»Ÿ begin
     if boSetItem and (g_SetItemsArr <> nil) then begin
       for I := Low(g_SetItemsArr) to High(g_SetItemsArr) do begin
         if g_SetItemsArr[I] and (I >= 0) and (I < g_SetItemsList.Count) then begin
@@ -6979,32 +7012,32 @@ begin
               if SetItems.Value[K] <= 0 then Continue;
               Try
                 case K of
-                  0: Inc(m_AddAbil.AC2, SetItems.Value[K]); //·ÀÓù
-                  1: Inc(m_AddAbil.MAC2, SetItems.Value[K]); //Ä§Óù
-                  2: Inc(m_AddAbil.DC2, SetItems.Value[K]); //¹¥»÷
-                  3: Inc(m_AddAbil.MC2, SetItems.Value[K]); //Ä§·¨
-                  4: Inc(m_AddAbil.SC2, SetItems.Value[K]); //µÀÊõ
-                  5: Inc(m_AddAbil.wHitPoint, SetItems.Value[K]); //×¼È·
-                  6: Inc(m_AddAbil.wSpeedPoint, SetItems.Value[K]); //Ãô½İ
-                  7: Inc(m_AddAbil.HP, SetItems.Value[K]); //ÉúÃüÖµ
-                  8: Inc(m_AddAbil.MP, SetItems.Value[K]); //Ä§·¨Öµ
-                  9: m_AddAbil.AC2 := Round(SetItems.Value[K] / 10 * m_AddAbil.AC2); //·ÀÓù±¶Êı
-                  10: m_AddAbil.MAC2 := Round(SetItems.Value[K] / 10 * m_AddAbil.MAC2); //Ä§Óù±¶Êı
-                  11: m_AddAbil.DC2 := Round(SetItems.Value[K] / 10 * m_AddAbil.DC2); //¹¥»÷±¶Êı
-                  12: m_AddAbil.MC2 := Round(SetItems.Value[K] / 10 * m_AddAbil.MC2); //Ä§·¨±¶Êı
-                  13: m_AddAbil.SC2 := Round(SetItems.Value[K] / 10 * m_AddAbil.SC2); //µÀÊõ±¶Êı
-                  14: Inc(m_AddAbil.wHealthRecover, SetItems.Value[K]); //ÌåÁ¦»Ö¸´
-                  15: Inc(m_AddAbil.wSpellRecover, SetItems.Value[K]); //Ä§·¨»Ö¸´
-                  16: Inc(m_AddAbil.wPoisonRecover, SetItems.Value[K]); //ÖĞ¶¾»Ö¸´
-                  17: Inc(m_AddAbil.wAntiMagic, SetItems.Value[K]); //Ä§·¨¶ã±Ü
-                  18: Inc(m_AddAbil.wAntiPoison, SetItems.Value[K]); //¶¾Îï¶ã±Ü
-                  19: Inc(m_AddAbil.wAddAttack, SetItems.Value[K]); //ÉËº¦¼Ó³É
-                  20: Inc(m_AddAbil.wDelDamage, SetItems.Value[K]); //ÉËº¦ÎüÊÕ
-                  21: Inc(m_AddAbil.btDeadliness, SetItems.Value[K]); //ÖÂÃüÒ»»÷
-                  22: Inc(m_nSetItemExp, SetItems.Value[K]); //¾­Ñé±¶Êı
-                  23: m_boParalysis := True; //Âé±Ô
-                  24: m_boMagicShield := True; //»¤Éí
-                  25: m_boRevival := True; //¸´»î
+                  0: Inc(m_AddAbil.AC2, SetItems.Value[K]); //é˜²å¾¡
+                  1: Inc(m_AddAbil.MAC2, SetItems.Value[K]); //é­”å¾¡
+                  2: Inc(m_AddAbil.DC2, SetItems.Value[K]); //æ”»å‡»
+                  3: Inc(m_AddAbil.MC2, SetItems.Value[K]); //é­”æ³•
+                  4: Inc(m_AddAbil.SC2, SetItems.Value[K]); //é“æœ¯
+                  5: Inc(m_AddAbil.wHitPoint, SetItems.Value[K]); //å‡†ç¡®
+                  6: Inc(m_AddAbil.wSpeedPoint, SetItems.Value[K]); //æ•æ·
+                  7: Inc(m_AddAbil.HP, SetItems.Value[K]); //ç”Ÿå‘½å€¼
+                  8: Inc(m_AddAbil.MP, SetItems.Value[K]); //é­”æ³•å€¼
+                  9: m_AddAbil.AC2 := Round(SetItems.Value[K] / 10 * m_AddAbil.AC2); //é˜²å¾¡å€æ•°
+                  10: m_AddAbil.MAC2 := Round(SetItems.Value[K] / 10 * m_AddAbil.MAC2); //é­”å¾¡å€æ•°
+                  11: m_AddAbil.DC2 := Round(SetItems.Value[K] / 10 * m_AddAbil.DC2); //æ”»å‡»å€æ•°
+                  12: m_AddAbil.MC2 := Round(SetItems.Value[K] / 10 * m_AddAbil.MC2); //é­”æ³•å€æ•°
+                  13: m_AddAbil.SC2 := Round(SetItems.Value[K] / 10 * m_AddAbil.SC2); //é“æœ¯å€æ•°
+                  14: Inc(m_AddAbil.wHealthRecover, SetItems.Value[K]); //ä½“åŠ›æ¢å¤
+                  15: Inc(m_AddAbil.wSpellRecover, SetItems.Value[K]); //é­”æ³•æ¢å¤
+                  16: Inc(m_AddAbil.wPoisonRecover, SetItems.Value[K]); //ä¸­æ¯’æ¢å¤
+                  17: Inc(m_AddAbil.wAntiMagic, SetItems.Value[K]); //é­”æ³•èº²é¿
+                  18: Inc(m_AddAbil.wAntiPoison, SetItems.Value[K]); //æ¯’ç‰©èº²é¿
+                  19: Inc(m_AddAbil.wAddAttack, SetItems.Value[K]); //ä¼¤å®³åŠ æˆ
+                  20: Inc(m_AddAbil.wDelDamage, SetItems.Value[K]); //ä¼¤å®³å¸æ”¶
+                  21: Inc(m_AddAbil.btDeadliness, SetItems.Value[K]); //è‡´å‘½ä¸€å‡»
+                  22: Inc(m_nSetItemExp, SetItems.Value[K]); //ç»éªŒå€æ•°
+                  23: m_boParalysis := True; //éº»ç—¹
+                  24: m_boMagicShield := True; //æŠ¤èº«
+                  25: m_boRevival := True; //å¤æ´»
 
                 end;
               Except
@@ -7014,22 +7047,22 @@ begin
         end;
       end;
     end;
-    //Ì××°ÏµÍ³ end       
+    //å¥—è£…ç³»ç»Ÿ end       
   end;
 
   {
-  Inc(m_btAddAttack, m_AddAbil.wAddAttack); //ÉËº¦¼Ó³É
-  Inc(m_btDelDamage, m_AddAbil.wDelDamage); //ÉËº¦ÎüÊÕ
-  Inc(m_btAddWuXinAttack, m_AddAbil.wAddWuXinAttack); //ÎåĞĞ¹¥»÷
-  Inc(m_btDelWuXinAttack, m_AddAbil.wDelWuXinAttack); //ÎåĞĞ·ÀÓù
-  Inc(m_btHitPoint, m_AddAbil.wHitPoint); //×¼È·
-  Inc(m_btSpeedPoint, m_AddAbil.wSpeedPoint); //Ãô½İ
-  Inc(m_btAntiPoison, m_AddAbil.wAntiPoison); //       //¶¾Îï¶ã±Ü
-  Inc(m_nPoisonRecover, m_AddAbil.wPoisonRecover); //¶¾Îï»Ö¸´
-  Inc(m_nHealthRecover, m_AddAbil.wHealthRecover); //ÌåÁ¦»Ö¸´
-  Inc(m_nSpellRecover, m_AddAbil.wSpellRecover); //Ä§·¨»Ö¸´
-  Inc(m_nAntiMagic, m_AddAbil.wAntiMagic); //Ä§·¨¶ã±Ü
-  Inc(m_nLuck, m_AddAbil.btLuck); //ĞÒÔË
+  Inc(m_btAddAttack, m_AddAbil.wAddAttack); //ä¼¤å®³åŠ æˆ
+  Inc(m_btDelDamage, m_AddAbil.wDelDamage); //ä¼¤å®³å¸æ”¶
+  Inc(m_btAddWuXinAttack, m_AddAbil.wAddWuXinAttack); //äº”è¡Œæ”»å‡»
+  Inc(m_btDelWuXinAttack, m_AddAbil.wDelWuXinAttack); //äº”è¡Œé˜²å¾¡
+  Inc(m_btHitPoint, m_AddAbil.wHitPoint); //å‡†ç¡®
+  Inc(m_btSpeedPoint, m_AddAbil.wSpeedPoint); //æ•æ·
+  Inc(m_btAntiPoison, m_AddAbil.wAntiPoison); //       //æ¯’ç‰©èº²é¿
+  Inc(m_nPoisonRecover, m_AddAbil.wPoisonRecover); //æ¯’ç‰©æ¢å¤
+  Inc(m_nHealthRecover, m_AddAbil.wHealthRecover); //ä½“åŠ›æ¢å¤
+  Inc(m_nSpellRecover, m_AddAbil.wSpellRecover); //é­”æ³•æ¢å¤
+  Inc(m_nAntiMagic, m_AddAbil.wAntiMagic); //é­”æ³•èº²é¿
+  Inc(m_nLuck, m_AddAbil.btLuck); //å¹¸è¿
   Inc(m_btDeadliness, m_AddAbil.btDeadliness);
 
   sItemNameL, sItemNameR
@@ -7105,12 +7138,12 @@ begin
       StatusChanged();
     end;
   end;
-  //01-20 Ôö¼Ó´ËĞĞ£¬Ö»ÓĞÀàĞÍÎªÈËÎïµÄ½ÇÉ«²ÅÖØĞÂ¼ÆËã¹¥»÷Ãô½İ
+  //01-20 å¢åŠ æ­¤è¡Œï¼Œåªæœ‰ç±»å‹ä¸ºäººç‰©çš„è§’è‰²æ‰é‡æ–°è®¡ç®—æ”»å‡»æ•æ·
   if (m_btRaceServer = RC_PLAYOBJECT) then
     TPlayObject(Self).RecalcHitSpeed();
 
 
-  //·¢ËÍ¹âÕÕĞ§¹û,ÒÑÈ¡Ïû
+  //å‘é€å…‰ç…§æ•ˆæœ,å·²å–æ¶ˆ
   {nOldLight := m_nLight;
   if (m_UseItems[U_RIGHTHAND].wIndex > 0) and (m_UseItems[U_RIGHTHAND].Dura > 0)
     then
@@ -7119,22 +7152,22 @@ begin
     m_nLight := 0;
   if nOldLight <> m_nLight then
     SendRefMsg(RM_CHANGELIGHT, 0, 0, 0, 0, ''); }
-  Inc(m_btAddAttack, m_AddAbil.wAddAttack); //ÉËº¦¼Ó³É
-  Inc(m_btDelDamage, m_AddAbil.wDelDamage); //ÉËº¦ÎüÊÕ
-  Inc(m_btAddWuXinAttack, m_AddAbil.wAddWuXinAttack); //ÎåĞĞ¹¥»÷
-  Inc(m_btDelWuXinAttack, m_AddAbil.wDelWuXinAttack); //ÎåĞĞ·ÀÓù
-  Inc(m_btHitPoint, m_AddAbil.wHitPoint); //×¼È·
-  Inc(m_btSpeedPoint, m_AddAbil.wSpeedPoint); //Ãô½İ
-  Inc(m_btAntiPoison, m_AddAbil.wAntiPoison); //       //¶¾Îï¶ã±Ü
-  Inc(m_nPoisonRecover, m_AddAbil.wPoisonRecover); //¶¾Îï»Ö¸´
-  Inc(m_nHealthRecover, m_AddAbil.wHealthRecover); //ÌåÁ¦»Ö¸´
-  Inc(m_nSpellRecover, m_AddAbil.wSpellRecover); //Ä§·¨»Ö¸´
-  Inc(m_nAntiMagic, m_AddAbil.wAntiMagic); //Ä§·¨¶ã±Ü
-  Inc(m_nLuck, m_AddAbil.btLuck); //ĞÒÔË
+  Inc(m_btAddAttack, m_AddAbil.wAddAttack); //ä¼¤å®³åŠ æˆ
+  Inc(m_btDelDamage, m_AddAbil.wDelDamage); //ä¼¤å®³å¸æ”¶
+  Inc(m_btAddWuXinAttack, m_AddAbil.wAddWuXinAttack); //äº”è¡Œæ”»å‡»
+  Inc(m_btDelWuXinAttack, m_AddAbil.wDelWuXinAttack); //äº”è¡Œé˜²å¾¡
+  Inc(m_btHitPoint, m_AddAbil.wHitPoint); //å‡†ç¡®
+  Inc(m_btSpeedPoint, m_AddAbil.wSpeedPoint); //æ•æ·
+  Inc(m_btAntiPoison, m_AddAbil.wAntiPoison); //       //æ¯’ç‰©èº²é¿
+  Inc(m_nPoisonRecover, m_AddAbil.wPoisonRecover); //æ¯’ç‰©æ¢å¤
+  Inc(m_nHealthRecover, m_AddAbil.wHealthRecover); //ä½“åŠ›æ¢å¤
+  Inc(m_nSpellRecover, m_AddAbil.wSpellRecover); //é­”æ³•æ¢å¤
+  Inc(m_nAntiMagic, m_AddAbil.wAntiMagic); //é­”æ³•èº²é¿
+  Inc(m_nLuck, m_AddAbil.btLuck); //å¹¸è¿
   Inc(m_btDeadliness, m_AddAbil.btDeadliness);
 
-  m_nHitSpeed := m_AddAbil.nHitSpeed; //¹¥»÷ËÙ¶È
-  m_nItemExp := m_AddAbil.btExpRate; //×°±¸¾­Ñé¼Ó³É
+  m_nHitSpeed := m_AddAbil.nHitSpeed; //æ”»å‡»é€Ÿåº¦
+  m_nItemExp := m_AddAbil.btExpRate; //è£…å¤‡ç»éªŒåŠ æˆ
 
   {Inc(nHPorMPRate, m_AddAbil.btHPorMPRate);
     Inc(nAC2Rate, m_AddAbil.btAC2Rate);
@@ -7161,7 +7194,7 @@ begin
     if m_boAC then
       m_WAbil.AC := MakeLong(LoWord(m_WAbil.AC), HiWord(m_WAbil.AC) + 2 + (m_Abil.Level div 7))
     else
-      m_WAbil.AC := MakeLong(LoWord(m_WAbil.AC), HiWord(m_WAbil.AC) - 2 - (m_Abil.Level div 7)); //ĞÂÔö¼õÊôĞÔ
+      m_WAbil.AC := MakeLong(LoWord(m_WAbil.AC), HiWord(m_WAbil.AC) - 2 - (m_Abil.Level div 7)); //æ–°å¢å‡å±æ€§
   end;
   if m_wStatusTimeArr[STATE_MAGDEFENCEUP {11 0x74}] > 0 then begin
     if m_boMAC then
@@ -7227,7 +7260,7 @@ begin
       m_WAbil.MaxMP := _MIN(High(Word), m_WAbil.MaxMP - m_wStatusArrValue[5]);
   end;
 
-  //»ğÇòºÍÖÎÓá½äÖ¸È¡Ïû
+  //ç«çƒå’Œæ²»ä¿æˆ’æŒ‡å–æ¶ˆ
   {if (m_btRaceServer = RC_PLAYOBJECT) then begin
     if m_boFlameRing then
       AddItemSkill(1)
@@ -7240,12 +7273,12 @@ begin
       DelItemSkill(2);
   end;  }
 
-  if m_boMuscleRing then begin //»îÁ¦
+  if m_boMuscleRing then begin //æ´»åŠ›
     Inc(m_WAbil.MaxWeight, m_WAbil.MaxWeight);
     Inc(m_WAbil.MaxWearWeight, m_WAbil.MaxWearWeight);
     Inc(m_WAbil.MaxHandWeight, m_WAbil.MaxHandWeight);
   end;
-  if m_nMoXieSuite > 0 then begin //Ä§Ñª
+  if m_nMoXieSuite > 0 then begin //é­”è¡€
     if m_WAbil.MaxMP <= m_nMoXieSuite then
       m_nMoXieSuite := m_WAbil.MaxMP - 1;
     Dec(m_WAbil.MaxMP, m_nMoXieSuite);
@@ -7308,7 +7341,7 @@ begin
       m_WAbil.MP := _MIN(m_WAbil.MaxMP, m_WAbil.MP);
     end;
   end;
-  //ÏŞÖÆ×î¸ßÊôĞÔ
+  //é™åˆ¶æœ€é«˜å±æ€§
   {m_WAbil.AC := MakeLong(_MIN(MAXHUMPOWER, LoWord(m_WAbil.AC)),
     _MIN(MAXHUMPOWER, HiWord(m_WAbil.AC)));
   m_WAbil.MAC := MakeLong(_MIN(MAXHUMPOWER, LoWord(m_WAbil.MAC)),
@@ -7458,11 +7491,11 @@ begin
             m_WAbil.HP := m_WAbil.MaxHP;
             HealthSpellChanged;
             nCheckCode := 1008;
-            SysMsg(g_sRevivalRecoverMsg {'¸´»î½äÖ¸ÉúĞ§£¬ÌåÁ¦»Ö¸´'}, c_Green, t_Hint);
+            SysMsg(g_sRevivalRecoverMsg {'å¤æ´»æˆ’æŒ‡ç”Ÿæ•ˆï¼Œä½“åŠ›æ¢å¤'}, c_Green, t_Hint);
           end;
         end
         else if m_LastHiter <> nil then begin
-          if not m_LastHiter.m_boUnRevival {·À¸´»î} and m_boRevival and (GetTickCount - m_dwRevivalTick > g_Config.dwRevivalTime {60 * 1000}) then begin
+          if not m_LastHiter.m_boUnRevival {é˜²å¤æ´»} and m_boRevival and (GetTickCount - m_dwRevivalTick > g_Config.dwRevivalTime {60 * 1000}) then begin
             m_dwRevivalTick := GetTickCount();
             nCheckCode := 1006;
             ItemDamageRevivalRing;
@@ -7470,7 +7503,7 @@ begin
             m_WAbil.HP := m_WAbil.MaxHP;
             HealthSpellChanged;
             nCheckCode := 1008;
-            SysMsg(g_sRevivalRecoverMsg {'¸´»î½äÖ¸ÉúĞ§£¬ÌåÁ¦»Ö¸´'}, c_Green, t_Hint);
+            SysMsg(g_sRevivalRecoverMsg {'å¤æ´»æˆ’æŒ‡ç”Ÿæ•ˆï¼Œä½“åŠ›æ¢å¤'}, c_Green, t_Hint);
           end;
         end;
         nCheckCode := 2004;
@@ -7544,11 +7577,11 @@ begin
     end;
   end;
 
-  //ÑªÆøÊ¯´¦Àí¿ªÊ¼
+  //è¡€æ°”çŸ³å¤„ç†å¼€å§‹
   try
     boSendChange := False;
     if (not m_boDeath) and (m_btRaceServer = RC_PLAYOBJECT) and (not m_PEnvir.m_boNotStone) and (TPlayObject(Self).m_AttackState <> as_Dare) then begin
-      //¼ÓHP
+      //åŠ HP
       if (m_nIncHealth = 0) and (m_UseItems[U_CHARM].wIndex > 0) and ((GetTickCount - m_nIncHPStoneTime) > g_Config.HPStoneIntervalTime)
         and ((m_WAbil.HP / m_WAbil.MaxHP * 100) < g_Config.HPStoneStartRate) then begin
         m_nIncHPStoneTime := GetTickCount;
@@ -7582,7 +7615,7 @@ begin
           end;
         end;
       end;
-      //¼ÓMP
+      //åŠ MP
       if (m_nIncSpell = 0) and (m_UseItems[U_CHARM].wIndex > 0) and ((GetTickCount - m_nIncMPStoneTime) > g_Config.MPStoneIntervalTime)
         and ((m_WAbil.MP / m_WAbil.MaxMP * 100) < g_Config.MPStoneStartRate) then begin
         m_nIncMPStoneTime := GetTickCount;
@@ -7622,7 +7655,7 @@ begin
   except
     MainOutMessage(sExceptionMsg7);
   end;
-  //ÑªÆøÊ¯´¦Àí½áÊø
+  //è¡€æ°”çŸ³å¤„ç†ç»“æŸ
 
   try
     if not m_boDeath and ((m_nIncSpell > 0) or (m_nIncHealth > 0) or (m_nIncHealing > 0)) then begin
@@ -7683,7 +7716,7 @@ begin
       Inc(m_nHealthTick, g_Config.nHealthFillTime);
       HealthSpellChanged();
     end;
-    //¼ì²éHP/MPÖµÊÇ·ñ´óÓÚ×î´óÖµ£¬´óÓÚÔò½µµÍµ½Õı³£´óĞ¡
+    //æ£€æŸ¥HP/MPå€¼æ˜¯å¦å¤§äºæœ€å¤§å€¼ï¼Œå¤§äºåˆ™é™ä½åˆ°æ­£å¸¸å¤§å°
     boNeedRecalc := False;
     if m_WAbil.HP > m_WAbil.MaxHP then begin
       boNeedRecalc := True;
@@ -7699,14 +7732,14 @@ begin
   except
     MainOutMessage(sExceptionMsg2);
   end;
-  //TBaseObject.Run 3 ÇåÀíÄ¿±ê¶ÔÏó
+  //TBaseObject.Run 3 æ¸…ç†ç›®æ ‡å¯¹è±¡
   try
     if (m_TargetCret <> nil) then begin
       if ((GetTickCount() - m_dwTargetFocusTick) > 30000) or
         m_TargetCret.m_boDeath or
         m_TargetCret.m_boGhost or
         (m_TargetCret.m_PEnvir <> m_PEnvir) or
-        // 08/06 Ôö¼Ó£¬¹­¼ıÎÀÊ¿ÔÚÈËÎï½øÈë·¿¼äºóÔÙ³öÀ´£¬»¹»á¹¥»÷ÈËÎï(ÈËÎïµÄ¹¥»÷Ä¿±êÃ»Çå³ı)
+        // 08/06 å¢åŠ ï¼Œå¼“ç®­å«å£«åœ¨äººç‰©è¿›å…¥æˆ¿é—´åå†å‡ºæ¥ï¼Œè¿˜ä¼šæ”»å‡»äººç‰©(äººç‰©çš„æ”»å‡»ç›®æ ‡æ²¡æ¸…é™¤)
       (abs(m_TargetCret.m_nCurrX - m_nCurrX) > 15) or
         (abs(m_TargetCret.m_nCurrY - m_nCurrY) > 15) then begin
         m_TargetCret := nil;
@@ -7730,7 +7763,7 @@ begin
     end;
     if m_Master <> nil then begin
       m_boNoItem := True;
-      //±¦±¦±äÉ«
+      //å®å®å˜è‰²
       {if m_boAutoChangeColor and ((GetTickCount - m_dwAutoChangeColorTick) >
         LongWord(g_Config.dwBBMonAutoChangeColorTime)) then begin
         m_dwAutoChangeColorTick := GetTickCount();
@@ -7771,7 +7804,7 @@ begin
         m_nFixStatus := m_nCharStatus;
         StatusChanged();
       end;         }
-      // ±¦±¦ÔÚÖ÷ÈËËÀÍöºóËÀÍö´¦Àí
+      // å®å®åœ¨ä¸»äººæ­»äº¡åæ­»äº¡å¤„ç†
       if m_Master.m_boDeath and (m_btRaceServer <> RC_CAMION) then begin
         m_WAbil.HP := 0;
       end;
@@ -7789,7 +7822,7 @@ begin
       end;
     end;
     //004C7F0B
-    //Çå³ı±¦±¦ÁĞ±íÖĞÒÑ¾­ËÀÍö¼°ÅÑ±äµÄ±¦±¦ĞÅÏ¢
+    //æ¸…é™¤å®å®åˆ—è¡¨ä¸­å·²ç»æ­»äº¡åŠå›å˜çš„å®å®ä¿¡æ¯
     nCheckCode := 3010;
     for i := m_SlaveList.Count - 1 downto 0 do begin
       if m_SlaveList.Count <= 0 then break;
@@ -7821,16 +7854,16 @@ begin
   //004C802F
   try
     nCheckCode := 4;
-    // ¼õÉÙPKÖµ¿ªÊ¼
+    // å‡å°‘PKå€¼å¼€å§‹
     if (GetTickCount() - m_dwDecPkPointTick) > g_Config.dwDecPkPointTime {120000} then begin
       m_dwDecPkPointTick := GetTickCount();
       if m_nPkPoint > 0 then begin
         DecPKPoint(g_Config.nDecPkPointCount {1});
       end;
     end;
-    // ¼õÉÙPKÖµ½áÊø
+    // å‡å°‘PKå€¼ç»“æŸ
 
-    //¼ì²éÕÕÃ÷ÎïÆ·¼°PK×´Ì¬ ¿ªÊ¼
+    //æ£€æŸ¥ç…§æ˜ç‰©å“åŠPKçŠ¶æ€ å¼€å§‹
     nCheckCode := 41;
     if (GetTickCount - m_DecLightItemDrugTick) > g_Config.dwDecLightItemDrugTime {500}then begin
       Inc(m_DecLightItemDrugTick, g_Config.dwDecLightItemDrugTime {500});
@@ -7839,12 +7872,12 @@ begin
         CheckPKStatus();
       end;
     end;
-    //¼ì²éÕÕÃ÷ÎïÆ·¼°PK×´Ì¬ ½áÊø
+    //æ£€æŸ¥ç…§æ˜ç‰©å“åŠPKçŠ¶æ€ ç»“æŸ
 
     nCheckCode := 42;
     if (GetTickCount - m_dwCheckRoyaltyTick) > 10000 then begin
       m_dwCheckRoyaltyTick := GetTickCount();
-      // Çå×é¶ÓÒÑËÀÍö³ÉÔ±
+      // æ¸…ç»„é˜Ÿå·²æ­»äº¡æˆå‘˜
       nCheckCode := 430;
       if m_btRaceServer = RC_PLAYOBJECT then begin
         if (m_GroupOwner <> nil) then begin
@@ -7870,10 +7903,10 @@ begin
             SendDefMsg(Self, SM_GROUPCANCEL, 1, 0, 0, 0, '');
           end;
         end;
-        TPlayObject(Self).RefGroupWuXin(Self); //Ë¢ĞÂÎåĞĞĞÅÏ¢
-        // Çå×é¶ÓÒÑËÀÍö³ÉÔ± ½áÊø
+        TPlayObject(Self).RefGroupWuXin(Self); //åˆ·æ–°äº”è¡Œä¿¡æ¯
+        // æ¸…ç»„é˜Ÿå·²æ­»äº¡æˆå‘˜ ç»“æŸ
         nCheckCode := 45;
-        // ¼ì²é½»Ò×Ë«·½ ×´Ì¬
+        // æ£€æŸ¥äº¤æ˜“åŒæ–¹ çŠ¶æ€
         if (TPlayObject(Self).m_DealCreat <> nil) and (TPlayObject(Self).m_DealCreat.m_boGhost) then
           TPlayObject(Self).m_DealCreat := nil;
         nCheckCode := 46;
@@ -7883,7 +7916,7 @@ begin
           m_dwMasterRoyaltyTick := 0;
         end;
 
-        //±¦±¦ÅÑ±ä  ¿ªÊ¼
+        //å®å®å›å˜  å¼€å§‹
         nCheckCode := 423;
         if (GetTickCount > m_dwMasterRoyaltyTick) then begin
           for i := m_Master.m_SlaveList.Count - 1 downto 0 do begin
@@ -7901,7 +7934,7 @@ begin
           nCheckCode := 426;
           RefShowName();
         end;
-        //±¦±¦ÅÑ±ä ½áÊø
+        //å®å®å›å˜ ç»“æŸ
         nCheckCode := 427;
         if m_dwMasterTick <> 0 then begin
           if (GetTickCount - m_dwMasterTick) > 3 * 60 * 60 * 1000 then begin
@@ -7914,7 +7947,7 @@ begin
     if (GetTickCount - m_dwVerifyTick) > 30 * 1000 then begin
       m_dwVerifyTick := GetTickCount();
       //if not m_boDenyRefStatus then
-      //Ë¢ĞÂÔÚµØÍ¼ÉÏÎ»ÖÃµÄÊ±¼ä
+      //åˆ·æ–°åœ¨åœ°å›¾ä¸Šä½ç½®çš„æ—¶é—´
       m_PEnvir.VerifyMapTime(m_nCurrX, m_nCurrY, Self);
     end;
   except
@@ -7943,12 +7976,12 @@ begin
                 end;
               STATE_DEFENCEUP: begin
                   boNeedRecalc := True;
-                  SysMsg('·ÀÓùÁ¦»Ø¸´Õı³£', c_Green, t_Hint);
+                  SysMsg('é˜²å¾¡åŠ›å›å¤æ­£å¸¸', c_Green, t_Hint);
                   ChangeStatusMode(STATUS_AC, False);
                 end;
               STATE_MAGDEFENCEUP: begin
                   boNeedRecalc := True;
-                  SysMsg('Ä§ÓùÁ¦»Ø¸´Õı³£', c_Green, t_Hint);
+                  SysMsg('é­”å¾¡åŠ›å›å¤æ­£å¸¸', c_Green, t_Hint);
                   ChangeStatusMode(STATUS_MAC, False);
                 end;
               STATE_BUBBLEDEFENCEUP: begin
@@ -7974,26 +8007,26 @@ begin
           boNeedRecalc := True;
           case i of
             0: begin
-                SysMsg('¹¥»÷Á¦»Ø¸´Õı³£', c_Green, t_Hint);
+                SysMsg('æ”»å‡»åŠ›å›å¤æ­£å¸¸', c_Green, t_Hint);
                 ChangeStatusMode(STATUS_DC, False);
               end;
             1: begin
-                SysMsg('Ä§·¨Á¦»Ø¸´Õı³£', c_Green, t_Hint);
+                SysMsg('é­”æ³•åŠ›å›å¤æ­£å¸¸', c_Green, t_Hint);
                 ChangeStatusMode(STATUS_MC, False);
               end;
             2: begin
-                SysMsg('µÀÊõ»Ø¸´Õı³£', c_Green, t_Hint);
+                SysMsg('é“æœ¯å›å¤æ­£å¸¸', c_Green, t_Hint);
                 ChangeStatusMode(STATUS_SC, False);
               end;
             3: begin
-                SysMsg('¹¥»÷ËÙ¶È»Ø¸´Õı³£', c_Green, t_Hint);
+                SysMsg('æ”»å‡»é€Ÿåº¦å›å¤æ­£å¸¸', c_Green, t_Hint);
               end;
             4: begin
-                SysMsg('ÌåÁ¦»Ø¸´Õı³£', c_Green, t_Hint);
+                SysMsg('ä½“åŠ›å›å¤æ­£å¸¸', c_Green, t_Hint);
                 ChangeStatusMode(STATUS_HP, False);
               end;
             5: begin
-                SysMsg('Ä§·¨Öµ»Ø¸´Õı³£', c_Green, t_Hint);
+                SysMsg('é­”æ³•å€¼å›å¤æ­£å¸¸', c_Green, t_Hint);
                 ChangeStatusMode(STATUS_MP, False);
               end;
           end;
@@ -8153,7 +8186,7 @@ var
   bo21: Boolean;
   OldMapName: string;
 begin
-  //°ÚÌ¯²»ÔÊĞíÇĞ»»µØÍ¼
+  //æ‘†æ‘Šä¸å…è®¸åˆ‡æ¢åœ°å›¾
   if (m_btRaceServer = RC_PLAYOBJECT) and (TPlayObject(Self).m_boShoping) then exit;
   if not m_boMapApoise then exit;
   if Envir <> nil then begin
@@ -8184,7 +8217,7 @@ begin
       m_dwMapMoveTick := GetTickCount();
       if m_btRaceServer = RC_PLAYOBJECT then begin
         with TPlayObject(Self) do begin
-          GetStartType(); //Ë¢ĞÂÈËÎïµ±Ç°ËùÔÚÎ»ÖÃµÄ×´Ì¬
+          GetStartType(); //åˆ·æ–°äººç‰©å½“å‰æ‰€åœ¨ä½ç½®çš„çŠ¶æ€
 
           ClearDare(4);
           m_AttackState := as_None;
@@ -8384,7 +8417,7 @@ begin
                 TargeTBaseObject.bo2B0 := True;
                 TargeTBaseObject.m_dw2B4Tick := GetTickCount();
               end;
-              MakePosion(ProcessMsg.wParam {ÖĞ¶¾ÀàĞÍ}, ProcessMsg.nParam1{nPower}, ProcessMsg.nParam3);
+              MakePosion(ProcessMsg.wParam {ä¸­æ¯’ç±»å‹}, ProcessMsg.nParam1{nPower}, ProcessMsg.nParam3);
               if (ProcessMsg.wParam = POISON_STONE) and MakePoisonInfo.boFastParalysis then
                 m_nFastParalysis := 2;
             end;
@@ -8414,10 +8447,10 @@ begin
               TargeTBaseObject.bo2B0 := True;
               TargeTBaseObject.m_dw2B4Tick := GetTickCount();
             end;
-            MakePosion(ProcessMsg.wParam {ÖĞ¶¾ÀàĞÍ}, ProcessMsg.nParam1{nPower}, ProcessMsg.nParam3);
+            MakePosion(ProcessMsg.wParam {ä¸­æ¯’ç±»å‹}, ProcessMsg.nParam1{nPower}, ProcessMsg.nParam3);
           end
           else
-            MakePosion(ProcessMsg.wParam {ÖĞ¶¾ÀàĞÍ}, ProcessMsg.nParam1{nPower}, ProcessMsg.nParam3);
+            MakePosion(ProcessMsg.wParam {ä¸­æ¯’ç±»å‹}, ProcessMsg.nParam1{nPower}, ProcessMsg.nParam3);
 
         end;
       RM_TRANSPARENT: begin //10308
@@ -8438,7 +8471,7 @@ begin
   end;
 end;
 
-//´´½¨±¦±¦
+//åˆ›å»ºå®å®
 
 function TBaseObject.MakeSlave(sMonName: string; nMakeLevel, nExpLevel, nMaxMob, nMagID:
   Integer; dwRoyaltySec: LongWord): TBaseObject; //004C37C0
@@ -8619,10 +8652,10 @@ procedure TBaseObject.Skill42OnOff(boSwitch: Boolean);
 begin
   m_bo42kill := boSwitch;
   if m_bo42kill then begin
-    SysMsg('¿ªÆô¿ñ·çÕ¶', c_Green, t_Hint);
+    SysMsg('å¼€å¯ç‹‚é£æ–©', c_Green, t_Hint);
   end
   else begin
-    SysMsg('¹Ø±Õ¿ñ·çÕ¶', c_Green, t_Hint);
+    SysMsg('å…³é—­ç‹‚é£æ–©', c_Green, t_Hint);
   end;
 end;
 
@@ -8630,10 +8663,10 @@ procedure TBaseObject.Skill43OnOff(boSwitch: Boolean);
 begin
   m_bo43kill := boSwitch;
   if m_bo43kill then begin
-    SysMsg('¿ªÆôÆÆ¿Õ½£', c_Green, t_Hint);
+    SysMsg('å¼€å¯ç ´ç©ºå‰‘', c_Green, t_Hint);
   end
   else begin
-    SysMsg('¹Ø±ÕÆÆ¿Õ½£', c_Green, t_Hint);
+    SysMsg('å…³é—­ç ´ç©ºå‰‘', c_Green, t_Hint);
   end;
 end;           }
   {
@@ -8694,9 +8727,9 @@ procedure TBaseObject.MapRandomMove(sMapName: string; nInt: Integer);
 begin
   MapRandomMove(g_MapManager.FindMap(sMapName), nInt);
 end;
-//·µ»ØÖµ -1Ôö¼ÓÊ§°Ü
-//       1 Ôö¼Ó³É¹¦£¬Çå³ıÔ­Useritem
-//       2 Ôö¼Ó³É¹¦£¬²»Çå³şÔ­Useritem
+//è¿”å›å€¼ -1å¢åŠ å¤±è´¥
+//       1 å¢åŠ æˆåŠŸï¼Œæ¸…é™¤åŸUseritem
+//       2 å¢åŠ æˆåŠŸï¼Œä¸æ¸…æ¥šåŸUseritem
 
 function TBaseObject.AddItemToBag(UserItem: pTUserItem; StdItem32: pTStdItem; boCheck: Boolean;
   sDealName, sLogName: string; var AddUserItem: pTUserItem): Integer;
@@ -8710,7 +8743,7 @@ var
 begin
   Result := -1;
   AddUserItem := nil;
-  //ÊÇ·ñ¼ì²âµş¼ÓÎïÆ·
+  //æ˜¯å¦æ£€æµ‹å åŠ ç‰©å“
   try
     if boCheck then begin
       if StdItem32 = nil then
@@ -8718,7 +8751,7 @@ begin
       else
         StdItem := StdItem32;
       if Stditem <> nil then begin
-        //ÅĞ¶ÏÊÇ·ñÊÇ¿ÉÒÔµş¼ÓµÄÎïÆ·£¬ÊÇµÄ»°£¬ÏÈ²éÕÒ±³°üÊÇ·ñÓĞÏàÍ¬µÄÎïÆ·
+        //åˆ¤æ–­æ˜¯å¦æ˜¯å¯ä»¥å åŠ çš„ç‰©å“ï¼Œæ˜¯çš„è¯ï¼Œå…ˆæŸ¥æ‰¾èƒŒåŒ…æ˜¯å¦æœ‰ç›¸åŒçš„ç‰©å“
         if (sm_Superposition in StdItem.StdModeEx) and (StdItem.DuraMax > 1) and (UserItem.DuraMax > 1) and
           (UserItem.Dura < UserItem.DuraMax) then
         begin
@@ -8743,15 +8776,15 @@ begin
                 nMaxCount := 0;
             end;
           end;
-          //±³°üÖĞÓĞ×ã¹»µÄµş¼Ó¿Õ¼ä
+          //èƒŒåŒ…ä¸­æœ‰è¶³å¤Ÿçš„å åŠ ç©ºé—´
           if (nMaxCount = 0) and (m_TempItemList.Count > 0) then begin
-            Result := 1;     //Ôö¼Ó³É¹¦£¬Ã»ÓĞÔö¼ÓĞÂÎïÆ·£¬´«ÈëÎïÆ·¿ÉÊÍ·ÅÄÚ´æ
+            Result := 1;     //å¢åŠ æˆåŠŸï¼Œæ²¡æœ‰å¢åŠ æ–°ç‰©å“ï¼Œä¼ å…¥ç‰©å“å¯é‡Šæ”¾å†…å­˜
           end
           else if (nMaxCount > 0) and (m_ItemList.Count < m_nMaxItemListCount) then begin
-            //ÎŞ×ã¹»µÄµş¼Ó¿Õ¼ä£¬Ö±½ÓÔö¼ÓÎªĞÂÎïÆ·
+            //æ— è¶³å¤Ÿçš„å åŠ ç©ºé—´ï¼Œç›´æ¥å¢åŠ ä¸ºæ–°ç‰©å“
             UserItem.Dura := nAddCount;
             m_ItemList.Add(UserItem);
-            Result := 2;  //Ôö¼Ó³É¹¦
+            Result := 2;  //å¢åŠ æˆåŠŸ
             exit;
           end;
           if Result <> -1 then begin
