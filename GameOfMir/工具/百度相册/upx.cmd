@@ -1,1 +1,0 @@
-start ..\UPX\upx.exe "..\∞Ÿ∂»œ‡≤·\baiduAlbum.exe"

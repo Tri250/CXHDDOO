@@ -1,1 +1,0 @@
-start ..\upx.exe "..\Pro\phpencoder.dll"
