@@ -1,6 +1,0 @@
-*.log
-*.tmp
-**/bin/
-**/obj/
-**/Build/
-Build/
