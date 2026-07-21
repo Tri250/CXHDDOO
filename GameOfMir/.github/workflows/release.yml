@@ -1,0 +1,156 @@
+name: GameOfMir Release
+
+on:
+  push:
+    branches:
+      - trae/agent-kv0rLR
+    paths:
+      - 'GameOfMir/**'
+      - '.github/workflows/release.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+      release_notes:
+        description: 'Release notes'
+        required: false
+        default: 'GameOfMir Engine Release'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version info
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            # Auto-generate version from date and commit hash
+            DATE_TAG=$(date +'%Y%m%d')
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            echo "VERSION=v${DATE_TAG}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          echo "## GameOfMir Engine Release" > release_notes.md
+          echo "" >> release_notes.md
+          echo "**Version:** ${{ steps.version.outputs.VERSION }}" >> release_notes.md
+          echo "**Date:** $(date +'%Y-%m-%d %H:%M:%S')" >> release_notes.md
+          echo "**Branch:** ${{ github.ref_name }}" >> release_notes.md
+          echo "**Commit:** ${{ github.sha }}" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### 引擎模块" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "| 模块 | 说明 |" >> release_notes.md
+          echo "|------|------|" >> release_notes.md
+          echo "| M2Engine | 主引擎服务端 (Delphi/Object Pascal) |" >> release_notes.md
+          echo "| Common | 核心公共类型定义 (Grobal2.pas) |" >> release_notes.md
+          echo "| Config | 引擎配置文件 |" >> release_notes.md
+          echo "| MirClient | 客户端源码 |" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### 新增系统" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "- BUFF/DEBUFF状态管理器 (BuffManager.pas)" >> release_notes.md
+          echo "- 随机词缀引擎 (AffixEngine.pas)" >> release_notes.md
+          echo "- 副本实例化系统 (DungeonManager.pas)" >> release_notes.md
+          echo "- 怪物AI行为树 (MonsterAI.pas)" >> release_notes.md
+          echo "- 活动引擎 (ActivityManager.pas)" >> release_notes.md
+          echo "- 师徒系统 (MasterSystem.pas)" >> release_notes.md
+          echo "- 行会科技树+仓库 (Guild.pas扩展)" >> release_notes.md
+          echo "- GCD冷却系统 (ObjBase.pas/Magic.pas扩展)" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### 新增配置文件" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "- BuffDefs.ini - BUFF/DEBUFF定义" >> release_notes.md
+          echo "- AffixData.ini - 词缀数据" >> release_notes.md
+          echo "- DungeonTemplate.ini - 副本模板" >> release_notes.md
+          echo "- ActivityData.ini - 活动配置" >> release_notes.md
+          echo "- MonsterAI.ini - 怪物AI配置" >> release_notes.md
+          echo "- 新手引导脚本.txt - 新手引导" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### 最近提交" >> release_notes.md
+          echo '```' >> release_notes.md
+          git log --oneline -10 >> release_notes.md
+          echo '```' >> release_notes.md
+          cat release_notes.md
+
+      - name: Package source code
+        run: |
+          # Create package directory
+          PKG_DIR="GameOfMir-Engine-${{ steps.version.outputs.VERSION }}"
+          mkdir -p "${PKG_DIR}"
+
+          # Copy core engine modules
+          cp -r GameOfMir/M2Engine "${PKG_DIR}/"
+          cp -r GameOfMir/Common "${PKG_DIR}/"
+          cp -r GameOfMir/Config "${PKG_DIR}/"
+          cp -r GameOfMir/Build "${PKG_DIR}/" 2>/dev/null || true
+
+          # Copy development docs
+          cp -r GameOfMir/开发文档 "${PKG_DIR}/" 2>/dev/null || true
+
+          # Copy client source
+          cp -r GameOfMir/MirClient "${PKG_DIR}/" 2>/dev/null || true
+
+          # Copy other engine modules
+          for dir in DBServer LoginSrv LoginGate RunGate SelGate GameCenter GameCenterSE LogDataServer; do
+            if [ -d "GameOfMir/${dir}" ]; then
+              cp -r "GameOfMir/${dir}" "${PKG_DIR}/"
+            fi
+          done
+
+          # Copy project files
+          cp GameOfMir/Project6.* "${PKG_DIR}/" 2>/dev/null || true
+          cp GameOfMir/*.bat "${PKG_DIR}/" 2>/dev/null || true
+
+          # Copy release notes
+          cp release_notes.md "${PKG_DIR}/RELEASE_NOTES.md"
+
+          # Create ZIP archive
+          zip -r "${PKG_DIR}.zip" "${PKG_DIR}"
+          echo "PACKAGE=${PKG_DIR}.zip" >> $GITHUB_ENV
+          echo "PKG_DIR=${PKG_DIR}" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.VERSION }}
+          name: "GameOfMir Engine ${{ steps.version.outputs.VERSION }}"
+          body_path: release_notes.md
+          files: ${{ env.PACKAGE }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GameOfMir-Engine-${{ steps.version.outputs.VERSION }}
+          path: ${{ env.PACKAGE }}
+          retention-days: 30
+
+      - name: Release summary
+        run: |
+          echo "============================================"
+          echo "  GameOfMir Engine Release Complete!"
+          echo "============================================"
+          echo "  Version: ${{ steps.version.outputs.VERSION }}"
+          echo "  Package: ${{ env.PACKAGE }}"
+          echo "  Branch:  ${{ github.ref_name }}"
+          echo "============================================"
