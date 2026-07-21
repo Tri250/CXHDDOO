@@ -1,0 +1,375 @@
+name: GameOfMir Windows Release
+
+on:
+  push:
+    branches:
+      - trae/agent-kv0rLR
+    paths:
+      - 'GameOfMir/**'
+      - '.github/workflows/windows-release.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  windows-build-and-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version info
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $ver = "${{ github.event.inputs.version }}"
+          } else {
+            $dateTag = Get-Date -Format "yyyyMMdd"
+            $shortSha = (git rev-parse --short HEAD).Trim()
+            $ver = "v${dateTag}-${shortSha}-win"
+          }
+          echo "VERSION=$ver" >> $env:GITHUB_OUTPUT
+          echo "Version: $ver"
+
+      - name: Setup Lazarus/Free Pascal
+        uses: gcarreno/setup-lazarus@v3
+        with:
+          lazarus-version: "3.4"
+          include-packages: "Synapse"
+
+      - name: Prepare build directories
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "GameOfMir\Build\Output" -Force | Out-Null
+          New-Item -ItemType Directory -Path "GameOfMir\Build\MirServer" -Force | Out-Null
+          New-Item -ItemType Directory -Path "GameOfMir\Build\M2Server" -Force | Out-Null
+
+      - name: Build M2Server (Free Pascal)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          Write-Host "Building M2Server with Free Pascal..."
+          fpc -Mdelphi -S2 -dRELEASE -dFPC -FEGameOfMir\Build\MirServer -FUGameOfMir\Build\M2Server -FUGameOfMir\Common -FUGameOfMir\M2Engine -FUGameOfMir\MyCommon -oM2Server.exe GameOfMir\M2Engine\M2Server.dpr 2>&1
+
+      - name: Build DBServer
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          Write-Host "Building DBServer..."
+          fpc -Mdelphi -S2 -dRELEASE -dFPC -FEGameOfMir\Build\MirServer -FUGameOfMir\Common -FUGameOfMir\DBServer -oDBServer.exe GameOfMir\DBServer\DBServer.dpr 2>&1
+
+      - name: Build LoginSrv
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          Write-Host "Building LoginSrv..."
+          fpc -Mdelphi -S2 -dRELEASE -dFPC -FEGameOfMir\Build\MirServer -FUGameOfMir\Common -FUGameOfMir\LoginSrv -oLoginSrv.exe GameOfMir\LoginSrv\LoginSrv.dpr 2>&1
+
+      - name: Build LoginGate
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          Write-Host "Building LoginGate..."
+          fpc -Mdelphi -S2 -dRELEASE -dFPC -FEGameOfMir\Build\MirServer -FUGameOfMir\Common -FUGameOfMir\LoginGate -oLoginGate.exe GameOfMir\LoginGate\LoginGate.dpr 2>&1
+
+      - name: Build RunGate
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          Write-Host "Building RunGate..."
+          fpc -Mdelphi -S2 -dRELEASE -dFPC -FEGameOfMir\Build\MirServer -FUGameOfMir\Common -FUGameOfMir\RunGate -oRunGate.exe GameOfMir\RunGate\RunGate.dpr 2>&1
+
+      - name: Build SelGate
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          Write-Host "Building SelGate..."
+          fpc -Mdelphi -S2 -dRELEASE -dFPC -FEGameOfMir\Build\MirServer -FUGameOfMir\Common -FUGameOfMir\SelGate -oSelGate.exe GameOfMir\SelGate\SelGate.dpr 2>&1
+
+      - name: Check build results
+        shell: pwsh
+        id: buildresult
+        run: |
+          $mirDir = "GameOfMir\Build\MirServer"
+          $hasExe = $false
+          $exeList = @()
+          if (Test-Path $mirDir) {
+            $exes = Get-ChildItem -Path $mirDir -Filter "*.exe" -ErrorAction SilentlyContinue
+            foreach ($exe in $exes) {
+              $hasExe = $true
+              $exeList += "$($exe.Name) ($('{0:N0}' -f $exe.Length) bytes)"
+              Write-Host "Built: $($exe.FullName) - $($exe.Length) bytes"
+            }
+          }
+          if ($hasExe) {
+            echo "HAS_EXE=true" >> $env:GITHUB_OUTPUT
+            echo "EXE_LIST=$($exeList -join ', ')" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "HAS_EXE=false" >> $env:GITHUB_OUTPUT
+            Write-Host "No executables built - packaging source code for Windows deployment"
+          }
+
+      - name: Create Windows deployment package
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.VERSION }}"
+          $pkgDir = "GameOfMir-Windows-$version"
+          New-Item -ItemType Directory -Path $pkgDir -Force | Out-Null
+
+          # Create MirServer directory structure
+          $mirDirs = @("Mir200", "Mir200\Envir", "Mir200\Map", "Mir200\Log", "Mir200\GuildStorage", "DB", "LoginSrv", "Gate")
+          foreach ($dir in $mirDirs) {
+            New-Item -ItemType Directory -Path "$pkgDir\$dir" -Force | Out-Null
+          }
+
+          # Copy built executables if any
+          $buildMirDir = "GameOfMir\Build\MirServer"
+          if (Test-Path $buildMirDir) {
+            Get-ChildItem -Path $buildMirDir -Filter "*.exe" -ErrorAction SilentlyContinue | ForEach-Object {
+              Copy-Item $_.FullName "$pkgDir\Mir200\" -Force
+              Write-Host "Copied $($_.Name) to Mir200\"
+            }
+          }
+
+          # Copy Config files to Mir200\Envir
+          if (Test-Path "GameOfMir\Config") {
+            Copy-Item "GameOfMir\Config\*" "$pkgDir\Mir200\Envir\" -Force -Recurse
+            Write-Host "Copied Config to Mir200\Envir\"
+          }
+
+          # Copy source code
+          $srcDir = "$pkgDir\Source"
+          New-Item -ItemType Directory -Path $srcDir -Force | Out-Null
+          $srcDirs = @("M2Engine", "Common", "Config", "MyCommon", "DBServer", "LoginSrv", "LoginGate", "RunGate", "SelGate", "GameCenter", "GameCenterSE")
+          foreach ($dir in $srcDirs) {
+            $srcPath = "GameOfMir\$dir"
+            if (Test-Path $srcPath) {
+              Copy-Item $srcPath "$srcDir\$dir" -Force -Recurse
+              Write-Host "Copied source: $dir"
+            }
+          }
+
+          # Copy development docs
+          if (Test-Path "GameOfMir\开发文档") {
+            Copy-Item "GameOfMir\开发文档" "$pkgDir\Docs" -Force -Recurse
+          }
+          if (Test-Path "GameOfMir\帮助文档") {
+            Copy-Item "GameOfMir\帮助文档" "$pkgDir\Docs-HELP" -Force -Recurse
+          }
+
+          # Create StartServer.bat
+          $startLines = @(
+            '@echo off',
+            'chcp 65001 >nul',
+            'echo ==========================================',
+            'echo   GameOfMir Windows Server Starter',
+            'echo ==========================================',
+            'echo.',
+            'echo [1/5] Starting DBServer...',
+            'start "DBServer" "Mir200\DBServer.exe" 2>nul',
+            'echo [2/5] Starting LoginSrv...',
+            'start "LoginSrv" "LoginSrv\LoginSrv.exe" 2>nul',
+            'echo [3/5] Starting LoginGate...',
+            'start "LoginGate" "Gate\LoginGate.exe" 2>nul',
+            'echo [4/5] Starting RunGate...',
+            'start "RunGate" "Gate\RunGate.exe" 2>nul',
+            'echo [5/5] Starting M2Server...',
+            'start "M2Server" "Mir200\M2Server.exe" 2>nul',
+            'echo.',
+            'echo All services started. If EXE missing, compile with Delphi IDE.',
+            'pause'
+          )
+          $startLines | Set-Content -Path "$pkgDir\StartServer.bat" -Encoding ASCII
+
+          # Create StopServer.bat
+          $stopLines = @(
+            '@echo off',
+            'echo Stopping GameOfMir services...',
+            'taskkill /IM M2Server.exe /F 2>nul',
+            'taskkill /IM DBServer.exe /F 2>nul',
+            'taskkill /IM LoginSrv.exe /F 2>nul',
+            'taskkill /IM LoginGate.exe /F 2>nul',
+            'taskkill /IM RunGate.exe /F 2>nul',
+            'taskkill /IM SelGate.exe /F 2>nul',
+            'echo All services stopped.',
+            'pause'
+          )
+          $stopLines | Set-Content -Path "$pkgDir\StopServer.bat" -Encoding ASCII
+
+          # Create BUILD_GUIDE.txt
+          $guideLines = @(
+            '============================================',
+            '  GameOfMir Engine Windows Build Guide',
+            '============================================',
+            '',
+            '1. Install Delphi IDE (Delphi 2007/2010 recommended)',
+            '   Download: https://www.embarcadero.com/',
+            '',
+            '2. Open Source\M2Engine\M2Server.dpr',
+            '   - Search Path: ..\Common;..\MyCommon',
+            '   - Output Directory: ..\..\Mir200',
+            '   - Build in Release mode',
+            '',
+            '3. Build other server modules:',
+            '   - Source\DBServer\DBServer.dpr',
+            '   - Source\LoginSrv\LoginSrv.dpr',
+            '   - Source\LoginGate\LoginGate.dpr',
+            '   - Source\RunGate\RunGate.dpr',
+            '   - Source\SelGate\SelGate.dpr',
+            '',
+            '4. Config files in Mir200\Envir\:',
+            '   - BuffDefs.ini - BUFF/DEBUFF definitions',
+            '   - AffixData.ini - Random affix data',
+            '   - DungeonTemplate.ini - Dungeon templates',
+            '   - ActivityData.ini - Activity config',
+            '   - MonsterAI.ini - Monster AI config',
+            '',
+            '5. Start: Double-click StartServer.bat',
+            '6. Stop:  Double-click StopServer.bat',
+            '============================================'
+          )
+          $guideLines | Set-Content -Path "$pkgDir\BUILD_GUIDE.txt" -Encoding UTF8
+
+          # Create README.md
+          $readmeLines = @(
+            "# GameOfMir Engine $version - Windows Release",
+            '',
+            '## Requirements',
+            '- Windows 7/8/10/11 or Windows Server 2012+',
+            '- 2GB+ RAM',
+            '- Delphi 2007/2009/2010/XE (for compilation)',
+            '',
+            '## New Systems',
+            '- BUFF/DEBUFF Manager (BuffManager.pas)',
+            '- Random Affix Engine (AffixEngine.pas)',
+            '- Dungeon Instance System (DungeonManager.pas)',
+            '- Monster AI Behavior Tree (MonsterAI.pas)',
+            '- Activity Engine (ActivityManager.pas)',
+            '- Master-Apprentice System (MasterSystem.pas)',
+            '- Guild Tech Tree + Storage (Guild.pas extension)',
+            '- GCD Cooldown System (ObjBase.pas/Magic.pas extension)',
+            '',
+            '## Quick Start',
+            '1. Compile source code (see BUILD_GUIDE.txt)',
+            '2. Place compiled EXEs in corresponding directories',
+            '3. Run StartServer.bat',
+            '',
+            '## Directory Structure',
+            '```',
+            "GameOfMir-Windows-$version/",
+            '|-- Mir200/              # M2Server engine',
+            '|   |-- Envir/           # Config files',
+            '|   |-- Map/             # Map files',
+            '|   +-- Log/             # Logs',
+            '|-- DB/                  # Database',
+            '|-- LoginSrv/            # Login service',
+            '|-- Gate/                # Gate services',
+            '|-- Source/              # Source code',
+            '|-- Docs/                # Dev docs',
+            '|-- StartServer.bat      # Start script',
+            '|-- StopServer.bat       # Stop script',
+            '+-- BUILD_GUIDE.txt      # Build guide',
+            '```'
+          )
+          $readmeLines | Set-Content -Path "$pkgDir\README.md" -Encoding UTF8
+
+          # Create ZIP archive
+          Compress-Archive -Path $pkgDir -DestinationPath "$pkgDir.zip" -Force
+          echo "PACKAGE=$pkgDir.zip" >> $env:GITHUB_ENV
+          echo "PKG_DIR=$pkgDir" >> $env:GITHUB_ENV
+          Write-Host "Package created: $pkgDir.zip"
+          $zipSize = (Get-Item "$pkgDir.zip").Length
+          Write-Host "Package size: $('{0:N0}' -f $zipSize) bytes ($('{0:N2}' -f ($zipSize/1MB)) MB)"
+
+      - name: Generate release notes
+        shell: pwsh
+        id: notes
+        run: |
+          $version = "${{ steps.version.outputs.VERSION }}"
+          $hasExe = "${{ steps.buildresult.outputs.HAS_EXE }}"
+          $exeList = "${{ steps.buildresult.outputs.EXE_LIST }}"
+          $notes = @()
+          $notes += "## GameOfMir Engine Windows Release"
+          $notes += ""
+          $notes += "**Version:** $version"
+          $notes += "**Date:** $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+          $notes += "**Branch:** ${{ github.ref_name }}"
+          $notes += "**Commit:** ${{ github.sha }}"
+          $notes += "**Platform:** Windows (x86/x64)"
+          $notes += ""
+          if ($hasExe -eq "true") {
+            $notes += "### Build Output"
+            $notes += ""
+            $notes += "$exeList"
+            $notes += ""
+          } else {
+            $notes += "### Build Note"
+            $notes += ""
+            $notes += "This release contains full source code. Use Delphi IDE to compile Windows executables."
+            $notes += "See BUILD_GUIDE.txt for compilation instructions."
+            $notes += ""
+          }
+          $notes += "### New Systems"
+          $notes += ""
+          $notes += "- BUFF/DEBUFF Manager (BuffManager.pas)"
+          $notes += "- Random Affix Engine (AffixEngine.pas)"
+          $notes += "- Dungeon Instance System (DungeonManager.pas)"
+          $notes += "- Monster AI Behavior Tree (MonsterAI.pas)"
+          $notes += "- Activity Engine (ActivityManager.pas)"
+          $notes += "- Master-Apprentice System (MasterSystem.pas)"
+          $notes += "- Guild Tech Tree + Storage (Guild.pas extension)"
+          $notes += "- GCD Cooldown System (ObjBase.pas/Magic.pas extension)"
+          $notes += ""
+          $notes += "### New Config Files"
+          $notes += ""
+          $notes += "- BuffDefs.ini - BUFF/DEBUFF definitions"
+          $notes += "- AffixData.ini - Random affix data"
+          $notes += "- DungeonTemplate.ini - Dungeon templates"
+          $notes += "- ActivityData.ini - Activity config"
+          $notes += "- MonsterAI.ini - Monster AI config"
+          $notes += "- Guide script - Newbie guide"
+          $notes | Set-Content -Path "release_notes.md" -Encoding UTF8
+          Write-Host "Release notes generated"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.VERSION }}
+          name: "GameOfMir Engine ${{ steps.version.outputs.VERSION }} (Windows)"
+          body_path: release_notes.md
+          files: ${{ env.PACKAGE }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GameOfMir-Windows-${{ steps.version.outputs.VERSION }}
+          path: ${{ env.PACKAGE }}
+          retention-days: 30
+
+      - name: Release summary
+        shell: pwsh
+        run: |
+          Write-Host "============================================"
+          Write-Host "  GameOfMir Windows Release Complete!"
+          Write-Host "============================================"
+          Write-Host "  Version:  ${{ steps.version.outputs.VERSION }}"
+          Write-Host "  Package:  ${{ env.PACKAGE }}"
+          Write-Host "  Branch:   ${{ github.ref_name }}"
+          Write-Host "  Platform: Windows"
+          Write-Host "  Has EXE:  ${{ steps.buildresult.outputs.HAS_EXE }}"
+          Write-Host "============================================"
