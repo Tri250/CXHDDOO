@@ -157,36 +157,45 @@ object VideoMerger {
         bufferInfo: MediaCodec.BufferInfo,
         buffer: ByteBuffer
     ) {
-        var currentTime = 0L
+        var loopStartTime = 0L
         val extractor = MediaExtractor()
         try {
             extractor.setDataSource(bgmFile.absolutePath)
+            var bgmTrackIndex = -1
             for (i in 0 until extractor.trackCount) {
                 val format = extractor.getTrackFormat(i)
                 val mime = format.getString(MediaFormat.KEY_MIME) ?: continue
                 if (mime.startsWith("audio/")) {
+                    bgmTrackIndex = i
                     extractor.selectTrack(i)
                     break
                 }
             }
 
-            while (currentTime < totalDuration) {
+            if (bgmTrackIndex < 0) return
+
+            while (loopStartTime < totalDuration) {
                 buffer.clear()
                 val sampleSize = extractor.readSampleData(buffer, 0)
                 if (sampleSize < 0) {
                     extractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC)
+                    val bgmDuration = getVideoDuration(bgmFile)
+                    if (bgmDuration <= 0) break
+                    loopStartTime += bgmDuration
                     continue
                 }
+
+                val presentationTime = loopStartTime + extractor.sampleTime
+                if (presentationTime >= totalDuration) break
 
                 bufferInfo.set(
                     sampleSize,
                     0,
-                    currentTime,
+                    presentationTime,
                     extractor.sampleFlags
                 )
 
                 muxer.writeSampleData(trackIndex, buffer, bufferInfo)
-                currentTime = extractor.sampleTime + currentTime
                 extractor.advance()
             }
         } finally {

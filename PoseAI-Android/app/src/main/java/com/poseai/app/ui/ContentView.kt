@@ -2,6 +2,9 @@ package com.poseai.app.ui
 
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,27 +16,54 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BrightnessHigh
 import androidx.compose.material.icons.filled.Cameraswitch
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Exposure
 import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.Flip
 import androidx.compose.material.icons.filled.GridOn
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Mood
+import androidx.compose.material.icons.filled.MovieFilter
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -42,18 +72,23 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.poseai.app.model.VlogClip
+import com.poseai.app.model.SceneType
 import com.poseai.app.model.VlogTemplate
 import com.poseai.app.ui.theme.Accent
+import androidx.compose.ui.graphics.toArgb
 import com.poseai.app.ui.theme.BackgroundDark
 import com.poseai.app.ui.theme.Error
+import com.poseai.app.ui.theme.SurfaceDark
 import com.poseai.app.ui.theme.SurfaceGlass
 import com.poseai.app.ui.theme.Success
 import com.poseai.app.ui.theme.TextPrimary
 import com.poseai.app.ui.theme.TextSecondary
 import com.poseai.app.ui.theme.Warning
+import com.poseai.app.util.PhotoFilterEngine
 import com.poseai.app.viewmodel.ShootingViewModel
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShootingScreen(
     viewModel: ShootingViewModel = viewModel()
@@ -81,8 +116,28 @@ fun ShootingScreen(
     val isReviewingVlog by viewModel.isReviewingVlog.collectAsState()
     val vlogPath by viewModel.exportedVlogPath.collectAsState()
     val isAutoCapturing by viewModel.isAutoCapturing.collectAsState()
+    val screenFillLightEnabled by viewModel.screenFillLightEnabled.collectAsState()
+    val screenFillLightIntensity by viewModel.screenFillLightIntensity.collectAsState()
+    val detectedPoseLines by viewModel.detectedPoseLines.collectAsState()
+    val detectedPosePoints by viewModel.detectedPosePoints.collectAsState()
+    val currentFilter by viewModel.currentFilter.collectAsState()
+    val showSceneSelector by viewModel.showSceneSelector.collectAsState()
+    val showFilterSelector by viewModel.showFilterSelector.collectAsState()
+    val showVlogTemplateSelector by viewModel.showVlogTemplateSelector.collectAsState()
+    val watermarkEnabled by viewModel.watermarkEnabled.collectAsState()
+    val lowLightMode by viewModel.lowLightMode.collectAsState()
+    val useSecondaryPose by viewModel.useSecondaryPose.collectAsState()
+    val currentSequenceIndex by viewModel.currentSequenceIndex.collectAsState()
+    val currentAngleIndex by viewModel.currentAngleIndex.collectAsState()
+    val currentSequenceShot = viewModel.getCurrentSequenceShot()
+    val currentAngle = viewModel.getCurrentAngle()
 
     var showSettings by remember { mutableStateOf(false) }
+    var showExposurePanel by remember { mutableStateOf(false) }
+    val exposureValue by viewModel.exposureValue.collectAsState()
+
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
@@ -101,17 +156,35 @@ fun ShootingScreen(
             GridOverlay()
         }
 
-        if (lowLightWarning) {
+        if (lowLightWarning && lowLightMode) {
             LowLightOverlay()
+        }
+
+        if (screenFillLightEnabled) {
+            ScreenFillLightOverlay(intensity = screenFillLightIntensity)
         }
 
         if (smileEnabled) {
             SmileIndicator(strength = smileStrength)
         }
 
-        currentPlan?.let {
+        if (detectedPoseLines.isNotEmpty() || detectedPosePoints.isNotEmpty()) {
+            DetectedSkeletonOverlay(
+                lines = detectedPoseLines,
+                points = detectedPosePoints,
+                score = poseScore,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        currentPlan?.let { plan ->
+            val targetPoints = if (useSecondaryPose && plan.secondaryPosePoints.isNotEmpty()) {
+                plan.secondaryPosePoints
+            } else {
+                plan.posePoints
+            }
             SilhouetteOverlay(
-                posePoints = it.posePoints,
+                posePoints = targetPoints,
                 score = poseScore,
                 modifier = Modifier.fillMaxSize()
             )
@@ -127,7 +200,8 @@ fun ShootingScreen(
                 planName = currentPlan?.poseName ?: "",
                 planIndex = (viewModel.currentPlanIndex.collectAsState().value + 1),
                 totalPlans = currentScene.plans.size,
-                onSettings = { showSettings = true }
+                onSettings = { showSettings = true },
+                onSceneClick = { viewModel.toggleSceneSelector() }
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -141,6 +215,17 @@ fun ShootingScreen(
             if (vlogText.isNotEmpty()) {
                 VlogSubtitle(text = vlogText)
             }
+        }
+
+        if (showExposurePanel) {
+            ExposurePanel(
+                exposureValue = exposureValue,
+                minExposure = -10,
+                maxExposure = 10,
+                onDecrease = { viewModel.decreaseExposure() },
+                onIncrease = { viewModel.increaseExposure() },
+                onDismiss = { showExposurePanel = false }
+            )
         }
 
         Column(
@@ -158,6 +243,40 @@ fun ShootingScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            currentPlan?.let { plan ->
+                if (plan.sequence.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    SequenceIndicator(
+                        currentIndex = currentSequenceIndex,
+                        totalSteps = plan.sequence.size,
+                        stepName = currentSequenceShot?.name ?: "",
+                        onPrevious = { viewModel.previousSequenceStep() },
+                        onNext = { viewModel.nextSequenceStep() }
+                    )
+                }
+                if (plan.multiAngles.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    AngleIndicator(
+                        currentAngleName = currentAngle?.name ?: "",
+                        angleCount = plan.multiAngles.size,
+                        onNextAngle = { viewModel.nextAngle() }
+                    )
+                }
+                if (plan.secondaryPosePoints.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    SecondaryPoseToggle(
+                        isSecondary = useSecondaryPose,
+                        onToggle = { viewModel.toggleSecondaryPose() }
+                    )
+                }
+                if (plan.vlogScript != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    PlanVlogButton(
+                        onClick = { viewModel.startVlogFromPlan() }
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             BottomControls(
@@ -172,24 +291,19 @@ fun ShootingScreen(
                 onToggleAuto = { viewModel.toggleAutoCapture() },
                 onSmile = { viewModel.toggleSmile(!smileEnabled) },
                 onGrid = { viewModel.toggleGrid(!gridEnabled) },
-                onStartVlog = {
-                    // 使用默认 Vlog 模板启动录制
-                    val defaultTemplate = VlogTemplate(
-                        name = "快速 Vlog",
-                        clips = listOf(
-                            VlogClip("看镜头微笑", "第1幕", 3f),
-                            VlogClip("转个圈展示全身", "第2幕", 3f),
-                            VlogClip("挥手告别", "第3幕", 2f)
-                        )
-                    )
-                    viewModel.startVlog(defaultTemplate)
-                },
+                onFilter = { viewModel.toggleFilterSelector() },
+                onExposure = { showExposurePanel = !showExposurePanel },
+                onScreenFillLight = { viewModel.toggleScreenFillLight() },
+                onStartVlog = { viewModel.toggleVlogTemplateSelector() },
                 onStopVlog = { viewModel.stopVlog() },
+                onScene = { viewModel.toggleSceneSelector() },
                 isVlogRecording = isVlogRecording,
                 isVlogMerging = isVlogMerging,
                 isAutoCapturing = isAutoCapturing,
                 smileEnabled = smileEnabled,
-                gridEnabled = gridEnabled
+                gridEnabled = gridEnabled,
+                screenFillLightEnabled = screenFillLightEnabled,
+                currentFilterName = currentFilter.displayName
             )
         }
 
@@ -223,6 +337,39 @@ fun ShootingScreen(
                 viewModel = viewModel
             )
         }
+
+        if (showSceneSelector) {
+            SceneSelectorBottomSheetComposable(
+                viewModel = viewModel,
+                currentScene = currentScene,
+                onDismiss = { viewModel.toggleSceneSelector() }
+            ) { scene ->
+                viewModel.setScene(scene)
+                viewModel.toggleSceneSelector()
+            }
+        }
+
+        if (showFilterSelector) {
+            FilterSelectorBottomSheet(
+                currentFilter = currentFilter,
+                onFilterSelected = {
+                    viewModel.setFilter(it)
+                    viewModel.toggleFilterSelector()
+                },
+                onDismiss = { viewModel.toggleFilterSelector() }
+            )
+        }
+
+        if (showVlogTemplateSelector) {
+            VlogTemplateSelectorBottomSheet(
+                templates = viewModel.getVlogTemplates(),
+                onTemplateSelected = {
+                    viewModel.startVlog(it)
+                    viewModel.toggleVlogTemplateSelector()
+                },
+                onDismiss = { viewModel.toggleVlogTemplateSelector() }
+            )
+        }
     }
 }
 
@@ -232,7 +379,8 @@ fun TopBar(
     planName: String,
     planIndex: Int,
     totalPlans: Int,
-    onSettings: () -> Unit
+    onSettings: () -> Unit,
+    onSceneClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -241,6 +389,14 @@ fun TopBar(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        IconButton(onClick = onSceneClick) {
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = "场景",
+                tint = Accent,
+                modifier = Modifier.size(22.dp)
+            )
+        }
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = sceneName,
@@ -323,6 +479,15 @@ fun LowLightOverlay() {
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFFFF0E0).copy(alpha = 0.08f))
+    )
+}
+
+@Composable
+fun ScreenFillLightOverlay(intensity: Float) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White.copy(alpha = intensity * 0.25f))
     )
 }
 
@@ -422,13 +587,19 @@ fun BottomControls(
     onToggleAuto: () -> Unit,
     onSmile: () -> Unit,
     onGrid: () -> Unit,
+    onFilter: () -> Unit,
+    onExposure: () -> Unit,
+    onScreenFillLight: () -> Unit,
     onStartVlog: () -> Unit,
     onStopVlog: () -> Unit,
+    onScene: () -> Unit,
     isVlogRecording: Boolean,
     isVlogMerging: Boolean,
     isAutoCapturing: Boolean,
     smileEnabled: Boolean,
-    gridEnabled: Boolean
+    gridEnabled: Boolean,
+    screenFillLightEnabled: Boolean,
+    currentFilterName: String
 ) {
     Column {
         Row(
@@ -441,7 +612,7 @@ fun BottomControls(
                     imageVector = Icons.Default.Mood,
                     contentDescription = "微笑快门",
                     tint = if (smileEnabled) Accent else TextSecondary,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(26.dp)
                 )
             }
             IconButton(onClick = onGrid) {
@@ -449,7 +620,48 @@ fun BottomControls(
                     imageVector = Icons.Default.GridOn,
                     contentDescription = "网格",
                     tint = if (gridEnabled) Accent else TextSecondary,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+            IconButton(onClick = onFilter) {
+                Icon(
+                    imageVector = Icons.Default.Palette,
+                    contentDescription = "滤镜",
+                    tint = if (currentFilterName != "原图") Accent else TextSecondary,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+            IconButton(onClick = onExposure) {
+                Icon(
+                    imageVector = Icons.Default.Exposure,
+                    contentDescription = "曝光",
+                    tint = TextSecondary,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+            IconButton(onClick = onScreenFillLight) {
+                Icon(
+                    imageVector = Icons.Default.BrightnessHigh,
+                    contentDescription = "屏幕补光",
+                    tint = if (screenFillLightEnabled) Accent else TextSecondary,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onScene) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = "场景",
+                    tint = TextSecondary,
+                    modifier = Modifier.size(26.dp)
                 )
             }
             IconButton(onClick = onToggleAuto) {
@@ -457,7 +669,7 @@ fun BottomControls(
                     imageVector = Icons.Default.Star,
                     contentDescription = "自动抓拍",
                     tint = if (isAutoCapturing) Accent else TextSecondary,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(26.dp)
                 )
             }
             IconButton(onClick = onSwitch) {
@@ -465,7 +677,15 @@ fun BottomControls(
                     imageVector = Icons.Default.Cameraswitch,
                     contentDescription = "切换摄像头",
                     tint = TextPrimary,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+            IconButton(onClick = onStartVlog) {
+                Icon(
+                    imageVector = Icons.Default.Videocam,
+                    contentDescription = "Vlog",
+                    tint = if (isVlogRecording || isVlogMerging) Accent else TextSecondary,
+                    modifier = Modifier.size(26.dp)
                 )
             }
         }
@@ -615,7 +835,7 @@ fun SilhouetteOverlay(
                 color = androidx.compose.ui.graphics.Color(color),
                 radius = 8.dp.toPx(),
                 center = androidx.compose.ui.geometry.Offset(cx, cy),
-                alpha = 0.6f
+                alpha = 0.4f
             )
         }
 
@@ -643,9 +863,43 @@ fun SilhouetteOverlay(
                     start = androidx.compose.ui.geometry.Offset(pa.x * w, pa.y * h),
                     end = androidx.compose.ui.geometry.Offset(pb.x * w, pb.y * h),
                     strokeWidth = 3.dp.toPx(),
-                    alpha = 0.5f
+                    alpha = 0.3f
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun DetectedSkeletonOverlay(
+    lines: List<Pair<android.graphics.PointF, android.graphics.PointF>>,
+    points: Map<String, android.graphics.PointF>,
+    score: Float,
+    modifier: Modifier = Modifier
+) {
+    androidx.compose.foundation.Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+
+        lines.forEach { (pa, pb) ->
+            drawLine(
+                color = Color.Green,
+                start = androidx.compose.ui.geometry.Offset(pa.x * w, pa.y * h),
+                end = androidx.compose.ui.geometry.Offset(pb.x * w, pb.y * h),
+                strokeWidth = 4.dp.toPx(),
+                alpha = 0.85f
+            )
+        }
+
+        points.values.forEach { point ->
+            val cx = point.x * w
+            val cy = point.y * h
+            drawCircle(
+                color = Color.Green,
+                radius = 6.dp.toPx(),
+                center = androidx.compose.ui.geometry.Offset(cx, cy),
+                alpha = 0.9f
+            )
         }
     }
 }
@@ -813,6 +1067,452 @@ fun SettingToggle(
                 checkedThumbColor = Accent,
                 checkedTrackColor = Accent.copy(alpha = 0.5f)
             )
+        )
+    }
+}
+
+@Composable
+fun ExposurePanel(
+    exposureValue: Int,
+    minExposure: Int,
+    maxExposure: Int,
+    onDecrease: () -> Unit,
+    onIncrease: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(end = 16.dp, top = 100.dp),
+        contentAlignment = Alignment.TopEnd
+    ) {
+        Column(
+            modifier = Modifier
+                .background(SurfaceGlass, RoundedCornerShape(16.dp))
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            IconButton(onClick = onIncrease, modifier = Modifier.size(32.dp)) {
+                Text("+", color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            }
+            Text(
+                text = "$exposureValue",
+                color = TextPrimary,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+            IconButton(onClick = onDecrease, modifier = Modifier.size(32.dp)) {
+                Text("-", color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SceneSelectorBottomSheetComposable(
+    viewModel: ShootingViewModel,
+    currentScene: SceneType,
+    onDismiss: () -> Unit,
+    onSceneSelected: (SceneType) -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = SurfaceDark,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "选择场景",
+                color = TextPrimary,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            androidx.compose.foundation.lazy.LazyColumn {
+                items(SceneType.values().filter { it != SceneType.UNKNOWN }) { scene ->
+                    SceneItem(
+                        scene = scene,
+                        isSelected = scene == currentScene,
+                        onClick = { onSceneSelected(scene) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SceneItem(scene: SceneType, isSelected: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp)
+            .background(
+                if (isSelected) Accent.copy(alpha = 0.15f) else Color.Transparent,
+                RoundedCornerShape(12.dp)
+            )
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = scene.displayName,
+                color = TextPrimary,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = "${scene.plans.size} 个姿势方案",
+                color = TextSecondary,
+                fontSize = 13.sp
+            )
+        }
+        if (isSelected) {
+            Icon(
+                imageVector = Icons.Default.Star,
+                contentDescription = null,
+                tint = Accent,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FilterSelectorBottomSheet(
+    currentFilter: PhotoFilterEngine.Filter,
+    onFilterSelected: (PhotoFilterEngine.Filter) -> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = SurfaceDark,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "选择滤镜",
+                color = TextPrimary,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(PhotoFilterEngine.Filter.values()) { filter ->
+                    FilterItem(
+                        filter = filter,
+                        isSelected = filter == currentFilter,
+                        onClick = { onFilterSelected(filter) }
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+fun FilterItem(
+    filter: PhotoFilterEngine.Filter,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(80.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(72.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(
+                    when (filter) {
+                        PhotoFilterEngine.Filter.ORIGINAL -> Color.Gray
+                        PhotoFilterEngine.Filter.VIVID -> Color(0xFFFFB74D)
+                        PhotoFilterEngine.Filter.WARM -> Color(0xFFFFCC80)
+                        PhotoFilterEngine.Filter.COOL -> Color(0xFF81D4FA)
+                        PhotoFilterEngine.Filter.FADE -> Color(0xFFE0E0E0)
+                        PhotoFilterEngine.Filter.VINTAGE -> Color(0xFFD7CCC8)
+                        PhotoFilterEngine.Filter.MONO -> Color(0xFF757575)
+                        PhotoFilterEngine.Filter.DRAMATIC -> Color(0xFF424242)
+                    }
+                )
+                .border(
+                    width = if (isSelected) 3.dp else 0.dp,
+                    color = if (isSelected) Accent else Color.Transparent,
+                    shape = RoundedCornerShape(12.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = filter.displayName.take(1),
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = filter.displayName,
+            color = if (isSelected) Accent else TextSecondary,
+            fontSize = 12.sp,
+            fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun VlogTemplateSelectorBottomSheet(
+    templates: List<VlogTemplate>,
+    onTemplateSelected: (VlogTemplate) -> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = SurfaceDark,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "选择 Vlog 模板",
+                color = TextPrimary,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            androidx.compose.foundation.lazy.LazyColumn {
+                items(templates) { template ->
+                    VlogTemplateItem(
+                        template = template,
+                        onClick = { onTemplateSelected(template) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun VlogTemplateItem(template: VlogTemplate, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp)
+            .background(SurfaceGlass, RoundedCornerShape(12.dp))
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .background(Accent.copy(alpha = 0.2f), RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Videocam,
+                contentDescription = null,
+                tint = Accent,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = template.name,
+                color = TextPrimary,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = "${template.clips.size} 个分镜 · 约 ${template.clips.sumOf { it.duration.toInt() }} 秒",
+                color = TextSecondary,
+                fontSize = 13.sp
+            )
+        }
+        Icon(
+            imageVector = Icons.Default.PlayArrow,
+            contentDescription = "开始",
+            tint = Accent,
+            modifier = Modifier.size(24.dp)
+        )
+    }
+}
+
+@Composable
+fun SequenceIndicator(
+    currentIndex: Int,
+    totalSteps: Int,
+    stepName: String,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .background(SurfaceGlass, RoundedCornerShape(12.dp))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onPrevious, modifier = Modifier.size(32.dp)) {
+            Icon(
+                imageVector = Icons.Default.ChevronLeft,
+                contentDescription = "上一步",
+                tint = TextPrimary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "分镜 ${currentIndex + 1}/$totalSteps",
+                color = TextSecondary,
+                fontSize = 11.sp
+            )
+            Text(
+                text = stepName,
+                color = TextPrimary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+        IconButton(onClick = onNext, modifier = Modifier.size(32.dp)) {
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = "下一步",
+                tint = TextPrimary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun AngleIndicator(
+    currentAngleName: String,
+    angleCount: Int,
+    onNextAngle: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .background(SurfaceGlass, RoundedCornerShape(12.dp))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.RotateRight,
+            contentDescription = null,
+            tint = Accent,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "视角: $currentAngleName",
+            color = TextPrimary,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.weight(1f)
+        )
+        TextButton(onClick = onNextAngle) {
+            Text(
+                text = "切换",
+                color = Accent,
+                fontSize = 12.sp
+            )
+        }
+    }
+}
+
+@Composable
+fun SecondaryPoseToggle(
+    isSecondary: Boolean,
+    onToggle: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .background(SurfaceGlass, RoundedCornerShape(12.dp))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Flip,
+            contentDescription = null,
+            tint = Accent,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = if (isSecondary) "目标姿势: 备选" else "目标姿势: 主姿势",
+            color = TextPrimary,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.weight(1f)
+        )
+        Switch(
+            checked = isSecondary,
+            onCheckedChange = { onToggle() },
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Accent,
+                checkedTrackColor = Accent.copy(alpha = 0.3f)
+            )
+        )
+    }
+}
+
+@Composable
+fun PlanVlogButton(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clickable { onClick() }
+            .background(Accent.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.MovieFilter,
+            contentDescription = null,
+            tint = Accent,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "用当前姿势拍 Vlog",
+            color = Accent,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.weight(1f)
+        )
+        Icon(
+            imageVector = Icons.Default.PlayArrow,
+            contentDescription = null,
+            tint = Accent,
+            modifier = Modifier.size(18.dp)
         )
     }
 }

@@ -4,7 +4,7 @@ import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
-import android.graphics.Matrix
+import android.graphics.PointF
 import android.graphics.Rect
 import android.graphics.YuvImage
 import android.media.AudioManager
@@ -22,6 +22,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewModelScope
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.pose.Pose
 import com.poseai.app.PoseAIApp
 import com.poseai.app.camera.CameraManager
 import com.poseai.app.data.ShootingRecord
@@ -31,6 +32,7 @@ import com.poseai.app.engine.SceneClassifier
 import com.poseai.app.engine.SmileDetector
 import com.poseai.app.model.SceneType
 import com.poseai.app.model.ShootingPlan
+import com.poseai.app.model.VlogClip
 import com.poseai.app.model.VlogTemplate
 import com.poseai.app.store.StoreManager
 import com.poseai.app.util.PhotoFilterEngine
@@ -60,6 +62,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         private const val SMILE_FRAME_INTERVAL = 150L
         private const val LOW_LIGHT_THRESHOLD = 50
         private const val AUTO_CAPTURE_SCORE_THRESHOLD = 80f
+        private const val SCREEN_FILL_LIGHT_BRIGHTNESS = 0.4f
     }
 
     private val app = application as PoseAIApp
@@ -87,6 +90,21 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     private val _poseScore = MutableStateFlow(0f)
     val poseScore: StateFlow<Float> = _poseScore.asStateFlow()
 
+    private val _detectedPoseLines = MutableStateFlow<List<Pair<PointF, PointF>>>(emptyList())
+    val detectedPoseLines: StateFlow<List<Pair<PointF, PointF>>> = _detectedPoseLines.asStateFlow()
+
+    private val _detectedPosePoints = MutableStateFlow<Map<String, PointF>>(emptyMap())
+    val detectedPosePoints: StateFlow<Map<String, PointF>> = _detectedPosePoints.asStateFlow()
+
+    private val _useSecondaryPose = MutableStateFlow(false)
+    val useSecondaryPose: StateFlow<Boolean> = _useSecondaryPose.asStateFlow()
+
+    private val _currentSequenceIndex = MutableStateFlow(0)
+    val currentSequenceIndex: StateFlow<Int> = _currentSequenceIndex.asStateFlow()
+
+    private val _currentAngleIndex = MutableStateFlow(0)
+    val currentAngleIndex: StateFlow<Int> = _currentAngleIndex.asStateFlow()
+
     private val _isAutoCapturing = MutableStateFlow(false)
     val isAutoCapturing: StateFlow<Boolean> = _isAutoCapturing.asStateFlow()
 
@@ -113,6 +131,12 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
 
     private val _isLowLightWarning = MutableStateFlow(false)
     val isLowLightWarning: StateFlow<Boolean> = _isLowLightWarning.asStateFlow()
+
+    private val _screenFillLightEnabled = MutableStateFlow(false)
+    val screenFillLightEnabled: StateFlow<Boolean> = _screenFillLightEnabled.asStateFlow()
+
+    private val _screenFillLightIntensity = MutableStateFlow(SCREEN_FILL_LIGHT_BRIGHTNESS)
+    val screenFillLightIntensity: StateFlow<Float> = _screenFillLightIntensity.asStateFlow()
 
     private val _isHeatWarning = MutableStateFlow(false)
     val isHeatWarning: StateFlow<Boolean> = _isHeatWarning.asStateFlow()
@@ -147,12 +171,73 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     private val _captureCount = MutableStateFlow(0)
     val captureCount: StateFlow<Int> = _captureCount.asStateFlow()
 
+    private val _currentFilter = MutableStateFlow(PhotoFilterEngine.Filter.ORIGINAL)
+    val currentFilter: StateFlow<PhotoFilterEngine.Filter> = _currentFilter.asStateFlow()
+
+    private val _exposureValue = MutableStateFlow(0)
+    val exposureValue: StateFlow<Int> = _exposureValue.asStateFlow()
+
+    private val _zoomLevel = MutableStateFlow(1f)
+    val zoomLevel: StateFlow<Float> = _zoomLevel.asStateFlow()
+
+    private val _showSceneSelector = MutableStateFlow(false)
+    val showSceneSelector: StateFlow<Boolean> = _showSceneSelector.asStateFlow()
+
+    private val _showFilterSelector = MutableStateFlow(false)
+    val showFilterSelector: StateFlow<Boolean> = _showFilterSelector.asStateFlow()
+
+    private val _showVlogTemplateSelector = MutableStateFlow(false)
+    val showVlogTemplateSelector: StateFlow<Boolean> = _showVlogTemplateSelector.asStateFlow()
+
+    private val vlogTemplates = listOf(
+        VlogTemplate(
+            name = "快速 Vlog",
+            clips = listOf(
+                VlogClip("看镜头微笑", "第1幕 · 开场问候", 3f),
+                VlogClip("转个圈展示全身", "第2幕 · 全身展示", 3f),
+                VlogClip("挥手告别", "第3幕 · 结尾", 2f)
+            )
+        ),
+        VlogTemplate(
+            name = "穿搭分享",
+            clips = listOf(
+                VlogClip("近距离展示上衣细节", "第1幕 · 上衣", 3f),
+                VlogClip("拉远展示全身搭配", "第2幕 · 全身", 4f),
+                VlogClip("展示鞋子和包包", "第3幕 · 配饰", 3f),
+                VlogClip("比心结束", "第4幕 · 结尾", 2f)
+            )
+        ),
+        VlogTemplate(
+            name = "美食探店",
+            clips = listOf(
+                VlogClip("对着食物比个耶", "第1幕 · 美食登场", 3f),
+                VlogClip("做一个开动的手势", "第2幕 · 开动啦", 3f),
+                VlogClip("品尝后微笑点头", "第3幕 · 好吃", 3f),
+                VlogClip("竖大拇指推荐", "第4幕 · 推荐", 2f)
+            )
+        ),
+        VlogTemplate(
+            name = "旅行记录",
+            clips = listOf(
+                VlogClip("站在景点前挥手", "第1幕 · 到达", 3f),
+                VlogClip("展示周围风景", "第2幕 · 风景", 4f),
+                VlogClip("开心地比心", "第3幕 · 心情", 2f),
+                VlogClip("转身走向远方", "第4幕 · 继续前行", 4f)
+            )
+        )
+    )
+
+    fun getVlogTemplates(): List<VlogTemplate> = vlogTemplates
+
     private var autoCaptureJob: Job? = null
     private var vlogCaptureJob: Job? = null
 
     private var lastSceneDetectionTime = 0L
     private var lastPoseFrameTime = 0L
     private var lastSmileFrameTime = 0L
+
+    private var frameWidth = 0
+    private var frameHeight = 0
 
     private val photoOutputDir: File by lazy {
         File(app.filesDir, "photos").apply { mkdirs() }
@@ -243,15 +328,39 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                     val plan = currentPlan
                     val detector = poseDetector
                     val isFront = cameraManager?.isFrontCamera?.value ?: false
+                    frameWidth = width
+                    frameHeight = height
 
-                    if (plan != null && detector != null) {
+                    if (detector != null) {
                         val inputImage = InputImage.fromMediaImage(mediaImage, rotationDegrees)
                         viewModelScope.launch {
                             try {
-                                val pose = detector.detect(inputImage) ?: return@launch
-                                if (PoseUtils.isPoseValid(pose)) {
+                                val pose: Pose = detector.detect(inputImage) ?: return@launch
+                                val isValid = PoseUtils.isPoseValid(pose)
+
+                                if (isValid) {
+                                    val detectedMap = PoseUtils.poseToNormalizedMap(
+                                        pose, width.toFloat(), height.toFloat(), isFront
+                                    )
+                                    _detectedPosePoints.value = detectedMap
+
+                                    val skeletonLines = PoseUtils.getSkeletonLines(
+                                        pose, width.toFloat(), height.toFloat(), isFront
+                                    )
+                                    _detectedPoseLines.value = skeletonLines
+                                } else {
+                                    _detectedPosePoints.value = emptyMap()
+                                    _detectedPoseLines.value = emptyList()
+                                }
+
+                                if (plan != null && isValid) {
+                                    val targetPoints = if (_useSecondaryPose.value && plan.secondaryPosePoints.isNotEmpty()) {
+                                        plan.secondaryPosePoints
+                                    } else {
+                                        plan.posePoints
+                                    }
                                     val score = PoseUtils.calculateSimilarity(
-                                        pose, plan.posePoints,
+                                        pose, targetPoints,
                                         width.toFloat(), height.toFloat(), isFront
                                     )
                                     _poseScore.value = score
@@ -440,10 +549,20 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         try {
             // 暗光降噪
             if (_lowLightMode.value && _isLowLightWarning.value) {
-                val denoised = PhotoFilterEngine.applyLowLightDenoise(bitmap)
+                val denoised = PhotoFilterEngine.applyLowLightDenoise(bitmap!!)
                 if (denoised !== bitmap) {
                     bitmap?.recycle()
                     bitmap = denoised
+                }
+            }
+
+            // 应用滤镜
+            val filter = _currentFilter.value
+            if (filter != PhotoFilterEngine.Filter.ORIGINAL && bitmap != null) {
+                val filtered = PhotoFilterEngine.applyFilter(bitmap!!, filter)
+                if (filtered !== bitmap) {
+                    bitmap?.recycle()
+                    bitmap = filtered
                 }
             }
 
@@ -772,6 +891,130 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun getCaptureHistory() = app.database.shootingDao().getAll()
+
+    // ====== 滤镜控制 ======
+
+    fun setFilter(filter: PhotoFilterEngine.Filter) {
+        _currentFilter.value = filter
+    }
+
+    fun nextFilter() {
+        val values = PhotoFilterEngine.Filter.values()
+        val idx = values.indexOf(_currentFilter.value)
+        _currentFilter.value = values[(idx + 1) % values.size]
+    }
+
+    fun previousFilter() {
+        val values = PhotoFilterEngine.Filter.values()
+        val idx = values.indexOf(_currentFilter.value)
+        _currentFilter.value = values[(idx - 1 + values.size) % values.size]
+    }
+
+    // ====== 曝光补偿控制 ======
+
+    fun setExposureCompensation(value: Int) {
+        cameraManager?.setExposureCompensation(value)
+        _exposureValue.value = value
+    }
+
+    fun increaseExposure() {
+        val max = cameraManager?.getMaxExposure() ?: 10
+        val current = _exposureValue.value
+        if (current < max) {
+            setExposureCompensation(current + 1)
+        }
+    }
+
+    fun decreaseExposure() {
+        val min = cameraManager?.getMinExposure() ?: -10
+        val current = _exposureValue.value
+        if (current > min) {
+            setExposureCompensation(current - 1)
+        }
+    }
+
+    // ====== 变焦控制 ======
+
+    fun setZoom(ratio: Float) {
+        cameraManager?.setZoomRatio(ratio)
+        _zoomLevel.value = ratio
+    }
+
+    // ====== 辅助姿势 / 连拍 / 多角度 ======
+
+    fun toggleSecondaryPose(): Boolean {
+        val newValue = !_useSecondaryPose.value
+        _useSecondaryPose.value = newValue
+        _poseScore.value = 0f
+        return newValue
+    }
+
+    fun nextSequenceStep() {
+        val plan = currentPlan ?: return
+        if (plan.sequence.isEmpty()) return
+        _currentSequenceIndex.value = (_currentSequenceIndex.value + 1) % plan.sequence.size
+    }
+
+    fun previousSequenceStep() {
+        val plan = currentPlan ?: return
+        if (plan.sequence.isEmpty()) return
+        _currentSequenceIndex.value = if (_currentSequenceIndex.value > 0) {
+            _currentSequenceIndex.value - 1
+        } else {
+            plan.sequence.size - 1
+        }
+    }
+
+    fun nextAngle() {
+        val plan = currentPlan ?: return
+        if (plan.multiAngles.isEmpty()) return
+        _currentAngleIndex.value = (_currentAngleIndex.value + 1) % plan.multiAngles.size
+    }
+
+    fun getCurrentSequenceShot() = currentPlan?.sequence?.getOrNull(_currentSequenceIndex.value)
+    fun getCurrentAngle() = currentPlan?.multiAngles?.getOrNull(_currentAngleIndex.value)
+
+    fun startVlogFromPlan() {
+        val plan = currentPlan ?: return
+        val vlogScript = plan.vlogScript ?: return
+        startVlog(vlogScript)
+    }
+
+    // ====== 屏幕补光 ======
+
+    fun toggleScreenFillLight(): Boolean {
+        val newValue = !_screenFillLightEnabled.value
+        _screenFillLightEnabled.value = newValue
+        return newValue
+    }
+
+    fun setScreenFillLightEnabled(enabled: Boolean) {
+        _screenFillLightEnabled.value = enabled
+    }
+
+    fun setScreenFillLightIntensity(intensity: Float) {
+        _screenFillLightIntensity.value = intensity.coerceIn(0.1f, 1f)
+    }
+
+    // ====== 选择器控制 ======
+
+    fun toggleSceneSelector() {
+        _showSceneSelector.value = !_showSceneSelector.value
+    }
+
+    fun toggleFilterSelector() {
+        _showFilterSelector.value = !_showFilterSelector.value
+    }
+
+    fun toggleVlogTemplateSelector() {
+        _showVlogTemplateSelector.value = !_showVlogTemplateSelector.value
+    }
+
+    fun dismissSelectors() {
+        _showSceneSelector.value = false
+        _showFilterSelector.value = false
+        _showVlogTemplateSelector.value = false
+    }
 
     // ====== 清理 ======
 

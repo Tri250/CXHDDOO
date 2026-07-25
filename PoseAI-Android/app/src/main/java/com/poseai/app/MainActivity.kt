@@ -13,16 +13,25 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Style
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.poseai.app.ui.GalleryScreen
 import com.poseai.app.ui.OOTDAnalysisScreen
@@ -124,6 +133,19 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+data class BottomNavItem(
+    val route: String,
+    val label: String,
+    val icon: ImageVector
+)
+
+val bottomNavItems = listOf(
+    BottomNavItem("shooting", "拍摄", Icons.Default.CameraAlt),
+    BottomNavItem("gallery", "相册", Icons.Default.PhotoLibrary),
+    BottomNavItem("ootd", "穿搭", Icons.Default.Style),
+    BottomNavItem("pro", "Pro", Icons.Default.WorkspacePremium)
+)
+
 @Composable
 fun PoseAINavHost(
     onViewModelCreated: (ShootingViewModel) -> Unit
@@ -133,115 +155,177 @@ fun PoseAINavHost(
     val onboardingCompleted by PoseAIApp.getStoreManager().onboardingCompleted.collectAsState(initial = false)
     val startDestination = if (onboardingCompleted) "shooting" else "onboarding"
 
-    NavHost(
-        navController = navController,
-        startDestination = startDestination
-    ) {
-        composable("onboarding") {
-            OnboardingScreen(
-                onComplete = {
-                    scope.launch {
-                        PoseAIApp.getStoreManager().setOnboardingCompleted(true)
-                    }
-                    navController.navigate("ai_activation") {
-                        popUpTo("onboarding") { inclusive = true }
-                    }
-                }
-            )
-        }
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
+    val showBottomBar = bottomNavItems.any { it.route == currentDestination?.route }
 
-        composable("ai_activation") {
-            val aiModelManager = PoseAIApp.getAIModelManager()
-            var activationStatus by remember { mutableStateOf("") }
-            var isActivating by remember { mutableStateOf(false) }
-            var isComplete by remember { mutableStateOf(false) }
-
-            LaunchedEffect(Unit) {
-                if (aiModelManager.isActivated) {
-                    isComplete = true
+    Scaffold(
+        bottomBar = {
+            if (showBottomBar) {
+                NavigationBar(
+                    containerColor = com.poseai.app.ui.theme.SurfaceDark,
+                    contentColor = com.poseai.app.ui.theme.TextPrimary
+                ) {
+                    bottomNavItems.forEach { item ->
+                        val selected = currentDestination?.hierarchy?.any { it.route == item.route } == true
+                        NavigationBarItem(
+                            icon = {
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = item.label,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = item.label,
+                                    fontSize = 11.sp
+                                )
+                            },
+                            selected = selected,
+                            onClick = {
+                                navController.navigate(item.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = com.poseai.app.ui.theme.Accent,
+                                selectedTextColor = com.poseai.app.ui.theme.Accent,
+                                unselectedIconColor = com.poseai.app.ui.theme.TextSecondary,
+                                unselectedTextColor = com.poseai.app.ui.theme.TextSecondary,
+                                indicatorColor = com.poseai.app.ui.theme.Accent.copy(alpha = 0.15f)
+                            )
+                        )
+                    }
                 }
             }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+        }
+    ) { innerPadding ->
+        Box(modifier = Modifier.padding(innerPadding)) {
+            NavHost(
+                navController = navController,
+                startDestination = startDestination
             ) {
-                Text(
-                    text = "AI 模型激活",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-
-                if (isComplete) {
-                    Text(
-                        text = "AI 模型已就绪",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Button(onClick = {
-                        navController.navigate("shooting") {
-                            popUpTo("ai_activation") { inclusive = true }
-                        }
-                    }) {
-                        Text("开始使用")
-                    }
-                } else {
-                    Text(
-                        text = if (activationStatus.isNotEmpty()) activationStatus
-                        else "正在激活 AI 模型...",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    if (!isActivating) {
-                        Button(onClick = {
-                            isActivating = true
-                            activationStatus = "正在激活..."
+                composable("onboarding") {
+                    OnboardingScreen(
+                        onComplete = {
                             scope.launch {
-                                val result = aiModelManager.activate()
-                                activationStatus = result.message
-                                isActivating = false
-                                isComplete = result.success
+                                PoseAIApp.getStoreManager().setOnboardingCompleted(true)
                             }
-                        }) {
-                            Text("激活 AI 模型")
+                            navController.navigate("ai_activation") {
+                                popUpTo("onboarding") { inclusive = true }
+                            }
                         }
-                    } else {
-                        CircularProgressIndicator()
+                    )
+                }
+
+                composable("ai_activation") {
+                    val aiModelManager = PoseAIApp.getAIModelManager()
+                    var activationStatus by remember { mutableStateOf("") }
+                    var isActivating by remember { mutableStateOf(false) }
+                    var isComplete by remember { mutableStateOf(false) }
+
+                    LaunchedEffect(Unit) {
+                        if (aiModelManager.isActivated) {
+                            isComplete = true
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "AI 模型激活",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        if (isComplete) {
+                            Text(
+                                text = "AI 模型已就绪",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Button(onClick = {
+                                navController.navigate("shooting") {
+                                    popUpTo("ai_activation") { inclusive = true }
+                                }
+                            }) {
+                                Text("开始使用")
+                            }
+                        } else {
+                            Text(
+                                text = if (activationStatus.isNotEmpty()) activationStatus
+                                else "正在激活 AI 模型...",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            if (!isActivating) {
+                                Button(onClick = {
+                                    isActivating = true
+                                    activationStatus = "正在激活..."
+                                    scope.launch {
+                                        val result = aiModelManager.activate()
+                                        activationStatus = result.message
+                                        isActivating = false
+                                        isComplete = result.success
+                                    }
+                                }) {
+                                    Text("激活 AI 模型")
+                                }
+                            } else {
+                                CircularProgressIndicator()
+                            }
+                        }
                     }
                 }
+
+                composable("shooting") {
+                    val viewModel: ShootingViewModel = viewModel()
+                    LaunchedEffect(viewModel) { onViewModelCreated(viewModel) }
+                    ShootingScreen(viewModel = viewModel)
+                }
+
+                composable("gallery") {
+                    val viewModel: ShootingViewModel = viewModel()
+                    GalleryScreen(viewModel = viewModel)
+                }
+
+                composable("ootd") {
+                    val viewModel: ShootingViewModel = viewModel()
+                    OOTDAnalysisScreen(viewModel = viewModel)
+                }
+
+                composable("pro") {
+                    val proViewModel: ShootingViewModel = viewModel()
+                    ProScreen(
+                        isProUnlocked = false,
+                        onPurchase = { planId ->
+                            scope.launch {
+                                PoseAIApp.getStoreManager().setProUnlocked(true)
+                            }
+                        },
+                        onRestore = {
+                            scope.launch {
+                                PoseAIApp.getStoreManager().setProUnlocked(true)
+                            }
+                        }
+                    )
+                }
             }
-        }
-
-        composable("shooting") {
-            val viewModel: ShootingViewModel = viewModel()
-            LaunchedEffect(viewModel) { onViewModelCreated(viewModel) }
-            ShootingScreen(viewModel = viewModel)
-        }
-
-        composable("gallery") {
-            val viewModel: ShootingViewModel = viewModel()
-            GalleryScreen(viewModel = viewModel)
-        }
-
-        composable("ootd") {
-            val viewModel: ShootingViewModel = viewModel()
-            OOTDAnalysisScreen(viewModel = viewModel)
-        }
-
-        composable("pro") {
-            ProScreen(
-                isProUnlocked = false,
-                onPurchase = { },
-                onRestore = { }
-            )
         }
     }
 }
