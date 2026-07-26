@@ -61,6 +61,7 @@ import com.poseai.app.model.SceneType
 import com.poseai.app.model.ShootingPlan
 import com.poseai.app.ui.theme.*
 import com.poseai.app.util.PhotoFilterEngine
+import com.poseai.app.ui.theme.Dimens
 import com.poseai.app.viewmodel.ShootingViewModel
 import kotlinx.coroutines.launch
 import kotlin.math.*
@@ -389,8 +390,8 @@ fun ShootingScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = statusBarPadding.calculateTopPadding() + 8.dp)
-                    .padding(horizontal = 18.dp)
+                    .padding(top = statusBarPadding.calculateTopPadding() + Dimens.spacingXs)
+                    .padding(horizontal = Dimens.screenMarginH)
             ) {
                 TopBar(
                     scene = currentScene,
@@ -466,23 +467,24 @@ fun ShootingScreen(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 260.dp)
-                        .background(Accent.copy(alpha = 0.9f), RoundedCornerShape(20.dp))
+                        .background(Accent.copy(alpha = 0.9f), RoundedCornerShape(Dimens.radiusXl))
                         .clickable { viewModel.acceptRecommendedPlan() }
-                        .padding(horizontal = 20.dp, vertical = 10.dp),
+                        .padding(horizontal = Dimens.spacingXl, vertical = Dimens.spacingSm),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.AutoAwesome,
                         contentDescription = null,
                         tint = Color.Black,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(Dimens.iconXs)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(Dimens.spacingSm))
                     Text(
                         text = "推荐方案: ${recPlan.poseName}",
                         color = Color.Black,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = Dimens.fontLabel,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = Dimens.lineHeightLabel
                     )
                 }
             }
@@ -789,34 +791,37 @@ fun SceneScanningOverlay(
                                     size = Size(size.width, size.height)
                                 )
                             }
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.height(Dimens.spacingSm + 2.dp))
                             Text(
                                 text = "识别场景中…",
                                 color = TextPrimary,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold
+                                fontSize = Dimens.fontLabel,
+                                fontWeight = FontWeight.SemiBold,
+                                lineHeight = Dimens.lineHeightLabel
                             )
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(Dimens.spacingXxl))
 
             // 提示文字（带渐显动画）
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "将镜头对准拍摄背景",
                     color = TextPrimary.copy(alpha = 0.85f),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
+                    fontSize = Dimens.fontBody,
+                    fontWeight = FontWeight.Medium,
+                    lineHeight = Dimens.lineHeightBody
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(Dimens.spacingXs + 2.dp))
                 Text(
                     text = "咖啡馆 · 海边 · 森林",
                     color = Accent.copy(alpha = 0.7f),
-                    fontSize = 12.sp,
-                    letterSpacing = 2.sp
+                    fontSize = Dimens.fontCaption,
+                    letterSpacing = 2.sp,
+                    lineHeight = Dimens.lineHeightCaption
                 )
             }
         }
@@ -877,9 +882,9 @@ fun TopBar(
         if (isSceneReady && plan != null) {
             Row(
                 modifier = Modifier
-                    .background(Surface, RoundedCornerShape(18.dp))
-                    .border(1.dp, Border, RoundedCornerShape(18.dp))
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                    .background(Surface, RoundedCornerShape(Dimens.radiusLg))
+                    .border(Dimens.strokeThin, Border, RoundedCornerShape(Dimens.radiusLg))
+                    .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // 场景图标
@@ -893,16 +898,17 @@ fun TopBar(
                         imageVector = Icons.Default.LocationOn,
                         contentDescription = null,
                         tint = Accent,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(Dimens.iconSm)
                     )
                 }
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(Dimens.spacingSm))
                 Column {
                     Text(
                         text = scene.displayName,
                         color = TextSecondary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium
+                        fontSize = Dimens.fontCaption,
+                        fontWeight = FontWeight.Medium,
+                        lineHeight = Dimens.lineHeightCaption
                     )
                     // 根据当前模式显示不同信息
                     if (plan.vlogScript != null && isVlogRecording) {
@@ -915,34 +921,38 @@ fun TopBar(
                                         CircleShape
                                     )
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(Dimens.spacingXs))
                             Text(
-                                text = "Vlog [分镜 ${activeVlogClipIndex + 1}/${plan.vlogScript!!.clips.size}]",
+                                text = "Vlog · 分镜 ${activeVlogClipIndex + 1}/${plan.vlogScript!!.clips.size}",
                                 color = Danger,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Black
+                                fontSize = Dimens.fontTitle,
+                                fontWeight = FontWeight.Black,
+                                lineHeight = Dimens.lineHeightTitle
                             )
                         }
                     } else if (plan.sequence.isNotEmpty()) {
                         Text(
-                            text = "[${currentSequenceIndex + 1}/${plan.sequence.size}] ${plan.sequence[currentSequenceIndex].title}",
+                            text = "${currentSequenceIndex + 1}/${plan.sequence.size} · ${plan.sequence[currentSequenceIndex].title}",
                             color = Success,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = Dimens.fontTitle,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = Dimens.lineHeightTitle
                         )
                     } else if (plan.multiAngles.isNotEmpty()) {
                         Text(
-                            text = "[${currentAngleIndex + 1}/${plan.multiAngles.size}] ${plan.multiAngles[currentAngleIndex].title}",
+                            text = "${currentAngleIndex + 1}/${plan.multiAngles.size} · ${plan.multiAngles[currentAngleIndex].title}",
                             color = Danger,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = Dimens.fontTitle,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = Dimens.lineHeightTitle
                         )
                     } else {
                         Text(
                             text = plan.poseName,
                             color = TextPrimary,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = Dimens.fontTitle,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = Dimens.lineHeightTitle
                         )
                     }
                 }
@@ -952,20 +962,21 @@ fun TopBar(
         Spacer(modifier = Modifier.weight(1f))
 
         // 右侧：倒计时徽章 + 拍照计数 + 分数环 + 设置 + 帮助按钮
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm), verticalAlignment = Alignment.CenterVertically) {
             // 倒计时徽章（timerSeconds > 0 时显示）
             if (timerSeconds > 0) {
                 Box(
                     modifier = Modifier
-                        .background(Accent.copy(alpha = 0.2f), RoundedCornerShape(50))
-                        .border(1.dp, Accent.copy(alpha = 0.6f), RoundedCornerShape(50))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .background(Accent.copy(alpha = 0.2f), RoundedCornerShape(Dimens.radiusFull))
+                        .border(Dimens.strokeThin, Accent.copy(alpha = 0.6f), RoundedCornerShape(Dimens.radiusFull))
+                        .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs)
                 ) {
                     Text(
                         text = "${timerSeconds}s",
                         color = Accent,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = Dimens.fontCaption,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = Dimens.lineHeightCaption
                     )
                 }
             }
@@ -973,9 +984,9 @@ fun TopBar(
             if (captureCount > 0) {
                 Box(
                     modifier = Modifier
-                        .background(Success.copy(alpha = 0.18f), RoundedCornerShape(50))
-                        .border(1.dp, Success.copy(alpha = 0.6f), RoundedCornerShape(50))
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                        .background(Success.copy(alpha = 0.18f), RoundedCornerShape(Dimens.radiusFull))
+                        .border(Dimens.strokeThin, Success.copy(alpha = 0.6f), RoundedCornerShape(Dimens.radiusFull))
+                        .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs),
                     contentAlignment = Alignment.Center
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -983,14 +994,15 @@ fun TopBar(
                             imageVector = Icons.Default.PhotoCamera,
                             contentDescription = null,
                             tint = Success,
-                            modifier = Modifier.size(12.dp)
+                            modifier = Modifier.size(Dimens.iconXs)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(Dimens.spacingXs))
                         Text(
                             text = "已拍 $captureCount",
                             color = Success,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = Dimens.fontCaption,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = Dimens.lineHeightCaption
                         )
                     }
                 }
@@ -1002,30 +1014,30 @@ fun TopBar(
             IconButton(
                 onClick = onSettings,
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(Dimens.buttonIcon)
                     .background(Surface, CircleShape)
-                    .border(1.dp, Border, CircleShape)
+                    .border(Dimens.strokeThin, Border, CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.Default.Settings,
                     contentDescription = "设置",
                     tint = TextPrimary,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(Dimens.iconSm)
                 )
             }
             // 帮助按钮
             IconButton(
                 onClick = onHelp,
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(Dimens.buttonIcon)
                     .background(Surface, CircleShape)
-                    .border(1.dp, Border, CircleShape)
+                    .border(Dimens.strokeThin, Border, CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.Default.QuestionMark,
                     contentDescription = "帮助",
                     tint = TextPrimary,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(Dimens.iconSm)
                 )
             }
         }
@@ -1067,7 +1079,7 @@ fun ScoreRing(score: Float, isAligned: Boolean) {
     )
 
     Box(
-        modifier = Modifier.size(54.dp).scale(alignedScale),
+        modifier = Modifier.size(Dimens.scoreRingSize).scale(alignedScale),
         contentAlignment = Alignment.Center
     ) {
         // 外发光（对齐时）
@@ -1112,8 +1124,9 @@ fun ScoreRing(score: Float, isAligned: Boolean) {
         Text(
             text = "${animatedScore.toInt()}",
             color = TextPrimary,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Black
+            fontSize = Dimens.fontLabel,
+            fontWeight = FontWeight.Black,
+            lineHeight = Dimens.lineHeightLabel
         )
     }
 }
@@ -1247,7 +1260,7 @@ fun BottomPanel(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 28.dp),
+                .padding(horizontal = Dimens.screenMarginH),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -1258,7 +1271,7 @@ fun BottomPanel(
                     onClick = onOpenGallery
                 )
             } else {
-                Spacer(modifier = Modifier.size(50.dp))
+                Spacer(modifier = Modifier.size(Dimens.thumbSize))
             }
 
             // 中：快门按钮
@@ -1275,32 +1288,32 @@ fun BottomPanel(
 
             // 右：切换摄像头 + 计时器 + 手电筒（沉浸模式隐藏）
             if (!isImmersiveMode) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)) {
                     IconButton(
                         onClick = onSwitchCamera,
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(Dimens.buttonAction)
                             .background(Surface, CircleShape)
-                            .border(1.dp, Border, CircleShape)
+                            .border(Dimens.strokeThin, Border, CircleShape)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Cameraswitch,
                             contentDescription = "切换摄像头",
                             tint = TextPrimary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(Dimens.iconMd)
                         )
                     }
 
                     IconButton(
                         onClick = onToggleTimer,
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(Dimens.buttonAction)
                             .background(
                                 if (timerSeconds > 0) Accent.copy(alpha = 0.25f) else Surface,
                                 CircleShape
                             )
                             .border(
-                                width = if (timerSeconds > 0) 1.5.dp else 1.dp,
+                                width = if (timerSeconds > 0) Dimens.strokeRegular else Dimens.strokeThin,
                                 color = if (timerSeconds > 0) Accent.copy(alpha = 0.7f) else Border,
                                 shape = CircleShape
                             )
@@ -1309,7 +1322,7 @@ fun BottomPanel(
                             imageVector = Icons.Default.Timer,
                             contentDescription = "计时器",
                             tint = if (timerSeconds > 0) Accent else TextSecondary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(Dimens.iconMd)
                         )
                     }
 
@@ -1317,13 +1330,13 @@ fun BottomPanel(
                     IconButton(
                         onClick = onToggleBurstMode,
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(Dimens.buttonAction)
                             .background(
                                 if (isBurstMode) Accent.copy(alpha = 0.25f) else Surface,
                                 CircleShape
                             )
                             .border(
-                                width = if (isBurstMode) 1.5.dp else 1.dp,
+                                width = if (isBurstMode) Dimens.strokeRegular else Dimens.strokeThin,
                                 color = if (isBurstMode) Accent.copy(alpha = 0.7f) else Border,
                                 shape = CircleShape
                             )
@@ -1332,7 +1345,7 @@ fun BottomPanel(
                             imageVector = Icons.Default.BurstMode,
                             contentDescription = "连拍",
                             tint = if (isBurstMode) Accent else TextSecondary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(Dimens.iconMd)
                         )
                     }
 
@@ -1342,13 +1355,13 @@ fun BottomPanel(
                     IconButton(
                         onClick = onCycleFlashMode,
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(Dimens.buttonAction)
                             .background(
                                 if (flashActive) Accent.copy(alpha = 0.25f) else Surface,
                                 CircleShape
                             )
                             .border(
-                                width = if (flashActive) 1.5.dp else 1.dp,
+                                width = if (flashActive) Dimens.strokeRegular else Dimens.strokeThin,
                                 color = if (flashActive) Accent.copy(alpha = 0.7f) else Border,
                                 shape = CircleShape
                             )
@@ -1365,7 +1378,7 @@ fun BottomPanel(
                                 else -> "闪光关闭"
                             },
                             tint = if (flashActive) Accent else TextSecondary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(Dimens.iconMd)
                         )
                     }
 
@@ -1373,20 +1386,21 @@ fun BottomPanel(
                     IconButton(
                         onClick = onCycleAspectRatio,
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(Dimens.buttonAction)
                             .background(Surface, CircleShape)
-                            .border(1.dp, Border, CircleShape)
+                            .border(Dimens.strokeThin, Border, CircleShape)
                     ) {
                         Text(
                             text = currentAspectRatioName,
                             color = TextPrimary,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = Dimens.fontCaption,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = Dimens.lineHeightCaption
                         )
                     }
                 }
             } else {
-                Spacer(modifier = Modifier.size(50.dp))
+                Spacer(modifier = Modifier.size(Dimens.thumbSize))
             }
         }
     }
@@ -1400,14 +1414,15 @@ fun ZoomIndicator(
 ) {
     Box(
         modifier = modifier
-            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(20.dp))
-            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(Dimens.radiusXl))
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs)
     ) {
         Text(
             text = String.format("%.1fx", zoomLevel),
             color = Color.White,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium
+            fontSize = Dimens.fontLabel,
+            fontWeight = FontWeight.Medium,
+            lineHeight = Dimens.lineHeightLabel
         )
     }
 }
@@ -1421,8 +1436,8 @@ fun PlanPicker(
     modifier: Modifier = Modifier
 ) {
     LazyRow(
-        modifier = modifier.padding(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        modifier = modifier.padding(horizontal = Dimens.screenMarginH),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
         items(plans.size) { index ->
             val plan = plans[index]
@@ -1444,9 +1459,20 @@ fun PlanCard(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    // 选中弹性放大（国产 App 常见的选中反馈）
+    val cardScale by animateFloatAsState(
+        targetValue = if (isSelected) 1.04f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "cardScale"
+    )
+
     Column(
         modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
+            .scale(cardScale)
+            .clip(RoundedCornerShape(Dimens.radiusMd))
             .background(
                 if (isSelected)
                     Brush.linearGradient(
@@ -1458,26 +1484,27 @@ fun PlanCard(
                     )
             )
             .border(
-                width = if (isSelected) 1.5.dp else 1.dp,
+                width = if (isSelected) Dimens.strokeRegular else Dimens.strokeThin,
                 color = if (isSelected) Accent.copy(alpha = 0.75f) else Border,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(Dimens.radiusMd)
             )
             .clickable { onClick() }
-            .padding(horizontal = 13.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
+        verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs + 2.dp)
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs + 3.dp)) {
             Text(
                 text = plan.poseName,
                 color = TextPrimary,
-                fontSize = 13.sp,
+                fontSize = Dimens.fontLabel,
                 fontWeight = FontWeight.Bold,
+                lineHeight = Dimens.lineHeightLabel,
                 maxLines = 1
             )
         }
 
         if (isSelected) {
-            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs + 1.dp)) {
                 TagBadge(
                     text = when (plan.composition) {
                         com.poseai.app.model.CompositionRule.CENTER -> "居中"
@@ -1500,20 +1527,21 @@ fun TagBadge(text: String, active: Boolean = false) {
         modifier = Modifier
             .background(
                 if (active) Accent.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.1f),
-                RoundedCornerShape(50)
+                RoundedCornerShape(Dimens.radiusFull)
             )
             .border(
-                width = if (active) 1.dp else 0.dp,
+                width = if (active) Dimens.strokeThin else 0.dp,
                 color = if (active) Accent.copy(alpha = 0.4f) else Color.Transparent,
-                shape = RoundedCornerShape(50)
+                shape = RoundedCornerShape(Dimens.radiusFull)
             )
-            .padding(horizontal = 7.dp, vertical = 3.5.dp)
+            .padding(horizontal = Dimens.spacingSm - 1.dp, vertical = Dimens.spacingXs)
     ) {
         Text(
             text = text,
             color = if (active) Accent else TextPrimary.copy(alpha = 0.7f),
-            fontSize = 10.sp,
-            fontWeight = FontWeight.SemiBold
+            fontSize = Dimens.fontCaption,
+            fontWeight = FontWeight.SemiBold,
+            lineHeight = Dimens.lineHeightCaption
         )
     }
 }
@@ -1528,10 +1556,10 @@ fun GalleryThumbnailButton(
 
     Box(
         modifier = Modifier
-            .size(50.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .size(Dimens.thumbSize)
+            .clip(RoundedCornerShape(Dimens.radiusMd))
             .background(Surface)
-            .border(1.dp, Border, RoundedCornerShape(12.dp))
+            .border(Dimens.strokeThin, Border, RoundedCornerShape(Dimens.radiusMd))
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
@@ -1548,7 +1576,7 @@ fun GalleryThumbnailButton(
                 imageVector = Icons.Default.PhotoLibrary,
                 contentDescription = "相册",
                 tint = TextPrimary,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(Dimens.iconLg)
             )
         }
     }
@@ -1566,7 +1594,7 @@ fun ShutterButton(
     onStopVlog: () -> Unit,
     isCompactHeight: Boolean
 ) {
-    val buttonSize = if (isCompactHeight) 82.dp else 92.dp
+    val buttonSize = if (isCompactHeight) 82.dp else Dimens.shutterSize
     val haptics = com.poseai.app.util.Haptics.rememberHapticController()
     // 按下缩放反馈（弹性更强，更接近国产App的"果冻"手感）
     var isPressed by remember { mutableStateOf(false) }
@@ -1604,7 +1632,7 @@ fun ShutterButton(
             // 录制中：红色停止按钮
             Box(
                 modifier = Modifier
-                    .size(68.dp)
+                    .size(Dimens.shutterInner)
                     .background(Danger, CircleShape)
                     .clickable {
                         isPressed = true
@@ -1629,8 +1657,8 @@ fun ShutterButton(
                 // 录制状态：方形停止图标外加微弱光晕
                 Box(
                     modifier = Modifier
-                        .size(24.dp)
-                        .background(Color.White, RoundedCornerShape(4.dp))
+                        .size(Dimens.iconLg)
+                        .background(Color.White, RoundedCornerShape(Dimens.radiusSm))
                 )
             }
         } else {
@@ -1659,7 +1687,7 @@ fun ShutterButton(
             // 内圆主体
             Box(
                 modifier = Modifier
-                    .size(68.dp)
+                    .size(Dimens.shutterInner)
                     .clip(CircleShape)
                     .background(
                         if (isAligned)
@@ -1698,15 +1726,16 @@ fun ShutterButton(
                     Text(
                         text = "${timerSeconds}",
                         color = if (isAligned) Color.White else Color.Black.copy(alpha = 0.75f),
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Black
+                        fontSize = Dimens.fontDisplay,
+                        fontWeight = FontWeight.Black,
+                        lineHeight = Dimens.lineHeightDisplay
                     )
                 } else if (isAligned) {
                     Icon(
                         imageVector = Icons.Default.CameraAlt,
                         contentDescription = "拍照",
                         tint = Color.White,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(Dimens.iconLg)
                     )
                 } else {
                     Box(
@@ -1725,22 +1754,23 @@ fun ShutterButton(
 fun LowLightBanner(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .background(Surface, RoundedCornerShape(50))
-            .border(1.dp, Color.Yellow.copy(alpha = 0.4f), RoundedCornerShape(50))
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .background(Surface, RoundedCornerShape(Dimens.radiusFull))
+            .border(Dimens.strokeThin, Color.Yellow.copy(alpha = 0.4f), RoundedCornerShape(Dimens.radiusFull))
+            .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm)
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm), verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = Icons.Default.Lightbulb,
                 contentDescription = null,
                 tint = Color.Yellow,
-                modifier = Modifier.size(14.dp)
+                modifier = Modifier.size(Dimens.iconXs)
             )
             Text(
                 text = "光线不足，移到明亮处效果更好",
                 color = TextPrimary.copy(alpha = 0.9f),
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium
+                fontSize = Dimens.fontLabel,
+                fontWeight = FontWeight.Medium,
+                lineHeight = Dimens.lineHeightLabel
             )
         }
     }
@@ -2267,15 +2297,16 @@ fun DetectedSkeletonOverlay(
 fun WarningBanner(text: String, color: Color, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .background(color.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .background(color.copy(alpha = 0.2f), RoundedCornerShape(Dimens.radiusSm))
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
             color = color,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium
+            fontSize = Dimens.fontLabel,
+            fontWeight = FontWeight.Medium,
+            lineHeight = Dimens.lineHeightLabel
         )
     }
 }
@@ -2312,20 +2343,21 @@ fun SmileIndicator(strength: Float) {
 fun VlogSubtitle(text: String, isRecording: Boolean = false, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .padding(horizontal = 24.dp, vertical = 8.dp),
+            .padding(horizontal = Dimens.spacingXxl, vertical = Dimens.spacingSm),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
             color = Color.White,
-            fontSize = 18.sp,
+            fontSize = Dimens.fontHeadline,
             fontWeight = FontWeight.Bold,
+            lineHeight = Dimens.lineHeightHeadline,
             modifier = Modifier
                 .background(
                     if (isRecording) Danger.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.6f),
-                    RoundedCornerShape(12.dp)
+                    RoundedCornerShape(Dimens.radiusMd)
                 )
-                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .padding(horizontal = Dimens.spacingXl, vertical = Dimens.spacingMd)
         )
     }
 }
@@ -3035,25 +3067,27 @@ fun VlogTemplateItem(template: com.poseai.app.model.VlogTemplate, onClick: () ->
                 modifier = Modifier.size(24.dp)
             )
         }
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(Dimens.spacingMd))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = template.name,
                 color = TextPrimary,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
+                fontSize = Dimens.fontTitle,
+                fontWeight = FontWeight.Medium,
+                lineHeight = Dimens.lineHeightTitle
             )
             Text(
                 text = "${template.clips.size} 个分镜 · 约 ${template.clips.sumOf { it.duration.toInt() }} 秒",
                 color = TextSecondary,
-                fontSize = 13.sp
+                fontSize = Dimens.fontLabel,
+                lineHeight = Dimens.lineHeightLabel
             )
         }
         Icon(
             imageVector = Icons.Default.PlayArrow,
             contentDescription = "开始",
             tint = Accent,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(Dimens.iconLg)
         )
     }
 }
@@ -3069,10 +3103,10 @@ fun SequenceIndicator(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .background(Surface, RoundedCornerShape(12.dp))
-            .border(1.dp, Border, RoundedCornerShape(12.dp))
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = Dimens.spacingLg)
+            .background(Surface, RoundedCornerShape(Dimens.radiusMd))
+            .border(Dimens.strokeThin, Border, RoundedCornerShape(Dimens.radiusMd))
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onPrevious, modifier = Modifier.size(32.dp)) {
@@ -3080,21 +3114,23 @@ fun SequenceIndicator(
                 imageVector = Icons.Default.ChevronLeft,
                 contentDescription = "上一步",
                 tint = TextPrimary,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(Dimens.iconMd)
             )
         }
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(Dimens.spacingSm))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = "分镜 ${currentIndex + 1}/$totalSteps",
                 color = TextSecondary,
-                fontSize = 11.sp
+                fontSize = Dimens.fontCaption,
+                lineHeight = Dimens.lineHeightCaption
             )
             Text(
                 text = stepName,
                 color = TextPrimary,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
+                fontSize = Dimens.fontBody,
+                fontWeight = FontWeight.Medium,
+                lineHeight = Dimens.lineHeightBody
             )
         }
         IconButton(onClick = onNext, modifier = Modifier.size(32.dp)) {
@@ -3102,7 +3138,7 @@ fun SequenceIndicator(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = "下一步",
                 tint = TextPrimary,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(Dimens.iconMd)
             )
         }
     }
@@ -3117,31 +3153,33 @@ fun AngleIndicator(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .background(Surface, RoundedCornerShape(12.dp))
-            .border(1.dp, Border, RoundedCornerShape(12.dp))
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = Dimens.spacingLg)
+            .background(Surface, RoundedCornerShape(Dimens.radiusMd))
+            .border(Dimens.strokeThin, Border, RoundedCornerShape(Dimens.radiusMd))
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Default.RotateRight,
             contentDescription = null,
             tint = Accent,
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(Dimens.iconMd)
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(Dimens.spacingSm))
         Text(
-            text = "视角: $currentAngleName",
+            text = "视角 · $currentAngleName",
             color = TextPrimary,
-            fontSize = 13.sp,
+            fontSize = Dimens.fontLabel,
             fontWeight = FontWeight.Medium,
+            lineHeight = Dimens.lineHeightLabel,
             modifier = Modifier.weight(1f)
         )
         TextButton(onClick = onNextAngle) {
             Text(
                 text = "切换",
                 color = Accent,
-                fontSize = 12.sp
+                fontSize = Dimens.fontCaption,
+                lineHeight = Dimens.lineHeightCaption
             )
         }
     }
@@ -3155,24 +3193,25 @@ fun SecondaryPoseToggle(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .background(Surface, RoundedCornerShape(12.dp))
-            .border(1.dp, Border, RoundedCornerShape(12.dp))
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = Dimens.spacingLg)
+            .background(Surface, RoundedCornerShape(Dimens.radiusMd))
+            .border(Dimens.strokeThin, Border, RoundedCornerShape(Dimens.radiusMd))
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Default.Flip,
             contentDescription = null,
             tint = Accent,
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(Dimens.iconMd)
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(Dimens.spacingSm))
         Text(
-            text = if (isSecondary) "目标姿势: 备选" else "目标姿势: 主姿势",
+            text = if (isSecondary) "目标姿势 · 备选" else "目标姿势 · 主姿势",
             color = TextPrimary,
-            fontSize = 13.sp,
+            fontSize = Dimens.fontLabel,
             fontWeight = FontWeight.Medium,
+            lineHeight = Dimens.lineHeightLabel,
             modifier = Modifier.weight(1f)
         )
         Switch(
@@ -3191,32 +3230,33 @@ fun PlanVlogButton(onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = Dimens.spacingLg)
             .clickable { onClick() }
-            .background(Accent.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-            .border(1.dp, Border, RoundedCornerShape(12.dp))
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .background(Accent.copy(alpha = 0.15f), RoundedCornerShape(Dimens.radiusMd))
+            .border(Dimens.strokeThin, Border, RoundedCornerShape(Dimens.radiusMd))
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Default.MovieFilter,
             contentDescription = null,
             tint = Accent,
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(Dimens.iconMd)
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(Dimens.spacingSm))
         Text(
             text = "用当前姿势拍 Vlog",
             color = Accent,
-            fontSize = 13.sp,
+            fontSize = Dimens.fontLabel,
             fontWeight = FontWeight.Medium,
+            lineHeight = Dimens.lineHeightLabel,
             modifier = Modifier.weight(1f)
         )
         Icon(
             imageVector = Icons.Default.PlayArrow,
             contentDescription = null,
             tint = Accent,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(Dimens.iconSm)
         )
     }
 }
@@ -3324,8 +3364,9 @@ fun CountdownOverlay(seconds: Int) {
         Text(
             text = "$seconds",
             color = Color.White.copy(alpha = alpha.value),
-            fontSize = 120.sp,
+            fontSize = Dimens.fontCountdown,
             fontWeight = FontWeight.Black,
+            lineHeight = Dimens.fontCountdown,
             modifier = Modifier.scale(scale.value)
         )
     }
@@ -3404,7 +3445,8 @@ fun BurstResultBanner(
             Text(
                 text = "+${photoPaths.size - 5}",
                 color = TextSecondary,
-                fontSize = 11.sp
+                fontSize = Dimens.fontCaption,
+                lineHeight = Dimens.lineHeightCaption
             )
         }
     }
@@ -3421,14 +3463,15 @@ fun DistanceHintText(
 ) {
     Box(
         modifier = modifier
-            .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(20.dp))
-            .padding(horizontal = 20.dp, vertical = 12.dp)
+            .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(Dimens.radiusXl))
+            .padding(horizontal = Dimens.spacingXl, vertical = Dimens.spacingMd)
     ) {
         Text(
             text = text,
             color = Accent,
-            fontSize = 15.sp,
+            fontSize = Dimens.fontTitle,
             fontWeight = FontWeight.SemiBold,
+            lineHeight = Dimens.lineHeightTitle,
             textAlign = TextAlign.Center
         )
     }
