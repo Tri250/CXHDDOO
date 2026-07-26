@@ -1737,7 +1737,7 @@ fun SmileIndicator(strength: Float) {
 }
 
 @Composable
-fun VlogSubtitle(text: String) {
+fun VlogSubtitle(text: String, isRecording: Boolean = false) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -1750,7 +1750,10 @@ fun VlogSubtitle(text: String) {
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
-                .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+                .background(
+                    if (isRecording) Danger.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.6f),
+                    RoundedCornerShape(12.dp)
+                )
                 .padding(horizontal = 20.dp, vertical = 12.dp)
         )
     }
@@ -1762,6 +1765,7 @@ fun VlogStatusIndicator(
     isMerging: Boolean,
     currentClip: Int,
     totalClips: Int,
+    dotAlpha: Float = 1f,
     onStop: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -1776,7 +1780,7 @@ fun VlogStatusIndicator(
             Box(
                 modifier = Modifier
                     .size(10.dp)
-                    .background(Error, CircleShape)
+                    .background(Error.copy(alpha = dotAlpha), CircleShape)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
@@ -2415,5 +2419,210 @@ fun PlanVlogButton(onClick: () -> Unit) {
             tint = Accent,
             modifier = Modifier.size(18.dp)
         )
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 倒计时大数字覆盖层
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+fun CountdownOverlay(seconds: Int) {
+    val scale = remember { Animatable(0.6f) }
+    LaunchedEffect(seconds) {
+        scale.snapTo(0.6f)
+        scale.animateTo(
+            targetValue = 1.2f,
+            animationSpec = tween(200, easing = FastOutSlowInEasing)
+        )
+        scale.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(300, easing = FastOutSlowInEasing)
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.45f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "$seconds",
+            color = Color.White,
+            fontSize = 120.sp,
+            fontWeight = FontWeight.Black,
+            modifier = Modifier.scale(scale.value)
+        )
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 快门闪光覆盖层
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+fun ShutterFlashOverlay() {
+    val alpha = remember { Animatable(0.7f) }
+    LaunchedEffect(Unit) {
+        alpha.animateTo(
+            targetValue = 0f,
+            animationSpec = tween(180, easing = FastOutSlowInEasing)
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Accent.copy(alpha = alpha.value))
+    )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 距离提示文案
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+fun DistanceHintText(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(20.dp))
+            .padding(horizontal = 20.dp, vertical = 12.dp)
+    ) {
+        Text(
+            text = text,
+            color = Accent,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 姿势引导弹窗（对齐 iOS PoseGuideSheet）
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+fun PoseGuideSheet(
+    plan: ShootingPlan?,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(
+            usePlatformDefaultWidth = false
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.7f))
+                .clickable(onClick = onDismiss)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .background(
+                        BackgroundDark,
+                        RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                    )
+                    .clickable(enabled = false) {} // 阻止点击穿透
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // 拖拽条
+                Box(
+                    modifier = Modifier
+                        .width(40.dp)
+                        .height(4.dp)
+                        .background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(2.dp))
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Text(
+                    text = "拍摄引导",
+                    color = TextPrimary,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                if (plan != null) {
+                    // 姿势名称
+                    Text(
+                        text = plan.poseName,
+                        color = Accent,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // 构图提示
+                    Text(
+                        text = when (plan.composition) {
+                            com.poseai.app.model.CompositionRule.CENTER -> "将人物置于画面中央"
+                            com.poseai.app.model.CompositionRule.RULE_OF_THIRDS -> "将人物放在三分线交点处"
+                            com.poseai.app.model.CompositionRule.DIAGONAL -> "沿对角线方向摆姿势"
+                            com.poseai.app.model.CompositionRule.FRAME_WITHIN_FRAME -> "利用环境框架构图"
+                        },
+                        color = TextSecondary,
+                        fontSize = 14.sp,
+                        lineHeight = 22.sp,
+                        textAlign = TextAlign.Center
+                    )
+
+                    // 场景提示
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = when {
+                            plan.sequence.isNotEmpty() -> "此姿势包含 ${plan.sequence.size} 个分镜步骤，请按顺序完成"
+                            plan.multiAngles.isNotEmpty() -> "此姿势支持 ${plan.multiAngles.size} 个角度，切换视角拍出不同感觉"
+                            plan.secondaryPosePoints.isNotEmpty() -> "此姿势有备选方案，可切换尝试"
+                            plan.vlogScript != null -> "此姿势支持 Vlog 录制，一键生成短视频"
+                            else -> "对准剪影轮廓，微调直到评分达到 80 分以上"
+                        },
+                        color = TextPrimary.copy(alpha = 0.8f),
+                        fontSize = 13.sp,
+                        lineHeight = 20.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .background(Surface, RoundedCornerShape(12.dp))
+                            .padding(16.dp)
+                    )
+                } else {
+                    Text(
+                        text = "将镜头对准场景，AI 识别后将自动推荐姿势方案",
+                        color = TextSecondary,
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // 关闭按钮
+                Button(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Accent
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "知道了",
+                        color = Color.Black,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
     }
 }
