@@ -51,7 +51,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.resume
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -1025,7 +1024,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                 // 连拍只拍照不弹预览，避免打断节奏
                 val success = kotlinx.coroutines.suspendCancellableCoroutine<Boolean> { cont ->
                     manager.takePhoto(photoFile) { ok, path ->
-                        if (cont.isActive) cont.resume(ok)
+                        if (cont.isActive) cont.resumeWith(Result.success(ok))
                     }
                 }
 
