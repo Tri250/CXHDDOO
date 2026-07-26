@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.pointerInput
@@ -37,6 +38,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
@@ -1360,20 +1362,20 @@ private fun DrawScope.drawSilhouetteShape(
 
         // 身体
         moveTo(left + w * 0.45f, top + h * 0.14f + headSize * 1.15f)
-        quadraticTo(left + w * 0.28f, top + h * 0.22f, left + w * 0.18f, top + h * 0.28f)
-        quadraticTo(left + w * 0.08f, top + h * 0.38f, left + w * 0.12f, top + h * 0.52f)
+        cubicTo(left + w * 0.28f, top + h * 0.22f, left + w * 0.28f, top + h * 0.22f, left + w * 0.18f, top + h * 0.28f)
+        cubicTo(left + w * 0.08f, top + h * 0.38f, left + w * 0.08f, top + h * 0.38f, left + w * 0.12f, top + h * 0.52f)
         cubicTo(left + w * 0.18f, top + h * 0.56f, left + w * 0.22f, top + h * 0.48f, left + w * 0.28f, top + h * 0.43f)
         lineTo(left + w * 0.33f, top + h * 0.50f)
-        quadraticTo(left + w * 0.27f, top + h * 0.72f, left + w * 0.24f, top + h * 0.93f)
+        cubicTo(left + w * 0.27f, top + h * 0.72f, left + w * 0.27f, top + h * 0.72f, left + w * 0.24f, top + h * 0.93f)
         lineTo(left + w * 0.40f, top + h * 0.93f)
-        quadraticTo(left + w * 0.44f, top + h * 0.74f, left + w * 0.48f, top + h * 0.58f)
-        quadraticTo(left + w * 0.54f, top + h * 0.74f, left + w * 0.63f, top + h * 0.93f)
+        cubicTo(left + w * 0.44f, top + h * 0.74f, left + w * 0.44f, top + h * 0.74f, left + w * 0.48f, top + h * 0.58f)
+        cubicTo(left + w * 0.54f, top + h * 0.74f, left + w * 0.54f, top + h * 0.74f, left + w * 0.63f, top + h * 0.93f)
         lineTo(left + w * 0.79f, top + h * 0.93f)
-        quadraticTo(left + w * 0.79f, top + h * 0.73f, left + w * 0.70f, top + h * 0.52f)
+        cubicTo(left + w * 0.79f, top + h * 0.73f, left + w * 0.79f, top + h * 0.73f, left + w * 0.70f, top + h * 0.52f)
         lineTo(left + w * 0.64f, top + h * 0.48f)
-        quadraticTo(left + w * 0.74f, top + h * 0.52f, left + w * 0.83f, top + h * 0.43f)
-        quadraticTo(left + w * 0.94f, top + h * 0.33f, left + w * 0.78f, top + h * 0.24f)
-        quadraticTo(left + w * 0.67f, top + h * 0.23f, left + w * 0.55f, top + h * 0.14f + headSize * 1.15f)
+        cubicTo(left + w * 0.74f, top + h * 0.52f, left + w * 0.74f, top + h * 0.52f, left + w * 0.83f, top + h * 0.43f)
+        cubicTo(left + w * 0.94f, top + h * 0.33f, left + w * 0.94f, top + h * 0.33f, left + w * 0.78f, top + h * 0.24f)
+        cubicTo(left + w * 0.67f, top + h * 0.23f, left + w * 0.67f, top + h * 0.23f, left + w * 0.55f, top + h * 0.14f + headSize * 1.15f)
         close()
     }
 

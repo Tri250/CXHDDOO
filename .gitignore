@@ -70,6 +70,9 @@ PoseAI-Android/.gradle/
 PoseAI-Android/local.properties
 *.apk
 *.aab
+*.jks
+*.keystore
+PoseAI-Android/poseai-signing.jks
 
 # ===== SDK / Build Tools (not part of project) =====
 /android-sdk/
