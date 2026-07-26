@@ -65,12 +65,12 @@ jobs:
               -storetype PKCS12 \
               -keyalg RSA -keysize 2048 -validity 10000 \
               -alias poseai-key \
-              -storepass poseai-store-pass \
-              -keypass poseai-key-pass \
+              -storepass poseai-signing-pass \
+              -keypass poseai-signing-pass \
               -dname "CN=PoseAI, OU=App, O=PoseAI, L=Beijing, ST=Beijing, C=CN"
-            echo "STORE_PASSWORD=poseai-store-pass" >> $GITHUB_ENV
+            echo "STORE_PASSWORD=poseai-signing-pass" >> $GITHUB_ENV
             echo "KEY_ALIAS=poseai-key" >> $GITHUB_ENV
-            echo "KEY_PASSWORD=poseai-key-pass" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=poseai-signing-pass" >> $GITHUB_ENV
           else
             echo "Using signing key from secrets..."
             echo "$ANDROID_SIGNING_KEY" | base64 --decode > "$SIGNING_KEY_PATH"
