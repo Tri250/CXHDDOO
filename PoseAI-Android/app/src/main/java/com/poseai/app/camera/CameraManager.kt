@@ -87,13 +87,20 @@ class CameraManager(private val context: Context) {
 
                 cameraProvider?.unbindAll()
 
+                // 安全获取 display rotation,可能为 null
+                val rotation = try {
+                    previewView.display?.rotation ?: 0
+                } catch (e: Exception) {
+                    0
+                }
+
                 preview = Preview.Builder().build().also {
                     it.setSurfaceProvider(previewView.surfaceProvider)
                 }
 
                 imageCapture = ImageCapture.Builder()
                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-                    .setTargetRotation(previewView.display.rotation)
+                    .setTargetRotation(rotation)
                     .build()
 
                 val recorder = Recorder.Builder()
@@ -109,7 +116,7 @@ class CameraManager(private val context: Context) {
                     currentAnalyzer = analysisAnalyzer
                     ImageAnalysis.Builder()
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .setTargetRotation(previewView.display.rotation)
+                        .setTargetRotation(rotation)
                         .build()
                         .also { it.setAnalyzer(cameraExecutor, analysisAnalyzer) }
                 } else null

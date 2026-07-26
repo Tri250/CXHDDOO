@@ -279,7 +279,11 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             _gridEnabled.value = storeManager.gridEnabled.first()
             _lowLightMode.value = storeManager.lowLightEnabled.first()
             val sceneStr = storeManager.selectedScene.first()
-            _currentScene.value = SceneType.valueOf(sceneStr)
+            _currentScene.value = try {
+                SceneType.valueOf(sceneStr)
+            } catch (e: IllegalArgumentException) {
+                SceneType.STREET
+            }
             _currentPlanIndex.value = 0
         }
 

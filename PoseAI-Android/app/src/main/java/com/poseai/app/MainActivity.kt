@@ -6,12 +6,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -51,13 +52,14 @@ class MainActivity : ComponentActivity() {
     private var hasAudioPermission by mutableStateOf(false)
     private var hasStoragePermission by mutableStateOf(false)
     private var hasNotificationPermission by mutableStateOf(false)
+    private var permissionRequestedOnce = false
 
     private val batteryReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             intent ?: return
-            val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
-            val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
-            val temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1)
+            val level = intent.getIntExtra("level", -1)
+            val scale = intent.getIntExtra("scale", -1)
+            val temp = intent.getIntExtra("temperature", -1)
 
             val batteryPct = if (level >= 0 && scale > 0) level * 100 / scale else 100
             val isLow = batteryPct < 20
@@ -96,17 +98,15 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Android 15+ edge-to-edge 适配
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+        )
         super.onCreate(savedInstanceState)
 
-        checkAndRequestPermissions()
-
-        val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            @Suppress("UnspecifiedRegisterReceiverFlag")
-            registerReceiver(batteryReceiver, filter)
-        }
+        // 初始化权限状态(不请求,仅检查)
+        updatePermissionStates()
 
         setContent {
             PoseAITheme {
@@ -128,29 +128,57 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun checkAndRequestPermissions() {
-        val cameraGranted = ContextCompat.checkSelfPermission(
+    override fun onResume() {
+        super.onResume()
+        // 延迟权限请求到 onResume,避免 onCreate 中过早调用导致崩溃
+        if (!permissionRequestedOnce && !hasCameraPermission) {
+            permissionRequestedOnce = true
+            checkAndRequestPermissions()
+        }
+        // 每次恢复时更新权限状态(用户可能从设置中改了权限)
+        updatePermissionStates()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // 注册电池广播
+        val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(batteryReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            registerReceiver(batteryReceiver, filter)
+        }
+    }
+
+    private fun updatePermissionStates() {
+        hasCameraPermission = ContextCompat.checkSelfPermission(
             this, Manifest.permission.CAMERA
         ) == PackageManager.PERMISSION_GRANTED
-        val audioGranted = ContextCompat.checkSelfPermission(
+        hasAudioPermission = ContextCompat.checkSelfPermission(
             this, Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
-
-        hasCameraPermission = cameraGranted
-        hasAudioPermission = audioGranted
-
         hasStoragePermission = checkStoragePermission()
         hasNotificationPermission = checkNotificationPermission()
+    }
+
+    private fun checkAndRequestPermissions() {
+        updatePermissionStates()
 
         val permsToRequest = buildPermissionRequestList(
-            cameraGranted = cameraGranted,
-            audioGranted = audioGranted,
+            cameraGranted = hasCameraPermission,
+            audioGranted = hasAudioPermission,
             storageGranted = hasStoragePermission,
             notificationGranted = hasNotificationPermission
         )
 
         if (permsToRequest.isNotEmpty()) {
-            permissionLauncher.launch(permsToRequest.toTypedArray())
+            try {
+                permissionLauncher.launch(permsToRequest.toTypedArray())
+            } catch (e: Exception) {
+                // 权限请求框架可能在某些设备上崩溃,捕获异常
+                Toast.makeText(this, "权限请求失败,请在设置中手动授权", Toast.LENGTH_LONG).show()
+            }
         }
     }
 
@@ -222,8 +250,8 @@ class MainActivity : ComponentActivity() {
         permissionLauncher.launch(perms.toTypedArray())
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
+    override fun onStop() {
+        super.onStop()
         try {
             unregisterReceiver(batteryReceiver)
         } catch (_: Exception) {}
