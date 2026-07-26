@@ -32,6 +32,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.graphicsLayer
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
@@ -238,6 +239,20 @@ fun ShootingScreen(
 
     val isSceneReady = currentScene != SceneType.UNKNOWN && currentPlan != null
     val isAligned = poseScore >= 80f
+
+    // 对齐达成强反馈：记录上一次对齐状态，变化时触发触觉+粒子动画
+    val haptics = com.poseai.app.util.Haptics.rememberHapticController()
+    var showAlignmentCelebration by remember { mutableStateOf(false) }
+    val prevAligned = remember { mutableStateOf(isAligned) }
+    LaunchedEffect(isAligned) {
+        if (isAligned && !prevAligned.value) {
+            haptics.perform(com.poseai.app.util.Haptics.Level.SUCCESS)
+            showAlignmentCelebration = true
+            kotlinx.coroutines.delay(1200)
+            showAlignmentCelebration = false
+        }
+        prevAligned.value = isAligned
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // ── 相机预览层（含点击对焦 + 双击沉浸 + 双指缩放）──
@@ -707,6 +722,15 @@ fun ShootingScreen(
                 onDismiss = { viewModel.toggleVlogTemplateSelector() }
             )
         }
+
+        // ── 对齐达成粒子庆祝动画 ──
+        AnimatedVisibility(
+            visible = showAlignmentCelebration && !isImmersiveMode,
+            enter = fadeIn(tween(200)) + scaleIn(initialScale = 0.5f, animationSpec = tween(400)),
+            exit = fadeOut(tween(600)) + scaleOut(targetScale = 1.3f, animationSpec = tween(600))
+        ) {
+            AlignmentCelebrationOverlay()
+        }
     }
 }
 
@@ -847,6 +871,102 @@ fun ScanCornerLines(modifier: Modifier = Modifier, color: Color = Accent) {
         corners.forEach { (a, b, c) ->
             drawLine(color, a, b, thick, cap = StrokeCap.Round)
             drawLine(color, b, c, thick, cap = StrokeCap.Round)
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 对齐达成粒子庆祝动画（国内用户期待的"已对齐"强反馈）
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+fun AlignmentCelebrationOverlay() {
+    val particleCount = 12
+    val particleColors = listOf(Success, Accent, Color(0xFF33D970), Color(0xFF0D9488), SuccessGlow)
+    // 粒子扩散动画
+    val particleProgress = remember { Animatable(0f) }
+    val checkmarkProgress = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        // 先播放粒子扩散
+        particleProgress.animateTo(1f, animationSpec = tween(600, easing = FastOutSlowInEasing))
+        // 粒子到达后播放对勾 + 文字
+        checkmarkProgress.animateTo(1f, animationSpec = spring(DampingRatioMediumBouncy, StiffnessMedium))
+    }
+
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        // 外层暗色遮罩（微弱）
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawCircle(
+                color = Color.Black.copy(alpha = 0.15f),
+                radius = size.minDimension * 0.4f,
+                center = center
+            )
+        }
+
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            // 粒子环 + 对勾
+            Box(
+                modifier = Modifier.size(120.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                // 粒子扩散
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val cx = size.width / 2f
+                    val cy = size.height / 2f
+                    val maxRadius = size.width * 0.65f
+                    for (i in 0 until particleCount) {
+                        val angle = (2 * Math.PI * i / particleCount).toFloat()
+                        val radius = maxRadius * particleProgress.value
+                        val px = cx + radius * cos(angle)
+                        val py = cy + radius * sin(angle)
+                        val particleAlpha = (1f - particleProgress.value) * 0.8f
+                        drawCircle(
+                            color = particleColors[i % particleColors.size].copy(alpha = particleAlpha),
+                            radius = 4.dp.toPx() * (1f - particleProgress.value * 0.5f),
+                            center = Offset(px, py)
+                        )
+                    }
+                }
+
+                // 对勾（国产App标志性反馈）
+                if (checkmarkProgress.value > 0f) {
+                    val checkScale = checkmarkProgress.value
+                    Box(
+                        modifier = Modifier
+                            .size((48 * checkScale).dp)
+                            .scale(checkScale)
+                            .background(Success, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "✓",
+                            color = Color.White,
+                            fontSize = Dimens.fontDisplay,
+                            fontWeight = FontWeight.Black,
+                            lineHeight = Dimens.lineHeightDisplay
+                        )
+                    }
+                }
+            }
+
+            // 文字
+            if (checkmarkProgress.value > 0.5f) {
+                Spacer(modifier = Modifier.height(Dimens.spacingSm))
+                Text(
+                    text = "姿势到位！",
+                    color = Color.White,
+                    fontSize = Dimens.fontHeadline,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = Dimens.lineHeightHeadline,
+                    modifier = Modifier
+                        .background(
+                            Color.Black.copy(alpha = 0.5f),
+                            RoundedCornerShape(Dimens.radiusFull)
+                        )
+                        .padding(horizontal = Dimens.spacingXl, vertical = Dimens.spacingSm)
+                )
+            }
         }
     }
 }
@@ -1784,92 +1904,106 @@ fun LowLightBanner(modifier: Modifier = Modifier) {
 fun CompositionGuideLines(
     composition: com.poseai.app.model.CompositionRule?
 ) {
+    val gridAlpha by animateFloatAsState(
+        targetValue = if (composition != null) 1f else 0f,
+        animationSpec = tween(Dimens.durationNormal),
+        label = "gridAlpha"
+    )
+
     Canvas(modifier = Modifier.fillMaxSize()) {
         val w = size.width
         val h = size.height
+        val baseAlpha = 0.22f * gridAlpha
+        val intersectionAlpha = 0.55f * gridAlpha
+        val intersectionRadius = 5.dp.toPx()
+        val lineWidth = Dimens.strokeRegular.toPx()
 
         if (composition == com.poseai.app.model.CompositionRule.RULE_OF_THIRDS) {
-            // 三分法
-            drawLine(
-                color = Color.White.copy(alpha = 0.06f),
-                start = Offset(w / 3f, 0f),
-                end = Offset(w / 3f, h),
-                strokeWidth = 1.dp.toPx()
-            )
-            drawLine(
-                color = Color.White.copy(alpha = 0.06f),
-                start = Offset(2 * w / 3f, 0f),
-                end = Offset(2 * w / 3f, h),
-                strokeWidth = 1.dp.toPx()
-            )
-            drawLine(
-                color = Color.White.copy(alpha = 0.06f),
-                start = Offset(0f, h / 3f),
-                end = Offset(w, h / 3f),
-                strokeWidth = 1.dp.toPx()
-            )
-            drawLine(
-                color = Color.White.copy(alpha = 0.06f),
-                start = Offset(0f, 2 * h / 3f),
-                end = Offset(w, 2 * h / 3f),
-                strokeWidth = 1.dp.toPx()
-            )
+            val lineColor = Color.White.copy(alpha = baseAlpha)
+            // 四条三分线
+            val thirdsX = listOf(w / 3f, 2 * w / 3f)
+            val thirdsY = listOf(h / 3f, 2 * h / 3f)
+            for (x in thirdsX) {
+                drawLine(color = lineColor, start = Offset(x, 0f), end = Offset(x, h), strokeWidth = lineWidth)
+            }
+            for (y in thirdsY) {
+                drawLine(color = lineColor, start = Offset(0f, y), end = Offset(w, y), strokeWidth = lineWidth)
+            }
+            // 四个交点高亮（三分法精髓）
+            val dotColor = Accent.copy(alpha = intersectionAlpha)
+            for (x in thirdsX) {
+                for (y in thirdsY) {
+                    drawCircle(color = dotColor.copy(alpha = 0.15f), radius = intersectionRadius * 3, center = Offset(x, y))
+                    drawCircle(color = dotColor, radius = intersectionRadius, center = Offset(x, y))
+                }
+            }
         } else if (composition == com.poseai.app.model.CompositionRule.CENTER) {
-            // 居中辅助线：中心十字 + 中央矩形
-            drawLine(
-                color = Color.White.copy(alpha = 0.05f),
-                start = Offset(w / 2f, 0f),
-                end = Offset(w / 2f, h),
-                strokeWidth = 1.dp.toPx()
-            )
-            drawLine(
-                color = Color.White.copy(alpha = 0.05f),
-                start = Offset(0f, h / 2f),
-                end = Offset(w, h / 2f),
-                strokeWidth = 1.dp.toPx()
-            )
-            // 中央矩形（人物目标区域）
+            val lineColor = Color.White.copy(alpha = baseAlpha)
+            drawLine(color = lineColor, start = Offset(w / 2f, 0f), end = Offset(w / 2f, h), strokeWidth = lineWidth)
+            drawLine(color = lineColor, start = Offset(0f, h / 2f), end = Offset(w, h / 2f), strokeWidth = lineWidth)
+            // 中央矩形
             val centerW = w * 0.5f
             val centerH = h * 0.7f
             drawRect(
-                color = Color.White.copy(alpha = 0.04f),
+                color = lineColor.copy(alpha = baseAlpha * 0.7f),
                 topLeft = Offset((w - centerW) / 2f, (h - centerH) / 2f),
                 size = Size(centerW, centerH),
-                style = Stroke(width = 1.dp.toPx())
+                style = Stroke(width = lineWidth)
             )
+            // 中心点高亮
+            drawCircle(color = Accent.copy(alpha = intersectionAlpha), radius = intersectionRadius, center = Offset(w / 2f, h / 2f))
         } else if (composition == com.poseai.app.model.CompositionRule.DIAGONAL) {
-            // 对角线构图
-            drawLine(
-                color = Color.White.copy(alpha = 0.06f),
-                start = Offset(0f, 0f),
-                end = Offset(w, h),
-                strokeWidth = 1.dp.toPx()
-            )
-            drawLine(
-                color = Color.White.copy(alpha = 0.06f),
-                start = Offset(w, 0f),
-                end = Offset(0f, h),
-                strokeWidth = 1.dp.toPx()
-            )
+            val lineColor = Color.White.copy(alpha = baseAlpha)
+            drawLine(color = lineColor, start = Offset(0f, 0f), end = Offset(w, h), strokeWidth = lineWidth)
+            drawLine(color = lineColor, start = Offset(w, 0f), end = Offset(0f, h), strokeWidth = lineWidth)
+            // 中心交点高亮
+            drawCircle(color = Accent.copy(alpha = intersectionAlpha), radius = intersectionRadius, center = Offset(w / 2f, h / 2f))
         } else if (composition == com.poseai.app.model.CompositionRule.FRAME_WITHIN_FRAME) {
-            // 框架构图：内外两个矩形
+            val outerColor = Color.White.copy(alpha = baseAlpha)
+            val innerColor = Accent.copy(alpha = baseAlpha * 1.2f)
             drawRect(
-                color = Color.White.copy(alpha = 0.06f),
+                color = outerColor,
                 topLeft = Offset(0f, 0f),
                 size = Size(w, h),
-                style = Stroke(width = 1.dp.toPx())
+                style = Stroke(width = lineWidth)
             )
             val innerMargin = minOf(w, h) * 0.15f
             drawRect(
-                color = Color.White.copy(alpha = 0.08f),
+                color = innerColor,
                 topLeft = Offset(innerMargin, innerMargin),
                 size = Size(w - 2 * innerMargin, h - 2 * innerMargin),
-                style = Stroke(width = 1.5.dp.toPx())
+                style = Stroke(width = Dimens.strokeBold.toPx())
             )
         } else if (composition == com.poseai.app.model.CompositionRule.GOLDEN_SPIRAL) {
-            // P5-6 黄金螺旋线构图
-            // 基于斐波那契数列绘制黄金螺旋曲线，并叠加黄金分割矩形辅助线
-            drawGoldenSpiral(w, h)
+            drawGoldenSpiral(w, h, gridAlpha)
+        }
+
+        // 水平仪（通用：所有构图模式都显示）
+        if (gridAlpha > 0.3f) {
+            val levelY = h * 0.5f
+            val levelWidth = w * 0.25f
+            val levelAlpha = 0.3f * gridAlpha
+            drawLine(
+                color = Accent.copy(alpha = levelAlpha),
+                start = Offset((w - levelWidth) / 2f, levelY),
+                end = Offset((w + levelWidth) / 2f, levelY),
+                strokeWidth = Dimens.strokeRegular.toPx(),
+                cap = StrokeCap.Round
+            )
+            // 水平仪两端的短竖线
+            val segmentH = 8.dp.toPx()
+            drawLine(
+                color = Accent.copy(alpha = levelAlpha * 0.7f),
+                start = Offset((w - levelWidth) / 2f, levelY - segmentH),
+                end = Offset((w - levelWidth) / 2f, levelY + segmentH),
+                strokeWidth = Dimens.strokeThin.toPx()
+            )
+            drawLine(
+                color = Accent.copy(alpha = levelAlpha * 0.7f),
+                start = Offset((w + levelWidth) / 2f, levelY - segmentH),
+                end = Offset((w + levelWidth) / 2f, levelY + segmentH),
+                strokeWidth = Dimens.strokeThin.toPx()
+            )
         }
     }
 }
@@ -1879,10 +2013,10 @@ fun CompositionGuideLines(
  * 实现：在黄金分割矩形内递归绘制 1/4 圆弧，形成螺旋曲线
  * 同时绘制黄金分割线作为辅助参考
  */
-private fun DrawScope.drawGoldenSpiral(w: Float, h: Float) {
+private fun DrawScope.drawGoldenSpiral(w: Float, h: Float, gridAlpha: Float = 1f) {
     val phi = 1.61803398875f  // 黄金比例
-    val spiralColor = Color.White.copy(alpha = 0.18f)
-    val guideColor = Color.White.copy(alpha = 0.06f)
+    val spiralColor = Accent.copy(alpha = 0.28f * gridAlpha)
+    val guideColor = Color.White.copy(alpha = 0.14f * gridAlpha)
 
     // 计算适合屏幕的黄金矩形（保持比例）
     // 默认竖屏拍摄，黄金矩形适配竖屏
@@ -2262,17 +2396,35 @@ fun DetectedSkeletonOverlay(
     score: Float,
     modifier: Modifier = Modifier
 ) {
+    // 骨架颜色根据评分渐变：低分→白（中性），高分→青墨绿（对齐佳）
+    val skeletonColor by animateColorAsState(
+        targetValue = when {
+            score >= 80f -> Success
+            score >= 60f -> Accent
+            score >= 40f -> Color(0xFF8EB4B0) // 青墨绿 50% 混合白
+            else -> Color.White.copy(alpha = 0.6f)
+        },
+        animationSpec = tween(Dimens.durationFast),
+        label = "skeletonColor"
+    )
+    val skeletonAlpha by animateFloatAsState(
+        targetValue = if (score >= 80f) 0.95f else 0.65f,
+        animationSpec = tween(Dimens.durationNormal),
+        label = "skeletonAlpha"
+    )
+
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
 
         lines.forEach { (pa, pb) ->
             drawLine(
-                color = Color.Green,
+                color = skeletonColor,
                 start = Offset(pa.x * w, pa.y * h),
                 end = Offset(pb.x * w, pb.y * h),
-                strokeWidth = 4.dp.toPx(),
-                alpha = 0.85f
+                strokeWidth = if (score >= 80f) 5.dp.toPx() else 3.5.dp.toPx(),
+                alpha = skeletonAlpha,
+                cap = StrokeCap.Round
             )
         }
 
@@ -2280,10 +2432,10 @@ fun DetectedSkeletonOverlay(
             val cx = point.x * w
             val cy = point.y * h
             drawCircle(
-                color = Color.Green,
-                radius = 6.dp.toPx(),
+                color = skeletonColor,
+                radius = if (score >= 80f) 7.dp.toPx() else 5.dp.toPx(),
                 center = Offset(cx, cy),
-                alpha = 0.9f
+                alpha = skeletonAlpha
             )
         }
     }
@@ -3100,46 +3252,89 @@ fun SequenceIndicator(
     onPrevious: () -> Unit,
     onNext: () -> Unit
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Dimens.spacingLg)
-            .background(Surface, RoundedCornerShape(Dimens.radiusMd))
-            .border(Dimens.strokeThin, Border, RoundedCornerShape(Dimens.radiusMd))
-            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
-        verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onPrevious, modifier = Modifier.size(32.dp)) {
-            Icon(
-                imageVector = Icons.Default.ChevronLeft,
-                contentDescription = "上一步",
-                tint = TextPrimary,
-                modifier = Modifier.size(Dimens.iconMd)
-            )
+        // 进度小圆点（国内主流：抖音/剪映风格）
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            for (i in 0 until totalSteps) {
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 3.dp)
+                        .size(if (i == currentIndex) 8.dp else 6.dp)
+                        .background(
+                            when {
+                                i < currentIndex -> Success.copy(alpha = 0.7f)
+                                i == currentIndex -> Accent
+                                else -> Color.White.copy(alpha = 0.2f)
+                            },
+                            CircleShape
+                        )
+                )
+            }
         }
-        Spacer(modifier = Modifier.width(Dimens.spacingSm))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "分镜 ${currentIndex + 1}/$totalSteps",
-                color = TextSecondary,
-                fontSize = Dimens.fontCaption,
-                lineHeight = Dimens.lineHeightCaption
-            )
-            Text(
-                text = stepName,
-                color = TextPrimary,
-                fontSize = Dimens.fontBody,
-                fontWeight = FontWeight.Medium,
-                lineHeight = Dimens.lineHeightBody
-            )
-        }
-        IconButton(onClick = onNext, modifier = Modifier.size(32.dp)) {
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = "下一步",
-                tint = TextPrimary,
-                modifier = Modifier.size(Dimens.iconMd)
-            )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingXs))
+
+        // 步骤卡片
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Surface, RoundedCornerShape(Dimens.radiusMd))
+                .border(Dimens.strokeThin, Border, RoundedCornerShape(Dimens.radiusMd))
+                .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onPrevious, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    imageVector = Icons.Default.ChevronLeft,
+                    contentDescription = "上一步",
+                    tint = if (currentIndex > 0) TextPrimary else TextSecondary,
+                    modifier = Modifier.size(Dimens.iconMd)
+                )
+            }
+            Spacer(modifier = Modifier.width(Dimens.spacingSm))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "第 ${currentIndex + 1} 步 / 共 $totalSteps 步",
+                    color = TextSecondary,
+                    fontSize = Dimens.fontCaption,
+                    lineHeight = Dimens.lineHeightCaption
+                )
+                Text(
+                    text = stepName,
+                    color = TextPrimary,
+                    fontSize = Dimens.fontBody,
+                    fontWeight = FontWeight.Medium,
+                    lineHeight = Dimens.lineHeightBody
+                )
+            }
+            // 跳过按钮（最后一页不显示）
+            if (currentIndex < totalSteps - 1) {
+                TextButton(onClick = onNext) {
+                    Text(
+                        text = "跳过",
+                        color = TextSecondary,
+                        fontSize = Dimens.fontCaption,
+                        lineHeight = Dimens.lineHeightCaption
+                    )
+                }
+            }
+            IconButton(onClick = onNext, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    imageVector = if (currentIndex >= totalSteps - 1) Icons.Default.Check else Icons.Default.ChevronRight,
+                    contentDescription = if (currentIndex >= totalSteps - 1) "完成" else "下一步",
+                    tint = if (currentIndex >= totalSteps - 1) Success else TextPrimary,
+                    modifier = Modifier.size(Dimens.iconMd)
+                )
+            }
         }
     }
 }
@@ -3159,6 +3354,7 @@ fun AngleIndicator(
             .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // 机位图标（俯仰指示）
         Icon(
             imageVector = Icons.Default.RotateRight,
             contentDescription = null,
@@ -3166,17 +3362,26 @@ fun AngleIndicator(
             modifier = Modifier.size(Dimens.iconMd)
         )
         Spacer(modifier = Modifier.width(Dimens.spacingSm))
-        Text(
-            text = "视角 · $currentAngleName",
-            color = TextPrimary,
-            fontSize = Dimens.fontLabel,
-            fontWeight = FontWeight.Medium,
-            lineHeight = Dimens.lineHeightLabel,
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "机位 $currentAngleName",
+                color = TextPrimary,
+                fontSize = Dimens.fontLabel,
+                fontWeight = FontWeight.Medium,
+                lineHeight = Dimens.lineHeightLabel
+            )
+            if (angleCount > 1) {
+                Text(
+                    text = "共 $angleCount 个机位可选",
+                    color = TextSecondary,
+                    fontSize = Dimens.fontCaption,
+                    lineHeight = Dimens.lineHeightCaption
+                )
+            }
+        }
         TextButton(onClick = onNextAngle) {
             Text(
-                text = "切换",
+                text = if (angleCount > 1) "换一个" else "确定",
                 color = Accent,
                 fontSize = Dimens.fontCaption,
                 lineHeight = Dimens.lineHeightCaption
@@ -3461,19 +3666,47 @@ fun DistanceHintText(
     text: String,
     modifier: Modifier = Modifier
 ) {
+    // 入场/离场淡入淡出
+    val hintAlpha by animateFloatAsState(
+        targetValue = if (text.isNotEmpty()) 1f else 0f,
+        animationSpec = tween(300),
+        label = "hintAlpha"
+    )
+
     Box(
         modifier = modifier
-            .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(Dimens.radiusXl))
+            .graphicsLayer(alpha = hintAlpha)
+            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(Dimens.radiusXl))
+            .border(Dimens.strokeThin, Accent.copy(alpha = 0.3f), RoundedCornerShape(Dimens.radiusXl))
             .padding(horizontal = Dimens.spacingXl, vertical = Dimens.spacingMd)
     ) {
-        Text(
-            text = text,
-            color = Accent,
-            fontSize = Dimens.fontTitle,
-            fontWeight = FontWeight.SemiBold,
-            lineHeight = Dimens.lineHeightTitle,
-            textAlign = TextAlign.Center
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // 方向提示图标
+            Text(
+                text = when {
+                    text.contains("向左") || text.contains("往左") -> "⬅"
+                    text.contains("向右") || text.contains("往右") -> "➡"
+                    text.contains("站远") || text.contains("离远") || text.contains("后退") -> "⬆"
+                    text.contains("靠近") || text.contains("站近") || text.contains("往前") -> "⬇"
+                    text.contains("抬高") || text.contains("举手") -> "⬆"
+                    text.contains("蹲下") || text.contains("降低") -> "⬇"
+                    text.contains("稳定") || text.contains("保持") -> "✦"
+                    text.contains("到位") || text.contains("OK") -> "✦"
+                    else -> "⊙"
+                },
+                fontSize = Dimens.fontHeadline,
+                lineHeight = Dimens.lineHeightHeadline
+            )
+            Spacer(modifier = Modifier.width(Dimens.spacingSm))
+            Text(
+                text = text,
+                color = Color.White,
+                fontSize = Dimens.fontBody,
+                fontWeight = FontWeight.Medium,
+                lineHeight = Dimens.lineHeightBody,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 

@@ -1520,10 +1520,12 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             return
         }
         val hint = when {
-            score < 30f -> "对准剪影位置，调整身体朝向与四肢"
-            score < 50f -> "再靠近一点，让姿势贴合剪影"
-            score < 70f -> "微调一下，几乎到位了"
-            else -> "保持稳定，马上就 OK"
+            score < 20f -> "站远一点，让全身进入画面"
+            score < 35f -> "往左挪一步，对准剪影轮廓"
+            score < 50f -> "再靠近一点，手抬高一些"
+            score < 65f -> "快了快了，微调一下就好"
+            score < 75f -> "稳住别动，就差一点点"
+            else -> "好！保持这个姿势"
         }
         _distanceHint.value = hint
     }
