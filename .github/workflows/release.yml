@@ -62,6 +62,7 @@ jobs:
             echo "No signing key secret found, generating a new keystore..."
             keytool -genkeypair -v \
               -keystore "$SIGNING_KEY_PATH" \
+              -storetype PKCS12 \
               -keyalg RSA -keysize 2048 -validity 10000 \
               -alias poseai-key \
               -storepass poseai-store-pass \
