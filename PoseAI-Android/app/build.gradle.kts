@@ -12,7 +12,7 @@ android {
         applicationId = "com.poseai.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
+        versionCode = 4
         versionName = "2.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -169,6 +169,11 @@ dependencies {
 
     // Gson
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // Palette — OOTD 主色调提取
+    implementation("androidx.palette:palette-ktx:1.0.0")
+    // ExifInterface — OOTD 图片方向修正
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
 
     // Testing
     testImplementation("junit:junit:4.13.2")
