@@ -98,8 +98,13 @@ class PoseDetectorEngine {
     }
 
     fun close() {
+        if (isClosed) return
         isClosed = true
-        detector.close()
+        try {
+            detector.close()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to close detector", e)
+        }
     }
 }
 

@@ -77,8 +77,7 @@ class AIModelManager(context: Context) {
         File(appContext.filesDir, "ai_models").apply { mkdirs() }
     }
 
-    private val _isActivated = prefs.getBoolean(KEY_ACTIVATED, false)
-    val isActivated: Boolean get() = _isActivated
+    val isActivated: Boolean get() = prefs.getBoolean(KEY_ACTIVATED, false)
 
     /**
      * 获取所有模型状态
@@ -179,16 +178,16 @@ class AIModelManager(context: Context) {
      * 从远程下载模型文件
      */
     private fun downloadModel(info: ModelInfo): Boolean {
+        var connection: HttpURLConnection? = null
         return try {
             val url = URL(info.url)
-            val connection = url.openConnection() as HttpURLConnection
+            connection = url.openConnection() as HttpURLConnection
             connection.connectTimeout = 15000
             connection.readTimeout = 30000
             connection.requestMethod = "GET"
 
             if (connection.responseCode != HttpURLConnection.HTTP_OK) {
                 Log.w(TAG, "模型下载 HTTP ${connection.responseCode}: ${info.url}")
-                connection.disconnect()
                 return false
             }
 
@@ -202,7 +201,6 @@ class AIModelManager(context: Context) {
                     }
                 }
             }
-            connection.disconnect()
 
             // 校验文件大小
             if (tempFile.length() < 100) {
@@ -219,19 +217,19 @@ class AIModelManager(context: Context) {
         } catch (e: Exception) {
             Log.e(TAG, "模型下载异常: ${info.id}", e)
             false
+        } finally {
+            connection?.disconnect()
         }
     }
 
     /**
      * 确保占位模型存在（当远程下载失败时的 fallback）
      * SceneClassifier 会处理模型文件不存在的情况
+     * 注意：不创建无效文件，让 SceneClassifier 的 fallback 逻辑自然触发
      */
     private fun ensurePlaceholderModel(info: ModelInfo) {
-        val file = File(modelsDir, info.filename)
-        if (!file.exists()) {
-            // 创建空标记文件，SceneClassifier 会使用 assets 中的 fallback
-            file.writeText("placeholder")
-        }
+        // 不创建占位文件，SceneClassifier 在模型不存在时会自动使用启发式分类
+        Log.i(TAG, "Model ${info.id} will use heuristic fallback")
     }
 
     /**
@@ -240,7 +238,7 @@ class AIModelManager(context: Context) {
     fun deactivate() {
         prefs.edit()
             .putBoolean(KEY_ACTIVATED, false)
-            .putString(KEY_ACTIVATION_TOKEN, null)
+            .remove(KEY_ACTIVATION_TOKEN)
             .apply()
 
         // 删除下载的模型文件
@@ -269,8 +267,14 @@ class AIModelManager(context: Context) {
     private fun verifyMd5(file: File, expectedMd5: String): Boolean {
         return try {
             val digest = MessageDigest.getInstance("MD5")
-            val bytes = file.readBytes()
-            val hash = digest.digest(bytes)
+            file.inputStream().use { input ->
+                val buffer = ByteArray(8192)
+                var bytesRead: Int
+                while (input.read(buffer).also { bytesRead = it } != -1) {
+                    digest.update(buffer, 0, bytesRead)
+                }
+            }
+            val hash = digest.digest()
             val hex = hash.joinToString("") { "%02x".format(it) }
             hex == expectedMd5
         } catch (e: Exception) {

@@ -273,6 +273,20 @@ fun OOTDAnalysisScreen(viewModel: ShootingViewModel) {
     }
 }
 
+private fun calculateInSampleSize(
+    options: android.graphics.BitmapFactory.Options,
+    reqWidth: Int,
+    reqHeight: Int
+): Int {
+    val height = options.outHeight
+    val width = options.outWidth
+    var inSampleSize = 1
+    while (height / inSampleSize >= reqHeight || width / inSampleSize >= reqWidth) {
+        inSampleSize *= 2
+    }
+    return inSampleSize
+}
+
 private fun copyUriToFile(context: android.content.Context, uri: android.net.Uri): String? {
     return try {
         val inputStream = context.contentResolver.openInputStream(uri) ?: return null
@@ -281,14 +295,27 @@ private fun copyUriToFile(context: android.content.Context, uri: android.net.Uri
             java.io.FileOutputStream(outputFile).use { output ->
                 input.copyTo(output)
             }
-        outputFile.absolutePath
+            outputFile.absolutePath
+        }
     } catch (e: Exception) {
         null
     }
 }
 
 private fun generateOOTDAnalysis(imagePath: String): OOTDAnalysisResult {
-    val bitmap = android.graphics.BitmapFactory.decodeFile(imagePath) ?: return OOTDAnalysisResult(
+    // 先解码图片尺寸，避免大图 OOM
+    val options = android.graphics.BitmapFactory.Options().apply {
+        inJustDecodeBounds = true
+    }
+    android.graphics.BitmapFactory.decodeFile(imagePath, options)
+    val reqWidth = 512
+    val reqHeight = 512
+    val inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
+
+    val decodeOptions = android.graphics.BitmapFactory.Options().apply {
+        this.inSampleSize = inSampleSize
+    }
+    val bitmap = android.graphics.BitmapFactory.decodeFile(imagePath, decodeOptions) ?: return OOTDAnalysisResult(
         overallScore = 0f,
         colorHarmony = 0f,
         proportionScore = 0f,
@@ -301,7 +328,7 @@ private fun generateOOTDAnalysis(imagePath: String): OOTDAnalysisResult {
     val avgR = mutableListOf<Int>()
     val avgG = mutableListOf<Int>()
     val avgB = mutableListOf<Int>()
-    val sampleSize = 50
+    val sampleSize = (kotlin.math.max(width, height) / 32).coerceAtLeast(4)
     for (y in 0 until height step sampleSize) {
         for (x in 0 until width step sampleSize) {
             val pixel = bitmap.getPixel(x, y)

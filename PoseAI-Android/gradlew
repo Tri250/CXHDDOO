@@ -1,2 +1,4 @@
-#!/usr/bin/env sh
-exec gradle "$@"
+#!/bin/sh
+export GRADLE_HOME=/workspace/gradle-8.7
+export JAVA_HOME=/root/.local/share/mise/installs/java/17.0.2
+exec "$JAVA_HOME/bin/java" -Xmx2048m -Dfile.encoding=UTF-8 -cp "$GRADLE_HOME/lib/gradle-launcher-8.7.jar" org.gradle.launcher.GradleMain "$@"

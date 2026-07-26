@@ -46,6 +46,8 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
         try {
             val modelFile = File(context.filesDir, "ai_models/$modelFilename")
             if (modelFile.exists() && modelFile.length() > 1024) {
+                // 关闭旧的 interpreter 防止内存泄漏
+                interpreter?.close()
                 interpreter = Interpreter(modelFile)
                 loaded = true
                 Log.i(TAG, "Loaded model from ${modelFile.absolutePath}")
@@ -59,6 +61,8 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
                 val assetList = context.assets.list("")
                 if (assetList?.contains(modelFilename) == true) {
                     val assetMapped = FileUtil.loadMappedFile(context, modelFilename)
+                    // 关闭旧的 interpreter 防止内存泄漏
+                    interpreter?.close()
                     interpreter = Interpreter(assetMapped)
                     loaded = true
                     Log.i(TAG, "Loaded model from assets")

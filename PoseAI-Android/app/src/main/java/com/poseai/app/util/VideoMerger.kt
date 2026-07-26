@@ -22,6 +22,10 @@ object VideoMerger {
         outputDir: File
     ): File? = withContext(Dispatchers.IO) {
         if (videoFiles.isEmpty()) return@withContext null
+        if (!outputDir.exists() && !outputDir.mkdirs()) {
+            Log.e(TAG, "Failed to create output directory")
+            return@withContext null
+        }
 
         val outputFile = File(outputDir, "${UUID.randomUUID()}_final.mp4")
         var muxer: MediaMuxer? = null
@@ -35,17 +39,20 @@ object VideoMerger {
             var totalVideoDuration = 0L
 
             val firstExtractor = MediaExtractor()
-            firstExtractor.setDataSource(videoFiles[0].absolutePath)
-            for (i in 0 until firstExtractor.trackCount) {
-                val format = firstExtractor.getTrackFormat(i)
-                val mime = format.getString(MediaFormat.KEY_MIME) ?: continue
-                if (mime.startsWith("video/")) {
-                    videoTrackIndex = muxer.addTrack(format)
-                } else if (mime.startsWith("audio/")) {
-                    audioTrackIndex = muxer.addTrack(format)
+            try {
+                firstExtractor.setDataSource(videoFiles[0].absolutePath)
+                for (i in 0 until firstExtractor.trackCount) {
+                    val format = firstExtractor.getTrackFormat(i)
+                    val mime = format.getString(MediaFormat.KEY_MIME) ?: continue
+                    if (mime.startsWith("video/")) {
+                        videoTrackIndex = muxer.addTrack(format)
+                    } else if (mime.startsWith("audio/")) {
+                        audioTrackIndex = muxer.addTrack(format)
+                    }
                 }
+            } finally {
+                firstExtractor.release()
             }
-            firstExtractor.release()
 
             if (bgmFile != null && bgmFile.exists()) {
                 val bgmExtractor = MediaExtractor()
@@ -67,66 +74,95 @@ object VideoMerger {
             muxer.start()
 
             val bufferInfo = MediaCodec.BufferInfo()
-            val buffer = ByteBuffer.allocate(256 * 1024)
+            val buffer = ByteBuffer.allocate(1024 * 1024)
 
             for (videoIndex in videoFiles.indices) {
                 val videoFile = videoFiles[videoIndex]
                 val extractor = MediaExtractor()
-                extractor.setDataSource(videoFile.absolutePath)
+                try {
+                    extractor.setDataSource(videoFile.absolutePath)
 
-                for (trackType in 0..1) {
-                    val trackMime = if (trackType == 0) "video/" else "audio/"
-                    val targetTrack = if (trackType == 0) videoTrackIndex else audioTrackIndex
+                    for (trackType in 0..1) {
+                        val trackMime = if (trackType == 0) "video/" else "audio/"
+                        val targetTrack = if (trackType == 0) videoTrackIndex else audioTrackIndex
+                        if (targetTrack < 0) continue
 
-                    for (i in 0 until extractor.trackCount) {
-                        val format = extractor.getTrackFormat(i)
-                        val mime = format.getString(MediaFormat.KEY_MIME) ?: continue
-                        if (mime.startsWith(trackMime)) {
-                            extractor.selectTrack(i)
-                            val startTime = totalVideoDuration
+                        for (i in 0 until extractor.trackCount) {
+                            val format = extractor.getTrackFormat(i)
+                            val mime = format.getString(MediaFormat.KEY_MIME) ?: continue
+                            if (mime.startsWith(trackMime)) {
+                                extractor.selectTrack(i)
+                                val startTime = totalVideoDuration
 
-                            while (true) {
-                                buffer.clear()
-                                val sampleSize = extractor.readSampleData(buffer, 0)
-                                if (sampleSize < 0) break
+                                while (true) {
+                                    buffer.clear()
+                                    val sampleSize = extractor.readSampleData(buffer, 0)
+                                    if (sampleSize < 0) break
+                                    if (sampleSize > buffer.capacity()) {
+                                        Log.w(TAG, "Sample size $sampleSize exceeds buffer capacity, skipping frame")
+                                        extractor.advance()
+                                        continue
+                                    }
 
-                                bufferInfo.set(
-                                    sampleSize,
-                                    0,
-                                    startTime + extractor.sampleTime,
-                                    extractor.sampleFlags
-                                )
+                                    bufferInfo.set(
+                                        sampleSize,
+                                        0,
+                                        startTime + extractor.sampleTime,
+                                        extractor.sampleFlags
+                                    )
 
-                                muxer.writeSampleData(targetTrack, buffer, bufferInfo)
-                                extractor.advance()
+                                    muxer.writeSampleData(targetTrack, buffer, bufferInfo)
+                                    extractor.advance()
+                                }
+
+                                extractor.unselectTrack(i)
+                                break
                             }
-
-                            extractor.unselectTrack(i)
-                            break
                         }
                     }
-                }
 
-                val duration = getVideoDuration(videoFile)
-                totalVideoDuration += duration
-                extractor.release()
+                    val duration = getVideoDuration(videoFile)
+                    totalVideoDuration += duration
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error processing video file ${videoFile.name}", e)
+                } finally {
+                    extractor.release()
+                }
             }
 
             if (bgmFile != null && bgmFile.exists() && bgmTrackIndex >= 0) {
                 writeBgmLooped(muxer, bgmTrackIndex, bgmFile, totalVideoDuration, bufferInfo, buffer)
             }
 
-            muxer.stop()
-            muxer.release()
+            try {
+                muxer.stop()
+            } catch (e: Exception) {
+                Log.e(TAG, "Muxer stop failed", e)
+            }
+            try {
+                muxer.release()
+            } catch (e: Exception) {
+                Log.e(TAG, "Muxer release failed", e)
+            }
 
-            outputFile
+            if (outputFile.exists() && outputFile.length() > 0) {
+                outputFile
+            } else {
+                Log.e(TAG, "Output file is empty or does not exist")
+                null
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Merge failed", e)
+            null
+        } finally {
             try {
                 muxer?.stop()
                 muxer?.release()
             } catch (_: Exception) {}
-            null
+            // 清理空输出文件
+            if (outputFile.exists() && outputFile.length() == 0L) {
+                outputFile.delete()
+            }
         }
     }
 

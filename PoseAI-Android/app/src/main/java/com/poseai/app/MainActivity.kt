@@ -23,6 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -46,6 +47,8 @@ class MainActivity : ComponentActivity() {
 
     private var hasCameraPermission by mutableStateOf(false)
     private var hasAudioPermission by mutableStateOf(false)
+    private var hasStoragePermission by mutableStateOf(false)
+    private var hasNotificationPermission by mutableStateOf(false)
 
     private val batteryReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -72,6 +75,12 @@ class MainActivity : ComponentActivity() {
     ) { permissions ->
         hasCameraPermission = permissions[Manifest.permission.CAMERA] == true
         hasAudioPermission = permissions[Manifest.permission.RECORD_AUDIO] == true
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            hasStoragePermission = permissions[Manifest.permission.READ_MEDIA_IMAGES] == true
+            hasNotificationPermission = permissions[Manifest.permission.POST_NOTIFICATIONS] == true
+        } else {
+            hasStoragePermission = permissions[Manifest.permission.READ_EXTERNAL_STORAGE] == true
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,11 +96,43 @@ class MainActivity : ComponentActivity() {
         hasCameraPermission = cameraGranted
         hasAudioPermission = audioGranted
 
-        if (!cameraGranted || !audioGranted) {
-            val perms = mutableListOf<String>()
-            if (!cameraGranted) perms.add(Manifest.permission.CAMERA)
-            if (!audioGranted) perms.add(Manifest.permission.RECORD_AUDIO)
-            permissionLauncher.launch(perms.toTypedArray())
+        // 检查并请求存储权限（版本适配）
+        hasStoragePermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                this, Manifest.permission.READ_MEDIA_IMAGES
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            ContextCompat.checkSelfPermission(
+                this, Manifest.permission.READ_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED
+        }
+
+        // 检查通知权限（API 33+）
+        hasNotificationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                this, Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+
+        val permsToRequest = mutableListOf<String>()
+        if (!cameraGranted) permsToRequest.add(Manifest.permission.CAMERA)
+        if (!audioGranted) permsToRequest.add(Manifest.permission.RECORD_AUDIO)
+        if (!hasStoragePermission) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                permsToRequest.add(Manifest.permission.READ_MEDIA_IMAGES)
+                permsToRequest.add(Manifest.permission.READ_MEDIA_VIDEO)
+            } else {
+                permsToRequest.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+        }
+        if (!hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+
+        if (permsToRequest.isNotEmpty()) {
+            permissionLauncher.launch(permsToRequest.toTypedArray())
         }
 
         val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
@@ -159,12 +200,17 @@ fun PoseAINavHost(
     val currentDestination = navBackStackEntry?.destination
     val showBottomBar = bottomNavItems.any { it.route == currentDestination?.route }
 
+    val configuration = LocalConfiguration.current
+    val isCompactHeight = configuration.screenHeightDp < 600
+
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar(
                     containerColor = com.poseai.app.ui.theme.SurfaceDark,
-                    contentColor = com.poseai.app.ui.theme.TextPrimary
+                    contentColor = com.poseai.app.ui.theme.TextPrimary,
+                    tonalElevation = 0.dp
                 ) {
                     bottomNavItems.forEach { item ->
                         val selected = currentDestination?.hierarchy?.any { it.route == item.route } == true
@@ -179,7 +225,7 @@ fun PoseAINavHost(
                             label = {
                                 Text(
                                     text = item.label,
-                                    fontSize = 11.sp
+                                    fontSize = if (isCompactHeight) 10.sp else 11.sp
                                 )
                             },
                             selected = selected,
@@ -205,7 +251,11 @@ fun PoseAINavHost(
             }
         }
     ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
             NavHost(
                 navController = navController,
                 startDestination = startDestination

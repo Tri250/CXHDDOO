@@ -1026,8 +1026,12 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         poseDetector?.close()
         sceneClassifier?.close()
         smileDetector?.close()
-        toneGenerator?.release()
-        tts?.stop()
-        tts?.shutdown()
+        try {
+            toneGenerator?.release()
+        } catch (_: Exception) {}
+        try {
+            tts?.stop()
+            tts?.shutdown()
+        } catch (_: Exception) {}
     }
 }

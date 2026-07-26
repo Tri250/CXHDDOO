@@ -10,11 +10,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -64,6 +68,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -139,6 +144,9 @@ fun ShootingScreen(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
+    val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
+    val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
+
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
             factory = { ctx ->
@@ -193,7 +201,8 @@ fun ShootingScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(top = statusBarPadding.calculateTopPadding() + 8.dp)
+                .padding(horizontal = 16.dp)
         ) {
             TopBar(
                 sceneName = currentScene.displayName,
@@ -231,7 +240,7 @@ fun ShootingScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 32.dp),
+                .padding(bottom = navBarPadding.calculateBottomPadding() + 16.dp),
             verticalArrangement = Arrangement.Bottom
         ) {
             PoseScoreBar(score = poseScore)
@@ -601,6 +610,14 @@ fun BottomControls(
     screenFillLightEnabled: Boolean,
     currentFilterName: String
 ) {
+    val configuration = LocalConfiguration.current
+    val isCompactHeight = configuration.screenHeightDp < 600
+    val iconSize = if (isCompactHeight) 22.dp else 26.dp
+    val captureButtonSize = if (isCompactHeight) 72.dp else 88.dp
+    val navButtonSize = if (isCompactHeight) 48.dp else 56.dp
+    val captureIconSize = if (isCompactHeight) 32.dp else 40.dp
+    val navIconSize = if (isCompactHeight) 28.dp else 32.dp
+
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -612,7 +629,7 @@ fun BottomControls(
                     imageVector = Icons.Default.Mood,
                     contentDescription = "微笑快门",
                     tint = if (smileEnabled) Accent else TextSecondary,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(iconSize)
                 )
             }
             IconButton(onClick = onGrid) {
@@ -620,7 +637,7 @@ fun BottomControls(
                     imageVector = Icons.Default.GridOn,
                     contentDescription = "网格",
                     tint = if (gridEnabled) Accent else TextSecondary,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(iconSize)
                 )
             }
             IconButton(onClick = onFilter) {
@@ -628,7 +645,7 @@ fun BottomControls(
                     imageVector = Icons.Default.Palette,
                     contentDescription = "滤镜",
                     tint = if (currentFilterName != "原图") Accent else TextSecondary,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(iconSize)
                 )
             }
             IconButton(onClick = onExposure) {
@@ -636,7 +653,7 @@ fun BottomControls(
                     imageVector = Icons.Default.Exposure,
                     contentDescription = "曝光",
                     tint = TextSecondary,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(iconSize)
                 )
             }
             IconButton(onClick = onScreenFillLight) {
@@ -644,12 +661,12 @@ fun BottomControls(
                     imageVector = Icons.Default.BrightnessHigh,
                     contentDescription = "屏幕补光",
                     tint = if (screenFillLightEnabled) Accent else TextSecondary,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(iconSize)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(if (isCompactHeight) 6.dp else 10.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -661,7 +678,7 @@ fun BottomControls(
                     imageVector = Icons.Default.LocationOn,
                     contentDescription = "场景",
                     tint = TextSecondary,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(iconSize)
                 )
             }
             IconButton(onClick = onToggleAuto) {
@@ -669,7 +686,7 @@ fun BottomControls(
                     imageVector = Icons.Default.Star,
                     contentDescription = "自动抓拍",
                     tint = if (isAutoCapturing) Accent else TextSecondary,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(iconSize)
                 )
             }
             IconButton(onClick = onSwitch) {
@@ -677,7 +694,7 @@ fun BottomControls(
                     imageVector = Icons.Default.Cameraswitch,
                     contentDescription = "切换摄像头",
                     tint = TextPrimary,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(iconSize)
                 )
             }
             IconButton(onClick = onStartVlog) {
@@ -685,12 +702,12 @@ fun BottomControls(
                     imageVector = Icons.Default.Videocam,
                     contentDescription = "Vlog",
                     tint = if (isVlogRecording || isVlogMerging) Accent else TextSecondary,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(iconSize)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(if (isCompactHeight) 10.dp else 16.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -699,13 +716,13 @@ fun BottomControls(
         ) {
             IconButton(
                 onClick = onPrevious,
-                modifier = Modifier.size(56.dp)
+                modifier = Modifier.size(navButtonSize)
             ) {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
                     contentDescription = "上一个姿势",
                     tint = TextPrimary,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(navIconSize)
                 )
             }
 
@@ -713,41 +730,41 @@ fun BottomControls(
                 IconButton(
                     onClick = onStopVlog,
                     modifier = Modifier
-                        .size(88.dp)
+                        .size(captureButtonSize)
                         .background(Error, CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Stop,
                         contentDescription = "停止录制",
                         tint = Color.White,
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(captureIconSize)
                     )
                 }
             } else {
                 IconButton(
                     onClick = onCapture,
                     modifier = Modifier
-                        .size(88.dp)
+                        .size(captureButtonSize)
                         .background(Accent, CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Star,
                         contentDescription = "拍照",
                         tint = Color.White,
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(captureIconSize)
                     )
                 }
             }
 
             IconButton(
                 onClick = onNext,
-                modifier = Modifier.size(56.dp)
+                modifier = Modifier.size(navButtonSize)
             ) {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
                     contentDescription = "下一个姿势",
                     tint = TextPrimary,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(navIconSize)
                 )
             }
         }

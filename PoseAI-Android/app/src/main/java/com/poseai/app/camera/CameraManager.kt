@@ -1,6 +1,8 @@
 package com.poseai.app.camera
 
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
@@ -25,6 +27,7 @@ import java.io.File
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class CameraManager(private val context: Context) {
 
@@ -54,6 +57,7 @@ class CameraManager(private val context: Context) {
     private var imageAnalysis: ImageAnalysis? = null
     private var videoCapture: VideoCapture<Recorder>? = null
     private var activeRecording: Recording? = null
+    private var torchObserver: androidx.lifecycle.Observer<Int>? = null
 
     private val cameraExecutor: ExecutorService = Executors.newFixedThreadPool(4)
 
@@ -125,9 +129,13 @@ class CameraManager(private val context: Context) {
 
     private fun observeCameraState() {
         val cam = camera ?: return
-        cam.cameraInfo.torchState.observeForever { state ->
+        // 移除旧的 observer 防止内存泄漏
+        torchObserver?.let { cam.cameraInfo.torchState.removeObserver(it) }
+        val observer = androidx.lifecycle.Observer<Int> { state ->
             _torchState.value = state
         }
+        torchObserver = observer
+        cam.cameraInfo.torchState.observeForever(observer)
         cam.cameraInfo.exposureState.let { exposure ->
             _exposureIndex.value = exposure.exposureCompensationIndex
         }
@@ -137,13 +145,33 @@ class CameraManager(private val context: Context) {
     }
 
     fun switchCamera(lifecycleOwner: LifecycleOwner, previewView: PreviewView) {
+        // 清理旧的 observer
+        camera?.let { oldCam ->
+            torchObserver?.let { oldCam.cameraInfo.torchState.removeObserver(it) }
+        }
+        torchObserver = null
         val newLens = if (_isFrontCamera.value) {
             CameraSelector.LENS_FACING_BACK
         } else {
             CameraSelector.LENS_FACING_FRONT
         }
+        // 检查目标摄像头是否存在
+        if (!hasCameraLensFacing(newLens)) {
+            Log.w(TAG, "设备不存在目标摄像头: $newLens")
+            return
+        }
         val analyzer = imageAnalysis?.analyzer
         startCamera(lifecycleOwner, previewView, newLens, analyzer)
+    }
+
+    private fun hasCameraLensFacing(lensFacing: Int): Boolean {
+        return try {
+            val cameraProvider = ProcessCameraProvider.getInstance(context).get()
+            val selector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
+            cameraProvider.hasCamera(selector)
+        } catch (e: Exception) {
+            false
+        }
     }
 
     fun takePhoto(outputFile: File, onResult: (Boolean, String?) -> Unit) {
@@ -260,7 +288,13 @@ class CameraManager(private val context: Context) {
 
     fun setExposureCompensation(index: Int): Boolean {
         val cam = camera ?: return false
-        val range = cam.cameraInfo.exposureState.exposureCompensationRange
+        val exposureState = cam.cameraInfo.exposureState
+        // 检查是否支持曝光补偿
+        if (!exposureState.isExposureCompensationSupported) {
+            Log.w(TAG, "设备不支持曝光补偿")
+            return false
+        }
+        val range = exposureState.exposureCompensationRange
         val clampedIndex = index.coerceIn(range.lower, range.upper)
         return try {
             cam.cameraControl.setExposureCompensationIndex(clampedIndex)
@@ -274,6 +308,11 @@ class CameraManager(private val context: Context) {
 
     fun toggleTorch(): Boolean {
         val cam = camera ?: return false
+        // 检查是否有闪光灯单元
+        if (!cam.cameraInfo.hasFlashUnit()) {
+            Log.w(TAG, "设备无闪光灯，无法切换_torch")
+            return false
+        }
         val newState = _torchState.value != TorchState.ON
         cam.cameraControl.enableTorch(newState)
         return newState
@@ -281,20 +320,32 @@ class CameraManager(private val context: Context) {
 
     fun setZoomRatio(ratio: Float) {
         val cam = camera ?: return
+        val zoomState = cam.cameraInfo.zoomState
+        // 检查变焦范围是否有效
+        if (zoomState.minZoomRatio == 1.0f && zoomState.maxZoomRatio == 1.0f) {
+            Log.w(TAG, "设备不支持变焦")
+            return
+        }
         val clamped = ratio.coerceIn(
-            cam.cameraInfo.zoomState.minZoomRatio,
-            cam.cameraInfo.zoomState.maxZoomRatio
+            zoomState.minZoomRatio,
+            zoomState.maxZoomRatio
         )
         cam.cameraControl.setZoomRatio(clamped)
         _zoomRatio.value = clamped
     }
 
     fun getMaxExposure(): Int {
-        return camera?.cameraInfo?.exposureState?.exposureCompensationRange?.upper ?: 10
+        val exposureState = camera?.cameraInfo?.exposureState
+        return if (exposureState?.isExposureCompensationSupported == true) {
+            exposureState.exposureCompensationRange.upper
+        } else 0
     }
 
     fun getMinExposure(): Int {
-        return camera?.cameraInfo?.exposureState?.exposureCompensationRange?.lower ?: -10
+        val exposureState = camera?.cameraInfo?.exposureState
+        return if (exposureState?.isExposureCompensationSupported == true) {
+            exposureState.exposureCompensationRange.lower
+        } else 0
     }
 
     fun getVideoChunkDir(): File = videoTempDir
@@ -306,9 +357,27 @@ class CameraManager(private val context: Context) {
             activeRecording?.stop()
             activeRecording = null
         } catch (_: Exception) {}
+        // 移除 torch observer 防止内存泄漏
+        camera?.let { oldCam ->
+            torchObserver?.let { oldCam.cameraInfo.torchState.removeObserver(it) }
+        }
+        torchObserver = null
         try {
             cameraProvider?.unbindAll()
         } catch (_: Exception) {}
-        cameraExecutor.shutdownNow()
+        camera = null
+        cameraProvider = null
+        preview = null
+        imageCapture = null
+        imageAnalysis = null
+        videoCapture = null
+        cameraExecutor.shutdown()
+        try {
+            if (!cameraExecutor.awaitTermination(3, TimeUnit.SECONDS)) {
+                cameraExecutor.shutdownNow()
+            }
+        } catch (_: InterruptedException) {
+            cameraExecutor.shutdownNow()
+        }
     }
 }

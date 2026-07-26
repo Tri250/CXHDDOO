@@ -90,6 +90,10 @@ class SmileDetector(
     }
 
     fun close() {
-        detector.close()
+        try {
+            detector.close()
+        } catch (e: Exception) {
+            Log.e("SmileDetector", "Failed to close detector", e)
+        }
     }
 }
