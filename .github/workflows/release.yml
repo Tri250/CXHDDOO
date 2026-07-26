@@ -50,26 +50,67 @@ jobs:
         run: chmod +x gradlew
         working-directory: PoseAI-Android
 
-      - name: Decode signing key
-        run: echo "${{ secrets.ANDROID_SIGNING_KEY }}" | base64 --decode > $HOME/signing-key.jks
+      - name: Setup signing key
+        env:
+          ANDROID_SIGNING_KEY: ${{ secrets.ANDROID_SIGNING_KEY }}
+          STORE_PASSWORD_SECRET: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS_SECRET: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD_SECRET: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          SIGNING_KEY_PATH="$HOME/signing-key.jks"
+          if [ -z "$ANDROID_SIGNING_KEY" ]; then
+            echo "No signing key secret found, generating a new keystore..."
+            keytool -genkeypair -v \
+              -keystore "$SIGNING_KEY_PATH" \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -alias poseai-key \
+              -storepass poseai-store-pass \
+              -keypass poseai-key-pass \
+              -dname "CN=PoseAI, OU=App, O=PoseAI, L=Beijing, ST=Beijing, C=CN"
+            echo "STORE_PASSWORD=poseai-store-pass" >> $GITHUB_ENV
+            echo "KEY_ALIAS=poseai-key" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=poseai-key-pass" >> $GITHUB_ENV
+          else
+            echo "Using signing key from secrets..."
+            echo "$ANDROID_SIGNING_KEY" | base64 --decode > "$SIGNING_KEY_PATH"
+            echo "STORE_PASSWORD=$STORE_PASSWORD_SECRET" >> $GITHUB_ENV
+            echo "KEY_ALIAS=$KEY_ALIAS_SECRET" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=$KEY_PASSWORD_SECRET" >> $GITHUB_ENV
+          fi
+          echo "SIGNING_KEY_PATH=$SIGNING_KEY_PATH" >> $GITHUB_ENV
+          echo "Signing key ready at: $SIGNING_KEY_PATH"
 
       - name: Build Release APK
         run: ./gradlew assembleRelease --no-daemon
         working-directory: PoseAI-Android
         env:
-          ORG_GRADLE_PROJECT_storeFile: $HOME/signing-key.jks
-          ORG_GRADLE_PROJECT_storePassword: ${{ secrets.STORE_PASSWORD }}
-          ORG_GRADLE_PROJECT_keyAlias: ${{ secrets.KEY_ALIAS }}
-          ORG_GRADLE_PROJECT_keyPassword: ${{ secrets.KEY_PASSWORD }}
+          ORG_GRADLE_PROJECT_storeFile: ${{ env.SIGNING_KEY_PATH }}
+          ORG_GRADLE_PROJECT_storePassword: ${{ env.STORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_keyAlias: ${{ env.KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_keyPassword: ${{ env.KEY_PASSWORD }}
 
       - name: Build Release AAB
         run: ./gradlew bundleRelease --no-daemon
         working-directory: PoseAI-Android
         env:
-          ORG_GRADLE_PROJECT_storeFile: $HOME/signing-key.jks
-          ORG_GRADLE_PROJECT_storePassword: ${{ secrets.STORE_PASSWORD }}
-          ORG_GRADLE_PROJECT_keyAlias: ${{ secrets.KEY_ALIAS }}
-          ORG_GRADLE_PROJECT_keyPassword: ${{ secrets.KEY_PASSWORD }}
+          ORG_GRADLE_PROJECT_storeFile: ${{ env.SIGNING_KEY_PATH }}
+          ORG_GRADLE_PROJECT_storePassword: ${{ env.STORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_keyAlias: ${{ env.KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_keyPassword: ${{ env.KEY_PASSWORD }}
+
+      - name: Verify APK signature
+        run: |
+          APK_FILE=$(find PoseAI-Android/app/build/outputs/apk/release -name "*.apk" | head -1)
+          echo "APK file: $APK_FILE"
+          echo "APK name: $(basename $APK_FILE)"
+          if echo "$APK_FILE" | grep -q "unsigned"; then
+            echo "ERROR: APK is still unsigned!"
+            exit 1
+          else
+            echo "OK: APK is signed"
+          fi
+          # 验证签名信息
+          $ANDROID_HOME/build-tools/${{ env.ANDROID_BUILD_TOOLS }}/apksigner verify --verbose "$APK_FILE" || true
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
