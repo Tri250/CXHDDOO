@@ -659,6 +659,14 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         _poseScore.value = 0f
     }
 
+    fun selectPlan(index: Int) {
+        val plans = _currentScene.value.plans
+        if (index in plans.indices) {
+            _currentPlanIndex.value = index
+            _poseScore.value = 0f
+        }
+    }
+
     fun switchCamera(lifecycleOwner: LifecycleOwner, previewView: PreviewView) {
         cameraManager?.switchCamera(lifecycleOwner, previewView)
         _poseScore.value = 0f
