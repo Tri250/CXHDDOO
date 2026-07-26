@@ -42,6 +42,8 @@ target/
 *.jar
 *.war
 *.ear
+!gradle-wrapper.jar
+!**/gradle-wrapper.jar
 
 # ===== Ruby =====
 .bundle/
