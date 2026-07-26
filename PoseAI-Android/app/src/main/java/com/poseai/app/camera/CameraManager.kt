@@ -6,6 +6,7 @@ import android.os.Build
 import android.util.Log
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -360,6 +361,30 @@ class CameraManager(private val context: Context) {
     }
 
     fun getVideoChunkDir(): File = videoTempDir
+
+    /**
+     * 点击对焦 + 测光：基于 PreviewView 的 MeteringPointFactory 创建对焦点
+     * @param x 屏幕坐标 X（像素）
+     * @param y 屏幕坐标 Y（像素）
+     * @param previewView 当前预览视图
+     * @return true 表示已成功提交对焦请求
+     */
+    fun tapToFocus(x: Float, y: Float, previewView: PreviewView): Boolean {
+        val cam = camera ?: return false
+        val factory = previewView.meteringPointFactory
+        // 创建一个半径 0.15 的对焦点（CameraX 推荐 0.1~0.2）
+        val point = factory.createPoint(x, y, 0.15f)
+        val action = FocusMeteringAction.Builder(point, FocusMeteringAction.FLAG_AF or FocusMeteringAction.FLAG_AE)
+            // 自动取消延时 3s，避免长时间锁定对焦
+            .setAutoCancelDuration(3, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+        return try {
+            cam.cameraControl.startFocusAndMetering(action).let { true }
+        } catch (e: Exception) {
+            Log.e(TAG, "tapToFocus failed", e)
+            false
+        }
+    }
 
     fun shutdown() {
         if (isShutdown) return

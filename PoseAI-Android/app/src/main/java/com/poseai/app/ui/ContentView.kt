@@ -2,8 +2,13 @@ package com.poseai.app.ui
 
 import android.graphics.PointF
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -36,6 +41,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
@@ -59,7 +65,8 @@ import kotlin.math.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShootingScreen(
-    viewModel: ShootingViewModel = viewModel()
+    viewModel: ShootingViewModel = viewModel(),
+    onNavigateToGallery: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val lifecycleOwner = context as? LifecycleOwner ?: error("Context is not a LifecycleOwner")
@@ -101,16 +108,54 @@ fun ShootingScreen(
     val currentAngle = viewModel.getCurrentAngle()
     val currentPlanIndex by viewModel.currentPlanIndex.collectAsState()
 
+    // 新增状态：倒计时 / 闪光 / 沉浸 / 俯拍 / 错误提示
+    val timerSeconds by viewModel.timerSeconds.collectAsState()
+    val countdownValue by viewModel.countdownValue.collectAsState()
+    val showShutterFlash by viewModel.showShutterFlash.collectAsState()
+    val isImmersiveMode by viewModel.isImmersiveMode.collectAsState()
+    val isTopDownWarning by viewModel.isTopDownWarning.collectAsState()
+    val vlogErrorMessage by viewModel.vlogErrorMessage.collectAsState()
+    val distanceHint by viewModel.distanceHint.collectAsState()
+    val photoSaveError by viewModel.photoSaveError.collectAsState()
+
     var showSettings by remember { mutableStateOf(false) }
     var showExposurePanel by remember { mutableStateOf(false) }
     var showGuide by remember { mutableStateOf(false) }
+    var showFilterShortcuts by remember { mutableStateOf(false) }
     val exposureValue by viewModel.exposureValue.collectAsState()
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
 
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
     val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
+    val density = LocalDensity.current
+
+    // 距离提示随评分变化更新
+    LaunchedEffect(poseScore, currentPlan) {
+        viewModel.updateDistanceHint(poseScore, currentPlan)
+    }
+
+    // 拍照保存失败提示：自动 Snackbar
+    LaunchedEffect(photoSaveError) {
+        val err = photoSaveError ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(
+            message = err,
+            duration = androidx.compose.material3.SnackbarDuration.Short
+        )
+        viewModel.clearPhotoSaveError()
+    }
+
+    // Vlog 失败兜底提示
+    LaunchedEffect(vlogErrorMessage) {
+        val err = vlogErrorMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(
+            message = err,
+            duration = androidx.compose.material3.SnackbarDuration.Long
+        )
+        viewModel.clearVlogError()
+    }
 
     // 场景扫描动画状态
     val scanPulse = remember { Animatable(0f) }
@@ -152,11 +197,27 @@ fun ShootingScreen(
         }
     }
 
+    // Vlog 红点闪烁动画
+    val vlogDotAlpha = remember { Animatable(0f) }
+    LaunchedEffect(isVlogRecording) {
+        if (isVlogRecording) {
+            vlogDotAlpha.animateTo(
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(800, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse
+                )
+            )
+        } else {
+            vlogDotAlpha.snapTo(1f)
+        }
+    }
+
     val isSceneReady = currentScene != SceneType.UNKNOWN && currentPlan != null
     val isAligned = poseScore >= 80f
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // ── 相机预览层 ──
+        // ── 相机预览层（含点击对焦 + 单击沉浸模式切换）──
         AndroidView(
             factory = { ctx ->
                 PreviewView(ctx).also { pv ->
@@ -166,14 +227,28 @@ fun ShootingScreen(
                     }
                 }
             },
-            modifier = Modifier.fillMaxSize()
+            // 双击切换沉浸模式，单击对焦
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onDoubleTap = { offset ->
+                            // 双击：切换沉浸模式（避免与单击对焦冲突）
+                            viewModel.toggleImmersiveMode()
+                        },
+                        onTap = { offset ->
+                            // 单击：触发对焦
+                            val pv = previewView
+                            if (pv != null) {
+                                viewModel.tapToFocus(offset.x, offset.y, pv)
+                            }
+                        }
+                    )
+                }
         )
 
-        // ── 点击切换沉浸模式（简化：切换 UI 显示/隐藏）──
-        // Android 暂不实现沉浸模式，保留点击对焦功能
-
-        // ── 构图辅助线 ──
-        if (isSceneReady && gridEnabled) {
+        // ── 构图辅助线（沉浸模式隐藏）──
+        if (isSceneReady && gridEnabled && !isImmersiveMode) {
             CompositionGuideLines(currentPlan?.composition)
         }
 
@@ -185,7 +260,7 @@ fun ShootingScreen(
             )
         }
 
-        // ── 剪影引导叠加层 ──
+        // ── 剪影引导叠加层（沉浸模式降低透明度）──
         if (isSceneReady && currentPlan != null) {
             val targetPoints = if (useSecondaryPose && currentPlan.secondaryPosePoints.isNotEmpty()) {
                 currentPlan.secondaryPosePoints
@@ -197,17 +272,28 @@ fun ShootingScreen(
                 isAligned = isAligned,
                 detectedPosePoints = detectedPosePoints,
                 plan = currentPlan,
+                isImmersiveMode = isImmersiveMode,
                 modifier = Modifier.fillMaxSize()
             )
         }
 
-        // ── 检测骨骼叠加 ──
-        if (detectedPoseLines.isNotEmpty() || detectedPosePoints.isNotEmpty()) {
+        // ── 检测骨骼叠加（沉浸模式隐藏）──
+        if (!isImmersiveMode && (detectedPoseLines.isNotEmpty() || detectedPosePoints.isNotEmpty())) {
             DetectedSkeletonOverlay(
                 lines = detectedPoseLines,
                 points = detectedPosePoints,
                 score = poseScore,
                 modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        // ── 距离提示（未对齐时，剪影下方）──
+        if (isSceneReady && !isAligned && distanceHint != null && !isImmersiveMode) {
+            DistanceHintText(
+                text = distanceHint!!,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(top = 280.dp)
             )
         }
 
@@ -236,50 +322,64 @@ fun ShootingScreen(
             )
         }
 
-        // ── 微笑指示器 ──
-        if (smileEnabled) {
+        // ── 微笑指示器（沉浸模式隐藏）──
+        if (smileEnabled && !isImmersiveMode) {
             SmileIndicator(strength = smileStrength)
         }
 
-        // ── 顶部信息栏 ──
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = statusBarPadding.calculateTopPadding() + 8.dp)
-                .padding(horizontal = 18.dp)
+        // ── 顶部信息栏（沉浸模式隐藏）──
+        AnimatedVisibility(
+            visible = !isImmersiveMode,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.fillMaxSize()
         ) {
-            TopBar(
-                scene = currentScene,
-                plan = currentPlan,
-                score = poseScore,
-                isSceneReady = isSceneReady,
-                isAligned = isAligned,
-                currentPlanIndex = currentPlanIndex,
-                currentSequenceIndex = currentSequenceIndex,
-                currentAngleIndex = currentAngleIndex,
-                isVlogRecording = isVlogRecording,
-                activeVlogClipIndex = activeClipIndex,
-                onHelp = { showGuide = true },
-                onSceneClick = { viewModel.toggleSceneSelector() }
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = statusBarPadding.calculateTopPadding() + 8.dp)
+                    .padding(horizontal = 18.dp)
+            ) {
+                TopBar(
+                    scene = currentScene,
+                    plan = currentPlan,
+                    score = poseScore,
+                    isSceneReady = isSceneReady,
+                    isAligned = isAligned,
+                    currentPlanIndex = currentPlanIndex,
+                    currentSequenceIndex = currentSequenceIndex,
+                    currentAngleIndex = currentAngleIndex,
+                    isVlogRecording = isVlogRecording,
+                    activeVlogClipIndex = activeClipIndex,
+                    timerSeconds = timerSeconds,
+                    onHelp = { showGuide = true },
+                    onSceneClick = { viewModel.toggleSceneSelector() },
+                    onSettings = { showSettings = true }
+                )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            // 过热/低电量警告
-            if (heatWarning) {
-                WarningBanner(text = "设备过热，已降频优化", color = Warning)
-            } else if (batteryLow) {
-                WarningBanner(text = "电量低，已进入省电模式", color = Error)
-            }
+                // 俯拍警告优先显示
+                if (isTopDownWarning && isSceneReady) {
+                    WarningBanner(
+                        text = "请平行或低角度拍摄，显腿更长",
+                        color = Danger
+                    )
+                } else if (heatWarning) {
+                    WarningBanner(text = "设备过热，已降频优化", color = Warning)
+                } else if (batteryLow) {
+                    WarningBanner(text = "电量低，已进入省电模式", color = Error)
+                }
 
-            // Vlog 字幕
-            if (vlogText.isNotEmpty()) {
-                VlogSubtitle(text = vlogText)
+                // Vlog 字幕（红色阴影发光样式）
+                if (vlogText.isNotEmpty()) {
+                    VlogSubtitle(text = vlogText, isRecording = isVlogRecording)
+                }
             }
         }
 
-        // ── 暗光提示 Banner ──
-        if (lowLightWarning && isSceneReady && lowLightMode) {
+        // ── 暗光提示 Banner（沉浸模式隐藏）──
+        if (lowLightWarning && isSceneReady && lowLightMode && !isImmersiveMode) {
             LowLightBanner(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -302,7 +402,7 @@ fun ShootingScreen(
             )
         }
 
-        // ── 底部面板 ──
+        // ── 底部面板（沉浸模式仅保留快门）──
         BottomPanel(
             isSceneReady = isSceneReady,
             isAligned = isAligned,
@@ -326,6 +426,8 @@ fun ShootingScreen(
             useSecondaryPose = useSecondaryPose,
             hasVlogScript = (currentPlan?.vlogScript != null),
             breathingScale = breathingScale.value,
+            timerSeconds = timerSeconds,
+            isImmersiveMode = isImmersiveMode,
             navBarPadding = navBarPadding,
             onPlanSelected = { viewModel.selectPlan(it) },
             onCapture = { viewModel.takePhoto() },
@@ -345,24 +447,43 @@ fun ShootingScreen(
             onToggleScreenFillLight = { viewModel.toggleScreenFillLight() },
             onToggleVlog = { viewModel.toggleVlogTemplateSelector() },
             onStopVlog = { viewModel.stopVlog() },
-            onOpenGallery = { /* TODO: 打开相册 */ },
-            onToggleTimer = { /* TODO: 计时器 */ },
+            onOpenGallery = onNavigateToGallery,
+            onToggleTimer = { viewModel.cycleTimer() },
             modifier = Modifier.align(Alignment.BottomCenter)
         )
 
-        // ── Vlog 状态指示器 ──
-        if (isVlogRecording || isVlogMerging) {
+        // ── Vlog 状态指示器（沉浸模式隐藏）──
+        if ((isVlogRecording || isVlogMerging) && !isImmersiveMode) {
             VlogStatusIndicator(
                 isRecording = isVlogRecording,
                 isMerging = isVlogMerging,
                 currentClip = activeClipIndex + 1,
                 totalClips = activeTemplate?.clips?.size ?: 0,
+                dotAlpha = vlogDotAlpha.value,
                 onStop = { viewModel.stopVlog() },
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(top = statusBarPadding.calculateTopPadding() + 8.dp, end = 16.dp)
             )
         }
+
+        // ── 倒计时大数字覆盖 ──
+        if (countdownValue > 0) {
+            CountdownOverlay(seconds = countdownValue)
+        }
+
+        // ── 快门闪光覆盖 ──
+        if (showShutterFlash) {
+            ShutterFlashOverlay()
+        }
+
+        // ── Snackbar 错误提示 ──
+        androidx.compose.material3.SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 180.dp)
+        )
 
         // ── 照片预览 ──
         if (isReviewing && lastPhotoPath != null) {
@@ -385,6 +506,14 @@ fun ShootingScreen(
             SettingsDialog(
                 onDismiss = { showSettings = false },
                 viewModel = viewModel
+            )
+        }
+
+        // ── 帮助引导弹窗（PoseGuideSheet）──
+        if (showGuide) {
+            PoseGuideSheet(
+                plan = currentPlan,
+                onDismiss = { showGuide = false }
             )
         }
 
@@ -583,8 +712,10 @@ fun TopBar(
     currentAngleIndex: Int,
     isVlogRecording: Boolean,
     activeVlogClipIndex: Int,
+    timerSeconds: Int = 0,
     onHelp: () -> Unit,
-    onSceneClick: () -> Unit
+    onSceneClick: () -> Unit,
+    onSettings: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -669,10 +800,41 @@ fun TopBar(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // 右侧：分数环 + 帮助按钮
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        // 右侧：倒计时徽章 + 分数环 + 设置 + 帮助按钮
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            // 倒计时徽章（timerSeconds > 0 时显示）
+            if (timerSeconds > 0) {
+                Box(
+                    modifier = Modifier
+                        .background(Accent.copy(alpha = 0.2f), RoundedCornerShape(50))
+                        .border(1.dp, Accent.copy(alpha = 0.6f), RoundedCornerShape(50))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "${timerSeconds}s",
+                        color = Accent,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
             if (isSceneReady) {
                 ScoreRing(score = score, isAligned = isAligned)
+            }
+            // 设置按钮
+            IconButton(
+                onClick = onSettings,
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(Surface, CircleShape)
+                    .border(1.dp, Border, CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "设置",
+                    tint = TextPrimary,
+                    modifier = Modifier.size(18.dp)
+                )
             }
             // 帮助按钮
             IconButton(
@@ -789,6 +951,8 @@ fun BottomPanel(
     useSecondaryPose: Boolean,
     hasVlogScript: Boolean,
     breathingScale: Float,
+    timerSeconds: Int = 0,
+    isImmersiveMode: Boolean = false,
     navBarPadding: PaddingValues,
     onPlanSelected: (Int) -> Unit,
     onCapture: () -> Unit,
@@ -820,58 +984,63 @@ fun BottomPanel(
                 Brush.verticalGradient(
                     colors = listOf(
                         Color.Transparent,
-                        Color.Black.copy(alpha = 0.55f)
+                        Color.Black.copy(alpha = if (isImmersiveMode) 0.35f else 0.55f)
                     )
                 )
             )
             .padding(bottom = navBarPadding.calculateBottomPadding() + 16.dp)
     ) {
-        // ── 方案选择器 ──
-        if (isSceneReady && availablePlans.isNotEmpty()) {
-            PlanPicker(
-                plans = availablePlans,
-                currentPlanIndex = currentPlanIndex,
-                onPlanSelected = onPlanSelected,
-                modifier = Modifier.padding(top = 10.dp)
-            )
+        // 沉浸模式仅保留快门，其他全部隐藏
+        if (!isImmersiveMode) {
+            // ── 方案选择器 ──
+            if (isSceneReady && availablePlans.isNotEmpty()) {
+                PlanPicker(
+                    plans = availablePlans,
+                    currentPlanIndex = currentPlanIndex,
+                    onPlanSelected = onPlanSelected,
+                    modifier = Modifier.padding(top = 10.dp)
+                )
+            }
+
+            // ── 扩展控制栏（序列/多角度/备选姿势/Vlog）──
+            currentPlan?.let { plan ->
+                if (plan.sequence.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    SequenceIndicator(
+                        currentIndex = currentSequenceIndex,
+                        totalSteps = plan.sequence.size,
+                        stepName = currentSequenceShot?.title ?: "",
+                        onPrevious = onPreviousSequence,
+                        onNext = onNextSequence
+                    )
+                }
+                if (plan.multiAngles.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    AngleIndicator(
+                        currentAngleName = currentAngle?.title ?: "",
+                        angleCount = plan.multiAngles.size,
+                        onNextAngle = onNextAngle
+                    )
+                }
+                if (plan.secondaryPosePoints.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    SecondaryPoseToggle(
+                        isSecondary = useSecondaryPose,
+                        onToggle = onToggleSecondaryPose
+                    )
+                }
+                if (plan.vlogScript != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    PlanVlogButton(onClick = onStartVlog)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+        } else {
+            Spacer(modifier = Modifier.height(20.dp))
         }
 
-        // ── 扩展控制栏（序列/多角度/备选姿势/Vlog）──
-        currentPlan?.let { plan ->
-            if (plan.sequence.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                SequenceIndicator(
-                    currentIndex = currentSequenceIndex,
-                    totalSteps = plan.sequence.size,
-                    stepName = currentSequenceShot?.title ?: "",
-                    onPrevious = onPreviousSequence,
-                    onNext = onNextSequence
-                )
-            }
-            if (plan.multiAngles.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                AngleIndicator(
-                    currentAngleName = currentAngle?.title ?: "",
-                    angleCount = plan.multiAngles.size,
-                    onNextAngle = onNextAngle
-                )
-            }
-            if (plan.secondaryPosePoints.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                SecondaryPoseToggle(
-                    isSecondary = useSecondaryPose,
-                    onToggle = onToggleSecondaryPose
-                )
-            }
-            if (plan.vlogScript != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                PlanVlogButton(onClick = onStartVlog)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // ── 主控制行 ──
+        // ── 主控制行（沉浸模式也保留）──
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -879,11 +1048,15 @@ fun BottomPanel(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 左：相册缩略图
-            GalleryThumbnailButton(
-                recentRecords = recentRecords,
-                onClick = onOpenGallery
-            )
+            // 左：相册缩略图（沉浸模式隐藏）
+            if (!isImmersiveMode) {
+                GalleryThumbnailButton(
+                    recentRecords = recentRecords,
+                    onClick = onOpenGallery
+                )
+            } else {
+                Spacer(modifier = Modifier.size(50.dp))
+            }
 
             // 中：快门按钮
             ShutterButton(
@@ -891,42 +1064,54 @@ fun BottomPanel(
                 isVlogRecording = isVlogRecording,
                 isVlogMerging = isVlogMerging,
                 breathingScale = breathingScale,
+                timerSeconds = timerSeconds,
                 onCapture = onCapture,
                 onStopVlog = onStopVlog,
                 isCompactHeight = isCompactHeight
             )
 
-            // 右：切换摄像头 + 计时器
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                IconButton(
-                    onClick = onSwitchCamera,
-                    modifier = Modifier
-                        .size(44.dp)
-                        .background(Surface, CircleShape)
-                        .border(1.dp, Border, CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Cameraswitch,
-                        contentDescription = "切换摄像头",
-                        tint = TextPrimary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+            // 右：切换摄像头 + 计时器（沉浸模式隐藏）
+            if (!isImmersiveMode) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    IconButton(
+                        onClick = onSwitchCamera,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(Surface, CircleShape)
+                            .border(1.dp, Border, CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Cameraswitch,
+                            contentDescription = "切换摄像头",
+                            tint = TextPrimary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
 
-                IconButton(
-                    onClick = onToggleTimer,
-                    modifier = Modifier
-                        .size(44.dp)
-                        .background(Surface, CircleShape)
-                        .border(1.dp, Border, CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Timer,
-                        contentDescription = "计时器",
-                        tint = TextSecondary,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    IconButton(
+                        onClick = onToggleTimer,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(
+                                if (timerSeconds > 0) Accent.copy(alpha = 0.25f) else Surface,
+                                CircleShape
+                            )
+                            .border(
+                                width = if (timerSeconds > 0) 1.5.dp else 1.dp,
+                                color = if (timerSeconds > 0) Accent.copy(alpha = 0.7f) else Border,
+                                shape = CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Timer,
+                            contentDescription = "计时器",
+                            tint = if (timerSeconds > 0) Accent else TextSecondary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
+            } else {
+                Spacer(modifier = Modifier.size(50.dp))
             }
         }
     }
@@ -1080,14 +1265,24 @@ fun ShutterButton(
     isVlogRecording: Boolean,
     isVlogMerging: Boolean,
     breathingScale: Float,
+    timerSeconds: Int = 0,
     onCapture: () -> Unit,
     onStopVlog: () -> Unit,
     isCompactHeight: Boolean
 ) {
     val buttonSize = if (isCompactHeight) 82.dp else 92.dp
+    // 按下缩放反馈
+    var isPressed by remember { mutableStateOf(false) }
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.92f else 1f,
+        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        label = "pressScale"
+    )
 
     Box(
-        modifier = Modifier.size(buttonSize),
+        modifier = Modifier
+            .size(buttonSize)
+            .scale(pressScale),
         contentAlignment = Alignment.Center
     ) {
         if (isVlogRecording || isVlogMerging) {
@@ -1096,7 +1291,20 @@ fun ShutterButton(
                 modifier = Modifier
                     .size(68.dp)
                     .background(Danger, CircleShape)
-                    .clickable { onStopVlog() },
+                    .clickable {
+                        isPressed = true
+                        onStopVlog()
+                    }
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = { onStopVlog() },
+                            onPress = {
+                                isPressed = true
+                                tryAwaitRelease()
+                                isPressed = false
+                            }
+                        )
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Box(
@@ -1145,10 +1353,27 @@ fun ShutterButton(
                                 colors = listOf(Color.White.copy(alpha = 0.92f), Color.White.copy(alpha = 0.78f))
                             )
                     )
-                    .clickable { onCapture() },
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = { onCapture() },
+                            onPress = {
+                                isPressed = true
+                                tryAwaitRelease()
+                                isPressed = false
+                            }
+                        )
+                    },
                 contentAlignment = Alignment.Center
             ) {
-                if (isAligned) {
+                if (timerSeconds > 0) {
+                    // 倒计时模式：显示秒数
+                    Text(
+                        text = "${timerSeconds}",
+                        color = if (isAligned) Color.White else Color.Black.copy(alpha = 0.75f),
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                } else if (isAligned) {
                     Icon(
                         imageVector = Icons.Default.CameraAlt,
                         contentDescription = "拍照",
@@ -1245,12 +1470,16 @@ fun SilhouetteGuideOverlay(
     isAligned: Boolean,
     detectedPosePoints: Map<String, PointF>,
     plan: ShootingPlan,
+    isImmersiveMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
     val configuration = LocalConfiguration.current
     val screenWidthDp = configuration.screenWidthDp.dp
     val screenHeightDp = configuration.screenHeightDp.dp
+
+    // 是否双人模式：plan.secondaryPosePoints 非空时
+    val isDualMode = plan.secondaryPosePoints.isNotEmpty()
 
     Canvas(modifier = modifier) {
         val w = size.width
@@ -1312,24 +1541,52 @@ fun SilhouetteGuideOverlay(
 
         // 绘制剪影
         val silColor = if (isAligned) Success else Color.White
-        val silAlpha = if (isAligned) 0.22f else 0.12f
-        val strokeAlpha = if (isAligned) 1f else 0.35f
+        // 沉浸模式降低透明度
+        val immersiveFactor = if (isImmersiveMode) 0.35f else 1f
+        val silAlpha = (if (isAligned) 0.22f else 0.12f) * immersiveFactor
+        val strokeAlpha = (if (isAligned) 1f else 0.35f) * immersiveFactor
         val strokeWidth = if (isAligned) 3.dp.toPx() else 1.8.dp.toPx()
 
-        val left = centerX - silW / 2f
-        val top = centerY - silH / 2f
-
-        // 绘制人体剪影形状
-        drawSilhouetteShape(
-            left = left,
-            top = top,
-            width = silW,
-            height = silH,
-            fillColor = silColor.copy(alpha = silAlpha),
-            strokeColor = silColor.copy(alpha = strokeAlpha),
-            strokeWidth = strokeWidth,
-            isDashed = !isAligned
-        )
+        if (isDualMode) {
+            // 双人模式：左右各偏移 18% 屏宽渲染两个剪影
+            val offset = w * 0.18f
+            // 左侧剪影（主姿势）
+            drawSilhouetteShape(
+                left = centerX - silW / 2f - offset,
+                top = centerY - silH / 2f,
+                width = silW,
+                height = silH,
+                fillColor = silColor.copy(alpha = silAlpha),
+                strokeColor = silColor.copy(alpha = strokeAlpha),
+                strokeWidth = strokeWidth,
+                isDashed = !isAligned
+            )
+            // 右侧剪影（备选姿势）
+            drawSilhouetteShape(
+                left = centerX - silW / 2f + offset,
+                top = centerY - silH / 2f,
+                width = silW,
+                height = silH,
+                fillColor = silColor.copy(alpha = silAlpha),
+                strokeColor = silColor.copy(alpha = strokeAlpha),
+                strokeWidth = strokeWidth,
+                isDashed = !isAligned
+            )
+        } else {
+            // 单人模式
+            val left = centerX - silW / 2f
+            val top = centerY - silH / 2f
+            drawSilhouetteShape(
+                left = left,
+                top = top,
+                width = silW,
+                height = silH,
+                fillColor = silColor.copy(alpha = silAlpha),
+                strokeColor = silColor.copy(alpha = strokeAlpha),
+                strokeWidth = strokeWidth,
+                isDashed = !isAligned
+            )
+        }
 
         // 对齐时发光效果
         if (isAligned) {

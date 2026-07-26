@@ -7,6 +7,10 @@ import android.graphics.ImageFormat
 import android.graphics.PointF
 import android.graphics.Rect
 import android.graphics.YuvImage
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.media.AudioManager
 import android.media.ToneGenerator
 import android.os.Build
@@ -15,6 +19,7 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.speech.tts.TextToSpeech
 import android.util.Log
+import android.view.View
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.view.PreviewView
@@ -189,6 +194,44 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     private val _showVlogTemplateSelector = MutableStateFlow(false)
     val showVlogTemplateSelector: StateFlow<Boolean> = _showVlogTemplateSelector.asStateFlow()
 
+    // ====== 倒计时 / 闪光 / 沉浸 / 俯拍警告 / Vlog 失败兜底 ======
+
+    /** 倒计时秒数：0=关闭，3/5/10 为可选档位 */
+    private val _timerSeconds = MutableStateFlow(0)
+    val timerSeconds: StateFlow<Int> = _timerSeconds.asStateFlow()
+
+    /** 当前倒计时剩余秒数（>0 时显示大数字） */
+    private val _countdownValue = MutableStateFlow(0)
+    val countdownValue: StateFlow<Int> = _countdownValue.asStateFlow()
+
+    /** 快门闪光覆盖（拍照瞬间短暂显示暖白闪光） */
+    private val _showShutterFlash = MutableStateFlow(false)
+    val showShutterFlash: StateFlow<Boolean> = _showShutterFlash.asStateFlow()
+
+    /** 沉浸模式：单击全屏切换，隐藏顶栏/方案/提示，仅保留剪影和快门 */
+    private val _isImmersiveMode = MutableStateFlow(false)
+    val isImmersiveMode: StateFlow<Boolean> = _isImmersiveMode.asStateFlow()
+
+    /** 设备俯仰角（弧度），由加速度计+磁力计推算 */
+    private val _devicePitch = MutableStateFlow(0f)
+    val devicePitch: StateFlow<Float> = _devicePitch.asStateFlow()
+
+    /** 俯拍警告：pitch < -0.35 rad (约 -20°) 视为俯拍 */
+    private val _isTopDownWarning = MutableStateFlow(false)
+    val isTopDownWarning: StateFlow<Boolean> = _isTopDownWarning.asStateFlow()
+
+    /** Vlog 失败兜底文案（非空时显示提示） */
+    private val _vlogErrorMessage = MutableStateFlow<String?>(null)
+    val vlogErrorMessage: StateFlow<String?> = _vlogErrorMessage.asStateFlow()
+
+    /** 距离提示文案（未对齐时由 UI 渲染） */
+    private val _distanceHint = MutableStateFlow<String?>(null)
+    val distanceHint: StateFlow<String?> = _distanceHint.asStateFlow()
+
+    /** 拍照保存失败提示（非空时显示 Snackbar） */
+    private val _photoSaveError = MutableStateFlow<String?>(null)
+    val photoSaveError: StateFlow<String?> = _photoSaveError.asStateFlow()
+
     private val vlogTemplates = listOf(
         VlogTemplate(
             name = "快速 Vlog",
@@ -231,6 +274,9 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
 
     private var autoCaptureJob: Job? = null
     private var vlogCaptureJob: Job? = null
+    private var countdownJob: Job? = null
+    private var flashResetJob: Job? = null
+    private var distanceHintResetJob: Job? = null
 
     private var lastSceneDetectionTime = 0L
     private var lastPoseFrameTime = 0L
@@ -238,6 +284,50 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
 
     private var frameWidth = 0
     private var frameHeight = 0
+
+    // ====== 陀螺仪 / 俯仰角检测 ======
+    private val sensorManager: SensorManager? by lazy {
+        app.getSystemService(android.content.Context.SENSOR_SERVICE) as? SensorManager
+    }
+    private val accelerometer: Sensor? by lazy {
+        sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    }
+    private val magnetometer: Sensor? by lazy {
+        sensorManager?.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+    }
+    private val gravityValues = FloatArray(3)
+    private val geomagneticValues = FloatArray(3)
+    private val rotationMatrix = FloatArray(9)
+    private val orientationValues = FloatArray(3)
+    private var sensorRegistered = false
+
+    private val sensorListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) {
+            when (event.sensor.type) {
+                Sensor.TYPE_ACCELEROMETER -> {
+                    System.arraycopy(event.values, 0, gravityValues, 0, 3)
+                    computePitch()
+                }
+                Sensor.TYPE_MAGNETIC_FIELD -> {
+                    System.arraycopy(event.values, 0, geomagneticValues, 0, 3)
+                    computePitch()
+                }
+            }
+        }
+
+        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+    }
+
+    private fun computePitch() {
+        if (gravityValues.all { it == 0f } || geomagneticValues.all { it == 0f }) return
+        if (SensorManager.getRotationMatrix(rotationMatrix, null, gravityValues, geomagneticValues)) {
+            SensorManager.getOrientation(rotationMatrix, orientationValues)
+            // orientationValues[1] = pitch，单位弧度；负值表示设备向前倾（俯拍）
+            val pitch = orientationValues[1]
+            _devicePitch.value = pitch
+            _isTopDownWarning.value = pitch < -0.35f
+        }
+    }
 
     private val photoOutputDir: File by lazy {
         File(app.filesDir, "photos").apply { mkdirs() }
@@ -278,6 +368,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             _watermarkEnabled.value = storeManager.watermarkEnabled.first()
             _gridEnabled.value = storeManager.gridEnabled.first()
             _lowLightMode.value = storeManager.lowLightEnabled.first()
+            _timerSeconds.value = storeManager.timerSeconds.first()
             val sceneStr = storeManager.selectedScene.first()
             _currentScene.value = try {
                 SceneType.valueOf(sceneStr)
@@ -300,12 +391,46 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             storeManager.lowLightEnabled.collect { _lowLightMode.value = it }
         }
+        viewModelScope.launch {
+            storeManager.timerSeconds.collect { _timerSeconds.value = it }
+        }
 
         cameraManager?.startCamera(
             lifecycleOwner,
             previewView,
             analysisAnalyzer = createAnalyzer()
         )
+
+        // 注册陀螺仪监听（用于俯拍警告）
+        registerSensorListener()
+    }
+
+    /**
+     * 注册加速度计 + 磁力计监听，用于推算设备俯仰角
+     */
+    fun registerSensorListener() {
+        if (sensorRegistered) return
+        val sm = sensorManager ?: return
+        val acc = accelerometer ?: return
+        val mag = magnetometer ?: return
+        try {
+            sm.registerListener(sensorListener, acc, SensorManager.SENSOR_DELAY_UI)
+            sm.registerListener(sensorListener, mag, SensorManager.SENSOR_DELAY_UI)
+            sensorRegistered = true
+        } catch (e: Exception) {
+            Log.w(TAG, "Sensor registration failed", e)
+        }
+    }
+
+    /**
+     * 注销传感器监听
+     */
+    fun unregisterSensorListener() {
+        if (!sensorRegistered) return
+        try {
+            sensorManager?.unregisterListener(sensorListener)
+        } catch (_: Exception) {}
+        sensorRegistered = false
     }
 
     // ====== 帧分析器 ======
@@ -521,10 +646,67 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
 
     // ====== 拍照 ======
 
+    /**
+     * 拍照入口：若 timerSeconds > 0 则启动倒计时，倒计时结束触发实际拍照；
+     * 否则直接拍照。倒计时进行中再次点击会取消并重排。
+     */
     fun takePhoto() {
+        if (_isVlogRecording.value || _isVlogMerging.value) return
+        if (_countdownValue.value > 0) {
+            // 倒计时进行中：取消并立即触发
+            cancelCountdown()
+            executeCapture()
+            return
+        }
+        val seconds = _timerSeconds.value
+        if (seconds > 0) {
+            startCountdown(seconds)
+        } else {
+            executeCapture()
+        }
+    }
+
+    /**
+     * 启动倒计时：每秒更新 countdownValue，到 0 时触发拍照
+     */
+    private fun startCountdown(seconds: Int) {
+        countdownJob?.cancel()
+        _countdownValue.value = seconds
+        countdownJob = viewModelScope.launch {
+            try {
+                for (i in seconds downTo 1) {
+                    _countdownValue.value = i
+                    // 倒计时短促提示音
+                    playCountdownTick()
+                    kotlinx.coroutines.delay(1000)
+                }
+                _countdownValue.value = 0
+                executeCapture()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                _countdownValue.value = 0
+                throw e
+            }
+        }
+    }
+
+    /**
+     * 取消倒计时
+     */
+    fun cancelCountdown() {
+        countdownJob?.cancel()
+        countdownJob = null
+        _countdownValue.value = 0
+    }
+
+    /**
+     * 实际执行拍照：闪光 + 声音 + 震动 + 保存
+     */
+    private fun executeCapture() {
         val manager = cameraManager ?: return
         if (_isVlogRecording.value || _isVlogMerging.value) return
 
+        // 快门闪光反馈
+        triggerShutterFlash()
         playShutterSound()
         vibrateShutter()
 
@@ -535,12 +717,66 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                 viewModelScope.launch(Dispatchers.IO) {
                     try {
                         processAndSavePhoto(path)
+                        // 保存成功：成功触觉反馈
+                        vibrateSuccess()
                     } catch (e: Exception) {
                         Log.e(TAG, "Photo processing failed", e)
+                        _photoSaveError.value = "照片保存失败：${e.message ?: "未知错误"}"
                     }
                 }
+            } else {
+                _photoSaveError.value = "拍照失败：${path ?: "相机未就绪"}"
             }
         }
+    }
+
+    /**
+     * 触发快门闪光：短暂显示暖白全屏覆盖（约 180ms）
+     */
+    private fun triggerShutterFlash() {
+        _showShutterFlash.value = true
+        flashResetJob?.cancel()
+        flashResetJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(180)
+            _showShutterFlash.value = false
+        }
+    }
+
+    /**
+     * 拍照成功反馈：双段震动（等效 iOS UINotificationFeedbackGenerator.success）
+     */
+    private fun vibrateSuccess() {
+        try {
+            val pattern = longArrayOf(0, 40, 60, 80)
+            val amplitudes = intArrayOf(0, 180, 0, 220)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    (app.getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
+                } else {
+                    @Suppress("DEPRECATION")
+                    app.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? Vibrator
+                }
+                vibrator?.vibrate(VibrationEffect.createWaveform(pattern, amplitudes, -1))
+            } else {
+                @Suppress("DEPRECATION")
+                val vibrator = app.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? Vibrator
+                @Suppress("DEPRECATION")
+                vibrator?.vibrate(pattern, -1)
+            }
+        } catch (_: Exception) {}
+    }
+
+    private fun playCountdownTick() {
+        viewModelScope.launch {
+            try {
+                toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP, 80)
+            } catch (_: Exception) {}
+        }
+    }
+
+    /** 清除拍照错误提示 */
+    fun clearPhotoSaveError() {
+        _photoSaveError.value = null
     }
 
     private suspend fun processAndSavePhoto(path: String) {
@@ -751,6 +987,98 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         return result
     }
 
+    // ====== 倒计时控制 ======
+
+    /**
+     * 循环切换倒计时档位：0 → 3 → 5 → 10 → 0
+     */
+    fun cycleTimer() {
+        val next = when (_timerSeconds.value) {
+            0 -> 3
+            3 -> 5
+            5 -> 10
+            else -> 0
+        }
+        setTimerSeconds(next)
+    }
+
+    fun setTimerSeconds(seconds: Int) {
+        _timerSeconds.value = seconds
+        // 如果关闭倒计时，取消进行中的倒计时
+        if (seconds == 0) cancelCountdown()
+        viewModelScope.launch {
+            storeManager.setTimerSeconds(seconds)
+        }
+    }
+
+    // ====== 沉浸模式 ======
+
+    fun toggleImmersiveMode() {
+        _isImmersiveMode.value = !_isImmersiveMode.value
+    }
+
+    fun setImmersiveMode(enabled: Boolean) {
+        _isImmersiveMode.value = enabled
+    }
+
+    // ====== 点击对焦 ======
+
+    fun tapToFocus(x: Float, y: Float, previewView: PreviewView): Boolean {
+        return cameraManager?.tapToFocus(x, y, previewView) ?: false
+    }
+
+    // ====== 距离提示 ======
+
+    /**
+     * 根据当前评分更新距离提示文案
+     * - 评分 < 50：明显的距离/姿势提示
+     * - 评分 50-80：轻微调整提示
+     * - 评分 >= 80：清除提示
+     */
+    fun updateDistanceHint(score: Float, plan: ShootingPlan?) {
+        if (score >= 80f) {
+            _distanceHint.value = null
+            return
+        }
+        if (plan == null) {
+            _distanceHint.value = null
+            return
+        }
+        val hint = when {
+            score < 30f -> "对准剪影位置，调整身体朝向与四肢"
+            score < 50f -> "再靠近一点，让姿势贴合剪影"
+            score < 70f -> "微调一下，几乎到位了"
+            else -> "保持稳定，马上就 OK"
+        }
+        _distanceHint.value = hint
+    }
+
+    // ====== App 前后台生命周期 ======
+
+    /**
+     * App 进入前台：重新注册传感器、相机已由 LifecycleOwner 自动恢复
+     */
+    fun onAppForeground() {
+        registerSensorListener()
+    }
+
+    /**
+     * App 进入后台：取消倒计时、停止 TTS、注销传感器
+     * 相机由 LifecycleOwner 自动停止
+     */
+    fun onAppBackground() {
+        cancelCountdown()
+        try {
+            tts?.stop()
+        } catch (_: Exception) {}
+        unregisterSensorListener()
+    }
+
+    /** 清除 Vlog 错误提示 */
+    fun clearVlogError() {
+        _vlogErrorMessage.value = null
+    }
+
     // ====== Vlog 导演系统 ======
 
     fun startVlog(template: VlogTemplate) {
@@ -840,7 +1168,12 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                     if (f.exists()) f else null
                 }
 
-                if (chunks.isNotEmpty()) {
+                if (chunks.isEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        _vlogErrorMessage.value = "Vlog 分镜加载失败：未捕获到任何视频片段"
+                        _displayVlogText.value = ""
+                    }
+                } else {
                     val merged = VideoMerger.merge(
                         videoFiles = chunks,
                         bgmFile = bgmFile,
@@ -850,11 +1183,16 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                         if (merged != null) {
                             _exportedVlogPath.value = merged.absolutePath
                             _isReviewingVlog.value = true
+                        } else {
+                            _vlogErrorMessage.value = "Vlog 合成失败，请重试"
                         }
                     }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Vlog merge failed", e)
+                withContext(Dispatchers.Main) {
+                    _vlogErrorMessage.value = "Vlog 合成异常：${e.message ?: "未知错误"}"
+                }
             } finally {
                 _isVlogMerging.value = false
                 _displayVlogText.value = ""
@@ -1034,6 +1372,8 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         super.onCleared()
         stopAutoCapture()
         stopVlog()
+        cancelCountdown()
+        unregisterSensorListener()
         cameraManager?.shutdown()
         poseDetector?.close()
         sceneClassifier?.close()

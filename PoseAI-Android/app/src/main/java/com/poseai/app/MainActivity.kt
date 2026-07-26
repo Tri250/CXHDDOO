@@ -137,6 +137,15 @@ class MainActivity : ComponentActivity() {
         }
         // 每次恢复时更新权限状态(用户可能从设置中改了权限)
         updatePermissionStates()
+        // 通知 ViewModel 进入前台：重新注册传感器
+        lastViewModel?.onAppForeground()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // 通知 ViewModel 进入后台：取消倒计时、停止 TTS、注销传感器
+        // 相机本身由 LifecycleOwner 自动管理
+        lastViewModel?.onAppBackground()
     }
 
     override fun onStart() {

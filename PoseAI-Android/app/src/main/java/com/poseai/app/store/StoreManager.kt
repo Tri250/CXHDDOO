@@ -26,6 +26,7 @@ class StoreManager(private val context: Context) {
         val KEY_GRID_ENABLED = booleanPreferencesKey("grid_enabled")
         val KEY_FLASH_MODE = intPreferencesKey("flash_mode")
         val KEY_AUTO_RECOMMEND_INTERVAL = intPreferencesKey("auto_recommend_interval")
+        val KEY_TIMER_SECONDS = intPreferencesKey("timer_seconds")
     }
 
     val onboardingCompleted: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -68,6 +69,11 @@ class StoreManager(private val context: Context) {
         prefs[KEY_AUTO_RECOMMEND_INTERVAL] ?: 1500
     }
 
+    /** 倒计时秒数：0=关闭，3/5/10 为可选档位 */
+    val timerSeconds: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_TIMER_SECONDS] ?: 0
+    }
+
     suspend fun setOnboardingCompleted(value: Boolean) {
         context.dataStore.edit { it[KEY_ONBOARDING_COMPLETED] = value }
     }
@@ -106,5 +112,9 @@ class StoreManager(private val context: Context) {
 
     suspend fun setAutoRecommendInterval(value: Int) {
         context.dataStore.edit { it[KEY_AUTO_RECOMMEND_INTERVAL] = value }
+    }
+
+    suspend fun setTimerSeconds(value: Int) {
+        context.dataStore.edit { it[KEY_TIMER_SECONDS] = value.coerceIn(0, 10) }
     }
 }
