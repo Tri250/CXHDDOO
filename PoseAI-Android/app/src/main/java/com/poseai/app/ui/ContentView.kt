@@ -9,6 +9,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -366,11 +368,22 @@ fun ShootingScreen(
             SmileIndicator(strength = smileStrength)
         }
 
-        // ── 顶部信息栏（沉浸模式隐藏）──
+        // ── 顶部信息栏（沉浸模式隐藏，slide+fade 过渡更柔和）──
         AnimatedVisibility(
             visible = !isImmersiveMode,
-            enter = fadeIn(),
-            exit = fadeOut(),
+            enter = fadeIn(animationSpec = tween(220)) +
+                slideInVertically(
+                    initialOffsetY = { -it / 4 },
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                ),
+            exit = fadeOut(animationSpec = tween(180)) +
+                slideOutVertically(
+                    targetOffsetY = { -it / 4 },
+                    animationSpec = tween(200, easing = FastOutLinearInEasing)
+                ),
             modifier = Modifier.fillMaxSize()
         ) {
             Column(
@@ -704,6 +717,10 @@ fun SceneScanningOverlay(
     scanPulse: Float,
     scanRotation: Float
 ) {
+    // 三层波纹错相扩散，对应国内主流摄影App的扫描效果
+    val ripple1 = scanPulse
+    val ripple2 = (scanPulse + 0.33f) % 1f
+    val ripple3 = (scanPulse + 0.66f) % 1f
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -717,30 +734,25 @@ fun SceneScanningOverlay(
                 modifier = Modifier.size(190.dp),
                 contentAlignment = Alignment.Center
             ) {
-                // 最外圈脉冲
-                val outerRadius = lerp(80.dp, 110.dp, scanPulse)
+                // 三层波纹扩散（错相 33%）
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val cx = size.width / 2
                     val cy = size.height / 2
-                    drawCircle(
-                        color = Accent,
-                        radius = outerRadius.toPx(),
-                        center = Offset(cx, cy),
-                        style = Stroke(width = 1.5.dp.toPx())
-                    )
-                }
-
-                // 第二圈
-                val midRadius = lerp(70.dp, 95.dp, (scanPulse + 0.3f) % 1f)
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val cx = size.width / 2
-                    val cy = size.height / 2
-                    drawCircle(
-                        color = Accent.copy(alpha = 0.2f),
-                        radius = midRadius.toPx(),
-                        center = Offset(cx, cy),
-                        style = Stroke(width = 1.dp.toPx())
-                    )
+                    val maxR = 110.dp.toPx()
+                    val minR = 70.dp.toPx()
+                    listOf(ripple1, ripple2, ripple3).forEach { p ->
+                        val r = lerp(minR, maxR, p)
+                        // 透明度随扩散衰减
+                        val a = (1f - p) * 0.6f
+                        if (a > 0.01f) {
+                            drawCircle(
+                                color = Accent.copy(alpha = a),
+                                radius = r,
+                                center = Offset(cx, cy),
+                                style = Stroke(width = 1.5.dp.toPx())
+                            )
+                        }
+                    }
                 }
 
                 // 主框
@@ -765,8 +777,6 @@ fun SceneScanningOverlay(
                         ) {
                             // 旋转扫描弧
                             Canvas(modifier = Modifier.size(44.dp)) {
-                                val cx = size.width / 2
-                                val cy = size.height / 2
                                 drawArc(
                                     brush = Brush.sweepGradient(
                                         colors = listOf(Accent, Color.Transparent)
@@ -793,7 +803,7 @@ fun SceneScanningOverlay(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 提示文字
+            // 提示文字（带渐显动画）
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "将镜头对准拍摄背景",
@@ -1037,9 +1047,27 @@ fun ScoreRing(score: Float, isAligned: Boolean) {
         animationSpec = tween(200),
         label = "scoreColor"
     )
+    // 分数弹性补间：国内用户偏好平滑过渡的分数变化
+    val animatedScore by animateFloatAsState(
+        targetValue = score,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "scoreValue"
+    )
+    // 对齐达标瞬间放大反馈
+    val alignedScale by animateFloatAsState(
+        targetValue = if (isAligned) 1.1f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "alignedScale"
+    )
 
     Box(
-        modifier = Modifier.size(54.dp),
+        modifier = Modifier.size(54.dp).scale(alignedScale),
         contentAlignment = Alignment.Center
     ) {
         // 外发光（对齐时）
@@ -1069,7 +1097,7 @@ fun ScoreRing(score: Float, isAligned: Boolean) {
             drawArc(
                 color = animatedColor,
                 startAngle = -90f,
-                sweepAngle = (score / 100f * 360f).coerceIn(0f, 360f),
+                sweepAngle = (animatedScore / 100f * 360f).coerceIn(0f, 360f),
                 useCenter = false,
                 topLeft = Offset(
                     center.x - 23.dp.toPx(),
@@ -1082,7 +1110,7 @@ fun ScoreRing(score: Float, isAligned: Boolean) {
 
         // 分数文字
         Text(
-            text = "${score.toInt()}",
+            text = "${animatedScore.toInt()}",
             color = TextPrimary,
             fontSize = 12.sp,
             fontWeight = FontWeight.Black
@@ -1539,13 +1567,32 @@ fun ShutterButton(
     isCompactHeight: Boolean
 ) {
     val buttonSize = if (isCompactHeight) 82.dp else 92.dp
-    // 按下缩放反馈
+    val haptics = com.poseai.app.util.Haptics.rememberHapticController()
+    // 按下缩放反馈（弹性更强，更接近国产App的"果冻"手感）
     var isPressed by remember { mutableStateOf(false) }
     val pressScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.92f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        targetValue = if (isPressed) 0.88f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
         label = "pressScale"
     )
+    // 对齐时光环呼吸（独立于呼吸缩放，避免互相干扰）
+    val ringAlpha = remember { Animatable(0.4f) }
+    LaunchedEffect(isAligned) {
+        if (isAligned) {
+            ringAlpha.animateTo(
+                targetValue = 0.9f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(900, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse
+                )
+            )
+        } else {
+            ringAlpha.snapTo(0.4f)
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -1561,11 +1608,15 @@ fun ShutterButton(
                     .background(Danger, CircleShape)
                     .clickable {
                         isPressed = true
+                        haptics.perform(com.poseai.app.util.Haptics.Level.CLICK)
                         onStopVlog()
                     }
                     .pointerInput(Unit) {
                         detectTapGestures(
-                            onTap = { onStopVlog() },
+                            onTap = {
+                                haptics.perform(com.poseai.app.util.Haptics.Level.CLICK)
+                                onStopVlog()
+                            },
                             onPress = {
                                 isPressed = true
                                 tryAwaitRelease()
@@ -1575,6 +1626,7 @@ fun ShutterButton(
                     },
                 contentAlignment = Alignment.Center
             ) {
+                // 录制状态：方形停止图标外加微弱光晕
                 Box(
                     modifier = Modifier
                         .size(24.dp)
@@ -1586,7 +1638,7 @@ fun ShutterButton(
             if (isAligned) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     drawCircle(
-                        color = SuccessGlow,
+                        color = SuccessGlow.copy(alpha = ringAlpha.value),
                         radius = 41.dp.toPx(),
                         center = center,
                         style = Stroke(width = 22.dp.toPx())
@@ -1623,9 +1675,17 @@ fun ShutterButton(
                     )
                     .pointerInput(Unit) {
                         detectTapGestures(
-                            onTap = { onCapture() },
+                            onTap = {
+                                // 对齐达标时给"成功"双段反馈；普通拍照给"重"反馈
+                                haptics.perform(
+                                    if (isAligned) com.poseai.app.util.Haptics.Level.SUCCESS
+                                    else com.poseai.app.util.Haptics.Level.HEAVY
+                                )
+                                onCapture()
+                            },
                             onPress = {
                                 isPressed = true
+                                haptics.perform(com.poseai.app.util.Haptics.Level.TICK)
                                 tryAwaitRelease()
                                 isPressed = false
                             }
@@ -3222,16 +3282,31 @@ fun FocusIndicatorOverlay(x: Float, y: Float) {
 
 @Composable
 fun CountdownOverlay(seconds: Int) {
+    val haptics = com.poseai.app.util.Haptics.rememberHapticController()
     val scale = remember { Animatable(0.6f) }
+    val alpha = remember { Animatable(1f) }
     LaunchedEffect(seconds) {
+        // 每秒数字进场：先放大后收缩，伴随触觉反馈
+        if (seconds > 0) {
+            haptics.perform(com.poseai.app.util.Haptics.Level.CLICK)
+        } else {
+            // 0 即拍照瞬间：重反馈
+            haptics.perform(com.poseai.app.util.Haptics.Level.HEAVY)
+        }
         scale.snapTo(0.6f)
+        alpha.snapTo(1f)
         scale.animateTo(
-            targetValue = 1.2f,
-            animationSpec = tween(200, easing = FastOutSlowInEasing)
+            targetValue = 1.3f,
+            animationSpec = tween(180, easing = FastOutSlowInEasing)
         )
         scale.animateTo(
             targetValue = 1f,
-            animationSpec = tween(300, easing = FastOutSlowInEasing)
+            animationSpec = tween(280, easing = FastOutSlowInEasing)
+        )
+        // 数字末尾淡出
+        alpha.animateTo(
+            targetValue = 0.6f,
+            animationSpec = tween(600, easing = FastOutSlowInEasing)
         )
     }
 
@@ -3241,9 +3316,18 @@ fun CountdownOverlay(seconds: Int) {
             .background(Color.Black.copy(alpha = 0.45f)),
         contentAlignment = Alignment.Center
     ) {
+        // 数字外的光晕环（国产App常见效果）
+        Canvas(modifier = Modifier.size(220.dp)) {
+            drawCircle(
+                color = Accent.copy(alpha = 0.18f * alpha.value),
+                radius = 100.dp.toPx(),
+                center = center,
+                style = Stroke(width = 4.dp.toPx())
+            )
+        }
         Text(
             text = "$seconds",
-            color = Color.White,
+            color = Color.White.copy(alpha = alpha.value),
             fontSize = 120.sp,
             fontWeight = FontWeight.Black,
             modifier = Modifier.scale(scale.value)

@@ -1,6 +1,7 @@
 package com.poseai.app
 
 import android.app.Application
+import android.os.Build
 import android.util.Log
 import androidx.room.Room
 import com.poseai.app.data.AppDatabase
@@ -35,6 +36,11 @@ class PoseAIApp : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+
+        // 全局未捕获异常处理：防止相机/ML Kit/TFLite 在某些机型上崩溃导致整个 App 闪退
+        // 崩溃时记录日志，便于用户反馈问题时定位
+        setupUncaughtExceptionHandler()
+
         try {
             database = Room.databaseBuilder(
                 this,
@@ -60,6 +66,28 @@ class PoseAIApp : Application() {
         } catch (e: Exception) {
             Log.e(TAG, "AIModelManager init failed, creating empty fallback", e)
             aiModelManager = AIModelManager(this)
+        }
+    }
+
+    /**
+     * 全局未捕获异常处理器
+     *
+     * 目的：在 TFLite/ML Kit/CameraX 在某些国产 ROM（MIUI/EMUI/ColorOS）上偶发崩溃时，
+     * 记录错误日志到 Logcat，避免完全无信息的闪退。
+     *
+     * 不阻止默认的进程终止行为，仅补充日志。
+     */
+    private fun setupUncaughtExceptionHandler() {
+        val previousHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            try {
+                Log.e(TAG, "Uncaught exception on ${thread.name}", throwable)
+                Log.e(TAG, "Device: ${Build.MANUFACTURER} ${Build.MODEL} (API ${Build.VERSION.SDK_INT}), App versionCode: ${packageManager.getPackageInfo(packageName, 0).let { it.longVersionCode.toInt() }}")
+            } catch (_: Throwable) {
+                // 记录日志失败时不再二次抛出
+            }
+            // 转交默认处理器，让系统正常终止进程
+            previousHandler?.uncaughtException(thread, throwable)
         }
     }
 }

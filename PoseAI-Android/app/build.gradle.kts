@@ -6,17 +6,19 @@ plugins {
 
 android {
     namespace = "com.poseai.app"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.poseai.app"
         minSdk = 26
-        targetSdk = 34
-        versionCode = 2
-        versionName = "2.0.1"
+        targetSdk = 35
+        versionCode = 3
+        versionName = "2.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
+        // 适配 Android 13+ 通知权限与 Android 14+ 前台服务类型
+        // 注：实际 FOREGROUND_SERVICE 类型在 Manifest 中按需声明
     }
 
     val storeFileProp = project.findProperty("storeFile") as? String
@@ -50,6 +52,22 @@ android {
         }
         debug {
             isMinifyEnabled = false
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
+    }
+
+    // release APK/AAB 输出文件名包含版本号，便于 release 产物识别
+    applicationVariants.all {
+        val variant = this
+        variant.outputs.all {
+            val output = this as com.android.build.gradle.internal.api.ApkVariantOutputImpl
+            val baseName = "PoseAI-${variant.name}-${variant.versionName}-${variant.versionCode}"
+            outputFileName = if (outputFileName.endsWith(".aab")) {
+                "$baseName.aab"
+            } else {
+                "$baseName.apk"
+            }
         }
     }
 

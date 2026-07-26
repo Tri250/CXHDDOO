@@ -136,6 +136,35 @@
 -keep class com.poseai.app.R$* { *; }
 -keep class com.poseai.app.BuildConfig { *; }
 
+# ===== Compose Metadata 保留（防止 R8 移除 Modifier/Composable 信息）=====
+-keep class androidx.compose.runtime.** { *; }
+-keepclassmembers class androidx.compose.runtime.** { *; }
+-keep @androidx.compose.runtime.Composable class * { *; }
+-keepclasseswithmembers class * {
+    @androidx.compose.runtime.Composable <methods>;
+}
+
+# ===== Compose Material3 主题/样式 =====
+-keep class androidx.compose.material3.** { *; }
+-keep class androidx.compose.material.icons.** { *; }
+
+# ===== Haptics / Vibrator 反射兼容 =====
+-keep class android.os.VibratorManager { *; }
+-keep class android.os.VibrationEffect { *; }
+-keep class com.poseai.app.util.Haptics* { *; }
+-keep class com.poseai.app.util.HapticController { *; }
+
+# ===== TFLite 模型资产（保持不被压缩）=====
+-keep class org.tensorflow.lite.Interpreter { *; }
+-keepclassmembers class org.tensorflow.lite.NativeInterpreterWrapper {
+    native <methods>;
+    public <methods>;
+}
+
+# ===== FileProvider 兼容性（不同 Android 版本）=====
+-keep class androidx.core.content.FileProvider { *; }
+-keep class androidx.core.content.FileProvider$* { *; }
+
 # ===== 保留 Parcelable =====
 -keep class * implements android.os.Parcelable {
     public static final android.os.Parcelable$Creator *;

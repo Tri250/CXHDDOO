@@ -79,7 +79,13 @@ class MainActivity : ComponentActivity() {
         hasCameraPermission = permissions[Manifest.permission.CAMERA] == true
         hasAudioPermission = permissions[Manifest.permission.RECORD_AUDIO] == true
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // Android 14+：完整访问或部分访问均视为已授权
+            val full = permissions[Manifest.permission.READ_MEDIA_IMAGES] == true
+            val partial = permissions[Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED] == true
+            hasStoragePermission = full || partial
+            hasNotificationPermission = permissions[Manifest.permission.POST_NOTIFICATIONS] == true
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             hasStoragePermission = permissions[Manifest.permission.READ_MEDIA_IMAGES] == true
             hasNotificationPermission = permissions[Manifest.permission.POST_NOTIFICATIONS] == true
         } else {
@@ -192,7 +198,16 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkStoragePermission(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // Android 14+：READ_MEDIA_IMAGES 已授予，或用户选择了部分访问
+            val full = ContextCompat.checkSelfPermission(
+                this, Manifest.permission.READ_MEDIA_IMAGES
+            ) == PackageManager.PERMISSION_GRANTED
+            val partial = ContextCompat.checkSelfPermission(
+                this, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED
+            ) == PackageManager.PERMISSION_GRANTED
+            full || partial
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(
                 this, Manifest.permission.READ_MEDIA_IMAGES
             ) == PackageManager.PERMISSION_GRANTED
@@ -225,7 +240,12 @@ class MainActivity : ComponentActivity() {
         if (!audioGranted) perms.add(Manifest.permission.RECORD_AUDIO)
 
         if (!storageGranted) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                // Android 14+：申请完整访问权限，系统会同时提供"部分访问"选项
+                perms.add(Manifest.permission.READ_MEDIA_IMAGES)
+                perms.add(Manifest.permission.READ_MEDIA_VIDEO)
+                perms.add(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 perms.add(Manifest.permission.READ_MEDIA_IMAGES)
                 perms.add(Manifest.permission.READ_MEDIA_VIDEO)
             } else {
@@ -244,7 +264,11 @@ class MainActivity : ComponentActivity() {
         val perms = mutableListOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
 
         if (!hasStoragePermission) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                perms.add(Manifest.permission.READ_MEDIA_IMAGES)
+                perms.add(Manifest.permission.READ_MEDIA_VIDEO)
+                perms.add(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 perms.add(Manifest.permission.READ_MEDIA_IMAGES)
                 perms.add(Manifest.permission.READ_MEDIA_VIDEO)
             } else {
