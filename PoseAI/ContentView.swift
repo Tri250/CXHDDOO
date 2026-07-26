@@ -6,12 +6,12 @@ import StoreKit
 
 // MARK: - 品牌设计常量
 enum Design {
-    // 主题色（暖金 + 深黑）
-    static let accent = Color(red: 1.0, green: 0.82, blue: 0.45)         // #FFD073 暖金
-    static let accentGlow = Color(red: 1.0, green: 0.82, blue: 0.45).opacity(0.35)
-    static let success = Color(red: 0.35, green: 0.95, blue: 0.60)       // #59F299 亮绿
-    static let successGlow = Color(red: 0.35, green: 0.95, blue: 0.60).opacity(0.35)
-    static let danger = Color(red: 1.0, green: 0.38, blue: 0.38)         // #FF6161 火红
+    // 主题色（青墨绿 + 深空黑）
+    static let accent = Color(red: 0.05, green: 0.58, blue: 0.50)         // #0D9488 青墨绿
+    static let accentGlow = Color(red: 0.05, green: 0.58, blue: 0.50).opacity(0.35)
+    static let success = Color(red: 0.10, green: 0.75, blue: 0.55)       // #1ABF8C 翡翠绿
+    static let successGlow = Color(red: 0.10, green: 0.75, blue: 0.55).opacity(0.35)
+    static let danger = Color(red: 0.95, green: 0.35, blue: 0.35)         // #F25959 珊瑚红
     static let surface = Color.white.opacity(0.08)
     static let surfaceStrong = Color.white.opacity(0.15)
     static let border = Color.white.opacity(0.18)
@@ -19,6 +19,7 @@ enum Design {
     static let textPrimary = Color.white
     static let textSecondary = Color.white.opacity(0.55)
     static let overlayBg = Color.black.opacity(0.55)
+    static let deepSpaceBlack = Color(red: 0.04, green: 0.06, blue: 0.05)  // 深空黑底色
     static let blur: Material = .ultraThinMaterial
     static let cornerCard: CGFloat = 18
     static let cornerBadge: CGFloat = 8
@@ -771,7 +772,7 @@ struct ContentView: View {
         VStack(spacing: 16) {
             Image(systemName: "crown.fill")
                 .font(.system(size: 44))
-                .foregroundColor(Color(red: 1.0, green: 0.82, blue: 0.45))
+                .foregroundColor(Design.accent)
             Text("「\(vm.scene.displayName)」是高级场景")
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.white)
@@ -786,7 +787,7 @@ struct ContentView: View {
                     .foregroundColor(.black)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 10)
-                    .background(Color(red: 1.0, green: 0.82, blue: 0.45), in: Capsule())
+                    .background(Design.accent, in: Capsule())
             }
         }
         .padding(.horizontal, 32)
@@ -826,7 +827,7 @@ struct ContentView: View {
             Circle()
                 .fill(
                     vm.isReady
-                        ? LinearGradient(colors: [Design.success, Color(red: 0.2, green: 0.85, blue: 0.45)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                        ? LinearGradient(colors: [Design.success, Color(red: 0.15, green: 0.80, blue: 0.60)], startPoint: .topLeading, endPoint: .bottomTrailing)
                         : LinearGradient(colors: [Color.white.opacity(0.92), Color.white.opacity(0.78)], startPoint: .top, endPoint: .bottom)
                 )
                 .frame(width: 68, height: 68)

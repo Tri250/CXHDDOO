@@ -13,9 +13,9 @@ struct PaywallView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            // 背景渐变
+            // 背景渐变（深空黑调）
             LinearGradient(
-                colors: [Color(red: 0.1, green: 0.1, blue: 0.15), .black],
+                colors: [Color(red: 0.05, green: 0.08, blue: 0.07), .black],
                 startPoint: .topLeading, endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
@@ -39,7 +39,7 @@ struct PaywallView: View {
                 ZStack {
                     Circle()
                         .fill(RadialGradient(
-                            colors: [Color(red: 1.0, green: 0.82, blue: 0.45).opacity(0.3), .clear],
+                            colors: [Design.accent.opacity(0.3), .clear],
                             center: .center, startRadius: 10, endRadius: 80
                         ))
                         .frame(width: 140, height: 140)
@@ -48,11 +48,11 @@ struct PaywallView: View {
                         .font(.system(size: 60))
                         .foregroundStyle(
                             LinearGradient(
-                                colors: [Color(red: 1.0, green: 0.82, blue: 0.45), Color(red: 1.0, green: 0.6, blue: 0.2)],
+                                colors: [Design.accent, Color(red: 0.08, green: 0.70, blue: 0.55)],
                                 startPoint: .top, endPoint: .bottom
                             )
                         )
-                        .shadow(color: Color(red: 1.0, green: 0.82, blue: 0.45).opacity(0.5), radius: 10, x: 0, y: 5)
+                        .shadow(color: Design.accent.opacity(0.5), radius: 10, x: 0, y: 5)
                 }
 
                 // 标题
@@ -127,10 +127,10 @@ struct PaywallView: View {
             if let product = storeManager.proProduct {
                 Text("限时优惠：\(product.displayPrice) / 终身买断")
                     .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(Color(red: 1.0, green: 0.82, blue: 0.45))
+                    .foregroundColor(Design.accent)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Color(red: 1.0, green: 0.82, blue: 0.45).opacity(0.15), in: Capsule())
+                    .background(Design.accent.opacity(0.15), in: Capsule())
             }
 
             // 购买按钮
@@ -151,12 +151,12 @@ struct PaywallView: View {
                 .padding(.vertical, 16)
                 .background(
                     LinearGradient(
-                        colors: [Color(red: 1.0, green: 0.82, blue: 0.45), Color(red: 1.0, green: 0.7, blue: 0.3)],
+                        colors: [Design.accent, Color(red: 0.08, green: 0.70, blue: 0.55)],
                         startPoint: .topLeading, endPoint: .bottomTrailing
                     ),
                     in: Capsule()
                 )
-                .shadow(color: Color(red: 1.0, green: 0.82, blue: 0.45).opacity(0.4), radius: 12, y: 5)
+                .shadow(color: Design.accent.opacity(0.4), radius: 12, y: 5)
                 .opacity(isPurchasing ? 0.7 : 1.0)
             }
             .disabled(isPurchasing)
@@ -265,11 +265,11 @@ struct ProFeatureRow: View {
         HStack(alignment: .top, spacing: 16) {
             ZStack {
                 Circle()
-                    .fill(Color(red: 1.0, green: 0.82, blue: 0.45).opacity(0.15))
+                    .fill(Design.accent.opacity(0.15))
                     .frame(width: 44, height: 44)
                 Image(systemName: icon)
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(Color(red: 1.0, green: 0.82, blue: 0.45))
+                    .foregroundColor(Design.accent)
             }
 
             VStack(alignment: .leading, spacing: 4) {

@@ -10,21 +10,21 @@ struct OnboardingView: View {
     private let steps: [OnboardingStep] = [
         OnboardingStep(
             icon: "viewfinder",
-            iconColor: Color(red: 1.0, green: 0.82, blue: 0.45),  // Design.accent
+            iconColor: Design.accent,
             title: "先对准背景",
             subtitle: "打开 App 后，把手机镜头\n对准你想拍照的场景",
             detail: "咖啡馆、海边、森林……\nAI 会自动识别并推荐最佳方案"
         ),
         OnboardingStep(
             icon: "figure.stand",
-            iconColor: Color(red: 1.0, green: 0.82, blue: 0.45),
+            iconColor: Design.accent,
             title: "站进人形剪影",
             subtitle: "画面中会出现一个人形轮廓\n调整位置让自己和剪影重合",
             detail: "剪影会根据你的实际身高自动缩放\n右上角分数环越高说明姿势越接近"
         ),
         OnboardingStep(
             icon: "camera.circle.fill",
-            iconColor: Color(red: 0.35, green: 0.95, blue: 0.60),  // Design.success
+            iconColor: Design.success,
             title: "保持不动，自动拍照",
             subtitle: "匹配度超过 85% 并保持 0.8 秒\nApp 会自动按下快门",
             detail: "也可以点击底部圆形按钮手动拍照\n照片自动保存到你的相册"
@@ -33,10 +33,10 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            // 背景
+            // 背景（深空黑调）
             Color.black.ignoresSafeArea()
             LinearGradient(
-                colors: [Color(red: 0.08, green: 0.08, blue: 0.12), .black],
+                colors: [Color(red: 0.04, green: 0.06, blue: 0.05), .black],
                 startPoint: .top, endPoint: .bottom
             )
             .ignoresSafeArea()
@@ -80,7 +80,7 @@ struct OnboardingView: View {
                         ForEach(0..<steps.count, id: \.self) { idx in
                             Capsule()
                                 .fill(idx == currentPage
-                                    ? Color(red: 1.0, green: 0.82, blue: 0.45)
+                                    ? Design.accent
                                     : Color.white.opacity(0.2))
                                 .frame(width: idx == currentPage ? 24 : 8, height: 8)
                                 .animation(.spring(response: 0.35, dampingFraction: 0.7), value: currentPage)
@@ -95,7 +95,7 @@ struct OnboardingView: View {
                             } label: {
                                 Image(systemName: hasAgreedToPrivacy ? "checkmark.square.fill" : "square")
                                     .font(.system(size: 16))
-                                    .foregroundColor(hasAgreedToPrivacy ? Color(red: 0.35, green: 0.95, blue: 0.60) : .white.opacity(0.5))
+                                    .foregroundColor(hasAgreedToPrivacy ? Design.success : .white.opacity(0.5))
                             }
                             Text("我已阅读并同意")
                                 .font(.system(size: 12))
@@ -151,17 +151,17 @@ struct OnboardingView: View {
 
     private func backgroundColor(for page: Int, agreed: Bool) -> Color {
         if page < steps.count - 1 {
-            return Color(red: 1.0, green: 0.82, blue: 0.45)
+            return Design.accent
         } else {
-            return agreed ? Color(red: 0.35, green: 0.95, blue: 0.60) : Color.white.opacity(0.15)
+            return agreed ? Design.success : Color.white.opacity(0.15)
         }
     }
 
     private func shadowColor(for page: Int, agreed: Bool) -> Color {
         if page < steps.count - 1 {
-            return Color(red: 1.0, green: 0.82, blue: 0.45).opacity(0.4)
+            return Design.accent.opacity(0.4)
         } else {
-            return agreed ? Color(red: 0.35, green: 0.95, blue: 0.60).opacity(0.4) : Color.clear
+            return agreed ? Design.success.opacity(0.4) : Color.clear
         }
     }
 }

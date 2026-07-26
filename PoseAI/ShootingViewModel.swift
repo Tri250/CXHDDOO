@@ -91,6 +91,7 @@ final class ShootingViewModel: ObservableObject {
     var compositionTipTask: DispatchWorkItem? = nil
     var scanTimeoutTask: DispatchWorkItem? = nil
     var timerTask: DispatchWorkItem? = nil
+    var timerCancellation: (() -> Void)? = nil
     var autoRecommendLastCheck: Date = .distantPast
     var userOverrideUntil: Date = .distantPast
 
@@ -610,14 +611,55 @@ final class ShootingViewModel: ObservableObject {
     }
 
     func triggerManualPhoto() {
-        if let plan = currentPlan, let seq = plan.sequence, activeSequenceIndex != 0 {
-            // 如果连拍进程被中途由于按了手拍打崩了，直接把它强制结束提走
-            // TODO: 这里目前选择手动快门直接当作最后一张处理
-            executeSequenceCapture(seqCount: activeSequenceIndex + 1)
-            activeSequenceIndex = 0
-        } else {
-            takeBurst(count: 1)
+        if let plan = currentPlan {
+            // Vlog 模式：手动快门视为中断，重置状态
+            if let vlog = plan.vlogScript, activeVlogClipIndex != 0 || isVlogRecording {
+                if isVlogRecording {
+                    // 正在录制时手动按快门，停止当前录制并取消
+                    manager.videoRecorder.stopRecordingChunk { [weak self] _ in
+                        guard let self = self else { return }
+                        self.isVlogRecording = false
+                        self.activeVlogClipIndex = 0
+                        self.displayVlogText = ""
+                        self.score = 0
+                        self.stableStartTime = nil
+                        self.manager.videoRecorder.reset()
+                    }
+                } else {
+                    activeVlogClipIndex = 0
+                    displayVlogText = ""
+                    score = 0
+                    stableStartTime = nil
+                    manager.videoRecorder.reset()
+                }
+                takeBurst(count: 1)
+                return
+            }
+            
+            // 多机位模式：中途手动快门，保存已拍的并结束
+            if let multi = plan.multiAngles, activeAngleIndex != 0 {
+                if capturedShotsCount > 0 {
+                    // 已有拍摄的照片，直接进入预览
+                    isReviewingPhotos = true
+                } else {
+                    takeBurst(count: 1)
+                }
+                activeAngleIndex = 0
+                score = 0
+                stableStartTime = nil
+                return
+            }
+            
+            // 连拍序列模式：中途手动快门，当作最后一张处理
+            if let seq = plan.sequence, activeSequenceIndex != 0 {
+                executeSequenceCapture(seqCount: activeSequenceIndex + 1)
+                activeSequenceIndex = 0
+                return
+            }
         }
+        
+        // 默认正常拍摄
+        takeBurst(count: 1)
     }
 
     func takeBurst(count: Int) {
@@ -666,27 +708,37 @@ final class ShootingViewModel: ObservableObject {
 
     func startCountdown() {
         countdown = timerSeconds
-        let task = DispatchWorkItem {}
-        timerTask = task
+        cancelTimer()
+        var isCancelled = false
+        
         func tick() {
+            guard !isCancelled else { return }
             guard countdown > 0 else {
                 triggerManualPhoto()
                 return
             }
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            
+            let task = DispatchWorkItem { [weak self] in
+                guard let self = self, !isCancelled else { return }
                 guard self.countdown > 0 else { return }
                 withAnimation { self.countdown -= 1 }
                 tick()
             }
+            timerTask = task
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: task)
         }
+        
+        timerCancellation = { isCancelled = true }
         tick()
     }
 
     func cancelTimer() {
-        countdown = 0
+        timerCancellation?()
+        timerCancellation = nil
         timerTask?.cancel()
         timerTask = nil
+        countdown = 0
     }
 
     func triggerFlash() {
@@ -762,6 +814,19 @@ final class ShootingViewModel: ObservableObject {
         userOverrideUntil = Date().addingTimeInterval(8)
         score = 0
         stableStartTime = nil
+        
+        // 重置序列/机位/Vlog 状态
+        activeSequenceIndex = 0
+        activeAngleIndex = 0
+        activeVlogClipIndex = 0
+        isVlogRecording = false
+        displayVlogText = ""
+        
+        // 清理自定义录制状态
+        cancelRecording()
+        
+        // 清理倒计时
+        cancelTimer()
     }
 
     // MARK: - 沉浸模式切换
@@ -773,41 +838,46 @@ final class ShootingViewModel: ObservableObject {
     }
 
     // MARK: - 自定义录制流程 (Step 7)
+    private var recordingCancellation: (() -> Void)? = nil
     
     func startRecordingCustomPlan() {
         guard !isRecordingMode else { return }
+        cancelRecording()
         isRecordingMode = true
         recordCountdown = 3
+        var isCancelled = false
         
-        // 倒计时捕捉
-        recordTick()
-    }
-    
-    private func recordTick() {
-        if recordCountdown > 0 {
+        func tick() {
+            guard !isCancelled else { return }
+            guard recordCountdown > 0 else {
+                // 倒计时结束，执行快照抓取
+                UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                
+                if let firstPose = self.detectedPoses.first, firstPose.points.count >= 5 {
+                    self.pointsToSave = firstPose.points
+                } else {
+                    self.pointsToSave = nil
+                    self.speak("未能检测到完整的人体骨架，请站远一点。")
+                }
+                self.isRecordingMode = false
+                self.recordingCancellation = nil
+                return
+            }
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                guard let self = self, self.isRecordingMode else { return }
+                guard let self = self, !isCancelled else { return }
                 self.recordCountdown -= 1
-                self.recordTick()
+                tick()
             }
-        } else {
-            // 倒计时结束，执行快照抓取
-            UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-            
-            if let firstPose = self.detectedPoses.first, firstPose.points.count >= 5 {
-                // 有效捕捉
-                self.pointsToSave = firstPose.points
-            } else {
-                // 无效捕捉
-                self.pointsToSave = nil
-                self.speak("未能检测到完整的人体骨架，请站远一点。")
-            }
-            self.isRecordingMode = false
         }
+        
+        recordingCancellation = { isCancelled = true }
+        tick()
     }
     
     func cancelRecording() {
+        recordingCancellation?()
+        recordingCancellation = nil
         isRecordingMode = false
         recordCountdown = 0
         pointsToSave = nil
