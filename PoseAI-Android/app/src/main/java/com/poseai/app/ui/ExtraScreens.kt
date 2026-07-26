@@ -511,6 +511,7 @@ fun OOTDScoreBar(label: String, score: Float) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GalleryScreen(viewModel: ShootingViewModel) {
     val records by viewModel.getCaptureHistory().collectAsState(initial = emptyList())

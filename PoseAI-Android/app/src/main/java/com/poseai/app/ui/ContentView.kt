@@ -741,7 +741,7 @@ fun SceneScanningOverlay(
                     val maxR = 110.dp.toPx()
                     val minR = 70.dp.toPx()
                     listOf(ripple1, ripple2, ripple3).forEach { p ->
-                        val r = lerp(minR, maxR, p)
+                        val r = minR + (maxR - minR) * p
                         // 透明度随扩散衰减
                         val a = (1f - p) * 0.6f
                         if (a > 0.01f) {
@@ -2121,34 +2121,30 @@ fun SilhouetteGuideOverlay(
                 isDashed = !isAligned
             )
 
-            // P4-6 双人模式主副标注：在剪影上方绘制"主"/"副"文字
-            // 解决前置摄像头下用户分不清左右主副姿势的痛点
+            // P4-6 双人模式主副标注：在剪影上方绘制主/副小色块标记
+            // 解决前置摄像头下用户分清左右主副姿势的需求
             val labelColor = silColor.copy(alpha = strokeAlpha)
-            val labelSizePx = 14.sp.toPx()
+            val labelSize = 14.dp.toPx()
             val labelOffsetY = 12.dp.toPx()
-            drawIntoCanvas { canvas ->
-                val paint = android.graphics.Paint().apply {
-                    color = labelColor.toArgb()
-                    textSize = labelSizePx
-                    isAntiAlias = true
-                    textAlign = android.graphics.Paint.Align.CENTER
-                    isFakeBoldText = true
-                }
-                // 左侧标注"主"（主姿势）
-                canvas.drawText(
-                    "主",
-                    leftMainX + silW / 2f,
-                    centerY - silH / 2f - labelOffsetY,
-                    paint
-                )
-                // 右侧标注"副"（备选姿势）
-                canvas.drawText(
-                    "副",
-                    leftSecondaryX + silW / 2f,
-                    centerY - silH / 2f - labelOffsetY,
-                    paint
-                )
-            }
+            val labelW = 16.dp.toPx()
+            // 左侧标注色块（主姿势）
+            drawRect(
+                color = labelColor,
+                topLeft = Offset(
+                    leftMainX + silW / 2f - labelW / 2f,
+                    centerY - silH / 2f - labelOffsetY - labelSize
+                ),
+                size = Size(labelW, labelSize)
+            )
+            // 右侧标注色块（备选姿势）
+            drawRect(
+                color = labelColor.copy(alpha = strokeAlpha * 0.6f),
+                topLeft = Offset(
+                    leftSecondaryX + silW / 2f - labelW / 2f,
+                    centerY - silH / 2f - labelOffsetY - labelSize
+                ),
+                size = Size(labelW, labelSize)
+            )
         } else {
             // 单人模式
             val left = centerX - silW / 2f

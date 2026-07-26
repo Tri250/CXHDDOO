@@ -51,6 +51,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.resume
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -634,7 +635,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                                     // 失败或模型未加载时降级到 PoseUtils.calculateSimilarity
                                     val simModel = poseSimilarityModel
                                     val score = if (simModel != null) {
-                                        simModel.computeSimilarity(smoothedMap, targetPoints)
+                                        simModel.computeSimilarity(smoothedPosePoints, targetPoints)
                                     } else {
                                         PoseUtils.calculateSimilarity(
                                             pose, targetPoints,
@@ -653,7 +654,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                                                 if (idx != _currentPlanIndex.value) {
                                                     val tp = p.posePoints
                                                     val s = if (simModel != null) {
-                                                        simModel.computeSimilarity(smoothedMap, tp)
+                                                        simModel.computeSimilarity(smoothedPosePoints, tp)
                                                     } else {
                                                         PoseUtils.calculateSimilarity(
                                                             pose, tp,
