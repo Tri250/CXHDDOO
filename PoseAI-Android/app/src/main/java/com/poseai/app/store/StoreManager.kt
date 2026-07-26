@@ -27,6 +27,8 @@ class StoreManager(private val context: Context) {
         val KEY_FLASH_MODE = intPreferencesKey("flash_mode")
         val KEY_AUTO_RECOMMEND_INTERVAL = intPreferencesKey("auto_recommend_interval")
         val KEY_TIMER_SECONDS = intPreferencesKey("timer_seconds")
+        val KEY_AUTO_RECOMMEND_ENABLED = booleanPreferencesKey("auto_recommend_enabled")
+        // KEY_FLASH_MODE 已在上方声明：0=off, 1=auto, 2=on
     }
 
     val onboardingCompleted: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -42,7 +44,9 @@ class StoreManager(private val context: Context) {
     }
 
     val cameraLens: Flow<Int> = context.dataStore.data.map { prefs ->
-        prefs[KEY_CAMERA_LENS] ?: 1
+        // 0=后置 (CameraX LENS_FACING_BACK)，1=前置 (LENS_FACING_FRONT)
+        // 默认后置，与 CameraManager.startCamera 默认值一致
+        prefs[KEY_CAMERA_LENS] ?: 0
     }
 
     val smileEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -116,5 +120,23 @@ class StoreManager(private val context: Context) {
 
     suspend fun setTimerSeconds(value: Int) {
         context.dataStore.edit { it[KEY_TIMER_SECONDS] = value.coerceIn(0, 10) }
+    }
+
+    /** 自动推荐开关（用户可关闭姿势亲近度推荐） */
+    val autoRecommendEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_AUTO_RECOMMEND_ENABLED] ?: true
+    }
+
+    suspend fun setAutoRecommendEnabled(value: Boolean) {
+        context.dataStore.edit { it[KEY_AUTO_RECOMMEND_ENABLED] = value }
+    }
+
+    /** 闪光灯模式：0=关闭, 1=自动, 2=常亮 */
+    val flashMode: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_FLASH_MODE] ?: 0
+    }
+
+    suspend fun setFlashMode(value: Int) {
+        context.dataStore.edit { it[KEY_FLASH_MODE] = value.coerceIn(0, 2) }
     }
 }

@@ -15,10 +15,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -125,6 +128,15 @@ fun ShootingScreen(
     val recommendedPlanIndex by viewModel.recommendedPlanIndex.collectAsState()
     val autoRecommendEnabled by viewModel.autoRecommendEnabled.collectAsState()
     val shouldShowReviewPrompt by viewModel.shouldShowReviewPrompt.collectAsState()
+    val isTorchOn by viewModel.isTorchOn.collectAsState()
+    // 闪光灯模式（0=关闭, 1=自动, 2=常亮）激活 cycleFlashMode/setFlashMode 死代码
+    val currentFlashMode by viewModel.currentFlashMode.collectAsState()
+    val zoomLevel by viewModel.zoomLevel.collectAsState()
+    val currentAspectRatio by viewModel.currentAspectRatio.collectAsState()
+    // 拍照计数（激活 captureCount 死代码：在顶栏显示已拍摄张数）
+    val captureCount by viewModel.captureCount.collectAsState()
+    // 连拍结果列表（激活 burstPhotos StateFlow 死代码：连拍后展示缩略图横幅）
+    val burstPhotos by viewModel.burstPhotos.collectAsState()
 
     var showSettings by remember { mutableStateOf(false) }
     var showExposurePanel by remember { mutableStateOf(false) }
@@ -225,7 +237,7 @@ fun ShootingScreen(
     val isAligned = poseScore >= 80f
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // ── 相机预览层（含点击对焦 + 单击沉浸模式切换）──
+        // ── 相机预览层（含点击对焦 + 双击沉浸 + 双指缩放）──
         AndroidView(
             factory = { ctx ->
                 PreviewView(ctx).also { pv ->
@@ -235,7 +247,7 @@ fun ShootingScreen(
                     }
                 }
             },
-            // 双击切换沉浸模式，单击对焦
+            // 双击切换沉浸模式，单击对焦，双指缩放
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(Unit) {
@@ -253,7 +265,26 @@ fun ShootingScreen(
                         }
                     )
                 }
+                .pointerInput(Unit) {
+                    // 双指缩放：激活 setZoom 死代码
+                    detectTransformGestures { _, _, zoomChange, _ ->
+                        if (zoomChange != 1f) {
+                            val newZoom = (zoomLevel * zoomChange).coerceIn(1f, 5f)
+                            viewModel.setZoom(newZoom)
+                        }
+                    }
+                }
         )
+
+        // ── 变焦指示器（缩放 > 1 时显示）──
+        if (zoomLevel > 1.01f) {
+            ZoomIndicator(
+                zoomLevel = zoomLevel,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 16.dp)
+            )
+        }
 
         // ── 构图辅助线（沉浸模式隐藏）──
         if (isSceneReady && gridEnabled && !isImmersiveMode) {
@@ -360,6 +391,7 @@ fun ShootingScreen(
                     isVlogRecording = isVlogRecording,
                     activeVlogClipIndex = activeClipIndex,
                     timerSeconds = timerSeconds,
+                    captureCount = captureCount,
                     onHelp = { showGuide = true },
                     onSceneClick = { viewModel.toggleSceneSelector() },
                     onSettings = { showSettings = true }
@@ -501,6 +533,9 @@ fun ShootingScreen(
             timerSeconds = timerSeconds,
             isImmersiveMode = isImmersiveMode,
             isBurstMode = isBurstMode,
+            isTorchOn = isTorchOn,
+            currentFlashMode = currentFlashMode,
+            currentAspectRatioName = currentAspectRatio.displayName.substringBefore(" "),
             navBarPadding = navBarPadding,
             onPlanSelected = { viewModel.selectPlan(it) },
             onCapture = { viewModel.takePhoto() },
@@ -523,6 +558,9 @@ fun ShootingScreen(
             onOpenGallery = onNavigateToGallery,
             onToggleTimer = { viewModel.cycleTimer() },
             onToggleBurstMode = { viewModel.toggleBurstMode() },
+            onToggleTorch = { viewModel.toggleTorch() },
+            onCycleFlashMode = { viewModel.cycleFlashMode() },
+            onCycleAspectRatio = { viewModel.cycleAspectRatio() },
             modifier = Modifier.align(Alignment.BottomCenter)
         )
 
@@ -554,6 +592,17 @@ fun ShootingScreen(
         // ── 快门闪光覆盖 ──
         if (showShutterFlash) {
             ShutterFlashOverlay()
+        }
+
+        // ── 连拍结果横幅（连拍完成后短暂展示，激活 burstPhotos StateFlow）──
+        if (burstPhotos.isNotEmpty()) {
+            BurstResultBanner(
+                photoPaths = burstPhotos,
+                onDismiss = { viewModel.clearBurstPhotos() },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = statusBarPadding.calculateTopPadding() + 60.dp)
+            )
         }
 
         // ── Snackbar 错误提示 ──
@@ -804,6 +853,7 @@ fun TopBar(
     isVlogRecording: Boolean,
     activeVlogClipIndex: Int,
     timerSeconds: Int = 0,
+    captureCount: Int = 0,
     onHelp: () -> Unit,
     onSceneClick: () -> Unit,
     onSettings: () -> Unit = {}
@@ -891,7 +941,7 @@ fun TopBar(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // 右侧：倒计时徽章 + 分数环 + 设置 + 帮助按钮
+        // 右侧：倒计时徽章 + 拍照计数 + 分数环 + 设置 + 帮助按钮
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             // 倒计时徽章（timerSeconds > 0 时显示）
             if (timerSeconds > 0) {
@@ -907,6 +957,32 @@ fun TopBar(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
+                }
+            }
+            // 拍照计数徽章（captureCount > 0 时显示，激活 captureCount 死代码）
+            if (captureCount > 0) {
+                Box(
+                    modifier = Modifier
+                        .background(Success.copy(alpha = 0.18f), RoundedCornerShape(50))
+                        .border(1.dp, Success.copy(alpha = 0.6f), RoundedCornerShape(50))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.PhotoCamera,
+                            contentDescription = null,
+                            tint = Success,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "已拍 $captureCount",
+                            color = Success,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
             if (isSceneReady) {
@@ -1045,6 +1121,9 @@ fun BottomPanel(
     timerSeconds: Int = 0,
     isImmersiveMode: Boolean = false,
     isBurstMode: Boolean = false,
+    isTorchOn: Boolean = false,
+    currentFlashMode: Int = 0,
+    currentAspectRatioName: String = "4:5",
     navBarPadding: PaddingValues,
     onPlanSelected: (Int) -> Unit,
     onCapture: () -> Unit,
@@ -1065,6 +1144,9 @@ fun BottomPanel(
     onOpenGallery: () -> Unit,
     onToggleTimer: () -> Unit,
     onToggleBurstMode: () -> Unit,
+    onToggleTorch: () -> Unit,
+    onCycleFlashMode: () -> Unit = {},
+    onCycleAspectRatio: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
@@ -1163,7 +1245,7 @@ fun BottomPanel(
                 isCompactHeight = isCompactHeight
             )
 
-            // 右：切换摄像头 + 计时器（沉浸模式隐藏）
+            // 右：切换摄像头 + 计时器 + 手电筒（沉浸模式隐藏）
             if (!isImmersiveMode) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     IconButton(
@@ -1225,11 +1307,80 @@ fun BottomPanel(
                             modifier = Modifier.size(20.dp)
                         )
                     }
+
+                    // 三态闪光灯按钮（激活 cycleFlashMode/setFlashMode 死代码）
+                    // 0=关闭, 1=自动, 2=常亮
+                    val flashActive = currentFlashMode != 0
+                    IconButton(
+                        onClick = onCycleFlashMode,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(
+                                if (flashActive) Accent.copy(alpha = 0.25f) else Surface,
+                                CircleShape
+                            )
+                            .border(
+                                width = if (flashActive) 1.5.dp else 1.dp,
+                                color = if (flashActive) Accent.copy(alpha = 0.7f) else Border,
+                                shape = CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector = when (currentFlashMode) {
+                                1 -> Icons.Default.FlashAuto
+                                2 -> Icons.Default.FlashOn
+                                else -> Icons.Default.FlashOff
+                            },
+                            contentDescription = when (currentFlashMode) {
+                                1 -> "自动闪光"
+                                2 -> "常亮闪光"
+                                else -> "闪光关闭"
+                            },
+                            tint = if (flashActive) Accent else TextSecondary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    // 画幅切换按钮（激活 AspectRatio 死代码）
+                    IconButton(
+                        onClick = onCycleAspectRatio,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(Surface, CircleShape)
+                            .border(1.dp, Border, CircleShape)
+                    ) {
+                        Text(
+                            text = currentAspectRatioName,
+                            color = TextPrimary,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             } else {
                 Spacer(modifier = Modifier.size(50.dp))
             }
         }
+    }
+}
+
+// ── 变焦指示器（双指缩放激活，显示当前缩放倍率）──
+@Composable
+fun ZoomIndicator(
+    zoomLevel: Float,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(20.dp))
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        Text(
+            text = String.format("%.1fx", zoomLevel),
+            color = Color.White,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
@@ -2377,6 +2528,11 @@ fun SettingsDialog(
     val watermarkEnabled by viewModel.watermarkEnabled.collectAsState()
     val gridEnabled by viewModel.gridEnabled.collectAsState()
     val lowLightEnabled by viewModel.lowLightMode.collectAsState()
+    val autoRecommendEnabled by viewModel.autoRecommendEnabled.collectAsState()
+    val autoRecommendInterval by viewModel.autoRecommendInterval.collectAsState()
+    val screenFillLightEnabled by viewModel.screenFillLightEnabled.collectAsState()
+    val screenFillLightIntensity by viewModel.screenFillLightIntensity.collectAsState()
+    var smileThreshold by remember { mutableStateOf(viewModel.getCurrentSmileThreshold()) }
 
     Dialog(onDismissRequest = onDismiss) {
         Column(
@@ -2384,6 +2540,7 @@ fun SettingsDialog(
                 .fillMaxWidth()
                 .background(BackgroundDark, RoundedCornerShape(20.dp))
                 .padding(20.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             Text(
                 text = "设置",
@@ -2398,6 +2555,43 @@ fun SettingsDialog(
                 checked = smileEnabled,
                 onCheckedChange = { viewModel.toggleSmile(it) }
             )
+            // 微笑灵敏度滑块（激活 StoreManager.smileThreshold 持久化）
+            if (smileEnabled) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 8.dp, end = 8.dp, bottom = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(text = "微笑灵敏度", color = TextSecondary, fontSize = 13.sp)
+                        Text(
+                            text = when {
+                                smileThreshold <= 0.5f -> "高"
+                                smileThreshold >= 0.85f -> "低"
+                                else -> "标准"
+                            },
+                            color = Accent,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    Slider(
+                        value = smileThreshold,
+                        onValueChange = {
+                            smileThreshold = it
+                            viewModel.setSmileThreshold(it)
+                        },
+                        valueRange = 0.3f..0.95f,
+                        colors = SliderDefaults.colors(
+                            thumbColor = Accent,
+                            activeTrackColor = Accent
+                        )
+                    )
+                }
+            }
             SettingToggle(
                 title = "网格线",
                 description = "显示三分构图网格",
@@ -2416,6 +2610,80 @@ fun SettingsDialog(
                 checked = watermarkEnabled,
                 onCheckedChange = { viewModel.toggleWatermark(it) }
             )
+            // 自动推荐开关（激活 StoreManager.autoRecommendEnabled 持久化）
+            SettingToggle(
+                title = "姿势亲近度推荐",
+                description = "根据当前姿势自动推荐方案",
+                checked = autoRecommendEnabled,
+                onCheckedChange = { viewModel.setAutoRecommendEnabled(it) }
+            )
+            // 自动抓拍间隔滑块（激活 StoreManager.setAutoRecommendInterval 持久化）
+            if (autoRecommendEnabled) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 8.dp, end = 8.dp, bottom = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(text = "推荐检测间隔", color = TextSecondary, fontSize = 13.sp)
+                        Text(
+                            text = "${autoRecommendInterval}ms",
+                            color = Accent,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    Slider(
+                        value = autoRecommendInterval.toFloat(),
+                        onValueChange = { viewModel.setAutoRecommendInterval(it.toInt()) },
+                        valueRange = 500f..5000f,
+                        steps = 8,
+                        colors = SliderDefaults.colors(
+                            thumbColor = Accent,
+                            activeTrackColor = Accent
+                        )
+                    )
+                }
+            }
+            // 屏幕补光开关 + 强度滑块（激活 setScreenFillLightIntensity 死代码）
+            SettingToggle(
+                title = "屏幕补光",
+                description = "暗光环境用屏幕补光",
+                checked = screenFillLightEnabled,
+                onCheckedChange = { viewModel.toggleScreenFillLight() }
+            )
+            if (screenFillLightEnabled) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 8.dp, end = 8.dp, bottom = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(text = "补光强度", color = TextSecondary, fontSize = 13.sp)
+                        Text(
+                            text = "${(screenFillLightIntensity * 100).toInt()}%",
+                            color = Accent,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    Slider(
+                        value = screenFillLightIntensity,
+                        onValueChange = { viewModel.setScreenFillLightIntensity(it) },
+                        valueRange = 0.1f..1f,
+                        colors = SliderDefaults.colors(
+                            thumbColor = Accent,
+                            activeTrackColor = Accent
+                        )
+                    )
+                }
+            }
         }
     }
 }
@@ -3004,6 +3272,64 @@ fun ShutterFlashOverlay() {
     )
 }
 
+/**
+ * 连拍结果横幅：连拍完成后短暂展示拍到的缩略图列表
+ * 激活 ShootingViewModel.burstPhotos StateFlow 的 UI 消费
+ */
+@Composable
+fun BurstResultBanner(
+    photoPaths: List<String>,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // 4 秒后自动消失
+    LaunchedEffect(photoPaths) {
+        kotlinx.coroutines.delay(4000)
+        onDismiss()
+    }
+
+    Row(
+        modifier = modifier
+            .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(16.dp))
+            .border(1.dp, Accent.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.BurstMode,
+            contentDescription = null,
+            tint = Accent,
+            modifier = Modifier.size(16.dp)
+        )
+        Text(
+            text = "连拍 ${photoPaths.size} 张",
+            color = Accent,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        photoPaths.take(5).forEach { path ->
+            coil.compose.AsyncImage(
+                model = path,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(6.dp)),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+            )
+        }
+        if (photoPaths.size > 5) {
+            Text(
+                text = "+${photoPaths.size - 5}",
+                color = TextSecondary,
+                fontSize = 11.sp
+            )
+        }
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // 距离提示文案
 // ═══════════════════════════════════════════════════════════════
@@ -3087,6 +3413,21 @@ fun PoseGuideSheet(
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(12.dp))
+
+                    // 姿势详细描述（激活原 Models.kt 中未展示的 poseDescription 字段）
+                    if (plan.poseDescription.isNotBlank()) {
+                        Text(
+                            text = plan.poseDescription,
+                            color = TextPrimary.copy(alpha = 0.9f),
+                            fontSize = 14.sp,
+                            lineHeight = 22.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .background(Surface, RoundedCornerShape(12.dp))
+                                .padding(14.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
 
                     // 构图提示
                     Text(

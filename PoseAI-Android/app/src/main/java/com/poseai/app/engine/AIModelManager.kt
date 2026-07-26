@@ -26,25 +26,59 @@ class AIModelManager(context: Context) {
         private const val KEY_DEVICE_ID = "device_id"
 
         // 模型注册表
+        // 说明：URL 字段保留用于未来远程下载；
+        // 当 remoteUrl 不可用时，AIModelManager 会自动检测 assets 中的 iOS 模型元数据文件
+        // （mobilenetv2_labels.json / googlenetplaces_labels.json）并启用关键词映射降级方案
         val MODEL_REGISTRY = listOf(
             ModelInfo(
                 id = "scene_classifier",
                 filename = "scene_model.tflite",
                 version = 1,
                 sizeBytes = 5_000_000L,
-                md5 = "placeholder_scene_model_md5",
+                md5 = "",  // 留空表示不强制校验 MD5（远程下载时如需校验再填入）
                 url = "https://models.poseai.app/scene_model_v1.tflite",
-                description = "场景识别模型 (6类场景分类)"
+                description = "场景识别模型 (7类场景分类)"
             ),
             ModelInfo(
                 id = "pose_similarity",
                 filename = "pose_similarity.tflite",
                 version = 1,
                 sizeBytes = 2_000_000L,
-                md5 = "placeholder_pose_sim_md5",
+                md5 = "",
                 url = "https://models.poseai.app/pose_similarity_v1.tflite",
                 description = "姿势相似度评估模型"
             )
+        )
+
+        /**
+         * iOS 模型资产清单（已从 .mlmodel 提取到 assets）
+         * 这些资产让 Android 端在没有 TFLite 模型时也能复刻 iOS 的语义识别能力
+         *
+         * 资产分类：
+         * - 标签 JSON：从 .mlmodel 提取的 ImageNet/Places 分类标签
+         * - 元数据 JSON：从 .mlmodel 提取的模型架构信息（层数、参数量、预处理参数）
+         * - 原始 .mlmodel：保留 iOS 模型文件，可在未来用 tools/convert_mlmodel_to_tflite.py 转换为 .tflite
+         */
+        val IOS_MODEL_ASSETS = listOf(
+            // 标签文件
+            "mobilenetv2_labels.json",      // MobileNetV2 1000 类 ImageNet 标签
+            "googlenetplaces_labels.json",  // GoogLeNetPlaces 205 类场景标签
+            // 元数据文件（从 .mlmodel 提取，包含架构和预处理参数）
+            "scene_model_metadata.json",        // MobileNetV2 架构元数据
+            "GoogLeNetPlaces_metadata.json",    // GoogLeNetPlaces 架构元数据
+            // 姿势数据
+            "poses.json",                   // iOS 端预设姿势坐标数据
+            // 原始 iOS 模型文件（资产保留，未来可转换为 .tflite）
+            "mobilenet_v2.mlmodel",         // 原始 iOS 模型文件
+            "googlenet_places.mlmodel"      // 原始 iOS 模型文件
+        )
+
+        /** 仅检测标签和元数据 JSON（轻量级检测，不依赖 .mlmodel 大文件） */
+        val IOS_MODEL_LIGHT_ASSETS = listOf(
+            "mobilenetv2_labels.json",
+            "googlenetplaces_labels.json",
+            "scene_model_metadata.json",
+            "GoogLeNetPlaces_metadata.json"
         )
     }
 
@@ -121,8 +155,13 @@ class AIModelManager(context: Context) {
      * 激活 AI 模型系统
      * 1. 生成设备 ID
      * 2. 注册激活
-     * 3. 下载所有模型
+     * 3. 下载所有模型（失败时降级到本地 iOS 模型资产）
      * 4. 校验完整性
+     *
+     * 降级策略：
+     * - 优先从远程 URL 下载 TFLite 模型
+     * - 远程不可用时，检测 assets 中的 iOS 模型元数据（标签 JSON + 原始 .mlmodel）
+     * - 检测到 iOS 资产则标记为"降级模式可用"，SceneClassifier 会用关键词映射替代模型推理
      */
     suspend fun activate(token: String? = null): ActivationResult = withContext(Dispatchers.IO) {
         try {
@@ -140,6 +179,7 @@ class AIModelManager(context: Context) {
             Log.i(TAG, "AI 模型系统激活成功")
             // 3. 下载模型
             val activatedModels = mutableListOf<String>()
+            var hasIosAssets = false
             for (info in MODEL_REGISTRY) {
                 val file = File(modelsDir, info.filename)
                 if (!file.exists() || file.length() < 100) {
@@ -149,8 +189,14 @@ class AIModelManager(context: Context) {
                         activatedModels.add(info.id)
                         Log.i(TAG, "模型下载成功: ${info.id}")
                     } else {
-                        Log.w(TAG, "模型下载失败: ${info.id}, 使用内置模型")
-                        // 创建占位模型（实际使用时由 SceneClassifier 处理 fallback）
+                        Log.w(TAG, "模型下载失败: ${info.id}, 检测本地 iOS 模型资产")
+                        // 检测 assets 中的 iOS 模型元数据
+                        if (hasIosModelAssets()) {
+                            hasIosAssets = true
+                            Log.i(TAG, "检测到 iOS 模型资产，启用关键词映射降级方案: ${info.id}")
+                        } else {
+                            Log.w(TAG, "无本地资产，使用启发式 fallback: ${info.id}")
+                        }
                         ensurePlaceholderModel(info)
                         activatedModels.add(info.id)
                     }
@@ -160,9 +206,15 @@ class AIModelManager(context: Context) {
                 }
             }
 
+            val message = if (hasIosAssets) {
+                "AI 模型激活成功（降级模式：使用 iOS 模型资产 + 关键词映射），共 ${activatedModels.size} 个模型就绪"
+            } else {
+                "AI 模型激活成功，共 ${activatedModels.size} 个模型就绪"
+            }
+
             ActivationResult(
                 success = true,
-                message = "AI 模型激活成功，共 ${activatedModels.size} 个模型就绪",
+                message = message,
                 activatedModels = activatedModels
             )
         } catch (e: Exception) {
@@ -171,6 +223,18 @@ class AIModelManager(context: Context) {
                 success = false,
                 message = "激活失败: ${e.message}"
             )
+        }
+    }
+
+    /**
+     * 检测 assets 中是否存在 iOS 模型元数据资产
+     */
+    private fun hasIosModelAssets(): Boolean {
+        return try {
+            val assetList = appContext.assets.list("") ?: return false
+            IOS_MODEL_ASSETS.any { assetList.contains(it) }
+        } catch (_: Exception) {
+            false
         }
     }
 
@@ -209,7 +273,8 @@ class AIModelManager(context: Context) {
             }
 
             // MD5 完整性校验：防止下载不完整或被篡改
-            if (info.md5.isNotEmpty() && info.md5 != "placeholder_scene_model_md5" && info.md5 != "placeholder_pose_sim_md5") {
+            // md5 字段为空时跳过校验（适用于本地 assets 模式或暂未发布签名的模型）
+            if (info.md5.isNotEmpty()) {
                 if (!verifyMd5(tempFile, info.md5)) {
                     Log.e(TAG, "MD5 校验失败: ${info.id}")
                     tempFile.delete()

@@ -9,7 +9,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
 class SmileDetector(
-    private val triggerThreshold: Float = 0.7f,
+    triggerThreshold: Float = 0.7f,
     private val stableDurationMs: Long = 800L,
     private val cooldownMs: Long = 3000L
 ) {
@@ -20,6 +20,19 @@ class SmileDetector(
         .build()
 
     private val detector = FaceDetection.getClient(options)
+
+    /**
+     * 微笑触发阈值，支持运行时更新
+     * 激活 StoreManager.smileThreshold 持久化字段：用户可在设置页调节灵敏度
+     * - 0.5f: 高灵敏度（容易触发，适合微笑不明显用户）
+     * - 0.7f: 默认（标准灵敏度）
+     * - 0.9f: 低灵敏度（需要明显笑容才触发）
+     */
+    @Volatile
+    var triggerThreshold: Float = triggerThreshold
+        set(value) {
+            field = value.coerceIn(0.3f, 0.95f)
+        }
 
     private var smoothedProbability: Float = 0f
     private var smileStableStartTime: Long = 0L

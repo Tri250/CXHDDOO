@@ -32,6 +32,7 @@ import com.poseai.app.PoseAIApp
 import com.poseai.app.camera.CameraManager
 import com.poseai.app.data.ShootingRecord
 import com.poseai.app.engine.PoseDetectorEngine
+import com.poseai.app.engine.PoseSimilarityModel
 import com.poseai.app.engine.PoseUtils
 import com.poseai.app.engine.SceneClassifier
 import com.poseai.app.engine.SmileDetector
@@ -91,6 +92,12 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     private var poseDetector: PoseDetectorEngine? = null
     private var sceneClassifier: SceneClassifier? = null
     private var smileDetector: SmileDetector? = null
+    /**
+     * 姿势相似度模型：激活 AIModelManager 注册的 pose_similarity.tflite
+     * - 优先用 TFLite 模型推理（更准确）
+     * - 模型不可用时自动降级到 PoseUtils.calculateSimilarity 的欧氏距离方案
+     */
+    private var poseSimilarityModel: PoseSimilarityModel? = null
 
     private var tts: TextToSpeech? = null
     private var toneGenerator: ToneGenerator? = null
@@ -187,11 +194,22 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     private val _isTorchOn = MutableStateFlow(false)
     val isTorchOn: StateFlow<Boolean> = _isTorchOn.asStateFlow()
 
+    /**
+     * 闪光灯模式：0=关闭, 1=自动, 2=常亮
+     * 持久化保存，启动时恢复（mode=2 时自动打开手电筒）
+     */
+    private val _currentFlashMode = MutableStateFlow(0)
+    val currentFlashMode: StateFlow<Int> = _currentFlashMode.asStateFlow()
+
     private val _captureCount = MutableStateFlow(0)
     val captureCount: StateFlow<Int> = _captureCount.asStateFlow()
 
     private val _currentFilter = MutableStateFlow(PhotoFilterEngine.Filter.ORIGINAL)
     val currentFilter: StateFlow<PhotoFilterEngine.Filter> = _currentFilter.asStateFlow()
+
+    /** 当前社交画幅预设（激活 AspectRatio 枚举和 applySmartCropByRatio 死代码） */
+    private val _currentAspectRatio = MutableStateFlow(PhotoFilterEngine.AspectRatio.RATIO_4_5)
+    val currentAspectRatio: StateFlow<PhotoFilterEngine.AspectRatio> = _currentAspectRatio.asStateFlow()
 
     private val _exposureValue = MutableStateFlow(0)
     val exposureValue: StateFlow<Int> = _exposureValue.asStateFlow()
@@ -271,6 +289,10 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     val autoRecommendEnabled: StateFlow<Boolean> = _autoRecommendEnabled.asStateFlow()
     private val _recommendedPlanIndex = MutableStateFlow(-1)
     val recommendedPlanIndex: StateFlow<Int> = _recommendedPlanIndex.asStateFlow()
+
+    /** 自动抓拍/推荐检测间隔（毫秒，500-5000）激活 setAutoRecommendInterval 持久化 */
+    private val _autoRecommendInterval = MutableStateFlow(1500)
+    val autoRecommendInterval: StateFlow<Int> = _autoRecommendInterval.asStateFlow()
 
     // ====== Review Prompt ======
     private val _shouldShowReviewPrompt = MutableStateFlow(false)
@@ -394,6 +416,13 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             Log.w(TAG, "Scene classifier not available")
         }
         smileDetector = SmileDetector()
+        // 激活 pose_similarity 模型：从 AIModelManager 下载目录或 assets 加载
+        try {
+            poseSimilarityModel = PoseSimilarityModel(app)
+            Log.i(TAG, "PoseSimilarityModel loaded=${poseSimilarityModel?.isModelLoaded() == true}")
+        } catch (e: Exception) {
+            Log.w(TAG, "PoseSimilarityModel init failed, will use heuristic", e)
+        }
 
         toneGenerator = try {
             ToneGenerator(AudioManager.STREAM_SYSTEM, 80)
@@ -421,6 +450,26 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                 SceneType.STREET
             }
             _currentPlanIndex.value = 0
+            // 激活 smileThreshold 持久化：从 StoreManager 读取并应用到 SmileDetector
+            val savedThreshold = storeManager.smileThreshold.first()
+            smileDetector?.triggerThreshold = savedThreshold
+            // 激活 autoRecommendEnabled 持久化
+            _autoRecommendEnabled.value = storeManager.autoRecommendEnabled.first()
+            // 激活 flashMode 持久化：恢复用户上次选择的闪光灯模式
+            // 0=关闭, 1=自动, 2=常亮；模式 2 时打开手电筒
+            val savedFlashMode = storeManager.flashMode.first()
+            _currentFlashMode.value = savedFlashMode
+            if (savedFlashMode == 2) {
+                // 等相机就绪后打开手电筒（异步，避免阻塞初始化）
+                viewModelScope.launch {
+                    kotlinx.coroutines.delay(500)
+                    val result = cameraManager?.toggleTorch() ?: false
+                    _isTorchOn.value = result
+                }
+            }
+            // 激活 autoRecommendInterval 持久化：恢复自动抓拍间隔
+            val savedInterval = storeManager.autoRecommendInterval.first()
+            _autoRecommendInterval.value = savedInterval
         }
 
         // 持续监听偏好变化
@@ -439,15 +488,35 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             storeManager.timerSeconds.collect { _timerSeconds.value = it }
         }
+        // 持续监听 smileThreshold 变化并应用到 SmileDetector
+        viewModelScope.launch {
+            storeManager.smileThreshold.collect { threshold ->
+                smileDetector?.triggerThreshold = threshold
+            }
+        }
+        // 持续监听 autoRecommendEnabled
+        viewModelScope.launch {
+            storeManager.autoRecommendEnabled.collect { _autoRecommendEnabled.value = it }
+        }
 
-        cameraManager?.startCamera(
-            lifecycleOwner,
-            previewView,
-            analysisAnalyzer = createAnalyzer()
-        )
-
-        // 注册陀螺仪监听（用于俯拍警告）
-        registerSensorListener()
+        // 激活 cameraLens 持久化：根据上次保存的镜头选择启动相机
+        // 0=后置 (LENS_FACING_BACK)，1=前置 (LENS_FACING_FRONT)
+        viewModelScope.launch {
+            val savedLens = storeManager.cameraLens.first()
+            val lensFacing = if (savedLens == 1) {
+                androidx.camera.core.CameraSelector.LENS_FACING_FRONT
+            } else {
+                androidx.camera.core.CameraSelector.LENS_FACING_BACK
+            }
+            cameraManager?.startCamera(
+                lifecycleOwner,
+                previewView,
+                lensFacing = lensFacing,
+                analysisAnalyzer = createAnalyzer()
+            )
+            // 注册陀螺仪监听（用于俯拍警告）
+            registerSensorListener()
+        }
     }
 
     /**
@@ -561,10 +630,17 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                                     } else {
                                         plan.posePoints
                                     }
-                                    val score = PoseUtils.calculateSimilarity(
-                                        pose, targetPoints,
-                                        width.toFloat(), height.toFloat(), isFront
-                                    )
+                                    // 优先使用 PoseSimilarityModel（激活 pose_similarity 模型）
+                                    // 失败或模型未加载时降级到 PoseUtils.calculateSimilarity
+                                    val simModel = poseSimilarityModel
+                                    val score = if (simModel != null) {
+                                        simModel.computeSimilarity(smoothedMap, targetPoints)
+                                    } else {
+                                        PoseUtils.calculateSimilarity(
+                                            pose, targetPoints,
+                                            width.toFloat(), height.toFloat(), isFront
+                                        )
+                                    }
                                     _poseScore.value = score
 
                                     // 姿势亲近度自动推荐：计算所有方案的相似度，推荐最高分方案
@@ -576,10 +652,14 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                                             plans.forEachIndexed { idx, p ->
                                                 if (idx != _currentPlanIndex.value) {
                                                     val tp = p.posePoints
-                                                    val s = PoseUtils.calculateSimilarity(
-                                                        pose, tp,
-                                                        width.toFloat(), height.toFloat(), isFront
-                                                    )
+                                                    val s = if (simModel != null) {
+                                                        simModel.computeSimilarity(smoothedMap, tp)
+                                                    } else {
+                                                        PoseUtils.calculateSimilarity(
+                                                            pose, tp,
+                                                            width.toFloat(), height.toFloat(), isFront
+                                                        )
+                                                    }
                                                     if (s > bestScore + 10f) {
                                                         bestScore = s
                                                         bestIdx = idx
@@ -980,6 +1060,13 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     }
 
     /**
+     * 清空连拍结果列表（UI 关闭连拍横幅时调用）
+     */
+    fun clearBurstPhotos() {
+        _burstPhotos.value = emptyList()
+    }
+
+    /**
      * Review Prompt 触发检查：在特定拍照次数时提示评价
      */
     private fun checkReviewPromptTrigger() {
@@ -1004,6 +1091,58 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         if (!enabled) {
             _recommendedPlanIndex.value = -1
         }
+        viewModelScope.launch { storeManager.setAutoRecommendEnabled(enabled) }
+    }
+
+    /**
+     * 设置自动抓拍/推荐检测间隔（激活 StoreManager.setAutoRecommendInterval 死代码）
+     * @param intervalMs 毫秒数，会被夹到 500..5000
+     */
+    fun setAutoRecommendInterval(intervalMs: Int) {
+        val clamped = intervalMs.coerceIn(500, 5000)
+        _autoRecommendInterval.value = clamped
+        viewModelScope.launch { storeManager.setAutoRecommendInterval(clamped) }
+    }
+
+    /**
+     * 设置微笑触发阈值（激活 StoreManager.smileThreshold 持久化）
+     * @param threshold 0.3-0.95，越大越不灵敏
+     */
+    fun setSmileThreshold(threshold: Float) {
+        smileDetector?.triggerThreshold = threshold
+        viewModelScope.launch { storeManager.setSmileThreshold(threshold) }
+    }
+
+    /**
+     * 获取当前微笑阈值（供设置页 UI 显示）
+     */
+    fun getCurrentSmileThreshold(): Float = smileDetector?.triggerThreshold ?: 0.7f
+
+    /**
+     * 设置闪光灯模式（激活 StoreManager.flashMode 持久化）
+     * @param mode 0=关闭, 1=自动, 2=常亮
+     */
+    fun setFlashMode(mode: Int) {
+        _currentFlashMode.value = mode
+        viewModelScope.launch { storeManager.setFlashMode(mode) }
+        // mode=2 常亮 → 打开手电筒；其他 → 关闭
+        when (mode) {
+            2 -> {
+                if (!_isTorchOn.value) toggleTorch()
+            }
+            else -> {
+                if (_isTorchOn.value) toggleTorch()
+            }
+        }
+    }
+
+    /**
+     * 循环切换闪光灯模式：0 关闭 → 1 自动 → 2 常亮 → 0 关闭
+     * 激活 setFlashMode 在 UI 中的使用，与 iOS FlashMode 枚举对齐
+     */
+    fun cycleFlashMode() {
+        val next = (_currentFlashMode.value + 1) % 3
+        setFlashMode(next)
     }
 
     /**
@@ -1102,9 +1241,9 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                 }
             }
 
-            // 智能裁切
+            // 智能裁切（使用当前画幅预设，激活 AspectRatio 死代码）
             if (bitmap != null) {
-                val cropped = PhotoFilterEngine.applySmartCrop(bitmap!!, 4f / 5f)
+                val cropped = PhotoFilterEngine.applySmartCropByRatio(bitmap!!, _currentAspectRatio.value)
                 // 保存裁切结果
                 FileOutputStream(path).use { out ->
                     cropped.compress(Bitmap.CompressFormat.JPEG, 90, out)
@@ -1208,6 +1347,11 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         _poseScore.value = 0f
         // 切换摄像头时取消倒计时，避免拍到切换前的画面
         cancelCountdown()
+        // 激活 cameraLens 持久化：记录用户选择的镜头（0=后置，1=前置）
+        viewModelScope.launch {
+            val currentLens = storeManager.cameraLens.first()
+            storeManager.setCameraLens(if (currentLens == 0) 1 else 0)
+        }
     }
 
     fun setScene(scene: SceneType) {
@@ -1242,8 +1386,8 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
 
         autoCaptureJob = viewModelScope.launch {
             while (_isAutoCapturing.value) {
-                // 获取当前间隔（不使用 collect，用 first 只取一次值）
-                val interval = storeManager.autoRecommendInterval.first().toLong()
+                // 直接读取缓存的 StateFlow 值，避免每次循环查 DataStore
+                val interval = _autoRecommendInterval.value.toLong()
                     .coerceIn(500L, 5000L)
                 delay(interval)
 
@@ -1627,10 +1771,81 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
 
     fun getCaptureHistory() = app.database.shootingDao().getAll()
 
+    /**
+     * 场景分布统计：返回各场景的拍摄次数（激活 ShootingDao.getSceneDistribution 死代码）
+     * 用于在统计页/相册页展示拍摄场景分布
+     */
+    suspend fun getSceneDistribution(): List<com.poseai.app.data.SceneCount> {
+        return try {
+            app.database.shootingDao().getSceneDistribution()
+        } catch (e: Exception) {
+            Log.e(TAG, "getSceneDistribution failed", e)
+            emptyList()
+        }
+    }
+
+    /**
+     * 获取全部拍摄记录（一次性）：用于统计分析和收藏列表
+     */
+    suspend fun getAllRecordsOnce(): List<ShootingRecord> {
+        return try {
+            app.database.shootingDao().getAllRecordsOnce()
+        } catch (e: Exception) {
+            Log.e(TAG, "getAllRecordsOnce failed", e)
+            emptyList()
+        }
+    }
+
+    /**
+     * 切换照片收藏状态（激活 ShootingRecord.isFavorite 死代码）
+     * @param id 记录 ID
+     * @param favorite 是否收藏
+     */
+    fun toggleFavorite(id: Long, favorite: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val record = app.database.shootingDao().getById(id) ?: return@launch
+                app.database.shootingDao().update(record.copy(isFavorite = favorite))
+            } catch (e: Exception) {
+                Log.e(TAG, "toggleFavorite failed", e)
+            }
+        }
+    }
+
+    /**
+     * 删除记录（按 ID）
+     */
+    fun deleteRecordById(id: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val record = app.database.shootingDao().getById(id)
+                if (record != null) {
+                    val file = File(record.imagePath)
+                    if (file.exists()) file.delete()
+                    app.database.shootingDao().deleteById(id.toInt())
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "deleteRecordById failed", e)
+            }
+        }
+    }
+
     // ====== 滤镜控制 ======
 
     fun setFilter(filter: PhotoFilterEngine.Filter) {
         _currentFilter.value = filter
+    }
+
+    /** 设置社交画幅预设（激活 AspectRatio 死代码） */
+    fun setAspectRatio(ratio: PhotoFilterEngine.AspectRatio) {
+        _currentAspectRatio.value = ratio
+    }
+
+    /** 循环切换画幅预设 */
+    fun cycleAspectRatio() {
+        val values = PhotoFilterEngine.AspectRatio.values()
+        val idx = values.indexOf(_currentAspectRatio.value)
+        _currentAspectRatio.value = values[(idx + 1) % values.size]
     }
 
     fun nextFilter() {
@@ -1767,6 +1982,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         poseDetector?.close()
         sceneClassifier?.close()
         smileDetector?.close()
+        poseSimilarityModel?.close()
         try {
             toneGenerator?.release()
         } catch (_: Exception) {}

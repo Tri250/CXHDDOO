@@ -20,14 +20,29 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
 
     companion object {
         private const val TAG = "SceneClassifier"
+        // 默认预处理参数（与 iOS MobileNetV2 元数据一致：channelScale=1/127.5, bias=-1.0）
+        private const val DEFAULT_CHANNEL_SCALE = 1f / 127.5f
+        private const val DEFAULT_BIAS = -1f
     }
 
     private var interpreter: Interpreter? = null
-    private val imageProcessor: ImageProcessor
+    // 元数据驱动预处理参数（运行时从 scene_model_metadata.json 读取并校验）
+    private var channelScale: Float = DEFAULT_CHANNEL_SCALE
+    private var redBias: Float = DEFAULT_BIAS
+    private var greenBias: Float = DEFAULT_BIAS
+    private var blueBias: Float = DEFAULT_BIAS
+    private var imageProcessor: ImageProcessor? = null
     private val inputSize = 224
     private var useFallback = false
+    /** 是否使用关键词映射降级（比纯启发式更智能） */
+    private var useKeywordMapper = false
     @Volatile
     private var isClosed = false
+    /** 元数据校验结果：记录加载的模型架构信息，便于诊断 */
+    private var metadataValidation: String? = null
+
+    /** 关键词映射器：复刻 iOS MobileNetV2SceneProvider 的关键词投票逻辑 */
+    private val keywordMapper: SceneKeywordMapper by lazy { SceneKeywordMapper(context) }
 
     private val labels = listOf(
         "COFFEE_SHOP",
@@ -40,24 +55,37 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
     )
 
     init {
+        // 优先级 0：从 iOS 模型元数据加载预处理参数（运行时一致性校验）
+        // 元数据文件由 convert_mlmodel_to_tflite.py 从 .mlmodel 提取生成
+        loadPreprocessingParamsFromMetadata(context)
+
+        // 用元数据驱动的预处理参数构建 ImageProcessor
+        // NormalizeOp(mean, std): output = (input - mean) / std
+        // 转换 iOS 公式 output = input * channelScale + bias 到 (mean, std) 形式：
+        //   mean = -bias / channelScale, std = 1 / channelScale
+        // 三通道 bias 不同时使用各通道独立计算（NormalizeOp 支持 3 通道均值/方差）
+        val mean = floatArrayOf(-redBias / channelScale, -greenBias / channelScale, -blueBias / channelScale)
+        val std = floatArrayOf(1f / channelScale, 1f / channelScale, 1f / channelScale)
         imageProcessor = ImageProcessor.Builder()
             .add(ResizeOp(inputSize, inputSize, ResizeOp.ResizeMethod.BILINEAR))
-            .add(NormalizeOp(127.5f, 127.5f))
+            .add(NormalizeOp(mean, std))
             .build()
 
         var loaded = false
+        // 优先级 1：从内部存储加载 AIModelManager 下载的 TFLite 模型
         try {
             val modelFile = File(context.filesDir, "ai_models/$modelFilename")
             if (modelFile.exists() && modelFile.length() > 1024) {
                 interpreter?.close()
                 interpreter = Interpreter(modelFile)
                 loaded = true
-                Log.i(TAG, "Loaded model from ${modelFile.absolutePath}")
+                Log.i(TAG, "Loaded TFLite model from ${modelFile.absolutePath}")
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to load from filesDir: ${e.message}")
         }
 
+        // 优先级 2：从 assets 加载内置 TFLite 模型
         if (!loaded) {
             try {
                 val assetList = context.assets.list("")
@@ -66,36 +94,113 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
                     interpreter?.close()
                     interpreter = Interpreter(assetMapped)
                     loaded = true
-                    Log.i(TAG, "Loaded model from assets")
+                    Log.i(TAG, "Loaded TFLite model from assets")
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to load from assets: ${e.message}")
             }
         }
 
+        // 优先级 3：检查 assets 中的 iOS 模型元数据文件（.mlmodel 已转换为标签 JSON + 架构元数据）
+        // 即使没有 TFLite 模型，也能加载 iOS 模型的标签数据，配合关键词映射做语义识别
+        val hasIosModelAssets = try {
+            val assetList = context.assets.list("")
+            assetList?.any { it == "mobilenetv2_labels.json" || it == "googlenetplaces_labels.json" } == true
+        } catch (_: Exception) {
+            false
+        }
+
+        // 优先级 4：加载 iOS 模型架构元数据（用于运行时校验和调试）
+        if (hasIosModelAssets) {
+            metadataValidation = try {
+                val metaFiles = listOf("scene_model_metadata.json", "GoogLeNetPlaces_metadata.json")
+                val summaries = mutableListOf<String>()
+                for (metaFile in metaFiles) {
+                    val json = context.assets.open(metaFile).bufferedReader().use { it.readText() }
+                    // 简单解析关键字段（不引入完整 JSON 库依赖）
+                    val layerCount = Regex("\"layer_count\"\\s*:\\s*(\\d+)").find(json)?.groupValues?.get(1)
+                    val totalParams = Regex("\"total_params\"\\s*:\\s*(\\d+)").find(json)?.groupValues?.get(1)
+                    if (layerCount != null && totalParams != null) {
+                        val modelName = metaFile.substringBefore("_metadata.json").substringBefore(".")
+                        summaries.add("$modelName: $layerCount 层 / $totalParams 参数")
+                    }
+                }
+                if (summaries.isNotEmpty()) summaries.joinToString("; ") else null
+            } catch (_: Exception) {
+                null
+            }
+        }
+
         useFallback = !loaded
-        if (useFallback) {
+        useKeywordMapper = !loaded && hasIosModelAssets
+        if (useKeywordMapper) {
+            val metaInfo = metadataValidation ?: "无元数据"
+            Log.i(TAG, "Using keyword-mapping fallback (iOS MobileNetV2 keywords + label assets) | 元数据: $metaInfo")
+        } else if (useFallback) {
             Log.i(TAG, "Using heuristic fallback classifier")
+        } else if (loaded) {
+            // 模型加载成功时打印预处理参数一致性校验结果
+            Log.i(TAG, "Model loaded. Preprocessing params | channelScale=$channelScale, biases=[$redBias, $greenBias, $blueBias] | ${metadataValidation ?: "无元数据"}")
+        }
+    }
+
+    /**
+     * 从 scene_model_metadata.json 加载预处理参数（channelScale + bias）
+     *
+     * 元数据由 iOS 端 .mlmodel 提取生成，包含与 iOS CoreML 完全一致的预处理公式：
+     *   output = input * channelScale + bias
+     *
+     * 这里读取后用于构建 TFLite 的 NormalizeOp，确保 Android 端预处理与 iOS 一致。
+     * 若元数据缺失或解析失败，使用 MobileNetV2 默认值 (1/127.5, -1.0)。
+     */
+    private fun loadPreprocessingParamsFromMetadata(context: Context) {
+        try {
+            val json = context.assets.open("scene_model_metadata.json")
+                .bufferedReader().use { it.readText() }
+            // 解析 preprocessing 段：{"image": {"channelScale": ..., "redBias": ..., "greenBias": ..., "blueBias": ...}}
+            val csMatch = Regex("\"channelScale\"\\s*:\\s*([\\-0-9.eE+]+)").find(json)
+            val rMatch = Regex("\"redBias\"\\s*:\\s*([\\-0-9.eE+]+)").find(json)
+            val gMatch = Regex("\"greenBias\"\\s*:\\s*([\\-0-9.eE+]+)").find(json)
+            val bMatch = Regex("\"blueBias\"\\s*:\\s*([\\-0-9.eE+]+)").find(json)
+            if (csMatch != null) {
+                channelScale = csMatch.groupValues[1].toFloat()
+                redBias = rMatch?.groupValues?.get(1)?.toFloat() ?: DEFAULT_BIAS
+                greenBias = gMatch?.groupValues?.get(1)?.toFloat() ?: DEFAULT_BIAS
+                blueBias = bMatch?.groupValues?.get(1)?.toFloat() ?: DEFAULT_BIAS
+                Log.i(TAG, "Loaded preprocessing from metadata: scale=$channelScale, biases=[$redBias, $greenBias, $blueBias]")
+            }
+        } catch (e: Exception) {
+            // 元数据文件缺失或解析失败时使用默认值（与 MobileNetV2 元数据等价）
+            Log.d(TAG, "Metadata not available, using default MobileNetV2 preprocessing params")
         }
     }
 
     fun classify(bitmap: Bitmap): SceneType {
         if (isClosed) return SceneType.UNKNOWN
-        return if (useFallback) {
-            classifyFallback(bitmap)
-        } else {
-            classifyWithModel(bitmap)
+        return when {
+            !useFallback -> classifyWithModel(bitmap)
+            useKeywordMapper -> {
+                // 优先用关键词映射（更接近 iOS 语义），失败再退回纯启发式
+                try {
+                    keywordMapper.classifyByKeywordVote(bitmap)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Keyword mapper failed, falling back to heuristic", e)
+                    classifyFallback(bitmap)
+                }
+            }
+            else -> classifyFallback(bitmap)
         }
     }
 
     private fun classifyWithModel(bitmap: Bitmap): SceneType {
         val interp = interpreter ?: return classifyFallback(bitmap)
+        val processor = imageProcessor ?: return classifyFallback(bitmap)
         if (isClosed) return SceneType.UNKNOWN
 
         return try {
             var tensorImage = TensorImage(DataType.FLOAT32)
             tensorImage.load(bitmap)
-            tensorImage = imageProcessor.process(tensorImage)
+            tensorImage = processor.process(tensorImage)
 
             val output = Array(1) { FloatArray(labels.size) }
             interp.run(tensorImage.buffer, output)
@@ -303,4 +408,11 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
         } catch (_: Exception) {}
         interpreter = null
     }
+
+    /** 暴露运行时状态供诊断 UI 使用 */
+    fun isModelLoaded(): Boolean = !useFallback
+    fun isUsingKeywordMapper(): Boolean = useKeywordMapper
+    fun getPreprocessingParams(): String =
+        "scale=$channelScale, biases=[$redBias, $greenBias, $blueBias]"
+    fun getMetadataValidation(): String? = metadataValidation
 }

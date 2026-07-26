@@ -5,6 +5,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,11 +17,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Mood
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.*
@@ -511,6 +514,18 @@ fun OOTDScoreBar(label: String, score: Float) {
 @Composable
 fun GalleryScreen(viewModel: ShootingViewModel) {
     val records by viewModel.getCaptureHistory().collectAsState(initial = emptyList())
+    var sceneStats by remember { mutableStateOf<List<com.poseai.app.data.SceneCount>>(emptyList()) }
+    var showFavoritesOnly by remember { mutableStateOf(false) }
+    var selectedRecord by remember { mutableStateOf<com.poseai.app.data.ShootingRecord?>(null) }
+    val scope = rememberCoroutineScope()
+
+    // 拍照计数变化时刷新场景统计
+    val captureCount by viewModel.captureCount.collectAsState()
+    LaunchedEffect(captureCount, records.size) {
+        sceneStats = viewModel.getSceneDistribution()
+    }
+
+    val displayRecords = if (showFavoritesOnly) records.filter { it.isFavorite } else records
 
     Column(
         modifier = Modifier
@@ -518,29 +533,72 @@ fun GalleryScreen(viewModel: ShootingViewModel) {
             .background(BackgroundDark)
             .padding(16.dp)
     ) {
-        Text(
-            text = "我的相册",
-            color = TextPrimary,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "我的相册",
+                color = TextPrimary,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            // 收藏筛选切换
+            FilterChip(
+                selected = showFavoritesOnly,
+                onClick = { showFavoritesOnly = !showFavoritesOnly },
+                label = {
+                    Text(
+                        text = if (showFavoritesOnly) "已收藏" else "收藏",
+                        fontSize = 12.sp
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = if (showFavoritesOnly) Icons.Default.Star else Icons.Default.StarBorder,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp)
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Accent.copy(alpha = 0.2f),
+                    selectedLabelColor = Accent,
+                    selectedLeadingIconColor = Accent
+                )
+            )
+        }
 
-        if (records.isEmpty()) {
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // 场景分布统计卡片（激活 getSceneDistribution 死代码）
+        if (sceneStats.isNotEmpty()) {
+            SceneStatsCard(stats = sceneStats, totalCount = records.size)
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        if (displayRecords.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = if (showFavoritesOnly) Icons.Default.StarBorder else Icons.Default.Palette,
+                        contentDescription = null,
+                        tint = TextSecondary.copy(alpha = 0.5f),
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "暂无照片",
+                        text = if (showFavoritesOnly) "暂无收藏照片" else "暂无照片",
                         color = TextSecondary,
                         fontSize = 16.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "去拍摄你的第一张 PoseAI 照片吧",
+                        text = if (showFavoritesOnly) "点击照片右上角的星标添加收藏" else "去拍摄你的第一张 PoseAI 照片吧",
                         color = TextSecondary.copy(alpha = 0.7f),
                         fontSize = 13.sp
                     )
@@ -553,16 +611,257 @@ fun GalleryScreen(viewModel: ShootingViewModel) {
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(records) { record ->
-                    GalleryItem(record = record)
+                items(displayRecords) { record ->
+                    GalleryItem(
+                        record = record,
+                        onClick = { selectedRecord = record },
+                        onToggleFavorite = {
+                            viewModel.toggleFavorite(record.id, !record.isFavorite)
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    // 详情/收藏/删除弹窗
+    selectedRecord?.let { record ->
+        PhotoDetailBottomSheet(
+            record = record,
+            onDismiss = { selectedRecord = null },
+            onToggleFavorite = {
+                viewModel.toggleFavorite(record.id, !record.isFavorite)
+                selectedRecord = null
+            },
+            onDelete = {
+                viewModel.deleteRecordById(record.id)
+                selectedRecord = null
+            }
+        )
+    }
+}
+
+/**
+ * 场景分布统计卡片：展示各场景的拍摄次数和占比
+ */
+@Composable
+fun SceneStatsCard(stats: List<com.poseai.app.data.SceneCount>, totalCount: Int) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(SurfaceDark, RoundedCornerShape(16.dp))
+            .border(1.dp, Accent.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = null,
+                tint = Accent,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "场景分布",
+                color = TextPrimary,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = "共 $totalCount 张",
+                color = TextSecondary,
+                fontSize = 12.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // 取前 5 个场景，按 count 降序已由 SQL 保证
+        val topStats = stats.take(5)
+        val maxCount = topStats.maxOfOrNull { it.count } ?: 1
+
+        topStats.forEach { stat ->
+            val sceneDisplayName = try {
+                SceneType.valueOf(stat.scene).displayName
+            } catch (e: IllegalArgumentException) {
+                stat.scene
+            }
+            val ratio = if (maxCount > 0) stat.count.toFloat() / maxCount else 0f
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = sceneDisplayName,
+                        color = TextPrimary,
+                        fontSize = 13.sp,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = "${stat.count} 张",
+                        color = Accent,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .background(SurfaceGlass, CircleShape)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(fraction = ratio.coerceIn(0f, 1f))
+                            .height(4.dp)
+                            .background(Accent, CircleShape)
+                    )
                 }
             }
         }
     }
 }
 
+/**
+ * 照片详情底部弹窗：显示大图、收藏、删除按钮
+ * 激活 ShootingRecord.isFavorite 字段相关 UI 交互
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GalleryItem(record: com.poseai.app.data.ShootingRecord) {
+fun PhotoDetailBottomSheet(
+    record: com.poseai.app.data.ShootingRecord,
+    onDismiss: () -> Unit,
+    onToggleFavorite: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val sceneDisplayName = try {
+        SceneType.valueOf(record.scene).displayName
+    } catch (e: IllegalArgumentException) {
+        record.scene
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = SurfaceDark,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            // 大图预览
+            if (record.imagePath.isNotEmpty()) {
+                coil.compose.AsyncImage(
+                    model = record.imagePath,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(360.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(BackgroundDark),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(BackgroundDark),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "图片文件不存在",
+                        color = TextSecondary,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 元信息
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "场景：$sceneDisplayName",
+                        color = TextPrimary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "姿势：${record.poseName.ifEmpty { "未记录" }}",
+                        color = TextSecondary,
+                        fontSize = 13.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "评分：${record.score.toInt()} 分",
+                        color = Accent,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                // 收藏按钮
+                IconButton(onClick = onToggleFavorite) {
+                    Icon(
+                        imageVector = if (record.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                        contentDescription = if (record.isFavorite) "取消收藏" else "收藏",
+                        tint = if (record.isFavorite) Accent else TextSecondary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 删除按钮
+            OutlinedButton(
+                onClick = onDelete,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = androidx.compose.ui.graphics.Color(0xFFFF6B6B)
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("删除照片", fontSize = 15.sp)
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+fun GalleryItem(
+    record: com.poseai.app.data.ShootingRecord,
+    onClick: () -> Unit = {},
+    onToggleFavorite: () -> Unit = {}
+) {
     Box(
         modifier = Modifier
             .aspectRatio(1f)
@@ -573,7 +872,9 @@ fun GalleryItem(record: com.poseai.app.data.ShootingRecord) {
             coil.compose.AsyncImage(
                 model = record.imagePath,
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(onClick = onClick),
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop
             )
             Box(
@@ -588,6 +889,23 @@ fun GalleryItem(record: com.poseai.app.data.ShootingRecord) {
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium
                 )
+            }
+            // 收藏标识（激活 isFavorite 字段在网格中的可视化）
+            if (record.isFavorite) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                        .padding(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = "已收藏",
+                        tint = Accent,
+                        modifier = Modifier.size(12.dp)
+                    )
+                }
             }
         } else {
             Box(
