@@ -8,6 +8,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -35,6 +38,7 @@ import com.poseai.app.model.SceneType
 import com.poseai.app.ui.theme.Accent
 import com.poseai.app.ui.theme.BackgroundDark
 import com.poseai.app.ui.theme.SurfaceDark
+import com.poseai.app.ui.theme.SurfaceGlass
 import com.poseai.app.ui.theme.TextPrimary
 import com.poseai.app.ui.theme.TextSecondary
 import com.poseai.app.viewmodel.ShootingViewModel
@@ -78,43 +82,6 @@ fun SceneSelectorBottomSheet(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun SceneItem(scene: SceneType, isSelected: Boolean, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 10.dp)
-            .background(
-                if (isSelected) Accent.copy(alpha = 0.15f) else Color.Transparent,
-                RoundedCornerShape(12.dp)
-            )
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = scene.displayName,
-                color = TextPrimary,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = "${scene.plans.size} 个姿势方案",
-                color = TextSecondary,
-                fontSize = 13.sp
-            )
-        }
-        if (isSelected) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                tint = Accent,
-                modifier = Modifier.size(24.dp)
-            )
         }
     }
 }
@@ -580,8 +547,8 @@ fun GalleryScreen(viewModel: ShootingViewModel) {
                 }
             }
         } else {
-            androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
-                columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(3),
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier.fillMaxSize()
@@ -790,8 +757,8 @@ fun ProFeatureGrid() {
         "暗光优化" to Icons.Default.Lightbulb
     )
 
-    androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
-        columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(4),
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(4),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier.fillMaxWidth()

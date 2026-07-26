@@ -56,6 +56,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -75,7 +76,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.poseai.app.model.SceneType
 import com.poseai.app.model.VlogTemplate
@@ -98,8 +99,8 @@ import kotlinx.coroutines.launch
 fun ShootingScreen(
     viewModel: ShootingViewModel = viewModel()
 ) {
-    val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
+    val lifecycleOwner = context as? LifecycleOwner ?: error("Context is not a LifecycleOwner")
     var previewView by remember { mutableStateOf<PreviewView?>(null) }
 
     val poseScore by viewModel.poseScore.collectAsState()
@@ -258,7 +259,7 @@ fun ShootingScreen(
                     SequenceIndicator(
                         currentIndex = currentSequenceIndex,
                         totalSteps = plan.sequence.size,
-                        stepName = currentSequenceShot?.name ?: "",
+                        stepName = currentSequenceShot?.title ?: "",
                         onPrevious = { viewModel.previousSequenceStep() },
                         onNext = { viewModel.nextSequenceStep() }
                     )
@@ -266,7 +267,7 @@ fun ShootingScreen(
                 if (plan.multiAngles.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     AngleIndicator(
-                        currentAngleName = currentAngle?.name ?: "",
+                        currentAngleName = currentAngle?.title ?: "",
                         angleCount = plan.multiAngles.size,
                         onNextAngle = { viewModel.nextAngle() }
                     )

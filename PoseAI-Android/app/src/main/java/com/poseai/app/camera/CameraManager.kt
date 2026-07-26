@@ -55,6 +55,7 @@ class CameraManager(private val context: Context) {
     private var preview: Preview? = null
     private var imageCapture: ImageCapture? = null
     private var imageAnalysis: ImageAnalysis? = null
+    private var currentAnalyzer: ImageAnalysis.Analyzer? = null
     private var videoCapture: VideoCapture<Recorder>? = null
     private var activeRecording: Recording? = null
     private var torchObserver: androidx.lifecycle.Observer<Int>? = null
@@ -106,6 +107,7 @@ class CameraManager(private val context: Context) {
                     .build()
 
                 imageAnalysis = if (analysisAnalyzer != null) {
+                    currentAnalyzer = analysisAnalyzer
                     ImageAnalysis.Builder()
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                         .setTargetRotation(previewView.display.rotation)
@@ -129,7 +131,6 @@ class CameraManager(private val context: Context) {
 
     private fun observeCameraState() {
         val cam = camera ?: return
-        // 移除旧的 observer 防止内存泄漏
         torchObserver?.let { cam.cameraInfo.torchState.removeObserver(it) }
         val observer = androidx.lifecycle.Observer<Int> { state ->
             _torchState.value = state
@@ -139,13 +140,12 @@ class CameraManager(private val context: Context) {
         cam.cameraInfo.exposureState.let { exposure ->
             _exposureIndex.value = exposure.exposureCompensationIndex
         }
-        cam.cameraInfo.zoomState.let { zoom ->
+        cam.cameraInfo.zoomState.value?.let { zoom ->
             _zoomRatio.value = zoom.zoomRatio
         }
     }
 
     fun switchCamera(lifecycleOwner: LifecycleOwner, previewView: PreviewView) {
-        // 清理旧的 observer
         camera?.let { oldCam ->
             torchObserver?.let { oldCam.cameraInfo.torchState.removeObserver(it) }
         }
@@ -155,13 +155,12 @@ class CameraManager(private val context: Context) {
         } else {
             CameraSelector.LENS_FACING_FRONT
         }
-        // 检查目标摄像头是否存在
         if (!hasCameraLensFacing(newLens)) {
             Log.w(TAG, "设备不存在目标摄像头: $newLens")
             return
         }
-        val analyzer = imageAnalysis?.analyzer
-        startCamera(lifecycleOwner, previewView, newLens, analyzer)
+        val hasAnalysis = imageAnalysis != null
+        startCamera(lifecycleOwner, previewView, newLens, if (hasAnalysis) currentAnalyzer else null)
     }
 
     private fun hasCameraLensFacing(lensFacing: Int): Boolean {
@@ -320,16 +319,14 @@ class CameraManager(private val context: Context) {
 
     fun setZoomRatio(ratio: Float) {
         val cam = camera ?: return
-        val zoomState = cam.cameraInfo.zoomState
-        // 检查变焦范围是否有效
-        if (zoomState.minZoomRatio == 1.0f && zoomState.maxZoomRatio == 1.0f) {
+        val zoomState = cam.cameraInfo.zoomState.value ?: return
+        val minRatio = zoomState.minZoomRatio
+        val maxRatio = zoomState.maxZoomRatio
+        if (minRatio == 1.0f && maxRatio == 1.0f) {
             Log.w(TAG, "设备不支持变焦")
             return
         }
-        val clamped = ratio.coerceIn(
-            zoomState.minZoomRatio,
-            zoomState.maxZoomRatio
-        )
+        val clamped = ratio.coerceIn(minRatio, maxRatio)
         cam.cameraControl.setZoomRatio(clamped)
         _zoomRatio.value = clamped
     }
