@@ -117,6 +117,7 @@ fun ShootingScreen(
     val vlogErrorMessage by viewModel.vlogErrorMessage.collectAsState()
     val distanceHint by viewModel.distanceHint.collectAsState()
     val photoSaveError by viewModel.photoSaveError.collectAsState()
+    val focusIndicator by viewModel.focusIndicator.collectAsState()
 
     var showSettings by remember { mutableStateOf(false) }
     var showExposurePanel by remember { mutableStateOf(false) }
@@ -359,23 +360,38 @@ fun ShootingScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 俯拍警告优先显示
-                if (isTopDownWarning && isSceneReady) {
-                    WarningBanner(
-                        text = "请平行或低角度拍摄，显腿更长",
-                        color = Danger
-                    )
-                } else if (heatWarning) {
-                    WarningBanner(text = "设备过热，已降频优化", color = Warning)
-                } else if (batteryLow) {
-                    WarningBanner(text = "电量低，已进入省电模式", color = Error)
-                }
-
-                // Vlog 字幕（红色阴影发光样式）
-                if (vlogText.isNotEmpty()) {
-                    VlogSubtitle(text = vlogText, isRecording = isVlogRecording)
+                // 沉浸模式下隐藏次要警告（过热/电量），保留俯拍警告独立显示
+                if (!isImmersiveMode) {
+                    if (heatWarning) {
+                        WarningBanner(text = "设备过热，已降频优化", color = Warning)
+                    } else if (batteryLow) {
+                        WarningBanner(text = "电量低，已进入省电模式", color = Error)
+                    }
                 }
             }
+        }
+
+        // ── 俯拍警告（独立于沉浸模式，始终显示）──
+        if (isTopDownWarning && isSceneReady) {
+            WarningBanner(
+                text = "请平行或低角度拍摄，显腿更长",
+                color = Danger,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = statusBarPadding.calculateTopPadding() + 70.dp)
+                    .padding(horizontal = 18.dp)
+            )
+        }
+
+        // ── Vlog 字幕（独立于沉浸模式，始终显示）──
+        if (vlogText.isNotEmpty()) {
+            VlogSubtitle(
+                text = vlogText,
+                isRecording = isVlogRecording,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = if (isImmersiveMode) statusBarPadding.calculateTopPadding() + 16.dp else statusBarPadding.calculateTopPadding() + 120.dp)
+            )
         }
 
         // ── 暗光提示 Banner（沉浸模式隐藏）──
@@ -470,6 +486,11 @@ fun ShootingScreen(
         // ── 倒计时大数字覆盖 ──
         if (countdownValue > 0) {
             CountdownOverlay(seconds = countdownValue)
+        }
+
+        // ── 点击对焦指示器 ──
+        focusIndicator?.let { point ->
+            FocusIndicatorOverlay(x = point.x, y = point.y)
         }
 
         // ── 快门闪光覆盖 ──
@@ -1691,10 +1712,9 @@ fun DetectedSkeletonOverlay(
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
-fun WarningBanner(text: String, color: Color) {
+fun WarningBanner(text: String, color: Color, modifier: Modifier = Modifier) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
             .background(color.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
             .padding(horizontal = 12.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
@@ -1737,11 +1757,10 @@ fun SmileIndicator(strength: Float) {
 }
 
 @Composable
-fun VlogSubtitle(text: String, isRecording: Boolean = false) {
+fun VlogSubtitle(text: String, isRecording: Boolean = false, modifier: Modifier = Modifier) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+        modifier = modifier
+            .padding(horizontal = 24.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -2419,6 +2438,57 @@ fun PlanVlogButton(onClick: () -> Unit) {
             tint = Accent,
             modifier = Modifier.size(18.dp)
         )
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 点击对焦指示器（对焦框动画）
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+fun FocusIndicatorOverlay(x: Float, y: Float) {
+    val scale = remember { Animatable(1.4f) }
+    val alpha = remember { Animatable(1f) }
+    LaunchedEffect(x, y) {
+        scale.snapTo(1.4f)
+        alpha.snapTo(1f)
+        scale.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(250, easing = FastOutSlowInEasing)
+        )
+        kotlinx.coroutines.delay(800)
+        alpha.animateTo(
+            targetValue = 0f,
+            animationSpec = tween(400, easing = FastOutSlowInEasing)
+        )
+    }
+
+    val sizePx = with(LocalDensity.current) { 80.dp.toPx() }
+    val strokeWidth = with(LocalDensity.current) { 2.dp.toPx() }
+    val cornerLen = with(LocalDensity.current) { 14.dp.toPx() }
+    val color = Accent.copy(alpha = alpha.value)
+
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val s = scale.value
+        val cx = x
+        val cy = y
+        val halfSize = sizePx / 2f * s
+
+        // 四角 L 形指示线
+        val corners = listOf(
+            // 左上
+            Triple(Offset(cx - halfSize, cy - halfSize + cornerLen), Offset(cx - halfSize, cy - halfSize), Offset(cx - halfSize + cornerLen, cy - halfSize)),
+            // 右上
+            Triple(Offset(cx + halfSize - cornerLen, cy - halfSize), Offset(cx + halfSize, cy - halfSize), Offset(cx + halfSize, cy - halfSize + cornerLen)),
+            // 左下
+            Triple(Offset(cx - halfSize, cy + halfSize - cornerLen), Offset(cx - halfSize, cy + halfSize), Offset(cx - halfSize + cornerLen, cy + halfSize)),
+            // 右下
+            Triple(Offset(cx + halfSize - cornerLen, cy + halfSize), Offset(cx + halfSize, cy + halfSize), Offset(cx + halfSize, cy + halfSize - cornerLen))
+        )
+        corners.forEach { (a, b, c) ->
+            drawLine(color, a, b, strokeWidth, cap = StrokeCap.Round)
+            drawLine(color, b, c, strokeWidth, cap = StrokeCap.Round)
+        }
     }
 }
 

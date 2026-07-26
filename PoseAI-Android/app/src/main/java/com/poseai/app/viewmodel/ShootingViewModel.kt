@@ -232,6 +232,12 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     private val _photoSaveError = MutableStateFlow<String?>(null)
     val photoSaveError: StateFlow<String?> = _photoSaveError.asStateFlow()
 
+    /** 点击对焦视觉反馈：对焦框位置（屏幕像素坐标），null 表示不显示 */
+    data class FocusPoint(val x: Float, val y: Float)
+    private val _focusIndicator = MutableStateFlow<FocusPoint?>(null)
+    val focusIndicator: StateFlow<FocusPoint?> = _focusIndicator.asStateFlow()
+    private var focusResetJob: Job? = null
+
     private val vlogTemplates = listOf(
         VlogTemplate(
             name = "快速 Vlog",
@@ -882,6 +888,10 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         if (plans.isEmpty()) return
         _currentPlanIndex.value = (_currentPlanIndex.value + 1) % plans.size
         _poseScore.value = 0f
+        _currentSequenceIndex.value = 0
+        _currentAngleIndex.value = 0
+        _useSecondaryPose.value = false
+        cancelCountdown()
     }
 
     fun previousPlan() {
@@ -893,6 +903,10 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             plans.size - 1
         }
         _poseScore.value = 0f
+        _currentSequenceIndex.value = 0
+        _currentAngleIndex.value = 0
+        _useSecondaryPose.value = false
+        cancelCountdown()
     }
 
     fun selectPlan(index: Int) {
@@ -900,18 +914,32 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         if (index in plans.indices) {
             _currentPlanIndex.value = index
             _poseScore.value = 0f
+            _currentSequenceIndex.value = 0
+            _currentAngleIndex.value = 0
+            _useSecondaryPose.value = false
+            // 切换方案时取消进行中的倒计时
+            cancelCountdown()
         }
     }
 
     fun switchCamera(lifecycleOwner: LifecycleOwner, previewView: PreviewView) {
         cameraManager?.switchCamera(lifecycleOwner, previewView)
         _poseScore.value = 0f
+        // 切换摄像头时取消倒计时，避免拍到切换前的画面
+        cancelCountdown()
     }
 
     fun setScene(scene: SceneType) {
         _currentScene.value = scene
         _currentPlanIndex.value = 0
         _poseScore.value = 0f
+        _currentSequenceIndex.value = 0
+        _currentAngleIndex.value = 0
+        _useSecondaryPose.value = false
+        // 切换场景时取消进行中的倒计时，避免拍到旧场景
+        cancelCountdown()
+        // 关闭所有选择器
+        dismissSelectors()
         viewModelScope.launch {
             storeManager.setSelectedScene(scene.name)
         }
@@ -1023,8 +1051,30 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
 
     // ====== 点击对焦 ======
 
+    /**
+     * 点击对焦：提交对焦请求并显示对焦框视觉反馈
+     * @param x 屏幕坐标 X（像素）
+     * @param y 屏幕坐标 Y（像素）
+     * @param previewView 当前预览视图
+     * @return true 表示已成功提交对焦请求
+     */
     fun tapToFocus(x: Float, y: Float, previewView: PreviewView): Boolean {
-        return cameraManager?.tapToFocus(x, y, previewView) ?: false
+        val success = cameraManager?.tapToFocus(x, y, previewView) ?: false
+        if (success) {
+            // 显示对焦框反馈，1.5s 后自动消失
+            _focusIndicator.value = FocusPoint(x, y)
+            focusResetJob?.cancel()
+            focusResetJob = viewModelScope.launch {
+                kotlinx.coroutines.delay(1500)
+                _focusIndicator.value = null
+            }
+        }
+        return success
+    }
+
+    /** 清除对焦指示器 */
+    fun clearFocusIndicator() {
+        _focusIndicator.value = null
     }
 
     // ====== 距离提示 ======
@@ -1373,6 +1423,9 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         stopAutoCapture()
         stopVlog()
         cancelCountdown()
+        flashResetJob?.cancel()
+        focusResetJob?.cancel()
+        distanceHintResetJob?.cancel()
         unregisterSensorListener()
         cameraManager?.shutdown()
         poseDetector?.close()
