@@ -19,11 +19,34 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
+    val storeFileProp = project.findProperty("storeFile") as? String
+    val storePasswordProp = project.findProperty("storePassword") as? String
+    val keyAliasProp = project.findProperty("keyAlias") as? String
+    val keyPasswordProp = project.findProperty("keyPassword") as? String
+    val hasSigningConfig = !storeFileProp.isNullOrBlank()
+            && !storePasswordProp.isNullOrBlank()
+            && !keyAliasProp.isNullOrBlank()
+            && !keyPasswordProp.isNullOrBlank()
+
+    if (hasSigningConfig) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(storeFileProp!!)
+                storePassword = storePasswordProp!!
+                keyAlias = keyAliasProp!!
+                keyPassword = keyPasswordProp!!
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (hasSigningConfig) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         debug {
             isMinifyEnabled = false
