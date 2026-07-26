@@ -1,0 +1,87 @@
+# ============================================================
+# Android CI Build Workflow
+# 项目名称: PoseAI Android
+# 包名: com.poseai.app
+# ============================================================
+#
+# 触发条件:
+#   - push 到 main 或 develop 分支
+#   - pull request 到 main 分支
+#
+# 功能:
+#   - 运行 Lint 代码检查
+#   - 构建 Debug APK
+#   - 上传构建产物
+# ============================================================
+
+name: Android CI Build
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+
+env:
+  JAVA_VERSION: '17'
+  JAVA_DISTRIBUTION: 'temurin'
+
+jobs:
+  build:
+    name: Debug Build & Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: '11076708'
+          packages: 'platforms;android-34 build-tools;34.0.0 platform-tools'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+        working-directory: PoseAI-Android
+
+      - name: Run Lint Check
+        run: ./gradlew lintDebug --no-daemon
+        working-directory: PoseAI-Android
+        continue-on-error: true
+
+      - name: Upload Lint Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lint-report
+          path: PoseAI-Android/app/build/reports/lint-results-debug.html
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --no-daemon
+        working-directory: PoseAI-Android
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: PoseAI-Android-Debug-APK
+          path: PoseAI-Android/app/build/outputs/apk/debug/*.apk

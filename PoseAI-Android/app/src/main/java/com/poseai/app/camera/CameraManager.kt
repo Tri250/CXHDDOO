@@ -85,7 +85,6 @@ class CameraManager(private val context: Context) {
             try {
                 cameraProvider = cameraProviderFuture.get()
 
-                // 先解绑旧的 use cases
                 cameraProvider?.unbindAll()
 
                 preview = Preview.Builder().build().also {
@@ -125,6 +124,8 @@ class CameraManager(private val context: Context) {
                 observeCameraState()
             } catch (exc: Exception) {
                 Log.e(TAG, "Camera start failed", exc)
+                cameraProvider = null
+                camera = null
             }
         }, ContextCompat.getMainExecutor(context))
     }
@@ -173,26 +174,35 @@ class CameraManager(private val context: Context) {
         }
     }
 
-    fun takePhoto(outputFile: File, onResult: (Boolean, String?) -> Unit) {
+    fun takePhoto(outputFile: File?, onResult: (Boolean, String?) -> Unit) {
+        if (outputFile == null) {
+            onResult(false, "Output file is null")
+            return
+        }
         val capture = imageCapture ?: run {
             onResult(false, "Image capture not ready")
             return
         }
-        val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
-        capture.takePicture(
-            outputOptions,
-            cameraExecutor,
-            object : ImageCapture.OnImageSavedCallback {
-                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                    onResult(true, outputFile.absolutePath)
-                }
+        try {
+            val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
+            capture.takePicture(
+                outputOptions,
+                cameraExecutor,
+                object : ImageCapture.OnImageSavedCallback {
+                    override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                        onResult(true, outputFile.absolutePath)
+                    }
 
-                override fun onError(exception: ImageCaptureException) {
-                    Log.e(TAG, "Take photo failed: ${exception.message}", exception)
-                    onResult(false, exception.message)
+                    override fun onError(exception: ImageCaptureException) {
+                        Log.e(TAG, "Take photo failed: ${exception.message}", exception)
+                        onResult(false, exception.message)
+                    }
                 }
-            }
-        )
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Take photo exception", e)
+            onResult(false, e.message)
+        }
     }
 
     fun startVideoChunk(): Boolean {
@@ -233,7 +243,6 @@ class CameraManager(private val context: Context) {
             true
         } catch (e: SecurityException) {
             Log.e(TAG, "Audio permission denied for video recording", e)
-            // 降级：不带音频录制
             try {
                 val pendingRecordingNoAudio = capture.output
                     .prepareRecording(context, outputOptions)
@@ -288,7 +297,6 @@ class CameraManager(private val context: Context) {
     fun setExposureCompensation(index: Int): Boolean {
         val cam = camera ?: return false
         val exposureState = cam.cameraInfo.exposureState
-        // 检查是否支持曝光补偿
         if (!exposureState.isExposureCompensationSupported) {
             Log.w(TAG, "设备不支持曝光补偿")
             return false
@@ -307,7 +315,6 @@ class CameraManager(private val context: Context) {
 
     fun toggleTorch(): Boolean {
         val cam = camera ?: return false
-        // 检查是否有闪光灯单元
         if (!cam.cameraInfo.hasFlashUnit()) {
             Log.w(TAG, "设备无闪光灯，无法切换_torch")
             return false
@@ -354,11 +361,11 @@ class CameraManager(private val context: Context) {
             activeRecording?.stop()
             activeRecording = null
         } catch (_: Exception) {}
-        // 移除 torch observer 防止内存泄漏
         camera?.let { oldCam ->
             torchObserver?.let { oldCam.cameraInfo.torchState.removeObserver(it) }
         }
         torchObserver = null
+        currentAnalyzer = null
         try {
             cameraProvider?.unbindAll()
         } catch (_: Exception) {}

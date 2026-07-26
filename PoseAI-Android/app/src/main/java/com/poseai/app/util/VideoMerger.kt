@@ -22,6 +22,13 @@ object VideoMerger {
         outputDir: File
     ): File? = withContext(Dispatchers.IO) {
         if (videoFiles.isEmpty()) return@withContext null
+        
+        val validVideoFiles = videoFiles.filter { it.exists() && it.length() > 0 }
+        if (validVideoFiles.isEmpty()) {
+            Log.e(TAG, "No valid video files to merge")
+            return@withContext null
+        }
+        
         if (!outputDir.exists() && !outputDir.mkdirs()) {
             Log.e(TAG, "Failed to create output directory")
             return@withContext null
@@ -29,6 +36,7 @@ object VideoMerger {
 
         val outputFile = File(outputDir, "${UUID.randomUUID()}_final.mp4")
         var muxer: MediaMuxer? = null
+        var muxerReleased = false
 
         try {
             muxer = MediaMuxer(outputFile.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
@@ -40,7 +48,7 @@ object VideoMerger {
 
             val firstExtractor = MediaExtractor()
             try {
-                firstExtractor.setDataSource(videoFiles[0].absolutePath)
+                firstExtractor.setDataSource(validVideoFiles[0].absolutePath)
                 for (i in 0 until firstExtractor.trackCount) {
                     val format = firstExtractor.getTrackFormat(i)
                     val mime = format.getString(MediaFormat.KEY_MIME) ?: continue
@@ -54,7 +62,7 @@ object VideoMerger {
                 firstExtractor.release()
             }
 
-            if (bgmFile != null && bgmFile.exists()) {
+            if (bgmFile != null && bgmFile.exists() && bgmFile.length() > 0) {
                 val bgmExtractor = MediaExtractor()
                 try {
                     bgmExtractor.setDataSource(bgmFile.absolutePath)
@@ -76,8 +84,8 @@ object VideoMerger {
             val bufferInfo = MediaCodec.BufferInfo()
             val buffer = ByteBuffer.allocate(1024 * 1024)
 
-            for (videoIndex in videoFiles.indices) {
-                val videoFile = videoFiles[videoIndex]
+            for (videoIndex in validVideoFiles.indices) {
+                val videoFile = validVideoFiles[videoIndex]
                 val extractor = MediaExtractor()
                 try {
                     extractor.setDataSource(videoFile.absolutePath)
@@ -130,19 +138,22 @@ object VideoMerger {
                 }
             }
 
-            if (bgmFile != null && bgmFile.exists() && bgmTrackIndex >= 0) {
+            if (bgmFile != null && bgmFile.exists() && bgmFile.length() > 0 && bgmTrackIndex >= 0) {
                 writeBgmLooped(muxer, bgmTrackIndex, bgmFile, totalVideoDuration, bufferInfo, buffer)
             }
 
-            try {
-                muxer.stop()
-            } catch (e: Exception) {
-                Log.e(TAG, "Muxer stop failed", e)
-            }
-            try {
-                muxer.release()
-            } catch (e: Exception) {
-                Log.e(TAG, "Muxer release failed", e)
+            if (!muxerReleased) {
+                try {
+                    muxer.stop()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Muxer stop failed", e)
+                }
+                try {
+                    muxer.release()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Muxer release failed", e)
+                }
+                muxerReleased = true
             }
 
             if (outputFile.exists() && outputFile.length() > 0) {
@@ -155,11 +166,15 @@ object VideoMerger {
             Log.e(TAG, "Merge failed", e)
             null
         } finally {
-            try {
-                muxer?.stop()
-                muxer?.release()
-            } catch (_: Exception) {}
-            // 清理空输出文件
+            if (!muxerReleased && muxer != null) {
+                try {
+                    muxer.stop()
+                } catch (_: Exception) {}
+                try {
+                    muxer.release()
+                } catch (_: Exception) {}
+                muxerReleased = true
+            }
             if (outputFile.exists() && outputFile.length() == 0L) {
                 outputFile.delete()
             }

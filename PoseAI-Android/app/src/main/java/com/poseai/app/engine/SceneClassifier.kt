@@ -26,6 +26,8 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
     private val imageProcessor: ImageProcessor
     private val inputSize = 224
     private var useFallback = false
+    @Volatile
+    private var isClosed = false
 
     private val labels = listOf(
         "COFFEE_SHOP",
@@ -46,7 +48,6 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
         try {
             val modelFile = File(context.filesDir, "ai_models/$modelFilename")
             if (modelFile.exists() && modelFile.length() > 1024) {
-                // 关闭旧的 interpreter 防止内存泄漏
                 interpreter?.close()
                 interpreter = Interpreter(modelFile)
                 loaded = true
@@ -61,7 +62,6 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
                 val assetList = context.assets.list("")
                 if (assetList?.contains(modelFilename) == true) {
                     val assetMapped = FileUtil.loadMappedFile(context, modelFilename)
-                    // 关闭旧的 interpreter 防止内存泄漏
                     interpreter?.close()
                     interpreter = Interpreter(assetMapped)
                     loaded = true
@@ -79,6 +79,7 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
     }
 
     fun classify(bitmap: Bitmap): SceneType {
+        if (isClosed) return SceneType.UNKNOWN
         return if (useFallback) {
             classifyFallback(bitmap)
         } else {
@@ -88,6 +89,7 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
 
     private fun classifyWithModel(bitmap: Bitmap): SceneType {
         val interp = interpreter ?: return classifyFallback(bitmap)
+        if (isClosed) return SceneType.UNKNOWN
 
         return try {
             var tensorImage = TensorImage(DataType.FLOAT32)
@@ -111,20 +113,11 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
         }
     }
 
-    /**
-     * 启发式场景分类 fallback
-     * 基于颜色统计特征进行粗略场景判断：
-     * - BEACH: 高蓝色 + 高亮度 (天空+海水)
-     * - PARK: 高绿色占比
-     * - HOME: 暖色调 + 中等亮度 + 低饱和度
-     * - COFFEE_SHOP: 暖棕色调 + 低亮度
-     * - STREET: 高对比度 + 中性色调
-     */
     private fun classifyFallback(bitmap: Bitmap): SceneType {
+        var small: Bitmap? = null
         return try {
-            val small = Bitmap.createScaledBitmap(bitmap, 64, 64, true)
+            small = Bitmap.createScaledBitmap(bitmap, 64, 64, true)
             val stats = computeColorStats(small)
-            small.recycle()
 
             val scores = mutableMapOf<SceneType, Float>()
 
@@ -143,6 +136,8 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
         } catch (e: Exception) {
             Log.e(TAG, "Fallback classification failed", e)
             SceneType.UNKNOWN
+        } finally {
+            small?.recycle()
         }
     }
 
@@ -160,6 +155,12 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
     )
 
     private fun computeColorStats(bitmap: Bitmap): ColorStats {
+        val width = bitmap.width
+        val height = bitmap.height
+        val total = width * height
+        val pixels = IntArray(total)
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+
         var sumR = 0L
         var sumG = 0L
         var sumB = 0L
@@ -169,34 +170,31 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
         var bluePixels = 0
         var warmPixels = 0
         var skyBluePixels = 0
-        val total = bitmap.width * bitmap.height
         var satSum = 0f
 
-        for (y in 0 until bitmap.height) {
-            for (x in 0 until bitmap.width) {
-                val pixel = bitmap.getPixel(x, y)
-                val r = Color.red(pixel)
-                val g = Color.green(pixel)
-                val b = Color.blue(pixel)
+        for (i in pixels.indices) {
+            val pixel = pixels[i]
+            val r = Color.red(pixel)
+            val g = Color.green(pixel)
+            val b = Color.blue(pixel)
 
-                sumR += r
-                sumG += g
-                sumB += b
+            sumR += r
+            sumG += g
+            sumB += b
 
-                val lum = (0.299 * r + 0.587 * g + 0.114 * b).toLong()
-                sumLum += lum
-                sumLumSq += lum * lum
+            val lum = (0.299 * r + 0.587 * g + 0.114 * b).toLong()
+            sumLum += lum
+            sumLumSq += lum * lum
 
-                val max = maxOf(r, g, b)
-                val min = minOf(r, g, b)
-                val sat = if (max > 0) (max - min).toFloat() / max else 0f
-                satSum += sat
+            val max = maxOf(r, g, b)
+            val min = minOf(r, g, b)
+            val sat = if (max > 0) (max - min).toFloat() / max else 0f
+            satSum += sat
 
-                if (g > r && g > b && g > 80) greenPixels++
-                if (b > r && b > g && b > 100) bluePixels++
-                if (r > b && r > 80 && g > 60) warmPixels++
-                if (b > 150 && b > g && b > r && (r + g) < 300) skyBluePixels++
-            }
+            if (g > r && g > b && g > 80) greenPixels++
+            if (b > r && b > g && b > 100) bluePixels++
+            if (r > b && r > 80 && g > 60) warmPixels++
+            if (b > 150 && b > g && b > r && (r + g) < 300) skyBluePixels++
         }
 
         val avgR = sumR.toFloat() / total
@@ -275,7 +273,11 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
     }
 
     fun close() {
-        interpreter?.close()
+        if (isClosed) return
+        isClosed = true
+        try {
+            interpreter?.close()
+        } catch (_: Exception) {}
         interpreter = null
     }
 }

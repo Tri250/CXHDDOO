@@ -1,0 +1,163 @@
+# ============================================================
+# Android Release Build Workflow
+# 项目名称: PoseAI Android
+# 包名: com.poseai.app
+# 版本: versionName "2.0", versionCode 1
+# ============================================================
+#
+# 触发条件:
+#   - 推送 v 开头的 tag 时自动触发 (如: v2.0.0)
+#   - 支持手动触发 (Actions 页面点击 Run workflow)
+#
+# 必需的 GitHub Secrets:
+#   - ANDROID_SIGNING_KEY: Android 签名密钥库文件 (JKS) 的 Base64 编码
+#   - KEY_ALIAS: 签名密钥别名
+#   - KEY_PASSWORD: 签名密钥密码
+#   - STORE_PASSWORD: 密钥库密码
+#
+# 生成 Base64 编码签名密钥的命令:
+#   base64 -i your-keystore.jks -o keystore-base64.txt
+# ============================================================
+
+name: Android Release Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  JAVA_VERSION: '17'
+  JAVA_DISTRIBUTION: 'temurin'
+  ANDROID_COMPILE_SDK: '34'
+  ANDROID_BUILD_TOOLS: '34.0.0'
+
+jobs:
+  build:
+    name: Build and Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: '11076708'
+          packages: 'platforms;android-${{ env.ANDROID_COMPILE_SDK }} build-tools;${{ env.ANDROID_BUILD_TOOLS }} platform-tools'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+        working-directory: PoseAI-Android
+
+      - name: Decode signing key
+        if: secrets.ANDROID_SIGNING_KEY != ''
+        run: echo "${{ secrets.ANDROID_SIGNING_KEY }}" | base64 --decode > $HOME/signing-key.jks
+
+      - name: Create keystore properties
+        if: secrets.ANDROID_SIGNING_KEY != ''
+        run: |
+          cat > PoseAI-Android/keystore.properties << EOF
+          storeFile=$HOME/signing-key.jks
+          storePassword=${{ secrets.STORE_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          EOF
+
+      - name: Inject signing config into build.gradle.kts
+        if: secrets.ANDROID_SIGNING_KEY != ''
+        run: |
+          cd PoseAI-Android
+          python3 << 'PYEOF'
+          with open('app/build.gradle.kts', 'r') as f:
+              content = f.read()
+
+          signing_config = """
+              val keystoreProperties = java.util.Properties()
+              val keystorePropertiesFile = rootProject.file("keystore.properties")
+              if (keystorePropertiesFile.exists()) {
+                  keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
+              }
+
+              signingConfigs {
+                  create("release") {
+                      storeFile = file(keystoreProperties["storeFile"] as String)
+                      storePassword = keystoreProperties["storePassword"] as String
+                      keyAlias = keystoreProperties["keyAlias"] as String
+                      keyPassword = keystoreProperties["keyPassword"] as String
+                  }
+              }
+          """
+
+          content = content.replace(
+              '    buildTypes {',
+              signing_config + '\n    buildTypes {'
+          )
+
+          content = content.replace(
+              '        release {',
+              '        release {\n            signingConfig = signingConfigs.getByName("release")'
+          )
+
+          with open('app/build.gradle.kts', 'w') as f:
+              f.write(content)
+
+          print("Signing config injected successfully")
+          PYEOF
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --no-daemon
+        working-directory: PoseAI-Android
+
+      - name: Build Release AAB
+        run: ./gradlew bundleRelease --no-daemon
+        working-directory: PoseAI-Android
+
+      - name: Verify APK signature
+        if: secrets.ANDROID_SIGNING_KEY != ''
+        run: |
+          $ANDROID_HOME/build-tools/${{ env.ANDROID_BUILD_TOOLS }}/apksigner verify --verbose \
+            app/build/outputs/apk/release/app-release.apk
+        working-directory: PoseAI-Android
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PoseAI-Android-APK
+          path: PoseAI-Android/app/build/outputs/apk/release/*.apk
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PoseAI-Android-AAB
+          path: PoseAI-Android/app/build/outputs/bundle/release/*.aab
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: PoseAI Android ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            PoseAI-Android/app/build/outputs/apk/release/*.apk
+            PoseAI-Android/app/build/outputs/bundle/release/*.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
