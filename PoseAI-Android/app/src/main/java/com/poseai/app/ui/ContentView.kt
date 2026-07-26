@@ -35,7 +35,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -118,6 +120,11 @@ fun ShootingScreen(
     val distanceHint by viewModel.distanceHint.collectAsState()
     val photoSaveError by viewModel.photoSaveError.collectAsState()
     val focusIndicator by viewModel.focusIndicator.collectAsState()
+    val isHeadroomWarning by viewModel.isHeadroomWarning.collectAsState()
+    val isBurstMode by viewModel.isBurstMode.collectAsState()
+    val recommendedPlanIndex by viewModel.recommendedPlanIndex.collectAsState()
+    val autoRecommendEnabled by viewModel.autoRecommendEnabled.collectAsState()
+    val shouldShowReviewPrompt by viewModel.shouldShowReviewPrompt.collectAsState()
 
     var showSettings by remember { mutableStateOf(false) }
     var showExposurePanel by remember { mutableStateOf(false) }
@@ -394,6 +401,55 @@ fun ShootingScreen(
             )
         }
 
+        // ── 留白智能提醒（头部上方空间过多）──
+        if (isHeadroomWarning && isSceneReady && !isImmersiveMode) {
+            WarningBanner(
+                text = "上方留白过多，请将人物上移",
+                color = Warning,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = statusBarPadding.calculateTopPadding() + 150.dp)
+                    .padding(horizontal = 18.dp)
+            )
+        }
+
+        // ── 姿势亲近度自动推荐提示 ──
+        if (autoRecommendEnabled && recommendedPlanIndex >= 0 && recommendedPlanIndex != currentPlanIndex && isSceneReady && !isImmersiveMode) {
+            val recPlan = currentScene.plans.getOrNull(recommendedPlanIndex)
+            if (recPlan != null) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 260.dp)
+                        .background(Accent.copy(alpha = 0.9f), RoundedCornerShape(20.dp))
+                        .clickable { viewModel.acceptRecommendedPlan() }
+                        .padding(horizontal = 20.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = Color.Black,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "推荐方案: ${recPlan.poseName}",
+                        color = Color.Black,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        // ── Review Prompt 评价引导 ──
+        if (shouldShowReviewPrompt) {
+            ReviewPromptDialog(
+                onDismiss = { viewModel.dismissReviewPrompt() }
+            )
+        }
+
         // ── 暗光提示 Banner（沉浸模式隐藏）──
         if (lowLightWarning && isSceneReady && lowLightMode && !isImmersiveMode) {
             LowLightBanner(
@@ -444,6 +500,7 @@ fun ShootingScreen(
             breathingScale = breathingScale.value,
             timerSeconds = timerSeconds,
             isImmersiveMode = isImmersiveMode,
+            isBurstMode = isBurstMode,
             navBarPadding = navBarPadding,
             onPlanSelected = { viewModel.selectPlan(it) },
             onCapture = { viewModel.takePhoto() },
@@ -465,6 +522,7 @@ fun ShootingScreen(
             onStopVlog = { viewModel.stopVlog() },
             onOpenGallery = onNavigateToGallery,
             onToggleTimer = { viewModel.cycleTimer() },
+            onToggleBurstMode = { viewModel.toggleBurstMode() },
             modifier = Modifier.align(Alignment.BottomCenter)
         )
 
@@ -510,7 +568,19 @@ fun ShootingScreen(
         if (isReviewing && lastPhotoPath != null) {
             PhotoReviewDialog(
                 photoPath = lastPhotoPath!!,
-                onDismiss = { viewModel.closePhotoReview() }
+                onDismiss = { viewModel.closePhotoReview() },
+                onShare = {
+                    viewModel.createShareIntent(lastPhotoPath!!)?.let { intent ->
+                        context.startActivity(android.content.Intent.createChooser(intent, "分享照片"))
+                    }
+                },
+                onDelete = {
+                    viewModel.deletePhoto(lastPhotoPath!!)
+                    viewModel.closePhotoReview()
+                },
+                onRetake = {
+                    viewModel.closePhotoReview()
+                }
             )
         }
 
@@ -974,6 +1044,7 @@ fun BottomPanel(
     breathingScale: Float,
     timerSeconds: Int = 0,
     isImmersiveMode: Boolean = false,
+    isBurstMode: Boolean = false,
     navBarPadding: PaddingValues,
     onPlanSelected: (Int) -> Unit,
     onCapture: () -> Unit,
@@ -993,6 +1064,7 @@ fun BottomPanel(
     onStopVlog: () -> Unit,
     onOpenGallery: () -> Unit,
     onToggleTimer: () -> Unit,
+    onToggleBurstMode: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
@@ -1130,6 +1202,29 @@ fun BottomPanel(
                             modifier = Modifier.size(20.dp)
                         )
                     }
+
+                    // 连拍模式按钮
+                    IconButton(
+                        onClick = onToggleBurstMode,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(
+                                if (isBurstMode) Accent.copy(alpha = 0.25f) else Surface,
+                                CircleShape
+                            )
+                            .border(
+                                width = if (isBurstMode) 1.5.dp else 1.dp,
+                                color = if (isBurstMode) Accent.copy(alpha = 0.7f) else Border,
+                                shape = CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.BurstMode,
+                            contentDescription = "连拍",
+                            tint = if (isBurstMode) Accent else TextSecondary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             } else {
                 Spacer(modifier = Modifier.size(50.dp))
@@ -1210,6 +1305,7 @@ fun PlanCard(
                         com.poseai.app.model.CompositionRule.RULE_OF_THIRDS -> "三分法"
                         com.poseai.app.model.CompositionRule.DIAGONAL -> "对角线"
                         com.poseai.app.model.CompositionRule.FRAME_WITHIN_FRAME -> "框架"
+                        com.poseai.app.model.CompositionRule.GOLDEN_SPIRAL -> "黄金螺旋"
                     },
                     active = true
                 )
@@ -1477,8 +1573,226 @@ fun CompositionGuideLines(
                 end = Offset(w, 2 * h / 3f),
                 strokeWidth = 1.dp.toPx()
             )
+        } else if (composition == com.poseai.app.model.CompositionRule.CENTER) {
+            // 居中辅助线：中心十字 + 中央矩形
+            drawLine(
+                color = Color.White.copy(alpha = 0.05f),
+                start = Offset(w / 2f, 0f),
+                end = Offset(w / 2f, h),
+                strokeWidth = 1.dp.toPx()
+            )
+            drawLine(
+                color = Color.White.copy(alpha = 0.05f),
+                start = Offset(0f, h / 2f),
+                end = Offset(w, h / 2f),
+                strokeWidth = 1.dp.toPx()
+            )
+            // 中央矩形（人物目标区域）
+            val centerW = w * 0.5f
+            val centerH = h * 0.7f
+            drawRect(
+                color = Color.White.copy(alpha = 0.04f),
+                topLeft = Offset((w - centerW) / 2f, (h - centerH) / 2f),
+                size = Size(centerW, centerH),
+                style = Stroke(width = 1.dp.toPx())
+            )
+        } else if (composition == com.poseai.app.model.CompositionRule.DIAGONAL) {
+            // 对角线构图
+            drawLine(
+                color = Color.White.copy(alpha = 0.06f),
+                start = Offset(0f, 0f),
+                end = Offset(w, h),
+                strokeWidth = 1.dp.toPx()
+            )
+            drawLine(
+                color = Color.White.copy(alpha = 0.06f),
+                start = Offset(w, 0f),
+                end = Offset(0f, h),
+                strokeWidth = 1.dp.toPx()
+            )
+        } else if (composition == com.poseai.app.model.CompositionRule.FRAME_WITHIN_FRAME) {
+            // 框架构图：内外两个矩形
+            drawRect(
+                color = Color.White.copy(alpha = 0.06f),
+                topLeft = Offset(0f, 0f),
+                size = Size(w, h),
+                style = Stroke(width = 1.dp.toPx())
+            )
+            val innerMargin = minOf(w, h) * 0.15f
+            drawRect(
+                color = Color.White.copy(alpha = 0.08f),
+                topLeft = Offset(innerMargin, innerMargin),
+                size = Size(w - 2 * innerMargin, h - 2 * innerMargin),
+                style = Stroke(width = 1.5.dp.toPx())
+            )
+        } else if (composition == com.poseai.app.model.CompositionRule.GOLDEN_SPIRAL) {
+            // P5-6 黄金螺旋线构图
+            // 基于斐波那契数列绘制黄金螺旋曲线，并叠加黄金分割矩形辅助线
+            drawGoldenSpiral(w, h)
         }
     }
+}
+
+/**
+ * 绘制黄金螺旋线（Golden Spiral / Fibonacci Spiral）
+ * 实现：在黄金分割矩形内递归绘制 1/4 圆弧，形成螺旋曲线
+ * 同时绘制黄金分割线作为辅助参考
+ */
+private fun DrawScope.drawGoldenSpiral(w: Float, h: Float) {
+    val phi = 1.61803398875f  // 黄金比例
+    val spiralColor = Color.White.copy(alpha = 0.18f)
+    val guideColor = Color.White.copy(alpha = 0.06f)
+
+    // 计算适合屏幕的黄金矩形（保持比例）
+    // 默认竖屏拍摄，黄金矩形适配竖屏
+    val isPortrait = h > w
+    val rect: androidx.compose.ui.geometry.Rect
+    if (isPortrait) {
+        // 竖屏：黄金矩形以高度为基准
+        val rectW = h / phi
+        val rectH = h
+        val left = (w - rectW) / 2f
+        val top = 0f
+        rect = androidx.compose.ui.geometry.Rect(left, top, left + rectW, top + rectH)
+    } else {
+        // 横屏：黄金矩形以宽度为基准
+        val rectW = w
+        val rectH = w / phi
+        val left = 0f
+        val top = (h - rectH) / 2f
+        rect = androidx.compose.ui.geometry.Rect(left, top, left + rectW, top + rectH)
+    }
+
+    // 绘制黄金分割辅助线
+    drawLine(
+        color = guideColor,
+        start = Offset(rect.left + rect.width * (1f / phi), rect.top),
+        end = Offset(rect.left + rect.width * (1f / phi), rect.bottom),
+        strokeWidth = 1.dp.toPx()
+    )
+    drawLine(
+        color = guideColor,
+        start = Offset(rect.left, rect.top + rect.height * (1f / phi)),
+        end = Offset(rect.right, rect.top + rect.height * (1f / phi)),
+        strokeWidth = 1.dp.toPx()
+    )
+
+    // 绘制黄金螺旋曲线：递归绘制 1/4 圆弧
+    // 螺旋方向：从大矩形开始，逐级缩小，每个 1/4 圆弧都在黄金分割子矩形内
+    var currentRect = rect
+    var direction = 0  // 0=左上→右下弧, 1=右上→左下弧, 2=右下→左上弧, 3=左下→右上弧
+    val maxIterations = 8  // 限制迭代次数避免无限递归
+
+    val path = Path()
+    var firstPoint = true
+
+    for (i in 0 until maxIterations) {
+        val rw = currentRect.width
+        val rh = currentRect.height
+        if (rw < 20f || rh < 20f) break
+
+        // 1/4 圆弧所在正方形的边长 = 短边
+        val squareSize = minOf(rw, rh)
+        // 圆弧中心和起止角度根据方向决定
+        val arcRect: androidx.compose.ui.geometry.Rect
+        val startAngle: Float
+        val sweepAngle: Float = 90f
+
+        when (direction % 4) {
+            0 -> {
+                // 圆弧在左上角，圆心在左上角对角顶点
+                arcRect = androidx.compose.ui.geometry.Rect(
+                    currentRect.left, currentRect.top,
+                    currentRect.left + squareSize, currentRect.top + squareSize
+                )
+                startAngle = 0f  // 从右开始顺时针
+            }
+            1 -> {
+                // 圆弧在右上角
+                arcRect = androidx.compose.ui.geometry.Rect(
+                    currentRect.right - squareSize, currentRect.top,
+                    currentRect.right, currentRect.top + squareSize
+                )
+                startAngle = 90f
+            }
+            2 -> {
+                // 圆弧在右下角
+                arcRect = androidx.compose.ui.geometry.Rect(
+                    currentRect.right - squareSize, currentRect.bottom - squareSize,
+                    currentRect.right, currentRect.bottom
+                )
+                startAngle = 180f
+            }
+            else -> {
+                // 圆弧在左下角
+                arcRect = androidx.compose.ui.geometry.Rect(
+                    currentRect.left, currentRect.bottom - squareSize,
+                    currentRect.left + squareSize, currentRect.bottom
+                )
+                startAngle = 270f
+            }
+        }
+
+        if (firstPoint) {
+            // 移动到弧的起点
+            val startX = when (direction % 4) {
+                0 -> arcRect.right
+                1 -> arcRect.right
+                2 -> arcRect.left
+                else -> arcRect.left
+            }
+            val startY = when (direction % 4) {
+                0 -> arcRect.top
+                1 -> arcRect.bottom
+                2 -> arcRect.bottom
+                else -> arcRect.top
+            }
+            path.moveTo(startX, startY)
+            firstPoint = false
+        }
+
+        path.arcTo(
+            rect = arcRect,
+            startAngleDegrees = startAngle,
+            sweepAngleDegrees = sweepAngle,
+            forceMoveTo = false
+        )
+
+        // 缩小到下一个黄金分割子矩形
+        currentRect = when (direction % 4) {
+            0 -> androidx.compose.ui.geometry.Rect(
+                currentRect.left + squareSize / phi, currentRect.top,
+                currentRect.right, currentRect.bottom
+            )
+            1 -> androidx.compose.ui.geometry.Rect(
+                currentRect.left, currentRect.top + squareSize / phi,
+                currentRect.right, currentRect.bottom
+            )
+            2 -> androidx.compose.ui.geometry.Rect(
+                currentRect.left, currentRect.top,
+                currentRect.right - squareSize / phi, currentRect.bottom
+            )
+            else -> androidx.compose.ui.geometry.Rect(
+                currentRect.left, currentRect.top,
+                currentRect.right, currentRect.bottom - squareSize / phi
+            )
+        }
+        direction++
+    }
+
+    drawPath(
+        path = path,
+        color = spiralColor,
+        style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round)
+    )
+
+    // 绘制黄金矩形外框（淡）
+    drawRect(
+        color = guideColor,
+        topLeft = Offset(rect.left, rect.top),
+        size = Size(rect.width, rect.height),
+        style = Stroke(width = 1.dp.toPx())
+    )
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1572,8 +1886,9 @@ fun SilhouetteGuideOverlay(
             // 双人模式：左右各偏移 18% 屏宽渲染两个剪影
             val offset = w * 0.18f
             // 左侧剪影（主姿势）
+            val leftMainX = centerX - silW / 2f - offset
             drawSilhouetteShape(
-                left = centerX - silW / 2f - offset,
+                left = leftMainX,
                 top = centerY - silH / 2f,
                 width = silW,
                 height = silH,
@@ -1583,8 +1898,9 @@ fun SilhouetteGuideOverlay(
                 isDashed = !isAligned
             )
             // 右侧剪影（备选姿势）
+            val leftSecondaryX = centerX - silW / 2f + offset
             drawSilhouetteShape(
-                left = centerX - silW / 2f + offset,
+                left = leftSecondaryX,
                 top = centerY - silH / 2f,
                 width = silW,
                 height = silH,
@@ -1593,6 +1909,35 @@ fun SilhouetteGuideOverlay(
                 strokeWidth = strokeWidth,
                 isDashed = !isAligned
             )
+
+            // P4-6 双人模式主副标注：在剪影上方绘制"主"/"副"文字
+            // 解决前置摄像头下用户分不清左右主副姿势的痛点
+            val labelColor = silColor.copy(alpha = strokeAlpha)
+            val labelSizePx = 14.sp.toPx()
+            val labelOffsetY = 12.dp.toPx()
+            drawIntoCanvas { canvas ->
+                val paint = android.graphics.Paint().apply {
+                    color = labelColor.toArgb()
+                    textSize = labelSizePx
+                    isAntiAlias = true
+                    textAlign = android.graphics.Paint.Align.CENTER
+                    isFakeBoldText = true
+                }
+                // 左侧标注"主"（主姿势）
+                canvas.drawText(
+                    "主",
+                    leftMainX + silW / 2f,
+                    centerY - silH / 2f - labelOffsetY,
+                    paint
+                )
+                // 右侧标注"副"（备选姿势）
+                canvas.drawText(
+                    "副",
+                    leftSecondaryX + silW / 2f,
+                    centerY - silH / 2f - labelOffsetY,
+                    paint
+                )
+            }
         } else {
             // 单人模式
             val left = centerX - silW / 2f
@@ -1831,6 +2176,24 @@ fun VlogStatusIndicator(
 
 @Composable
 fun PhotoReviewDialog(photoPath: String, onDismiss: () -> Unit) {
+    PhotoReviewDialog(
+        photoPath = photoPath,
+        onDismiss = onDismiss,
+        onShare = null,
+        onDelete = null,
+        onRetake = null
+    )
+}
+
+@Composable
+fun PhotoReviewDialog(
+    photoPath: String,
+    onDismiss: () -> Unit,
+    onShare: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null,
+    onRetake: (() -> Unit)? = null
+) {
+    val context = LocalContext.current
     Dialog(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier
@@ -1856,7 +2219,96 @@ fun PhotoReviewDialog(photoPath: String, onDismiss: () -> Unit) {
                     modifier = Modifier.size(28.dp)
                 )
             }
+
+            // 底部操作栏：分享 / 重拍 / 删除
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(bottom = 48.dp, start = 32.dp, end = 32.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                // 分享按钮
+                ReviewActionButton(
+                    icon = Icons.Default.Share,
+                    label = "分享",
+                    onClick = {
+                        if (onShare != null) {
+                            onShare.invoke()
+                        } else {
+                            val file = java.io.File(photoPath)
+                            if (file.exists()) {
+                                val uri = androidx.core.content.FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.fileprovider",
+                                    file
+                                )
+                                val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "image/jpeg"
+                                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(android.content.Intent.createChooser(shareIntent, "分享照片"))
+                            }
+                        }
+                    }
+                )
+
+                // 重拍按钮
+                if (onRetake != null) {
+                    ReviewActionButton(
+                        icon = Icons.Default.CameraAlt,
+                        label = "重拍",
+                        onClick = {
+                            onRetake.invoke()
+                        }
+                    )
+                }
+
+                // 删除按钮
+                if (onDelete != null) {
+                    ReviewActionButton(
+                        icon = Icons.Default.Delete,
+                        label = "删除",
+                        onClick = {
+                            onDelete.invoke()
+                        }
+                    )
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun ReviewActionButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable(onClick = onClick)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(52.dp)
+                .background(Color.White.copy(alpha = 0.15f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = label,
+            color = Color.White,
+            fontSize = 12.sp
+        )
     }
 }
 
@@ -2170,6 +2622,10 @@ fun FilterItem(
                         PhotoFilterEngine.Filter.VINTAGE -> Color(0xFFD7CCC8)
                         PhotoFilterEngine.Filter.MONO -> Color(0xFF757575)
                         PhotoFilterEngine.Filter.DRAMATIC -> Color(0xFF424242)
+                        PhotoFilterEngine.Filter.FILM -> Color(0xFF8D6E63)     // 柯达胶片棕
+                        PhotoFilterEngine.Filter.NOIR -> Color(0xFF212121)     // 深黑
+                        PhotoFilterEngine.Filter.LIGHT -> Color(0xFFFFF8E1)    // 日系米白
+                        PhotoFilterEngine.Filter.NEON -> Color(0xFF00BCD4)     // 青霓虹
                     }
                 )
                 .border(
@@ -2639,6 +3095,7 @@ fun PoseGuideSheet(
                             com.poseai.app.model.CompositionRule.RULE_OF_THIRDS -> "将人物放在三分线交点处"
                             com.poseai.app.model.CompositionRule.DIAGONAL -> "沿对角线方向摆姿势"
                             com.poseai.app.model.CompositionRule.FRAME_WITHIN_FRAME -> "利用环境框架构图"
+                            com.poseai.app.model.CompositionRule.GOLDEN_SPIRAL -> "沿黄金螺旋曲线摆放，主体在螺旋收敛点"
                         },
                         color = TextSecondary,
                         fontSize = 14.sp,
@@ -2692,6 +3149,159 @@ fun PoseGuideSheet(
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Review Prompt 应用评价引导弹窗（对齐 iOS SKStoreReviewController）
+// 触发条件：拍摄次数累计达到阈值；用户手动 dismiss 后不再重复
+// 实现：弹出友好的评价邀请对话框，引导用户去应用商店评分
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+fun ReviewPromptDialog(
+    onDismiss: () -> Unit,
+    onRateNow: () -> Unit = {},
+    onMaybeLater: () -> Unit = {},
+    onNeverAsk: () -> Unit = {}
+) {
+    val context = LocalContext.current
+    Dialog(onDismissRequest = onDismiss) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Surface, RoundedCornerShape(20.dp))
+                .border(1.dp, Border, RoundedCornerShape(20.dp))
+                .padding(24.dp)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // 顶部图标：五角星
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .background(Accent.copy(alpha = 0.15f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = Accent,
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "喜欢 PoseAI 吗？",
+                    color = TextPrimary,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "您的评分能帮助更多人拍出好照片，也能激励我们持续优化体验",
+                    color = TextSecondary,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 18.sp
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // 五星评分预览（视觉示意）
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    repeat(5) { i ->
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = Accent,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // 主操作：立即评价
+                Button(
+                    onClick = {
+                        // 尝试启动应用商店评分流程
+                        try {
+                            // Google Play 评分 Intent（端侧）
+                            val packageName = context.packageName
+                            val intent = android.content.Intent(
+                                android.content.Intent.ACTION_VIEW,
+                                android.net.Uri.parse("market://details?id=$packageName")
+                            ).apply {
+                                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            context.startActivity(intent)
+                        } catch (_: Exception) {
+                            // 没有 Play Store 时打开网页版
+                            try {
+                                val packageName = context.packageName
+                                val intent = android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
+                                ).apply {
+                                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(intent)
+                            } catch (_: Exception) {
+                                // 完全无应用商店环境，仅关闭弹窗
+                            }
+                        }
+                        onRateNow()
+                        onDismiss()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Accent),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "立即评价",
+                        color = Color.Black,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 次要操作：稍后
+                TextButton(
+                    onClick = {
+                        onMaybeLater()
+                        onDismiss()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "稍后再说",
+                        color = TextSecondary,
+                        fontSize = 14.sp
+                    )
+                }
+
+                // 第三操作：不再询问
+                TextButton(
+                    onClick = {
+                        onNeverAsk()
+                        onDismiss()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "不再询问",
+                        color = TextSecondary.copy(alpha = 0.7f),
+                        fontSize = 12.sp
+                    )
+                }
             }
         }
     }

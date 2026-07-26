@@ -32,6 +32,9 @@ interface ShootingDao {
     @Query("DELETE FROM shooting_records WHERE id = :id")
     suspend fun deleteById(id: Int)
 
+    @Query("DELETE FROM shooting_records WHERE imagePath = :path")
+    suspend fun deleteByPath(path: String)
+
     @Query("DELETE FROM shooting_records")
     suspend fun clearAll()
 }

@@ -88,13 +88,14 @@
   - 基于已有 `bodyBoundingBox` 计算人像在画面中的水平偏移量
   - 当 bbox 中心偏离画面中心 < 5% 时，UI 浮现提示"尝试向左右平移增加留白氛围感"
   - 零额外性能开销（复用已有数据）
-- [ ] **P5-4 拍后调色预设 (CIFilter)** `3h` `差异化`
+- [x] **P5-4 拍后调色预设 (CIFilter)** `3h` `差异化`
   - 仅在 `PhotoPreviewView` 对已拍照片应用 4 套 CIFilter 预设：
     1. `胶片感 Film`：`CIColorCurves` 青暗部 + 暖高光（复刻柯达调性）
     2. `高级黑白 B&W`：`CIPhotoEffectNoir` + `CISharpenLuminance` 大反差强锐度
     3. `日系清透 Light`：`CIExposureAdjust(+0.3)` + `CIVibrance(-0.2)` 低对比过曝
     4. `城市霓虹 Neon`：`CIColorMatrix` Teal & Orange 青橙赛博朋克
   - 实时预览 LUT（V2）需自定义 Metal 渲染层替换 AVCaptureVideoPreviewLayer，暂不纳入
+  - **Android 端侧实现**：`PhotoFilterEngine.kt` 新增 `FILM/NOIR/LIGHT/NEON` 4 套电影级调色滤镜，使用 ColorMatrix + 像素级处理 + 3x3 卷积锐化达到等效 CIFilter 效果；`FilterSelectorBottomSheet` 完整接入滤镜选择 UI
 - [x] **P5-5 人脸 EV 曝光补偿** `2h` `进阶`
   - 利用 Vision 人脸检测锁定坐标后，通过 `AVCaptureDevice.setExposureTargetBias(+0.3~0.7)` 提供人脸提亮
   - 人脸检测必须节流至每 2s 一次（与场景分类同频），避免与 30fps 姿态检测叠加
@@ -147,3 +148,4 @@
 | 2026-04-10 | P5-2 智能裁切双底片 | ✅ 在 onPhotoCapture 时利用 bbox 的相对坐标执行 CGImage.cropping 导出特写 |
 | 2026-04-10 | P5-5 人脸 EV 曝光补偿 | ✅ VisionService 2s 定期添加 VNFaceObservation 请求并反馈给 CameraManager 执行曝光靶心改变 |
 | 2026-04-10 | P5-6 黄金螺旋线构图 | ✅ Canvas 自定义绘制贝塞尔曲线螺旋 |
+| 2026-07-26 | Android 端侧深度自检修复 | ✅ 完成端侧功能对齐：连拍模式 BURST_COUNT=3、双人模式主副标注、黄金螺旋线构图、4 套电影级调色滤镜（FILM/NOIR/LIGHT/NEON）、社交画幅预设、NIGHT_NEON 场景识别、MD5 模型校验、ReviewPromptDialog、Vlog SRT 字幕生成与段间转场 |

@@ -190,6 +190,94 @@ enum class SceneType(
                 composition = CompositionRule.RULE_OF_THIRDS
             )
         )
+    ),
+    NIGHT_NEON(
+        "夜晚霓虹",
+        listOf(
+            ShootingPlan(
+                poseName = "霓虹回眸",
+                poseDescription = "背对霓虹灯招牌，回头侧脸被彩光照亮，眼神带故事感",
+                posePoints = mapOf(
+                    "neck" to android.graphics.PointF(0.5f, 0.25f),
+                    "leftShoulder" to android.graphics.PointF(0.35f, 0.34f),
+                    "rightShoulder" to android.graphics.PointF(0.65f, 0.34f),
+                    "leftElbow" to android.graphics.PointF(0.28f, 0.52f),
+                    "rightElbow" to android.graphics.PointF(0.7f, 0.5f),
+                    "leftWrist" to android.graphics.PointF(0.32f, 0.65f),
+                    "rightWrist" to android.graphics.PointF(0.68f, 0.62f),
+                    "leftHip" to android.graphics.PointF(0.42f, 0.56f),
+                    "rightHip" to android.graphics.PointF(0.58f, 0.56f),
+                    "leftKnee" to android.graphics.PointF(0.4f, 0.78f),
+                    "rightKnee" to android.graphics.PointF(0.6f, 0.78f),
+                    "leftAnkle" to android.graphics.PointF(0.38f, 0.95f),
+                    "rightAnkle" to android.graphics.PointF(0.62f, 0.95f)
+                ),
+                secondaryPosePoints = mapOf(
+                    "neck" to android.graphics.PointF(0.45f, 0.25f),
+                    "leftShoulder" to android.graphics.PointF(0.3f, 0.34f),
+                    "rightShoulder" to android.graphics.PointF(0.6f, 0.34f),
+                    "leftElbow" to android.graphics.PointF(0.22f, 0.52f),
+                    "rightElbow" to android.graphics.PointF(0.65f, 0.5f),
+                    "leftWrist" to android.graphics.PointF(0.25f, 0.65f),
+                    "rightWrist" to android.graphics.PointF(0.63f, 0.62f),
+                    "leftHip" to android.graphics.PointF(0.37f, 0.56f),
+                    "rightHip" to android.graphics.PointF(0.53f, 0.56f),
+                    "leftKnee" to android.graphics.PointF(0.35f, 0.78f),
+                    "rightKnee" to android.graphics.PointF(0.55f, 0.78f),
+                    "leftAnkle" to android.graphics.PointF(0.33f, 0.95f),
+                    "rightAnkle" to android.graphics.PointF(0.57f, 0.95f)
+                ),
+                composition = CompositionRule.RULE_OF_THIRDS,
+                sequence = listOf(
+                    SequenceShot("背对光源", "站在霓虹灯前，背影入镜"),
+                    SequenceShot("侧脸回眸", "转身侧脸，让彩光照亮面部"),
+                    SequenceShot("光影特写", "靠近光源，拍摄光影特写")
+                ),
+                multiAngles = listOf(
+                    MultiAngle("低位仰拍", 15),
+                    MultiAngle("平视回眸", 0),
+                    MultiAngle("高位俯拍", -15)
+                ),
+                vlogScript = VlogTemplate(
+                    name = "霓虹之夜",
+                    clips = listOf(
+                        VlogClip("走进霓虹街区", "开场氛围", 3f),
+                        VlogClip("背对霓虹招牌转身", "回眸杀", 4f),
+                        VlogClip("侧脸靠近光源特写", "光影质感", 3f),
+                        VlogClip("远景全身霓虹剪影", "结尾氛围", 2f)
+                    )
+                )
+            ),
+            ShootingPlan(
+                poseName = "霓虹倚靠",
+                poseDescription = "侧身倚靠在霓虹灯柱旁，一只手轻触灯柱，抬头看光",
+                posePoints = mapOf(
+                    "neck" to android.graphics.PointF(0.6f, 0.22f),
+                    "leftShoulder" to android.graphics.PointF(0.48f, 0.3f),
+                    "rightShoulder" to android.graphics.PointF(0.72f, 0.3f),
+                    "leftElbow" to android.graphics.PointF(0.42f, 0.48f),
+                    "rightElbow" to android.graphics.PointF(0.78f, 0.45f),
+                    "leftWrist" to android.graphics.PointF(0.5f, 0.35f),
+                    "rightWrist" to android.graphics.PointF(0.82f, 0.5f),
+                    "leftHip" to android.graphics.PointF(0.5f, 0.55f),
+                    "rightHip" to android.graphics.PointF(0.66f, 0.55f),
+                    "leftKnee" to android.graphics.PointF(0.48f, 0.76f),
+                    "rightKnee" to android.graphics.PointF(0.64f, 0.78f),
+                    "leftAnkle" to android.graphics.PointF(0.46f, 0.95f),
+                    "rightAnkle" to android.graphics.PointF(0.62f, 0.95f)
+                ),
+                composition = CompositionRule.DIAGONAL,
+                sequence = listOf(
+                    SequenceShot("靠墙站", "侧身倚靠，手自然下垂"),
+                    SequenceShot("抬头看光", "抬头望向霓虹灯源"),
+                    SequenceShot("低头沉思", "低头收下巴，氛围感拉满")
+                ),
+                multiAngles = listOf(
+                    MultiAngle("正面构图", 0),
+                    MultiAngle("侧面剪影", 45)
+                )
+            )
+        )
     )
 }
 
@@ -197,7 +285,9 @@ enum class CompositionRule {
     CENTER,
     RULE_OF_THIRDS,
     DIAGONAL,
-    FRAME_WITHIN_FRAME
+    FRAME_WITHIN_FRAME,
+    // P5-6 黄金螺旋线构图：基于斐波那契数列的螺旋曲线
+    GOLDEN_SPIRAL
 }
 
 data class SequenceShot(

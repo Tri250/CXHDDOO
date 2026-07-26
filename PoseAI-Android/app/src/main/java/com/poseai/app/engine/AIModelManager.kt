@@ -208,6 +208,15 @@ class AIModelManager(context: Context) {
                 return false
             }
 
+            // MD5 完整性校验：防止下载不完整或被篡改
+            if (info.md5.isNotEmpty() && info.md5 != "placeholder_scene_model_md5" && info.md5 != "placeholder_pose_sim_md5") {
+                if (!verifyMd5(tempFile, info.md5)) {
+                    Log.e(TAG, "MD5 校验失败: ${info.id}")
+                    tempFile.delete()
+                    return false
+                }
+            }
+
             // 重命名为正式文件
             val targetFile = File(modelsDir, info.filename)
             if (targetFile.exists()) targetFile.delete()

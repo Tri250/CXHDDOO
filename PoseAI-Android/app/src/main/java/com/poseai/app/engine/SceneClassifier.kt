@@ -35,6 +35,7 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
         "BEACH",
         "PARK",
         "HOME",
+        "NIGHT_NEON",
         "UNKNOWN"
     )
 
@@ -126,6 +127,7 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
             scores[SceneType.HOME] = scoreHome(stats)
             scores[SceneType.COFFEE_SHOP] = scoreCoffeeShop(stats)
             scores[SceneType.STREET] = scoreStreet(stats)
+            scores[SceneType.NIGHT_NEON] = scoreNightNeon(stats)
 
             val best = scores.maxByOrNull { it.value }
             if (best != null && best.value > 0.25f) {
@@ -151,7 +153,9 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
         val greenRatio: Float,
         val blueRatio: Float,
         val warmRatio: Float,
-        val skyBlueRatio: Float
+        val skyBlueRatio: Float,
+        val neonRatio: Float,
+        val darkRatio: Float
     )
 
     private fun computeColorStats(bitmap: Bitmap): ColorStats {
@@ -170,6 +174,8 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
         var bluePixels = 0
         var warmPixels = 0
         var skyBluePixels = 0
+        var neonPixels = 0
+        var darkPixels = 0
         var satSum = 0f
 
         for (i in pixels.indices) {
@@ -195,6 +201,10 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
             if (b > r && b > g && b > 100) bluePixels++
             if (r > b && r > 80 && g > 60) warmPixels++
             if (b > 150 && b > g && b > r && (r + g) < 300) skyBluePixels++
+            // 霓虹灯特征：高饱和度 + 某通道极高值（如纯红/纯蓝/纯品红）
+            if (sat > 0.6f && max > 180) neonPixels++
+            // 暗区像素：亮度 < 50
+            if (lum < 50) darkPixels++
         }
 
         val avgR = sumR.toFloat() / total
@@ -216,7 +226,9 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
             greenRatio = greenPixels.toFloat() / total,
             blueRatio = bluePixels.toFloat() / total,
             warmRatio = warmPixels.toFloat() / total,
-            skyBlueRatio = skyBluePixels.toFloat() / total
+            skyBlueRatio = skyBluePixels.toFloat() / total,
+            neonRatio = neonPixels.toFloat() / total,
+            darkRatio = darkPixels.toFloat() / total
         )
     }
 
@@ -269,6 +281,17 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
         if (neutralBalance < 40) score += 0.25f
         if (stats.saturation in 0.2f..0.45f) score += 0.15f
         if (stats.greenRatio < 0.2f) score += 0.15f
+        return score.coerceIn(0f, 1f)
+    }
+
+    private fun scoreNightNeon(stats: ColorStats): Float {
+        var score = 0f
+        // 霓虹场景核心特征：暗背景 + 高饱和霓虹光源
+        if (stats.darkRatio > 0.3f) score += 0.3f
+        if (stats.neonRatio > 0.08f) score += 0.3f
+        if (stats.brightness < 90f) score += 0.15f
+        if (stats.contrast > 70) score += 0.15f
+        if (stats.saturation > 0.35f) score += 0.1f
         return score.coerceIn(0f, 1f)
     }
 

@@ -68,6 +68,20 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         private const val LOW_LIGHT_THRESHOLD = 50
         private const val AUTO_CAPTURE_SCORE_THRESHOLD = 80f
         private const val SCREEN_FILL_LIGHT_BRIGHTNESS = 0.4f
+        // 关节坐标 EMA 平滑系数：新值权重，越大越灵敏但越抖动
+        private const val POSE_EMA_ALPHA = 0.4f
+        // 连拍模式：每次连拍张数和间隔
+        // P2-1 规范：姿势匹配后自动连拍 3 张
+        private const val BURST_COUNT = 3
+        private const val BURST_INTERVAL_MS = 400L
+        // 留白检测：头部（nose）Y 坐标阈值，大于此值表示头部过低、上方留白过多
+        private const val HEADROOM_WARNING_THRESHOLD = 0.35f
+        // 人脸 EV 联动：人脸区域平均亮度阈值
+        private const val FACE_DARK_THRESHOLD = 80f
+        private const val FACE_BRIGHT_THRESHOLD = 180f
+        // Review Prompt 触发阈值
+        private const val REVIEW_PROMPT_THRESHOLD_1 = 5
+        private const val REVIEW_PROMPT_THRESHOLD_2 = 20
     }
 
     private val app = application as PoseAIApp
@@ -237,6 +251,31 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     private val _focusIndicator = MutableStateFlow<FocusPoint?>(null)
     val focusIndicator: StateFlow<FocusPoint?> = _focusIndicator.asStateFlow()
     private var focusResetJob: Job? = null
+
+    // ====== EMA 关节平滑缓存 ======
+    private var smoothedPosePoints: Map<String, PointF> = emptyMap()
+
+    // ====== 连拍模式 ======
+    private val _isBurstMode = MutableStateFlow(false)
+    val isBurstMode: StateFlow<Boolean> = _isBurstMode.asStateFlow()
+    private var burstJob: Job? = null
+    private val _burstPhotos = MutableStateFlow<List<String>>(emptyList())
+    val burstPhotos: StateFlow<List<String>> = _burstPhotos.asStateFlow()
+
+    // ====== 留白智能提醒 ======
+    private val _isHeadroomWarning = MutableStateFlow(false)
+    val isHeadroomWarning: StateFlow<Boolean> = _isHeadroomWarning.asStateFlow()
+
+    // ====== 姿势亲近度自动推荐 ======
+    private val _autoRecommendEnabled = MutableStateFlow(true)
+    val autoRecommendEnabled: StateFlow<Boolean> = _autoRecommendEnabled.asStateFlow()
+    private val _recommendedPlanIndex = MutableStateFlow(-1)
+    val recommendedPlanIndex: StateFlow<Int> = _recommendedPlanIndex.asStateFlow()
+
+    // ====== Review Prompt ======
+    private val _shouldShowReviewPrompt = MutableStateFlow(false)
+    val shouldShowReviewPrompt: StateFlow<Boolean> = _shouldShowReviewPrompt.asStateFlow()
+    private var reviewPromptShownThreshold = 0
 
     private val vlogTemplates = listOf(
         VlogTemplate(
@@ -474,18 +513,46 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                                 val isValid = PoseUtils.isPoseValid(pose)
 
                                 if (isValid) {
-                                    val detectedMap = PoseUtils.poseToNormalizedMap(
+                                    val rawMap = PoseUtils.poseToNormalizedMap(
                                         pose, width.toFloat(), height.toFloat(), isFront
                                     )
-                                    _detectedPosePoints.value = detectedMap
+                                    // EMA 平滑：对新检测到的关节坐标做指数移动平均，消除抖动
+                                    val smoothedMap = if (smoothedPosePoints.isEmpty()) {
+                                        rawMap
+                                    } else {
+                                        rawMap.mapValues { (key, newPoint) ->
+                                            val prev = smoothedPosePoints[key]
+                                            if (prev != null) {
+                                                PointF(
+                                                    prev.x * (1 - POSE_EMA_ALPHA) + newPoint.x * POSE_EMA_ALPHA,
+                                                    prev.y * (1 - POSE_EMA_ALPHA) + newPoint.y * POSE_EMA_ALPHA
+                                                )
+                                            } else {
+                                                newPoint
+                                            }
+                                        }
+                                    }
+                                    smoothedPosePoints = smoothedMap
+                                    _detectedPosePoints.value = smoothedMap
 
                                     val skeletonLines = PoseUtils.getSkeletonLines(
                                         pose, width.toFloat(), height.toFloat(), isFront
                                     )
                                     _detectedPoseLines.value = skeletonLines
+
+                                    // 留白智能提醒：检测头部上方是否有足够留白
+                                    val nosePoint = smoothedMap["nose"]
+                                    if (nosePoint != null) {
+                                        // nose.y 过大表示头部在画面偏下方，上方留白过多
+                                        _isHeadroomWarning.value = nosePoint.y > HEADROOM_WARNING_THRESHOLD
+                                    } else {
+                                        _isHeadroomWarning.value = false
+                                    }
                                 } else {
+                                    smoothedPosePoints = emptyMap()
                                     _detectedPosePoints.value = emptyMap()
                                     _detectedPoseLines.value = emptyList()
+                                    _isHeadroomWarning.value = false
                                 }
 
                                 if (plan != null && isValid) {
@@ -499,6 +566,29 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                                         width.toFloat(), height.toFloat(), isFront
                                     )
                                     _poseScore.value = score
+
+                                    // 姿势亲近度自动推荐：计算所有方案的相似度，推荐最高分方案
+                                    if (_autoRecommendEnabled.value) {
+                                        val plans = _currentScene.value.plans
+                                        if (plans.size > 1) {
+                                            var bestIdx = _currentPlanIndex.value
+                                            var bestScore = score
+                                            plans.forEachIndexed { idx, p ->
+                                                if (idx != _currentPlanIndex.value) {
+                                                    val tp = p.posePoints
+                                                    val s = PoseUtils.calculateSimilarity(
+                                                        pose, tp,
+                                                        width.toFloat(), height.toFloat(), isFront
+                                                    )
+                                                    if (s > bestScore + 10f) {
+                                                        bestScore = s
+                                                        bestIdx = idx
+                                                    }
+                                                }
+                                            }
+                                            _recommendedPlanIndex.value = bestIdx
+                                        }
+                                    }
                                 }
                             } catch (e: Exception) {
                                 Log.e(TAG, "Pose detection error", e)
@@ -645,8 +735,89 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             } else if (!isLow && cameraManager?.exposureIndex?.value != 0) {
                 cameraManager?.setExposureCompensation(0)
             }
+
+            // 人脸 EV 联动：基于检测到的 nose 位置采样人脸区域亮度
+            val nosePoint = smoothedPosePoints["nose"]
+            if (nosePoint != null) {
+                val faceBrightness = sampleFaceRegionBrightness(buffer, imageProxy.width, imageProxy.height, nosePoint.x, nosePoint.y)
+                buffer.position(position)
+                if (faceBrightness != null) {
+                    adjustExposureForFace(faceBrightness)
+                }
+            }
         } catch (e: Exception) {
             // buffer 读取可能失败，忽略
+        }
+    }
+
+    /**
+     * 采样人脸区域的 Y 通道平均亮度
+     * @param buffer YUV Y 平面 buffer
+     * @param width 帧宽度
+     * @param height 帧高度
+     * @param noseX 归一化 nose X 坐标 [0,1]
+     * @param noseY 归一化 nose Y 坐标 [0,1]
+     * @return 人脸区域平均亮度 (0-255)，或 null 表示采样失败
+     */
+    private fun sampleFaceRegionBrightness(buffer: java.nio.ByteBuffer, width: Int, height: Int, noseX: Float, noseY: Float): Float? {
+        return try {
+            // 人脸区域：以 nose 为中心，上下左右各扩展一定范围
+            val faceRadiusX = (width * 0.12f).toInt()
+            val faceRadiusY = (height * 0.08f).toInt()
+            val centerX = (noseX * width).toInt().coerceIn(faceRadiusX, width - faceRadiusX)
+            val centerY = (noseY * height).toInt().coerceIn(faceRadiusY, height - faceRadiusY)
+
+            var sum = 0L
+            var count = 0
+            val rowStride = width
+            // 采样 5x5 网格
+            for (dy in -faceRadiusY..faceRadiusY step (faceRadiusY / 2).coerceAtLeast(1)) {
+                for (dx in -faceRadiusX..faceRadiusX step (faceRadiusX / 2).coerceAtLeast(1)) {
+                    val px = centerX + dx
+                    val py = centerY + dy
+                    if (px in 0 until width && py in 0 until height) {
+                        val idx = py * rowStride + px
+                        if (idx < buffer.capacity()) {
+                            sum += (buffer.get(idx).toInt() and 0xFF)
+                            count++
+                        }
+                    }
+                }
+            }
+            if (count > 0) sum.toFloat() / count else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * 基于人脸亮度自动调整 EV 曝光补偿
+     * - 人脸过暗（< FACE_DARK_THRESHOLD）：EV+1~2
+     * - 人脸过亮（> FACE_BRIGHT_THRESHOLD）：EV-1
+     * - 正常：EV 归零（如果当前非暗光模式）
+     */
+    private fun adjustExposureForFace(faceBrightness: Float) {
+        // 如果暗光模式已介入，不覆盖其 EV 设置
+        if (_isLowLightWarning.value && _lowLightMode.value) return
+
+        val currentEV = cameraManager?.exposureIndex?.value ?: 0
+        when {
+            faceBrightness < FACE_DARK_THRESHOLD -> {
+                if (currentEV < 2) {
+                    cameraManager?.setExposureCompensation((currentEV + 1).coerceAtMost(2))
+                }
+            }
+            faceBrightness > FACE_BRIGHT_THRESHOLD -> {
+                if (currentEV > -1) {
+                    cameraManager?.setExposureCompensation((currentEV - 1).coerceAtLeast(-1))
+                }
+            }
+            else -> {
+                // 人脸亮度正常，如果 EV 不为 0 且没有手动设置，归零
+                if (currentEV != 0 && !_isLowLightWarning.value) {
+                    cameraManager?.setExposureCompensation(0)
+                }
+            }
         }
     }
 
@@ -658,6 +829,11 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
      */
     fun takePhoto() {
         if (_isVlogRecording.value || _isVlogMerging.value) return
+        // 连拍模式：直接执行连拍
+        if (_isBurstMode.value) {
+            executeBurstCapture()
+            return
+        }
         if (_countdownValue.value > 0) {
             // 倒计时进行中：取消并立即触发
             cancelCountdown()
@@ -725,6 +901,8 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                         processAndSavePhoto(path)
                         // 保存成功：成功触觉反馈
                         vibrateSuccess()
+                        // Review Prompt 计数
+                        checkReviewPromptTrigger()
                     } catch (e: Exception) {
                         Log.e(TAG, "Photo processing failed", e)
                         _photoSaveError.value = "照片保存失败：${e.message ?: "未知错误"}"
@@ -733,6 +911,109 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             } else {
                 _photoSaveError.value = "拍照失败：${path ?: "相机未就绪"}"
             }
+        }
+    }
+
+    // ====== 连拍模式 ======
+
+    /**
+     * 切换连拍模式开关
+     */
+    fun toggleBurstMode(): Boolean {
+        _isBurstMode.value = !_isBurstMode.value
+        if (!_isBurstMode.value) {
+            stopBurst()
+        }
+        return _isBurstMode.value
+    }
+
+    /**
+     * 执行连拍：快速连续拍摄 BURST_COUNT 张照片
+     */
+    fun executeBurstCapture() {
+        if (_isVlogRecording.value || _isVlogMerging.value) return
+        if (burstJob?.isActive == true) return
+
+        _burstPhotos.value = emptyList()
+        burstJob = viewModelScope.launch {
+            val capturedPaths = mutableListOf<String>()
+            for (i in 0 until BURST_COUNT) {
+                val manager = cameraManager ?: break
+                val photoFile = File(photoOutputDir, "burst_${UUID.randomUUID()}.jpg")
+
+                // 连拍只拍照不弹预览，避免打断节奏
+                val success = kotlinx.coroutines.suspendCancellableCoroutine<Boolean> { cont ->
+                    manager.takePhoto(photoFile) { ok, path ->
+                        if (cont.isActive) cont.resume(ok)
+                    }
+                }
+
+                if (success) {
+                    capturedPaths.add(photoFile.absolutePath)
+                    // 后台处理保存
+                    viewModelScope.launch(Dispatchers.IO) {
+                        try {
+                            processAndSavePhoto(photoFile.absolutePath)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Burst photo processing failed", e)
+                        }
+                    }
+                }
+
+                if (i < BURST_COUNT - 1) {
+                    delay(BURST_INTERVAL_MS)
+                }
+            }
+
+            // 连拍完成反馈
+            vibrateSuccess()
+            _burstPhotos.value = capturedPaths
+        }
+    }
+
+    /**
+     * 停止连拍
+     */
+    fun stopBurst() {
+        burstJob?.cancel()
+        burstJob = null
+    }
+
+    /**
+     * Review Prompt 触发检查：在特定拍照次数时提示评价
+     */
+    private fun checkReviewPromptTrigger() {
+        val count = _captureCount.value
+        if (count >= REVIEW_PROMPT_THRESHOLD_2 && reviewPromptShownThreshold < REVIEW_PROMPT_THRESHOLD_2) {
+            _shouldShowReviewPrompt.value = true
+            reviewPromptShownThreshold = REVIEW_PROMPT_THRESHOLD_2
+        } else if (count >= REVIEW_PROMPT_THRESHOLD_1 && reviewPromptShownThreshold < REVIEW_PROMPT_THRESHOLD_1) {
+            _shouldShowReviewPrompt.value = true
+            reviewPromptShownThreshold = REVIEW_PROMPT_THRESHOLD_1
+        }
+    }
+
+    /** 用户已看到 Review Prompt，不再重复提示 */
+    fun dismissReviewPrompt() {
+        _shouldShowReviewPrompt.value = false
+    }
+
+    /** 切换自动推荐开关 */
+    fun setAutoRecommendEnabled(enabled: Boolean) {
+        _autoRecommendEnabled.value = enabled
+        if (!enabled) {
+            _recommendedPlanIndex.value = -1
+        }
+    }
+
+    /**
+     * 接受推荐方案：切换到推荐的 plan
+     */
+    fun acceptRecommendedPlan() {
+        val rec = _recommendedPlanIndex.value
+        if (rec >= 0 && rec != _currentPlanIndex.value) {
+            selectPlan(rec)
+            _recommendedPlanIndex.value = -1
         }
     }
 
@@ -1224,10 +1505,28 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                         _displayVlogText.value = ""
                     }
                 } else {
+                    // 构建字幕条目：根据每段视频的开始时间和时长生成
+                    val subtitles = mutableListOf<VideoMerger.SubtitleEntry>()
+                    var currentTimeUs = 0L
+                    vlog.clips.forEachIndexed { idx, clip ->
+                        val durationUs = (clip.duration * 1_000_000).toLong()
+                        subtitles.add(VideoMerger.SubtitleEntry(
+                            startTimeUs = currentTimeUs,
+                            endTimeUs = currentTimeUs + durationUs,
+                            text = clip.overlayText
+                        ))
+                        currentTimeUs += durationUs
+                        // 加上转场间隙
+                        if (idx < vlog.clips.size - 1) {
+                            currentTimeUs += 200_000L
+                        }
+                    }
+
                     val merged = VideoMerger.merge(
                         videoFiles = chunks,
                         bgmFile = bgmFile,
-                        outputDir = videoOutputDir
+                        outputDir = videoOutputDir,
+                        subtitles = subtitles
                     )
                     withContext(Dispatchers.Main) {
                         if (merged != null) {
@@ -1265,6 +1564,42 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     fun closePhotoReview() {
         _isReviewingPhoto.value = false
         _lastCapturedPhotoPath.value = null
+    }
+
+    /**
+     * 创建社交分享 Intent：通过系统分享面板分享照片
+     * @param photoPath 照片文件路径
+     * @return 配置好的 Intent，或 null 表示文件不存在
+     */
+    fun createShareIntent(photoPath: String): android.content.Intent? {
+        val file = File(photoPath)
+        if (!file.exists()) return null
+        val uri = androidx.core.content.FileProvider.getUriForFile(
+            app,
+            "${app.packageName}.fileprovider",
+            file
+        )
+        return android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = "image/jpeg"
+            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+    }
+
+    /**
+     * 删除照片文件并从数据库移除记录
+     * @param photoPath 照片文件路径
+     */
+    fun deletePhoto(photoPath: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val file = File(photoPath)
+                if (file.exists()) file.delete()
+                app.database.shootingDao().deleteByPath(photoPath)
+            } catch (e: Exception) {
+                Log.e(TAG, "Delete photo failed", e)
+            }
+        }
     }
 
     fun closeVlogReview() {
@@ -1423,6 +1758,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         stopAutoCapture()
         stopVlog()
         cancelCountdown()
+        stopBurst()
         flashResetJob?.cancel()
         focusResetJob?.cancel()
         distanceHintResetJob?.cancel()
