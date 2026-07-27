@@ -38,10 +38,13 @@ import com.poseai.app.engine.SceneClassifier
 import com.poseai.app.engine.SmileDetector
 import com.poseai.app.model.SceneType
 import com.poseai.app.model.ShootingPlan
+import com.poseai.app.model.CompositionRule
 import com.poseai.app.model.VlogClip
 import com.poseai.app.model.VlogTemplate
 import com.poseai.app.store.StoreManager
 import com.poseai.app.util.PhotoFilterEngine
+import com.poseai.app.util.BeautyEngine
+import com.poseai.app.util.ShareEngine
 import com.poseai.app.util.VideoMerger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -87,6 +90,12 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
 
     private val app = application as PoseAIApp
     private val storeManager: StoreManager = app.storeManager
+    private val customPoseStore = app.customPoseStore
+
+    init {
+        // 加载已保存的自定义姿势
+        _customPoses.value = customPoseStore.loadAll()
+    }
 
     private var cameraManager: CameraManager? = null
     private var poseDetector: PoseDetectorEngine? = null
@@ -111,7 +120,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     val currentPlanIndex: StateFlow<Int> = _currentPlanIndex.asStateFlow()
 
     val currentPlan: ShootingPlan?
-        get() = _currentScene.value.plans.getOrNull(_currentPlanIndex.value)
+        get() = _customActivePlan ?: _currentScene.value.plans.getOrNull(_currentPlanIndex.value)
 
     private val _poseScore = MutableStateFlow(0f)
     val poseScore: StateFlow<Float> = _poseScore.asStateFlow()
@@ -207,6 +216,27 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     private val _currentFilter = MutableStateFlow(PhotoFilterEngine.Filter.ORIGINAL)
     val currentFilter: StateFlow<PhotoFilterEngine.Filter> = _currentFilter.asStateFlow()
 
+    /** 滤镜强度 0-100（默认 100 = 完全应用滤镜） */
+    private val _filterIntensity = MutableStateFlow(100)
+    val filterIntensity: StateFlow<Int> = _filterIntensity.asStateFlow()
+
+    // ── 美颜参数 ──
+    /** 磨皮强度 0-100 */
+    private val _smoothingLevel = MutableStateFlow(0)
+    val smoothingLevel: StateFlow<Int> = _smoothingLevel.asStateFlow()
+
+    /** 美白强度 0-100 */
+    private val _whiteningLevel = MutableStateFlow(0)
+    val whiteningLevel: StateFlow<Int> = _whiteningLevel.asStateFlow()
+
+    /** 瘦脸强度 0-100 */
+    private val _slimmingLevel = MutableStateFlow(0)
+    val slimmingLevel: StateFlow<Int> = _slimmingLevel.asStateFlow()
+
+    /** 美颜总开关 */
+    private val _beautyEnabled = MutableStateFlow(false)
+    val beautyEnabled: StateFlow<Boolean> = _beautyEnabled.asStateFlow()
+
     /** 当前社交画幅预设（激活 AspectRatio 枚举和 applySmartCropByRatio 死代码） */
     private val _currentAspectRatio = MutableStateFlow(PhotoFilterEngine.AspectRatio.RATIO_4_5)
     val currentAspectRatio: StateFlow<PhotoFilterEngine.AspectRatio> = _currentAspectRatio.asStateFlow()
@@ -217,6 +247,19 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     private val _zoomLevel = MutableStateFlow(1f)
     val zoomLevel: StateFlow<Float> = _zoomLevel.asStateFlow()
 
+    // ── 画质设置 ──
+    /** JPEG 压缩质量（50-100），默认 90 */
+    private val _jpegQuality = MutableStateFlow(90)
+    val jpegQuality: StateFlow<Int> = _jpegQuality.asStateFlow()
+
+    /** 输出格式：0=JPEG, 1=WEBP */
+    private val _outputFormat = MutableStateFlow(0)
+    val outputFormat: StateFlow<Int> = _outputFormat.asStateFlow()
+
+    /** HDR 开关（软件 HDR 色调映射，所有设备可用） */
+    private val _hdrEnabled = MutableStateFlow(false)
+    val hdrEnabled: StateFlow<Boolean> = _hdrEnabled.asStateFlow()
+
     private val _showSceneSelector = MutableStateFlow(false)
     val showSceneSelector: StateFlow<Boolean> = _showSceneSelector.asStateFlow()
 
@@ -225,6 +268,49 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
 
     private val _showVlogTemplateSelector = MutableStateFlow(false)
     val showVlogTemplateSelector: StateFlow<Boolean> = _showVlogTemplateSelector.asStateFlow()
+
+    // ── 分享配置 ──
+    private val _showShareSheet = MutableStateFlow(false)
+    val showShareSheet: StateFlow<Boolean> = _showShareSheet.asStateFlow()
+
+    /** 当前分享的照片路径（进入分享面板时设置） */
+    private val _sharePhotoPath = MutableStateFlow<String?>(null)
+    val sharePhotoPath: StateFlow<String?> = _sharePhotoPath.asStateFlow()
+
+    /** 水印风格 */
+    private val _watermarkStyle = MutableStateFlow(ShareEngine.WatermarkStyle.SIGNATURE)
+    val watermarkStyle: StateFlow<ShareEngine.WatermarkStyle> = _watermarkStyle.asStateFlow()
+
+    /** 水印位置 */
+    private val _watermarkPosition = MutableStateFlow(ShareEngine.WatermarkPosition.BOTTOM_LEFT)
+    val watermarkPosition: StateFlow<ShareEngine.WatermarkPosition> = _watermarkPosition.asStateFlow()
+
+    /** 用户名（水印用） */
+    private val _shareUsername = MutableStateFlow("")
+    val shareUsername: StateFlow<String> = _shareUsername.asStateFlow()
+
+    /** 地点（水印用） */
+    private val _shareLocation = MutableStateFlow("")
+    val shareLocation: StateFlow<String> = _shareLocation.asStateFlow()
+
+    /** 话题列表 */
+    private val _shareTopics = MutableStateFlow<List<String>>(emptyList())
+    val shareTopics: StateFlow<List<String>> = _shareTopics.asStateFlow()
+
+    /** 分享文案 */
+    private val _shareCaption = MutableStateFlow("")
+    val shareCaption: StateFlow<String> = _shareCaption.asStateFlow()
+
+    // ── 自定义姿势 ──
+    private val _customPoses = MutableStateFlow<List<com.poseai.app.store.CustomPose>>(emptyList())
+    val customPoses: StateFlow<List<com.poseai.app.store.CustomPose>> = _customPoses.asStateFlow()
+
+    private val _showCustomPoseSheet = MutableStateFlow(false)
+    val showCustomPoseSheet: StateFlow<Boolean> = _showCustomPoseSheet.asStateFlow()
+
+    /** 是否正在预览自定义姿势（用于切换提示文案） */
+    private val _activeCustomPoseId = MutableStateFlow<String?>(null)
+    val activeCustomPoseId: StateFlow<String?> = _activeCustomPoseId.asStateFlow()
 
     // ====== 倒计时 / 闪光 / 沉浸 / 俯拍警告 / Vlog 失败兜底 ======
 
@@ -470,6 +556,10 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             // 激活 autoRecommendInterval 持久化：恢复自动抓拍间隔
             val savedInterval = storeManager.autoRecommendInterval.first()
             _autoRecommendInterval.value = savedInterval
+            // 激活画质设置持久化：JPEG 质量 / 输出格式 / HDR
+            _jpegQuality.value = storeManager.jpegQuality.first()
+            _outputFormat.value = storeManager.outputFormat.first()
+            _hdrEnabled.value = storeManager.hdrEnabled.first()
         }
 
         // 持续监听偏好变化
@@ -497,6 +587,16 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         // 持续监听 autoRecommendEnabled
         viewModelScope.launch {
             storeManager.autoRecommendEnabled.collect { _autoRecommendEnabled.value = it }
+        }
+        // 持续监听画质设置变化（多进程/其他页面修改时同步）
+        viewModelScope.launch {
+            storeManager.jpegQuality.collect { _jpegQuality.value = it }
+        }
+        viewModelScope.launch {
+            storeManager.outputFormat.collect { _outputFormat.value = it }
+        }
+        viewModelScope.launch {
+            storeManager.hdrEnabled.collect { _hdrEnabled.value = it }
         }
 
         // 激活 cameraLens 持久化：根据上次保存的镜头选择启动相机
@@ -1029,11 +1129,18 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                 }
 
                 if (success) {
-                    capturedPaths.add(photoFile.absolutePath)
-                    // 后台处理保存
+                    val originalPath = photoFile.absolutePath
+                    capturedPaths.add(originalPath)
+                    // 后台处理保存：使用返回的最终路径替换原始路径（WEBP 时会变更）
                     viewModelScope.launch(Dispatchers.IO) {
                         try {
-                            processAndSavePhoto(photoFile.absolutePath)
+                            val finalPath = processAndSavePhoto(originalPath)
+                            if (finalPath != null && finalPath != originalPath) {
+                                // WEBP 格式转换：更新 capturedPaths 中的路径
+                                val idx = capturedPaths.indexOf(originalPath)
+                                if (idx >= 0) capturedPaths[idx] = finalPath
+                                _burstPhotos.value = capturedPaths.toList()
+                            }
                         } catch (e: Exception) {
                             Log.e(TAG, "Burst photo processing failed", e)
                         }
@@ -1205,12 +1312,15 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         _photoSaveError.value = null
     }
 
-    private suspend fun processAndSavePhoto(path: String) {
+    private suspend fun processAndSavePhoto(path: String): String? {
         var bitmap: Bitmap? = BitmapFactory.decodeFile(path)
         if (bitmap == null) {
             Log.e(TAG, "Failed to decode photo: $path")
-            return
+            return null
         }
+
+        // 最终保存路径（WEBP 格式时需要更换扩展名）
+        var savedPath = path
 
         try {
             // 暗光降噪
@@ -1222,13 +1332,67 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                 }
             }
 
-            // 应用滤镜
+            // HDR 色调映射（画质设置：暗部提亮 + 高光压缩）
+            if (_hdrEnabled.value && bitmap != null) {
+                val hdr = PhotoFilterEngine.applyHdrToneMapping(bitmap!!)
+                if (hdr !== bitmap) {
+                    bitmap?.recycle()
+                    bitmap = hdr
+                }
+            }
+
+            // 美颜处理（磨皮 → 美白 → 瘦脸）
+            if (_beautyEnabled.value && bitmap != null) {
+                val smoothed = if (_smoothingLevel.value > 0) {
+                    BeautyEngine.applySmoothing(bitmap!!, _smoothingLevel.value)
+                } else bitmap!!
+                if (smoothed !== bitmap) {
+                    bitmap?.recycle()
+                    bitmap = smoothed
+                }
+
+                val whitened = if (_whiteningLevel.value > 0) {
+                    BeautyEngine.applyWhitening(bitmap!!, _whiteningLevel.value)
+                } else bitmap!!
+                if (whitened !== bitmap) {
+                    bitmap?.recycle()
+                    bitmap = whitened
+                }
+
+                // 瘦脸需要人脸关键点，暂用默认估算（脸中心 = 图片中上区域）
+                if (_slimmingLevel.value > 0 && bitmap != null) {
+                    val w = bitmap!!.width
+                    val h = bitmap!!.height
+                    val landmarks = BeautyEngine.FaceLandmarks(
+                        leftCheek = android.graphics.PointF(w * 0.35f, h * 0.4f),
+                        rightCheek = android.graphics.PointF(w * 0.65f, h * 0.4f),
+                        faceWidth = w * 0.5f,
+                        faceCenter = android.graphics.PointF(w * 0.5f, h * 0.35f)
+                    )
+                    val slimmed = BeautyEngine.applyFaceSlimming(bitmap!!, _slimmingLevel.value, landmarks)
+                    if (slimmed !== bitmap) {
+                        bitmap?.recycle()
+                        bitmap = slimmed
+                    }
+                }
+            }
+
+            // 应用滤镜（含强度调节）
             val filter = _currentFilter.value
             if (filter != PhotoFilterEngine.Filter.ORIGINAL && bitmap != null) {
                 val filtered = PhotoFilterEngine.applyFilter(bitmap!!, filter)
                 if (filtered !== bitmap) {
-                    bitmap?.recycle()
-                    bitmap = filtered
+                    // 滤镜强度混合：intensity=100 → 完全滤镜，intensity=0 → 完全原图
+                    val intensity = _filterIntensity.value / 100f
+                    if (intensity < 1f) {
+                        val blended = PhotoFilterEngine.blendBitmaps(bitmap!!, filtered, 1f - intensity)
+                        filtered.recycle()
+                        bitmap?.recycle()
+                        bitmap = blended
+                    } else {
+                        bitmap?.recycle()
+                        bitmap = filtered
+                    }
                 }
             }
 
@@ -1241,12 +1405,29 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                 }
             }
 
-            // 智能裁切（使用当前画幅预设，激活 AspectRatio 死代码）
+            // 智能裁切（使用当前画幅预设）+ 按画质设置保存
             if (bitmap != null) {
                 val cropped = PhotoFilterEngine.applySmartCropByRatio(bitmap!!, _currentAspectRatio.value)
-                // 保存裁切结果
-                FileOutputStream(path).use { out ->
-                    cropped.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                // 画质设置：JPEG 质量 + 输出格式（JPEG/WEBP）
+                val quality = _jpegQuality.value.coerceIn(50, 100)
+                val useWebp = _outputFormat.value == 1
+                // WEBP 格式时更换文件扩展名，避免 .jpg 文件写入 WEBP 数据导致解码失败
+                if (useWebp && path.endsWith(".jpg", ignoreCase = true)) {
+                    val webpFile = File(path.substringBeforeLast('.') + ".webp")
+                    savedPath = webpFile.absolutePath
+                    FileOutputStream(webpFile).use { out ->
+                        cropped.compress(Bitmap.CompressFormat.WEBP, quality, out)
+                    }
+                    // 删除原始 jpg 文件（已写入 webp 副本）
+                    try {
+                        File(path).takeIf { it.exists() && it.absolutePath != savedPath }?.delete()
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to delete original jpg after webp save", e)
+                    }
+                } else {
+                    FileOutputStream(path).use { out ->
+                        cropped.compress(Bitmap.CompressFormat.JPEG, quality, out)
+                    }
                 }
                 if (cropped !== bitmap) {
                     cropped.recycle()
@@ -1258,16 +1439,17 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                 scene = _currentScene.value.name,
                 poseName = currentPlan?.poseName ?: "",
                 score = _poseScore.value,
-                imagePath = path
+                imagePath = savedPath
             )
             app.database.shootingDao().insert(record)
             _captureCount.value += 1
 
             // 更新 UI 状态（切到主线程）
             withContext(Dispatchers.Main) {
-                _lastCapturedPhotoPath.value = path
+                _lastCapturedPhotoPath.value = savedPath
                 _isReviewingPhoto.value = true
             }
+            return savedPath
         } finally {
             bitmap?.recycle()
         }
@@ -1361,6 +1543,9 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         _currentSequenceIndex.value = 0
         _currentAngleIndex.value = 0
         _useSecondaryPose.value = false
+        // 切换场景时清除自定义姿势，恢复内置方案
+        _customActivePlan = null
+        _activeCustomPoseId.value = null
         // 切换场景时取消进行中的倒计时，避免拍到旧场景
         cancelCountdown()
         // 关闭所有选择器
@@ -1885,6 +2070,241 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         val values = PhotoFilterEngine.Filter.values()
         val idx = values.indexOf(_currentFilter.value)
         _currentFilter.value = values[(idx - 1 + values.size) % values.size]
+    }
+
+    // ====== 滤镜强度控制 ======
+
+    fun setFilterIntensity(intensity: Int) {
+        _filterIntensity.value = intensity.coerceIn(0, 100)
+    }
+
+    // ====== 美颜控制 ======
+
+    fun setBeautyEnabled(enabled: Boolean) {
+        _beautyEnabled.value = enabled
+    }
+
+    fun setSmoothingLevel(level: Int) {
+        _smoothingLevel.value = level.coerceIn(0, 100)
+    }
+
+    fun setWhiteningLevel(level: Int) {
+        _whiteningLevel.value = level.coerceIn(0, 100)
+    }
+
+    fun setSlimmingLevel(level: Int) {
+        _slimmingLevel.value = level.coerceIn(0, 100)
+    }
+
+    /** 一键美颜：设置预设强度 */
+    fun applyQuickBeauty() {
+        _beautyEnabled.value = true
+        _smoothingLevel.value = 40
+        _whiteningLevel.value = 30
+        _slimmingLevel.value = 20
+    }
+
+    /** 关闭美颜 */
+    fun disableBeauty() {
+        _beautyEnabled.value = false
+        _smoothingLevel.value = 0
+        _whiteningLevel.value = 0
+        _slimmingLevel.value = 0
+    }
+
+    // ====== 画质控制 ======
+
+    /** 设置 JPEG 压缩质量（50-100） */
+    fun setJpegQuality(value: Int) {
+        val clamped = value.coerceIn(50, 100)
+        _jpegQuality.value = clamped
+        viewModelScope.launch { storeManager.setJpegQuality(clamped) }
+    }
+
+    /** 设置输出格式：0=JPEG, 1=WEBP */
+    fun setOutputFormat(value: Int) {
+        val clamped = value.coerceIn(0, 1)
+        _outputFormat.value = clamped
+        viewModelScope.launch { storeManager.setOutputFormat(clamped) }
+    }
+
+    /** 设置 HDR 开关 */
+    fun setHdrEnabled(value: Boolean) {
+        _hdrEnabled.value = value
+        viewModelScope.launch { storeManager.setHdrEnabled(value) }
+    }
+
+    // ====== 分享控制 ======
+
+    /** 打开分享面板 */
+    fun openShareSheet(photoPath: String?) {
+        _sharePhotoPath.value = photoPath
+        // 用当前场景名作为水印副文本默认值
+        val sceneName = _currentScene.value.displayName
+        _watermarkStyle.value = if (_watermarkEnabled.value) {
+            ShareEngine.WatermarkStyle.SIGNATURE
+        } else {
+            ShareEngine.WatermarkStyle.NONE
+        }
+        // 注：sceneName 通过 buildShareConfig 时取自 currentScene
+        _showShareSheet.value = true
+    }
+
+    fun closeShareSheet() {
+        _showShareSheet.value = false
+    }
+
+    fun setWatermarkStyle(style: ShareEngine.WatermarkStyle) {
+        _watermarkStyle.value = style
+    }
+
+    fun setWatermarkPosition(position: ShareEngine.WatermarkPosition) {
+        _watermarkPosition.value = position
+    }
+
+    fun setShareUsername(name: String) {
+        _shareUsername.value = name
+    }
+
+    fun setShareLocation(location: String) {
+        _shareLocation.value = location
+    }
+
+    fun setShareCaption(caption: String) {
+        _shareCaption.value = caption
+    }
+
+    /** 添加话题（自动去重、去空、限长 20） */
+    fun addTopic(topic: String) {
+        val cleaned = topic.trim().replace("#", "").replace(" ", "")
+        if (cleaned.isEmpty()) return
+        val current = _shareTopics.value.toMutableList()
+        if (cleaned !in current) {
+            current.add(cleaned)
+            if (current.size > 8) current.removeAt(0) // 最多 8 个话题
+            _shareTopics.value = current
+        }
+    }
+
+    /** 移除话题 */
+    fun removeTopic(topic: String) {
+        _shareTopics.value = _shareTopics.value.filterNot { it == topic }
+    }
+
+    /** 清空话题 */
+    fun clearTopics() {
+        _shareTopics.value = emptyList()
+    }
+
+    /** 构建当前分享配置 */
+    fun buildShareConfig(): ShareEngine.ShareConfig {
+        return ShareEngine.ShareConfig(
+            watermarkStyle = _watermarkStyle.value,
+            watermarkPosition = _watermarkPosition.value,
+            username = _shareUsername.value,
+            location = _shareLocation.value,
+            sceneName = _currentScene.value.displayName,
+            topics = _shareTopics.value,
+            caption = _shareCaption.value
+        )
+    }
+
+    /**
+     * 执行系统分享（在 IO 线程准备图片，主线程启动分享面板）
+     * @return true 表示成功启动分享面板
+     */
+    suspend fun executeShare(context: android.content.Context): Boolean {
+        val photoPath = _sharePhotoPath.value ?: return false
+        val config = buildShareConfig()
+        return withContext(Dispatchers.IO) {
+            ShareEngine.shareToSystem(context, photoPath, config)
+        }
+    }
+
+    // ====== 自定义姿势控制 ======
+
+    /** 打开自定义姿势面板 */
+    fun openCustomPoseSheet() {
+        _customPoses.value = customPoseStore.loadAll()
+        _showCustomPoseSheet.value = true
+    }
+
+    fun closeCustomPoseSheet() {
+        _showCustomPoseSheet.value = false
+    }
+
+    /**
+     * 保存当前检测到的姿势为自定义模板
+     *
+     * 从 _detectedPosePoints 提取归一化坐标，存入 CustomPoseStore。
+     * 要求至少检测到 3 个关键点才能保存。
+     *
+     * @param name 姿势名称
+     * @param description 姿势描述
+     * @return true 表示保存成功
+     */
+    fun saveCurrentPoseAsCustom(name: String, description: String): Boolean {
+        val points = _detectedPosePoints.value
+        if (points.size < 3) return false
+        val cleanedName = name.trim().ifEmpty { "我的姿势" }
+        val pose = com.poseai.app.store.CustomPose(
+            name = cleanedName,
+            description = description.trim(),
+            posePoints = points.toMap()
+        )
+        val ok = customPoseStore.save(pose)
+        if (ok) {
+            _customPoses.value = customPoseStore.loadAll()
+        }
+        return ok
+    }
+
+    /** 删除自定义姿势 */
+    fun deleteCustomPose(id: String): Boolean {
+        val ok = customPoseStore.delete(id)
+        if (ok) {
+            _customPoses.value = customPoseStore.loadAll()
+            if (_activeCustomPoseId.value == id) {
+                _activeCustomPoseId.value = null
+            }
+        }
+        return ok
+    }
+
+    /**
+     * 应用自定义姿势为当前目标
+     *
+     * 将 CustomPose 转为临时 ShootingPlan，替换当前场景的方案列表头部，
+     * 这样姿势匹配、剪影绘制、相似度计算等链路无需改动即可工作。
+     */
+    fun applyCustomPose(pose: com.poseai.app.store.CustomPose) {
+        val plan = ShootingPlan(
+            poseName = pose.name,
+            poseDescription = pose.description.ifEmpty { "自定义姿势" },
+            posePoints = pose.posePoints,
+            composition = CompositionRule.CENTER
+        )
+        // 将自定义姿势作为唯一方案注入当前场景的运行时副本
+        _customActivePlan = plan
+        _currentPlanIndex.value = 0
+        _poseScore.value = 0f
+        _currentSequenceIndex.value = 0
+        _currentAngleIndex.value = 0
+        _useSecondaryPose.value = false
+        _activeCustomPoseId.value = pose.id
+        cancelCountdown()
+    }
+
+    /** 当前激活的自定义方案（非 null 时覆盖 currentPlan） */
+    @Volatile
+    private var _customActivePlan: ShootingPlan? = null
+
+    /** 清除自定义姿势，恢复内置场景方案 */
+    fun clearCustomPose() {
+        _customActivePlan = null
+        _activeCustomPoseId.value = null
+        _poseScore.value = 0f
+        _currentPlanIndex.value = 0
     }
 
     // ====== 曝光补偿控制 ======

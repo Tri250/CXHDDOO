@@ -62,6 +62,7 @@ import com.poseai.app.model.SceneType
 import com.poseai.app.model.ShootingPlan
 import com.poseai.app.ui.theme.*
 import com.poseai.app.util.PhotoFilterEngine
+import com.poseai.app.util.ShareEngine
 import com.poseai.app.ui.theme.Dimens
 import com.poseai.app.viewmodel.ShootingViewModel
 import kotlinx.coroutines.launch
@@ -105,8 +106,24 @@ fun ShootingScreen(
     val detectedPoseLines by viewModel.detectedPoseLines.collectAsState()
     val detectedPosePoints by viewModel.detectedPosePoints.collectAsState()
     val currentFilter by viewModel.currentFilter.collectAsState()
+    val filterIntensity by viewModel.filterIntensity.collectAsState()
+    val beautyEnabled by viewModel.beautyEnabled.collectAsState()
+    val smoothingLevel by viewModel.smoothingLevel.collectAsState()
+    val whiteningLevel by viewModel.whiteningLevel.collectAsState()
+    val slimmingLevel by viewModel.slimmingLevel.collectAsState()
     val showSceneSelector by viewModel.showSceneSelector.collectAsState()
     val showFilterSelector by viewModel.showFilterSelector.collectAsState()
+    val showShareSheet by viewModel.showShareSheet.collectAsState()
+    val sharePhotoPath by viewModel.sharePhotoPath.collectAsState()
+    val watermarkStyle by viewModel.watermarkStyle.collectAsState()
+    val watermarkPosition by viewModel.watermarkPosition.collectAsState()
+    val shareUsername by viewModel.shareUsername.collectAsState()
+    val shareLocation by viewModel.shareLocation.collectAsState()
+    val shareTopics by viewModel.shareTopics.collectAsState()
+    val shareCaption by viewModel.shareCaption.collectAsState()
+    val customPoses by viewModel.customPoses.collectAsState()
+    val showCustomPoseSheet by viewModel.showCustomPoseSheet.collectAsState()
+    val activeCustomPoseId by viewModel.activeCustomPoseId.collectAsState()
     val showVlogTemplateSelector by viewModel.showVlogTemplateSelector.collectAsState()
     val watermarkEnabled by viewModel.watermarkEnabled.collectAsState()
     val lowLightMode by viewModel.lowLightMode.collectAsState()
@@ -649,9 +666,7 @@ fun ShootingScreen(
                 photoPath = lastPhotoPath!!,
                 onDismiss = { viewModel.closePhotoReview() },
                 onShare = {
-                    viewModel.createShareIntent(lastPhotoPath!!)?.let { intent ->
-                        context.startActivity(android.content.Intent.createChooser(intent, "分享照片"))
-                    }
+                    viewModel.openShareSheet(lastPhotoPath!!)
                 },
                 onDelete = {
                     viewModel.deletePhoto(lastPhotoPath!!)
@@ -703,11 +718,75 @@ fun ShootingScreen(
         if (showFilterSelector) {
             FilterSelectorBottomSheet(
                 currentFilter = currentFilter,
+                filterIntensity = filterIntensity,
+                beautyEnabled = beautyEnabled,
+                smoothingLevel = smoothingLevel,
+                whiteningLevel = whiteningLevel,
+                slimmingLevel = slimmingLevel,
                 onFilterSelected = {
                     viewModel.setFilter(it)
                     viewModel.toggleFilterSelector()
                 },
+                onFilterIntensityChanged = { viewModel.setFilterIntensity(it) },
+                onBeautyEnabledChanged = { viewModel.setBeautyEnabled(it) },
+                onSmoothingChanged = { viewModel.setSmoothingLevel(it) },
+                onWhiteningChanged = { viewModel.setWhiteningLevel(it) },
+                onSlimmingChanged = { viewModel.setSlimmingLevel(it) },
+                onQuickBeauty = { viewModel.applyQuickBeauty() },
+                onDisableBeauty = { viewModel.disableBeauty() },
                 onDismiss = { viewModel.toggleFilterSelector() }
+            )
+        }
+
+        // ── 分享面板 ──
+        if (showShareSheet) {
+            ShareBottomSheet(
+                photoPath = sharePhotoPath,
+                watermarkStyle = watermarkStyle,
+                watermarkPosition = watermarkPosition,
+                username = shareUsername,
+                location = shareLocation,
+                topics = shareTopics,
+                caption = shareCaption,
+                onWatermarkStyleChanged = { viewModel.setWatermarkStyle(it) },
+                onWatermarkPositionChanged = { viewModel.setWatermarkPosition(it) },
+                onUsernameChanged = { viewModel.setShareUsername(it) },
+                onLocationChanged = { viewModel.setShareLocation(it) },
+                onCaptionChanged = { viewModel.setShareCaption(it) },
+                onAddTopic = { viewModel.addTopic(it) },
+                onRemoveTopic = { viewModel.removeTopic(it) },
+                onShare = {
+                    scope.launch {
+                        val ok = viewModel.executeShare(context)
+                        if (ok) {
+                            viewModel.closeShareSheet()
+                        }
+                    }
+                },
+                onDismiss = { viewModel.closeShareSheet() }
+            )
+        }
+
+        // ── 自定义姿势面板 ──
+        if (showCustomPoseSheet) {
+            CustomPoseSheet(
+                customPoses = customPoses,
+                activeCustomPoseId = activeCustomPoseId,
+                detectedPointsCount = detectedPosePoints.size,
+                onSaveCurrent = { name, desc ->
+                    viewModel.saveCurrentPoseAsCustom(name, desc)
+                },
+                onApplyPose = { pose ->
+                    viewModel.applyCustomPose(pose)
+                    viewModel.closeCustomPoseSheet()
+                },
+                onDeletePose = { id ->
+                    viewModel.deleteCustomPose(id)
+                },
+                onClearActive = {
+                    viewModel.clearCustomPose()
+                },
+                onDismiss = { viewModel.closeCustomPoseSheet() }
             )
         }
 
@@ -2772,6 +2851,9 @@ fun SettingsDialog(
     val autoRecommendInterval by viewModel.autoRecommendInterval.collectAsState()
     val screenFillLightEnabled by viewModel.screenFillLightEnabled.collectAsState()
     val screenFillLightIntensity by viewModel.screenFillLightIntensity.collectAsState()
+    val jpegQuality by viewModel.jpegQuality.collectAsState()
+    val outputFormat by viewModel.outputFormat.collectAsState()
+    val hdrEnabled by viewModel.hdrEnabled.collectAsState()
     var smileThreshold by remember { mutableStateOf(viewModel.getCurrentSmileThreshold()) }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -2845,7 +2927,7 @@ fun SettingsDialog(
                 onCheckedChange = { viewModel.toggleLowLight(it) }
             )
             SettingToggle(
-                title = "Pro 水印",
+                title = "水印",
                 description = "照片右下角添加 PoseAI 标识",
                 checked = watermarkEnabled,
                 onCheckedChange = { viewModel.toggleWatermark(it) }
@@ -2922,6 +3004,94 @@ fun SettingsDialog(
                             activeTrackColor = Accent
                         )
                     )
+                }
+            }
+
+            // ── 画质设置分区 ──
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "画质设置",
+                color = TextSecondary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            // HDR 开关
+            SettingToggle(
+                title = "HDR 高动态范围",
+                description = "暗部提亮 + 高光压缩，保留更多细节",
+                checked = hdrEnabled,
+                onCheckedChange = { viewModel.setHdrEnabled(it) }
+            )
+            // 输出格式切换：JPEG / WEBP
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = "输出格式", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                    Text(text = "WEBP 体积更小，JPEG 兼容性更好", color = TextSecondary, fontSize = 12.sp)
+                }
+                Row(
+                    modifier = Modifier
+                        .background(Surface, RoundedCornerShape(16.dp))
+                        .padding(2.dp)
+                ) {
+                    val formats = listOf("JPEG" to 0, "WEBP" to 1)
+                    formats.forEach { (label, value) ->
+                        val isSelected = outputFormat == value
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(if (isSelected) Accent else Color.Transparent)
+                                .clickable { viewModel.setOutputFormat(value) }
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = label,
+                                color = if (isSelected) Color.White else TextSecondary,
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+            // JPEG 压缩质量滑块
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 8.dp, end = 8.dp, bottom = 8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "压缩质量", color = TextSecondary, fontSize = 13.sp)
+                    Text(
+                        text = "$jpegQuality",
+                        color = Accent,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Slider(
+                    value = jpegQuality.toFloat(),
+                    onValueChange = { viewModel.setJpegQuality(it.toInt()) },
+                    valueRange = 50f..100f,
+                    colors = SliderDefaults.colors(
+                        thumbColor = Accent,
+                        activeTrackColor = Accent
+                    )
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "省空间", color = TextSecondary, fontSize = 11.sp)
+                    Text(text = "高清", color = TextSecondary, fontSize = 11.sp)
                 }
             }
         }
@@ -3022,6 +3192,50 @@ fun SceneSelectorBottomSheetComposable(
                         onClick = { onSceneSelected(scene) }
                     )
                 }
+                // 自定义姿势入口
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Accent.copy(alpha = 0.12f))
+                            .border(1.dp, Accent.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .clickable {
+                                onDismiss()
+                                viewModel.openCustomPoseSheet()
+                            }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = Accent,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "自定义姿势",
+                                color = Accent,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "保存当前姿势为模板，随时复用",
+                                color = TextSecondary,
+                                fontSize = 12.sp
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = Accent,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
             }
         }
     }
@@ -3066,11 +3280,28 @@ fun SceneItem(scene: SceneType, isSelected: Boolean, onClick: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun FilterSelectorBottomSheet(
     currentFilter: PhotoFilterEngine.Filter,
+    filterIntensity: Int,
+    beautyEnabled: Boolean,
+    smoothingLevel: Int,
+    whiteningLevel: Int,
+    slimmingLevel: Int,
     onFilterSelected: (PhotoFilterEngine.Filter) -> Unit,
+    onFilterIntensityChanged: (Int) -> Unit,
+    onBeautyEnabledChanged: (Boolean) -> Unit,
+    onSmoothingChanged: (Int) -> Unit,
+    onWhiteningChanged: (Int) -> Unit,
+    onSlimmingChanged: (Int) -> Unit,
+    onQuickBeauty: () -> Unit,
+    onDisableBeauty: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val tabs = listOf("滤镜", "美颜")
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = SurfaceDark,
@@ -3079,28 +3310,1110 @@ fun FilterSelectorBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingMd)
         ) {
+            // 标题
             Text(
-                text = "选择滤镜",
+                text = "滤镜美颜",
                 color = TextPrimary,
-                fontSize = 20.sp,
+                fontSize = Dimens.fontHeadline,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 16.dp)
+                lineHeight = Dimens.lineHeightHeadline,
+                modifier = Modifier.padding(bottom = Dimens.spacingMd)
             )
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth()
+
+            // Tab 切换
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Surface, RoundedCornerShape(Dimens.radiusFull))
+                    .padding(Dimens.spacingXs),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
             ) {
-                items(PhotoFilterEngine.Filter.values()) { filter ->
-                    FilterItem(
-                        filter = filter,
-                        isSelected = filter == currentFilter,
-                        onClick = { onFilterSelected(filter) }
+                tabs.forEachIndexed { index, title ->
+                    val isSelected = index == selectedTab
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(Dimens.radiusFull))
+                            .background(
+                                if (isSelected) Accent else Color.Transparent
+                            )
+                            .clickable { selectedTab = index }
+                            .padding(vertical = Dimens.spacingSm),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = title,
+                            color = if (isSelected) Color.White else TextSecondary,
+                            fontSize = Dimens.fontLabel,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            lineHeight = Dimens.lineHeightLabel
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+            // 内容区
+            when (selectedTab) {
+                0 -> {
+                    // ── 滤镜 Tab ──
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(PhotoFilterEngine.Filter.values()) { filter ->
+                            FilterItem(
+                                filter = filter,
+                                isSelected = filter == currentFilter,
+                                onClick = { onFilterSelected(filter) }
+                            )
+                        }
+                    }
+
+                    // 滤镜强度滑块（非原图时显示）
+                    if (currentFilter != PhotoFilterEngine.Filter.ORIGINAL) {
+                        Spacer(modifier = Modifier.height(Dimens.spacingLg))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "强度",
+                                color = TextSecondary,
+                                fontSize = Dimens.fontLabel,
+                                fontWeight = FontWeight.Medium,
+                                lineHeight = Dimens.lineHeightLabel
+                            )
+                            Spacer(modifier = Modifier.width(Dimens.spacingMd))
+                            Slider(
+                                value = filterIntensity.toFloat(),
+                                onValueChange = { onFilterIntensityChanged(it.toInt()) },
+                                valueRange = 0f..100f,
+                                modifier = Modifier.weight(1f),
+                                colors = SliderDefaults.colors(
+                                    thumbColor = Accent,
+                                    activeTrackColor = Accent,
+                                    inactiveTrackColor = Border
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(Dimens.spacingSm))
+                            Text(
+                                text = "$filterIntensity%",
+                                color = Accent,
+                                fontSize = Dimens.fontLabel,
+                                fontWeight = FontWeight.Bold,
+                                lineHeight = Dimens.lineHeightLabel,
+                                modifier = Modifier.width(40.dp)
+                            )
+                        }
+                    }
+                }
+                1 -> {
+                    // ── 美颜 Tab ──
+                    // 总开关 + 一键美颜
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "美颜",
+                                color = TextPrimary,
+                                fontSize = Dimens.fontBody,
+                                fontWeight = FontWeight.Medium,
+                                lineHeight = Dimens.lineHeightBody
+                            )
+                            Spacer(modifier = Modifier.width(Dimens.spacingSm))
+                            Switch(
+                                checked = beautyEnabled,
+                                onCheckedChange = { onBeautyEnabledChanged(it) },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Accent,
+                                    checkedTrackColor = Accent.copy(alpha = 0.3f)
+                                )
+                            )
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
+                            // 一键美颜
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(Dimens.radiusFull))
+                                    .background(Accent.copy(alpha = 0.15f))
+                                    .border(Dimens.strokeThin, Accent.copy(alpha = 0.4f), RoundedCornerShape(Dimens.radiusFull))
+                                    .clickable { onQuickBeauty() }
+                                    .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
+                            ) {
+                                Text(
+                                    text = "一键美颜",
+                                    color = Accent,
+                                    fontSize = Dimens.fontCaption,
+                                    fontWeight = FontWeight.Bold,
+                                    lineHeight = Dimens.lineHeightCaption
+                                )
+                            }
+                            // 关闭
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(Dimens.radiusFull))
+                                    .background(Surface)
+                                    .border(Dimens.strokeThin, Border, RoundedCornerShape(Dimens.radiusFull))
+                                    .clickable { onDisableBeauty() }
+                                    .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
+                            ) {
+                                Text(
+                                    text = "关闭",
+                                    color = TextSecondary,
+                                    fontSize = Dimens.fontCaption,
+                                    fontWeight = FontWeight.Medium,
+                                    lineHeight = Dimens.lineHeightCaption
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+                    // 三个滑块（仅在美颜开启时可用）
+                    val sliderEnabled = beautyEnabled
+                    val sliderAlpha = if (sliderEnabled) 1f else 0.4f
+
+                    // 磨皮
+                    BeautySliderItem(
+                        label = "磨皮",
+                        value = smoothingLevel,
+                        enabled = sliderEnabled,
+                        alpha = sliderAlpha,
+                        onValueChange = { onSmoothingChanged(it) }
+                    )
+                    Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+                    // 美白
+                    BeautySliderItem(
+                        label = "美白",
+                        value = whiteningLevel,
+                        enabled = sliderEnabled,
+                        alpha = sliderAlpha,
+                        onValueChange = { onWhiteningChanged(it) }
+                    )
+                    Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+                    // 瘦脸
+                    BeautySliderItem(
+                        label = "瘦脸",
+                        value = slimmingLevel,
+                        enabled = sliderEnabled,
+                        alpha = sliderAlpha,
+                        onValueChange = { onSlimmingChanged(it) }
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
+
+            Spacer(modifier = Modifier.height(Dimens.spacingXxl))
+        }
+    }
+}
+
+/** 美颜滑块项 */
+@Composable
+private fun BeautySliderItem(
+    label: String,
+    value: Int,
+    enabled: Boolean,
+    alpha: Float,
+    onValueChange: (Int) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer(alpha = alpha),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            color = TextPrimary,
+            fontSize = Dimens.fontLabel,
+            fontWeight = FontWeight.Medium,
+            lineHeight = Dimens.lineHeightLabel,
+            modifier = Modifier.width(48.dp)
+        )
+        Spacer(modifier = Modifier.width(Dimens.spacingSm))
+        Slider(
+            value = value.toFloat(),
+            onValueChange = { if (enabled) onValueChange(it.toInt()) },
+            valueRange = 0f..100f,
+            enabled = enabled,
+            modifier = Modifier.weight(1f),
+            colors = SliderDefaults.colors(
+                thumbColor = Accent,
+                activeTrackColor = Accent,
+                inactiveTrackColor = Border,
+                disabledThumbColor = TextSecondary,
+                disabledActiveTrackColor = TextSecondary,
+                disabledInactiveTrackColor = Border
+            )
+        )
+        Spacer(modifier = Modifier.width(Dimens.spacingSm))
+        Text(
+            text = if (enabled) "$value" else "--",
+            color = if (enabled) Accent else TextSecondary,
+            fontSize = Dimens.fontLabel,
+            fontWeight = FontWeight.Bold,
+            lineHeight = Dimens.lineHeightLabel,
+            modifier = Modifier.width(32.dp)
+        )
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 分享面板：水印定制 + 话题 + 系统分享
+// ═══════════════════════════════════════════════════════════════
+
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+fun ShareBottomSheet(
+    photoPath: String?,
+    watermarkStyle: ShareEngine.WatermarkStyle,
+    watermarkPosition: ShareEngine.WatermarkPosition,
+    username: String,
+    location: String,
+    topics: List<String>,
+    caption: String,
+    onWatermarkStyleChanged: (ShareEngine.WatermarkStyle) -> Unit,
+    onWatermarkPositionChanged: (ShareEngine.WatermarkPosition) -> Unit,
+    onUsernameChanged: (String) -> Unit,
+    onLocationChanged: (String) -> Unit,
+    onCaptionChanged: (String) -> Unit,
+    onAddTopic: (String) -> Unit,
+    onRemoveTopic: (String) -> Unit,
+    onShare: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    var isSharing by remember { mutableStateOf(false) }
+    var topicInput by remember { mutableStateOf("") }
+    var previewBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    // 加载预览图（缩小，便于在面板中展示）
+    LaunchedEffect(photoPath) {
+        if (photoPath != null) {
+            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                val opts = android.graphics.BitmapFactory.Options().apply {
+                    inSampleSize = 4
+                }
+                val bmp = android.graphics.BitmapFactory.decodeFile(photoPath, opts)
+                withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    previewBitmap = bmp
+                }
+            }
+        }
+    }
+
+    // 水印或话题变化时刷新预览
+    val watermarkedPreview = remember(
+        previewBitmap, watermarkStyle, watermarkPosition, username, location, topics
+    ) {
+        previewBitmap?.let { src ->
+            try {
+                val config = ShareEngine.ShareConfig(
+                    watermarkStyle = watermarkStyle,
+                    watermarkPosition = watermarkPosition,
+                    username = username,
+                    location = location,
+                    sceneName = "",
+                    topics = topics,
+                    caption = ""
+                )
+                ShareEngine.applyWatermarkAndTopics(src, config)
+            } catch (_: Exception) {
+                src
+            }
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = SurfaceDark,
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingMd)
+        ) {
+            // 标题
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "分享",
+                    color = TextPrimary,
+                    fontSize = Dimens.fontHeadline,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = Dimens.lineHeightHeadline
+                )
+                Text(
+                    text = "定制你的水印和话题",
+                    color = TextSecondary,
+                    fontSize = Dimens.fontCaption,
+                    lineHeight = Dimens.lineHeightCaption
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+            // 预览图
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(240.dp)
+                    .clip(RoundedCornerShape(Dimens.radiusMd))
+                    .background(Surface)
+                    .border(Dimens.strokeThin, Border, RoundedCornerShape(Dimens.radiusMd)),
+                contentAlignment = Alignment.Center
+            ) {
+                val preview = watermarkedPreview
+                if (preview != null) {
+                    androidx.compose.foundation.Image(
+                        bitmap = androidx.compose.ui.graphics.asImageBitmap(preview),
+                        contentDescription = "预览",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                    )
+                } else {
+                    Text(
+                        text = "暂无预览",
+                        color = TextSecondary,
+                        fontSize = Dimens.fontBody,
+                        lineHeight = Dimens.lineHeightBody
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+            // ── 水印风格选择 ──
+            Text(
+                text = "水印风格",
+                color = TextPrimary,
+                fontSize = Dimens.fontBody,
+                fontWeight = FontWeight.Medium,
+                lineHeight = Dimens.lineHeightBody
+            )
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+            ) {
+                items(ShareEngine.WatermarkStyle.values()) { style ->
+                    ShareStyleChip(
+                        text = style.displayName,
+                        isSelected = style == watermarkStyle,
+                        onClick = { onWatermarkStyleChanged(style) }
+                    )
+                }
+            }
+
+            // 仅在非 NONE、非 MINIMAL 时显示位置选择
+            if (watermarkStyle != ShareEngine.WatermarkStyle.NONE &&
+                watermarkStyle != ShareEngine.WatermarkStyle.MINIMAL
+            ) {
+                Spacer(modifier = Modifier.height(Dimens.spacingMd))
+                Text(
+                    text = "水印位置",
+                    color = TextPrimary,
+                    fontSize = Dimens.fontBody,
+                    fontWeight = FontWeight.Medium,
+                    lineHeight = Dimens.lineHeightBody
+                )
+                Spacer(modifier = Modifier.height(Dimens.spacingSm))
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+                ) {
+                    items(ShareEngine.WatermarkPosition.values()) { pos ->
+                        ShareStyleChip(
+                            text = pos.displayName,
+                            isSelected = pos == watermarkPosition,
+                            onClick = { onWatermarkPositionChanged(pos) }
+                        )
+                    }
+                }
+            }
+
+            // 仅在需要用户名/地点时显示输入框
+            if (watermarkStyle == ShareEngine.WatermarkStyle.USERNAME_BRAND) {
+                Spacer(modifier = Modifier.height(Dimens.spacingMd))
+                ShareTextField(
+                    label = "用户名",
+                    value = username,
+                    onValueChange = onUsernameChanged,
+                    placeholder = "输入用户名"
+                )
+            }
+            if (watermarkStyle == ShareEngine.WatermarkStyle.DATE_LOCATION) {
+                Spacer(modifier = Modifier.height(Dimens.spacingMd))
+                ShareTextField(
+                    label = "地点",
+                    value = location,
+                    onValueChange = onLocationChanged,
+                    placeholder = "输入地点"
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+            // ── 话题标签 ──
+            Text(
+                text = "话题",
+                color = TextPrimary,
+                fontSize = Dimens.fontBody,
+                fontWeight = FontWeight.Medium,
+                lineHeight = Dimens.lineHeightBody
+            )
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+            // 已添加的话题
+            if (topics.isNotEmpty()) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+                ) {
+                    topics.forEach { topic ->
+                        TopicChip(
+                            text = "#$topic",
+                            onRemove = { onRemoveTopic(topic) }
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(Dimens.spacingSm))
+            }
+
+            // 话题输入框
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = topicInput,
+                    onValueChange = { topicInput = it },
+                    placeholder = {
+                        Text(
+                            "添加话题（回车确认）",
+                            color = TextSecondary,
+                            fontSize = Dimens.fontBody,
+                            lineHeight = Dimens.lineHeightBody
+                        )
+                    },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        cursorColor = Accent,
+                        focusedBorderColor = Accent,
+                        unfocusedBorderColor = Border
+                    ),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Text,
+                        imeAction = androidx.compose.ui.text.input.ImeAction.Done
+                    ),
+                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                        onDone = {
+                            if (topicInput.isNotBlank()) {
+                                onAddTopic(topicInput)
+                                topicInput = ""
+                            }
+                        }
+                    )
+                )
+                Spacer(modifier = Modifier.width(Dimens.spacingSm))
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(Dimens.radiusMd))
+                        .background(Accent)
+                        .clickable {
+                            if (topicInput.isNotBlank()) {
+                                onAddTopic(topicInput)
+                                topicInput = ""
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "添加",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+            // ── 分享文案 ──
+            Text(
+                text = "分享文案",
+                color = TextPrimary,
+                fontSize = Dimens.fontBody,
+                fontWeight = FontWeight.Medium,
+                lineHeight = Dimens.lineHeightBody
+            )
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+            OutlinedTextField(
+                value = caption,
+                onValueChange = onCaptionChanged,
+                placeholder = {
+                    Text(
+                        "写点什么...",
+                        color = TextSecondary,
+                        fontSize = Dimens.fontBody,
+                        lineHeight = Dimens.lineHeightBody
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 80.dp, max = 140.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary,
+                    cursorColor = Accent,
+                    focusedBorderColor = Accent,
+                    unfocusedBorderColor = Border
+                )
+            )
+
+            Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+            // ── 分享按钮 ──
+            Button(
+                onClick = {
+                    if (!isSharing) {
+                        isSharing = true
+                        scope.launch {
+                            try {
+                                onShare()
+                            } finally {
+                                isSharing = false
+                            }
+                        }
+                    }
+                },
+                enabled = !isSharing && photoPath != null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Accent,
+                    disabledContainerColor = Accent.copy(alpha = 0.4f)
+                ),
+                shape = RoundedCornerShape(Dimens.radiusFull)
+            ) {
+                if (isSharing) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(Dimens.spacingSm))
+                    Text(
+                        text = "分享到...",
+                        color = Color.White,
+                        fontSize = Dimens.fontBody,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = Dimens.lineHeightBody
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Dimens.spacingXxl))
+        }
+    }
+}
+
+@Composable
+private fun ShareStyleChip(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(Dimens.radiusFull))
+            .background(if (isSelected) Accent else Surface)
+            .border(
+                Dimens.strokeThin,
+                if (isSelected) Accent else Border,
+                RoundedCornerShape(Dimens.radiusFull)
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs)
+    ) {
+        Text(
+            text = text,
+            color = if (isSelected) Color.White else TextSecondary,
+            fontSize = Dimens.fontCaption,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            lineHeight = Dimens.lineHeightCaption
+        )
+    }
+}
+
+@Composable
+private fun ShareTextField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = label,
+            color = TextSecondary,
+            fontSize = Dimens.fontCaption,
+            lineHeight = Dimens.lineHeightCaption
+        )
+        Spacer(modifier = Modifier.height(Dimens.spacingXs))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = {
+                Text(
+                    placeholder,
+                    color = TextSecondary,
+                    fontSize = Dimens.fontBody,
+                    lineHeight = Dimens.lineHeightBody
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = TextPrimary,
+                unfocusedTextColor = TextPrimary,
+                cursorColor = Accent,
+                focusedBorderColor = Accent,
+                unfocusedBorderColor = Border
+            )
+        )
+    }
+}
+
+@Composable
+private fun TopicChip(
+    text: String,
+    onRemove: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(Dimens.radiusFull))
+            .background(Accent.copy(alpha = 0.15f))
+            .border(Dimens.strokeThin, Accent.copy(alpha = 0.4f), RoundedCornerShape(Dimens.radiusFull))
+            .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = text,
+            color = Accent,
+            fontSize = Dimens.fontCaption,
+            fontWeight = FontWeight.Bold,
+            lineHeight = Dimens.lineHeightCaption
+        )
+        Spacer(modifier = Modifier.width(Dimens.spacingXs))
+        Icon(
+            imageVector = Icons.Default.Close,
+            contentDescription = "移除",
+            tint = Accent,
+            modifier = Modifier
+                .size(14.dp)
+                .clickable(onClick = onRemove)
+        )
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 自定义姿势面板：保存当前姿势 / 选择已保存姿势 / 删除
+// ═══════════════════════════════════════════════════════════════
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomPoseSheet(
+    customPoses: List<com.poseai.app.store.CustomPose>,
+    activeCustomPoseId: String?,
+    detectedPointsCount: Int,
+    onSaveCurrent: (String, String) -> Boolean,
+    onApplyPose: (com.poseai.app.store.CustomPose) -> Unit,
+    onDeletePose: (String) -> Unit,
+    onClearActive: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var poseName by remember { mutableStateOf("") }
+    var poseDesc by remember { mutableStateOf("") }
+    var saveResult by remember { mutableStateOf<String?>(null) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = SurfaceDark,
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingMd)
+        ) {
+            // 标题
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "自定义姿势",
+                    color = TextPrimary,
+                    fontSize = Dimens.fontHeadline,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = Dimens.lineHeightHeadline
+                )
+                Text(
+                    text = "保存当前姿势为模板",
+                    color = TextSecondary,
+                    fontSize = Dimens.fontCaption,
+                    lineHeight = Dimens.lineHeightCaption
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+            // ── 保存当前姿势 ──
+            Text(
+                text = "保存当前姿势",
+                color = TextPrimary,
+                fontSize = Dimens.fontBody,
+                fontWeight = FontWeight.Medium,
+                lineHeight = Dimens.lineHeightBody
+            )
+            Spacer(modifier = Modifier.height(Dimens.spacingXs))
+            Text(
+                text = if (detectedPointsCount >= 3) {
+                    "已检测到 $detectedPointsCount 个关键点，可以保存"
+                } else {
+                    "请先对准镜头摆好姿势，至少需要 3 个关键点（当前 $detectedPointsCount）"
+                },
+                color = if (detectedPointsCount >= 3) Success else Warning,
+                fontSize = Dimens.fontCaption,
+                lineHeight = Dimens.lineHeightCaption
+            )
+
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+            OutlinedTextField(
+                value = poseName,
+                onValueChange = { poseName = it },
+                placeholder = {
+                    Text(
+                        "姿势名称（如：侧身回眸）",
+                        color = TextSecondary,
+                        fontSize = Dimens.fontBody,
+                        lineHeight = Dimens.lineHeightBody
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary,
+                    cursorColor = Accent,
+                    focusedBorderColor = Accent,
+                    unfocusedBorderColor = Border
+                )
+            )
+
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+            OutlinedTextField(
+                value = poseDesc,
+                onValueChange = { poseDesc = it },
+                placeholder = {
+                    Text(
+                        "姿势描述（可选）",
+                        color = TextSecondary,
+                        fontSize = Dimens.fontBody,
+                        lineHeight = Dimens.lineHeightBody
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 60.dp, max = 100.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary,
+                    cursorColor = Accent,
+                    focusedBorderColor = Accent,
+                    unfocusedBorderColor = Border
+                )
+            )
+
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+            Button(
+                onClick = {
+                    val ok = onSaveCurrent(poseName, poseDesc)
+                    saveResult = if (ok) "保存成功" else "保存失败，请先摆好姿势"
+                    if (ok) {
+                        poseName = ""
+                        poseDesc = ""
+                    }
+                },
+                enabled = detectedPointsCount >= 3 && poseName.isNotBlank(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Accent,
+                    disabledContainerColor = Accent.copy(alpha = 0.4f)
+                ),
+                shape = RoundedCornerShape(Dimens.radiusFull)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Save,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(Dimens.spacingSm))
+                Text(
+                    "保存当前姿势",
+                    color = Color.White,
+                    fontSize = Dimens.fontBody,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = Dimens.lineHeightBody
+                )
+            }
+
+            saveResult?.let { msg ->
+                Spacer(modifier = Modifier.height(Dimens.spacingXs))
+                Text(
+                    text = msg,
+                    color = if (msg.contains("成功")) Success else Warning,
+                    fontSize = Dimens.fontCaption,
+                    lineHeight = Dimens.lineHeightCaption
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+            // ── 已保存的姿势列表 ──
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "我的姿势库 (${customPoses.size})",
+                    color = TextPrimary,
+                    fontSize = Dimens.fontBody,
+                    fontWeight = FontWeight.Medium,
+                    lineHeight = Dimens.lineHeightBody
+                )
+                if (activeCustomPoseId != null) {
+                    Text(
+                        text = "清除自定义",
+                        color = Accent,
+                        fontSize = Dimens.fontCaption,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = Dimens.lineHeightCaption,
+                        modifier = Modifier.clickable { onClearActive() }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+            if (customPoses.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(80.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "暂无自定义姿势",
+                        color = TextSecondary,
+                        fontSize = Dimens.fontBody,
+                        lineHeight = Dimens.lineHeightBody
+                    )
+                }
+            } else {
+                customPoses.forEach { pose ->
+                    CustomPoseItem(
+                        pose = pose,
+                        isActive = pose.id == activeCustomPoseId,
+                        onApply = { onApplyPose(pose) },
+                        onDelete = { onDeletePose(pose.id) }
+                    )
+                    Spacer(modifier = Modifier.height(Dimens.spacingSm))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Dimens.spacingXxl))
+        }
+    }
+}
+
+@Composable
+private fun CustomPoseItem(
+    pose: com.poseai.app.store.CustomPose,
+    isActive: Boolean,
+    onApply: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Dimens.radiusMd))
+            .background(if (isActive) Accent.copy(alpha = 0.12f) else Surface)
+            .border(
+                Dimens.strokeThin,
+                if (isActive) Accent else Border,
+                RoundedCornerShape(Dimens.radiusMd)
+            )
+            .padding(Dimens.spacingMd),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // 姿势缩略图（用 Canvas 绘制骨架）
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .clip(RoundedCornerShape(Dimens.radiusSm))
+                .background(SurfaceStrong),
+            contentAlignment = Alignment.Center
+        ) {
+            PoseSkeletonPreview(pose.posePoints)
+        }
+
+        Spacer(modifier = Modifier.width(Dimens.spacingMd))
+
+        // 名称和描述
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = pose.name,
+                color = if (isActive) Accent else TextPrimary,
+                fontSize = Dimens.fontBody,
+                fontWeight = FontWeight.Bold,
+                lineHeight = Dimens.lineHeightBody
+            )
+            if (pose.description.isNotEmpty()) {
+                Text(
+                    text = pose.description,
+                    color = TextSecondary,
+                    fontSize = Dimens.fontCaption,
+                    lineHeight = Dimens.lineHeightCaption,
+                    maxLines = 1
+                )
+            }
+            Text(
+                text = "${pose.posePoints.size} 个关键点",
+                color = TextSecondary,
+                fontSize = Dimens.fontCaption,
+                lineHeight = Dimens.lineHeightCaption
+            )
+        }
+
+        Spacer(modifier = Modifier.width(Dimens.spacingSm))
+
+        // 应用按钮
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(if (isActive) Accent.copy(alpha = 0.2f) else Surface)
+                .clickable(onClick = onApply),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (isActive) Icons.Default.Check else Icons.Default.PlayArrow,
+                contentDescription = if (isActive) "使用中" else "使用",
+                tint = if (isActive) Accent else TextPrimary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(Dimens.spacingXs))
+
+        // 删除按钮
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(Danger.copy(alpha = 0.15f))
+                .clickable(onClick = onDelete),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = "删除",
+                tint = Danger,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    }
+}
+
+/** 用 Canvas 绘制姿势骨架缩略图 */
+@Composable
+private fun PoseSkeletonPreview(posePoints: Map<String, PointF>) {
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val w = size.width
+        val h = size.height
+        // 关节连接关系（简化版）
+        val connections = listOf(
+            "neck" to "leftShoulder",
+            "neck" to "rightShoulder",
+            "leftShoulder" to "leftElbow",
+            "leftElbow" to "leftWrist",
+            "rightShoulder" to "rightElbow",
+            "rightElbow" to "rightWrist",
+            "neck" to "leftHip",
+            "neck" to "rightHip",
+            "leftHip" to "leftKnee",
+            "leftKnee" to "leftAnkle",
+            "rightHip" to "rightKnee",
+            "rightKnee" to "rightAnkle"
+        )
+        // 绘制连线
+        connections.forEach { (a, b) ->
+            val pa = posePoints[a]
+            val pb = posePoints[b]
+            if (pa != null && pb != null) {
+                drawLine(
+                    color = Accent.copy(alpha = 0.7f),
+                    start = Offset(pa.x * w, pa.y * h),
+                    end = Offset(pb.x * w, pb.y * h),
+                    strokeWidth = 2f
+                )
+            }
+        }
+        // 绘制关节点
+        posePoints.values.forEach { p ->
+            drawCircle(
+                color = Accent,
+                radius = 3f,
+                center = Offset(p.x * w, p.y * h)
+            )
         }
     }
 }
@@ -3119,7 +4432,7 @@ fun FilterItem(
         Box(
             modifier = Modifier
                 .size(72.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(Dimens.radiusMd))
                 .background(
                     when (filter) {
                         PhotoFilterEngine.Filter.ORIGINAL -> Color.Gray
@@ -3130,32 +4443,35 @@ fun FilterItem(
                         PhotoFilterEngine.Filter.VINTAGE -> Color(0xFFD7CCC8)
                         PhotoFilterEngine.Filter.MONO -> Color(0xFF757575)
                         PhotoFilterEngine.Filter.DRAMATIC -> Color(0xFF424242)
-                        PhotoFilterEngine.Filter.FILM -> Color(0xFF8D6E63)     // 柯达胶片棕
-                        PhotoFilterEngine.Filter.NOIR -> Color(0xFF212121)     // 深黑
-                        PhotoFilterEngine.Filter.LIGHT -> Color(0xFFFFF8E1)    // 日系米白
-                        PhotoFilterEngine.Filter.NEON -> Color(0xFF00BCD4)     // 青霓虹
+                        PhotoFilterEngine.Filter.FILM -> Color(0xFF8D6E63)
+                        PhotoFilterEngine.Filter.NOIR -> Color(0xFF212121)
+                        PhotoFilterEngine.Filter.LIGHT -> Color(0xFFFFF8E1)
+                        PhotoFilterEngine.Filter.NEON -> Color(0xFF00BCD4)
                     }
                 )
                 .border(
-                    width = if (isSelected) 3.dp else 0.dp,
+                    width = if (isSelected) Dimens.strokeBold else Dimens.strokeThin,
                     color = if (isSelected) Accent else Color.Transparent,
-                    shape = RoundedCornerShape(12.dp)
-                ),
+                    shape = RoundedCornerShape(Dimens.radiusMd)
+                )
+                .clickable { onClick() },
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = filter.displayName.take(1),
                 color = Color.White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = Dimens.fontHeadline,
+                fontWeight = FontWeight.Bold,
+                lineHeight = Dimens.lineHeightHeadline
             )
         }
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(Dimens.spacingXs + 2.dp))
         Text(
             text = filter.displayName,
             color = if (isSelected) Accent else TextSecondary,
-            fontSize = 12.sp,
-            fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
+            fontSize = Dimens.fontCaption,
+            fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
+            lineHeight = Dimens.lineHeightCaption
         )
     }
 }

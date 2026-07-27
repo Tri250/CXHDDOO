@@ -668,4 +668,77 @@ object PhotoFilterEngine {
      * 归一化矩形数据类
      */
     data class RectF(val left: Float, val top: Float, val right: Float, val bottom: Float)
+
+    // ═══════════════════════════════════════════════════════════════
+    // P1-3 画质设置：软件 HDR 色调映射
+    // 实现：暗部提亮 + 高光压缩 + 局部对比增强，模拟 HDR 效果
+    // 所有设备可用（不依赖 CameraX Extensions）
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * 软件 HDR 色调映射
+     * - 暗部（lum < 80）：提亮 1.4x，恢复阴影细节
+     * - 中间调：S 曲线增强对比
+     * - 高光（lum > 180）：压缩 0.85x，防止过曝
+     * - 整体饱和度微提 1.1x
+     */
+    fun applyHdrToneMapping(source: Bitmap): Bitmap {
+        return try {
+            val width = source.width
+            val height = source.height
+            val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val pixels = IntArray(width * height)
+            val outPixels = IntArray(width * height)
+            source.getPixels(pixels, 0, width, 0, 0, width, height)
+
+            for (i in pixels.indices) {
+                val p = pixels[i]
+                val r = Color.red(p).toFloat()
+                val g = Color.green(p).toFloat()
+                val b = Color.blue(p).toFloat()
+                val lum = 0.299f * r + 0.587f * g + 0.114f * b
+                val normLum = lum / 255f
+
+                // 分段色调映射
+                val mappedLum = when {
+                    lum < 80f -> {
+                        // 暗部提亮：1.4x，但不超过 80
+                        (lum * 1.4f).coerceAtMost(80f)
+                    }
+                    lum > 180f -> {
+                        // 高光压缩：0.85x + 38（保持 > 180）
+                        (lum * 0.85f + 38f).coerceIn(180f, 255f)
+                    }
+                    else -> {
+                        // 中间调：S 曲线增强对比
+                        // S(x) = x + 0.15 * sin(2π * (x-0.5))，在 0.5 处斜率最大
+                        val s = normLum + 0.06f * Math.sin(2.0 * Math.PI * (normLum - 0.5)).toFloat()
+                        (s * 255f).coerceIn(80f, 180f)
+                    }
+                }
+
+                // 按亮度比例调整 RGB
+                val ratio = if (lum > 0.1f) mappedLum / lum else 1f
+                var newR = r * ratio
+                var newG = g * ratio
+                var newB = b * ratio
+
+                // 整体饱和度微提 1.1x（围绕灰点）
+                val gray = (newR + newG + newB) / 3f
+                newR = gray + (newR - gray) * 1.1f
+                newG = gray + (newG - gray) * 1.1f
+                newB = gray + (newB - gray) * 1.1f
+
+                outPixels[i] = Color.rgb(
+                    newR.toInt().coerceIn(0, 255),
+                    newG.toInt().coerceIn(0, 255),
+                    newB.toInt().coerceIn(0, 255)
+                )
+            }
+            result.setPixels(outPixels, 0, width, 0, 0, width, height)
+            result
+        } catch (e: Exception) {
+            source.copy(source.config ?: Bitmap.Config.ARGB_8888, true)
+        }
+    }
 }

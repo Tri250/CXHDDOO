@@ -43,7 +43,6 @@ import com.poseai.app.ui.GalleryScreen
 import com.poseai.app.ui.OOTDAnalysisScreen
 import com.poseai.app.ui.OnboardingScreen
 import com.poseai.app.ui.PhotoEditorScreen
-import com.poseai.app.ui.ProScreen
 import com.poseai.app.ui.ShootingScreen
 import com.poseai.app.ui.theme.Accent
 import com.poseai.app.ui.theme.PoseAITheme
@@ -306,8 +305,7 @@ data class BottomNavItem(
 val bottomNavItems = listOf(
     BottomNavItem("shooting", "拍摄", Icons.Default.CameraAlt),
     BottomNavItem("gallery", "相册", Icons.Default.PhotoLibrary),
-    BottomNavItem("ootd", "穿搭", Icons.Default.Style),
-    BottomNavItem("pro", "Pro", Icons.Default.WorkspacePremium)
+    BottomNavItem("ootd", "穿搭", Icons.Default.Style)
 )
 
 @Composable
@@ -529,23 +527,6 @@ fun PoseAINavHost(
                 composable("ootd") {
                     val viewModel: ShootingViewModel = viewModel()
                     OOTDAnalysisScreen(viewModel = viewModel)
-                }
-
-                composable("pro") {
-                    val proViewModel: ShootingViewModel = viewModel()
-                    ProScreen(
-                        isProUnlocked = false,
-                        onPurchase = { planId ->
-                            scope.launch {
-                                PoseAIApp.getStoreManager().setProUnlocked(true)
-                            }
-                        },
-                        onRestore = {
-                            scope.launch {
-                                PoseAIApp.getStoreManager().setProUnlocked(true)
-                            }
-                        }
-                    )
                 }
             }
         }

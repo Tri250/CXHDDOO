@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.room.Room
 import com.poseai.app.data.AppDatabase
 import com.poseai.app.engine.AIModelManager
+import com.poseai.app.store.CustomPoseStore
 import com.poseai.app.store.StoreManager
 
 class PoseAIApp : Application() {
@@ -22,6 +23,8 @@ class PoseAIApp : Application() {
         fun getStoreManager(): StoreManager = instance.storeManager
 
         fun getAIModelManager(): AIModelManager = instance.aiModelManager
+
+        fun getCustomPoseStore(): CustomPoseStore = instance.customPoseStore
     }
 
     lateinit var database: AppDatabase
@@ -31,6 +34,9 @@ class PoseAIApp : Application() {
         private set
 
     lateinit var aiModelManager: AIModelManager
+        private set
+
+    lateinit var customPoseStore: CustomPoseStore
         private set
 
     override fun onCreate() {
@@ -66,6 +72,12 @@ class PoseAIApp : Application() {
         } catch (e: Exception) {
             Log.e(TAG, "AIModelManager init failed, creating empty fallback", e)
             aiModelManager = AIModelManager(this)
+        }
+        try {
+            customPoseStore = CustomPoseStore(this)
+            Log.i(TAG, "CustomPoseStore initialized")
+        } catch (e: Exception) {
+            Log.e(TAG, "CustomPoseStore init failed", e)
         }
     }
 

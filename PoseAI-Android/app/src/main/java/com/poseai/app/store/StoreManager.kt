@@ -16,7 +16,6 @@ class StoreManager(private val context: Context) {
 
     companion object {
         val KEY_ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
-        val KEY_PRO_UNLOCKED = booleanPreferencesKey("pro_unlocked")
         val KEY_SELECTED_SCENE = stringPreferencesKey("selected_scene")
         val KEY_CAMERA_LENS = intPreferencesKey("camera_lens")
         val KEY_SMILE_ENABLED = booleanPreferencesKey("smile_enabled")
@@ -29,14 +28,16 @@ class StoreManager(private val context: Context) {
         val KEY_TIMER_SECONDS = intPreferencesKey("timer_seconds")
         val KEY_AUTO_RECOMMEND_ENABLED = booleanPreferencesKey("auto_recommend_enabled")
         // KEY_FLASH_MODE 已在上方声明：0=off, 1=auto, 2=on
+        // 画质设置：JPEG 压缩质量 70-100
+        val KEY_JPEG_QUALITY = intPreferencesKey("jpeg_quality")
+        // 输出格式：0=JPEG, 1=WEBP
+        val KEY_OUTPUT_FORMAT = intPreferencesKey("output_format")
+        // HDR 开关
+        val KEY_HDR_ENABLED = booleanPreferencesKey("hdr_enabled")
     }
 
     val onboardingCompleted: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[KEY_ONBOARDING_COMPLETED] ?: false
-    }
-
-    val proUnlocked: Flow<Boolean> = context.dataStore.data.map { prefs ->
-        prefs[KEY_PRO_UNLOCKED] ?: false
     }
 
     val selectedScene: Flow<String> = context.dataStore.data.map { prefs ->
@@ -80,10 +81,6 @@ class StoreManager(private val context: Context) {
 
     suspend fun setOnboardingCompleted(value: Boolean) {
         context.dataStore.edit { it[KEY_ONBOARDING_COMPLETED] = value }
-    }
-
-    suspend fun setProUnlocked(value: Boolean) {
-        context.dataStore.edit { it[KEY_PRO_UNLOCKED] = value }
     }
 
     suspend fun setSelectedScene(value: String) {
@@ -138,5 +135,32 @@ class StoreManager(private val context: Context) {
 
     suspend fun setFlashMode(value: Int) {
         context.dataStore.edit { it[KEY_FLASH_MODE] = value.coerceIn(0, 2) }
+    }
+
+    /** JPEG 压缩质量（70-100），默认 90 */
+    val jpegQuality: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_JPEG_QUALITY] ?: 90
+    }
+
+    suspend fun setJpegQuality(value: Int) {
+        context.dataStore.edit { it[KEY_JPEG_QUALITY] = value.coerceIn(50, 100) }
+    }
+
+    /** 输出格式：0=JPEG, 1=WEBP */
+    val outputFormat: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_OUTPUT_FORMAT] ?: 0
+    }
+
+    suspend fun setOutputFormat(value: Int) {
+        context.dataStore.edit { it[KEY_OUTPUT_FORMAT] = value.coerceIn(0, 1) }
+    }
+
+    /** HDR 开关（设备支持时生效） */
+    val hdrEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_HDR_ENABLED] ?: false
+    }
+
+    suspend fun setHdrEnabled(value: Boolean) {
+        context.dataStore.edit { it[KEY_HDR_ENABLED] = value }
     }
 }
