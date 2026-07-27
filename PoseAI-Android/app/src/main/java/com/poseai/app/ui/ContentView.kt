@@ -1088,7 +1088,7 @@ fun TopBar(
                     .clip(RoundedCornerShape(Dimens.radiusFull))
                     .background(Color.Black.copy(alpha = 0.45f))
                     .clickable { onSceneClick() }
-                    .padding(start = Dimens.spacingSm, end = Dimens.spacingMd, vertical = 6.dp),
+                    .padding(horizontal = Dimens.spacingMd, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // 场景小徽章
@@ -1609,7 +1609,7 @@ fun BottomPanel(
                         androidx.compose.material3.DropdownMenu(
                             expanded = showMoreMenu,
                             onDismissRequest = { showMoreMenu = false },
-                            containerColor = SurfaceDark.copy(alpha = 0.95f)
+                            modifier = Modifier.background(SurfaceDark.copy(alpha = 0.95f), RoundedCornerShape(Dimens.radiusMd))
                         ) {
                             // 闪光灯
                             androidx.compose.material3.DropdownMenuItem(
