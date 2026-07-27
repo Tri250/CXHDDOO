@@ -34,15 +34,10 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
     private var imageProcessor: ImageProcessor? = null
     private val inputSize = 224
     private var useFallback = false
-    /** 是否使用关键词映射降级（比纯启发式更智能） */
-    private var useKeywordMapper = false
     @Volatile
     private var isClosed = false
     /** 元数据校验结果：记录加载的模型架构信息，便于诊断 */
     private var metadataValidation: String? = null
-
-    /** 关键词映射器：复刻 iOS MobileNetV2SceneProvider 的关键词投票逻辑 */
-    private val keywordMapper: SceneKeywordMapper by lazy { SceneKeywordMapper(context) }
 
     private val labels = listOf(
         "COFFEE_SHOP",
@@ -101,45 +96,30 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
             }
         }
 
-        // 优先级 3：检查 assets 中的 iOS 模型元数据文件（.mlmodel 已转换为标签 JSON + 架构元数据）
-        // 即使没有 TFLite 模型，也能加载 iOS 模型的标签数据，配合关键词映射做语义识别
-        val hasIosModelAssets = try {
-            val assetList = context.assets.list("")
-            assetList?.any { it == "mobilenetv2_labels.json" || it == "googlenetplaces_labels.json" } == true
-        } catch (_: Exception) {
-            false
-        }
-
-        // 优先级 4：加载 iOS 模型架构元数据（用于运行时校验和调试）
-        if (hasIosModelAssets) {
-            metadataValidation = try {
-                val metaFiles = listOf("scene_model_metadata.json", "GoogLeNetPlaces_metadata.json")
-                val summaries = mutableListOf<String>()
-                for (metaFile in metaFiles) {
-                    val json = context.assets.open(metaFile).bufferedReader().use { it.readText() }
-                    // 简单解析关键字段（不引入完整 JSON 库依赖）
-                    val layerCount = Regex("\"layer_count\"\\s*:\\s*(\\d+)").find(json)?.groupValues?.get(1)
-                    val totalParams = Regex("\"total_params\"\\s*:\\s*(\\d+)").find(json)?.groupValues?.get(1)
-                    if (layerCount != null && totalParams != null) {
-                        val modelName = metaFile.substringBefore("_metadata.json").substringBefore(".")
-                        summaries.add("$modelName: $layerCount 层 / $totalParams 参数")
-                    }
+        // 优先级 3：加载 iOS 模型架构元数据（用于运行时校验和调试）
+        metadataValidation = try {
+            val metaFiles = listOf("scene_model_metadata.json")
+            val summaries = mutableListOf<String>()
+            for (metaFile in metaFiles) {
+                val json = context.assets.open(metaFile).bufferedReader().use { it.readText() }
+                // 简单解析关键字段（不引入完整 JSON 库依赖）
+                val layerCount = Regex("\"layer_count\"\\s*:\\s*(\\d+)").find(json)?.groupValues?.get(1)
+                val totalParams = Regex("\"total_params\"\\s*:\\s*(\\d+)").find(json)?.groupValues?.get(1)
+                if (layerCount != null && totalParams != null) {
+                    val modelName = metaFile.substringBefore("_metadata.json").substringBefore(".")
+                    summaries.add("$modelName: $layerCount 层 / $totalParams 参数")
                 }
-                if (summaries.isNotEmpty()) summaries.joinToString("; ") else null
-            } catch (_: Exception) {
-                null
             }
+            if (summaries.isNotEmpty()) summaries.joinToString("; ") else null
+        } catch (e: Exception) {
+            android.util.Log.w("SceneClassifier", "Metadata load failed", e)
+            null
         }
 
         useFallback = !loaded
-        useKeywordMapper = !loaded && hasIosModelAssets
-        if (useKeywordMapper) {
-            val metaInfo = metadataValidation ?: "无元数据"
-            Log.i(TAG, "Using keyword-mapping fallback (iOS MobileNetV2 keywords + label assets) | 元数据: $metaInfo")
-        } else if (useFallback) {
+        if (useFallback) {
             Log.i(TAG, "Using heuristic fallback classifier")
-        } else if (loaded) {
-            // 模型加载成功时打印预处理参数一致性校验结果
+        } else {
             Log.i(TAG, "Model loaded. Preprocessing params | channelScale=$channelScale, biases=[$redBias, $greenBias, $blueBias] | ${metadataValidation ?: "无元数据"}")
         }
     }
@@ -179,15 +159,6 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
         if (isClosed) return SceneType.UNKNOWN
         return when {
             !useFallback -> classifyWithModel(bitmap)
-            useKeywordMapper -> {
-                // 优先用关键词映射（更接近 iOS 语义），失败再退回纯启发式
-                try {
-                    keywordMapper.classifyByKeywordVote(bitmap)
-                } catch (e: Exception) {
-                    Log.w(TAG, "Keyword mapper failed, falling back to heuristic", e)
-                    classifyFallback(bitmap)
-                }
-            }
             else -> classifyFallback(bitmap)
         }
     }
@@ -405,7 +376,8 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
         isClosed = true
         try {
             interpreter?.close()
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            android.util.Log.w("SceneClassifier", "Operation failed", e)}
         interpreter = null
     }
 

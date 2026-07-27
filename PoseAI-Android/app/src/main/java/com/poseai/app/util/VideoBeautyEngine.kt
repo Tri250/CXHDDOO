@@ -17,6 +17,53 @@ import java.nio.ByteBuffer
 import kotlin.math.abs
 
 /**
+ * Bitmap ARGB 转 NV21 完整实现
+ * NV21 格式：YYYY...VU...（UV交错，V在前）
+ */
+private fun bitmapToNv21(bitmap: Bitmap): ByteArray {
+    val width = bitmap.width
+    val height = bitmap.height
+    val argb = IntArray(width * height)
+    bitmap.getPixels(argb, 0, width, 0, 0, width, height)
+
+    val yuv = ByteArray(width * height * 3 / 2)
+
+    // Y 平面
+    for (i in 0 until height) {
+        for (j in 0 until width) {
+            val pixel = argb[i * width + j]
+            val r = (pixel shr 16) and 0xff
+            val g = (pixel shr 8) and 0xff
+            val b = pixel and 0xff
+            val y = ((66 * r + 129 * g + 25 * b + 128) shr 8) + 16
+            yuv[i * width + j] = y.coerceIn(0, 255).toByte()
+        }
+    }
+
+    // UV 平面（NV21: VU 交错，每 2x2 采样一次）
+    var uvIndex = width * height
+    for (i in 0 until height step 2) {
+        for (j in 0 until width step 2) {
+            val p1 = argb[i * width + j]
+            val p2 = if (j + 1 < width) argb[i * width + (j + 1)] else p1
+            val p3 = if (i + 1 < height) argb[(i + 1) * width + j] else p1
+            val p4 = if (i + 1 < height && j + 1 < width) argb[(i + 1) * width + (j + 1)] else p1
+
+            val r = (((p1 shr 16) and 0xff) + ((p2 shr 16) and 0xff) + ((p3 shr 16) and 0xff) + ((p4 shr 16) and 0xff)) shr 2
+            val g = (((p1 shr 8) and 0xff) + ((p2 shr 8) and 0xff) + ((p3 shr 8) and 0xff) + ((p4 shr 8) and 0xff)) shr 2
+            val b = ((p1 and 0xff) + (p2 and 0xff) + (p3 and 0xff) + (p4 and 0xff)) shr 2
+
+            val u = ((-38 * r - 74 * g + 112 * b + 128) shr 8) + 128
+            val v = ((112 * r - 94 * g - 18 * b + 128) shr 8) + 128
+
+            yuv[uvIndex++] = v.coerceIn(0, 255).toByte()
+            yuv[uvIndex++] = u.coerceIn(0, 255).toByte()
+        }
+    }
+    return yuv
+}
+
+/**
  * 视频实时美颜/滤镜/变速引擎
  *
  * 功能：
@@ -437,25 +484,64 @@ class VideoBeautyEngine {
     /**
      * 完整视频逐帧处理
      *
-     * 使用 MediaMetadataRetriever 提取每一帧 → 逐帧处理 → 重新编码
+     * 1. 使用 MediaExtractor 分析视频参数（帧率、时长、分辨率、音频轨道）
+     * 2. 使用 MediaMetadataRetriever 提取每一帧 → 逐帧处理 → 重新编码
+     * 3. 复制原始音频轨道到输出（保持音视频同步）
      * 注意：此方法处理时间较长，适合短视频（<30秒）
      */
     private fun processVideoInternal(inputPath: String, outputPath: String, params: VideoProcessParams): Boolean {
+        // ═══════════════════════════════════════════════════════════════
+        // 阶段 1：分析输入文件
+        // ═══════════════════════════════════════════════════════════════
+        val extractor = android.media.MediaExtractor()
+        extractor.setDataSource(inputPath)
+
+        var videoTrackIndex = -1
+        var audioTrackIndex = -1
+        var videoFormat: MediaFormat? = null
+        var audioFormat: MediaFormat? = null
+
+        for (i in 0 until extractor.trackCount) {
+            val format = extractor.getTrackFormat(i)
+            val mime = format.getString(MediaFormat.KEY_MIME) ?: continue
+            if (mime.startsWith("video/") && videoTrackIndex < 0) {
+                videoTrackIndex = i
+                videoFormat = format
+            } else if (mime.startsWith("audio/") && audioTrackIndex < 0) {
+                audioTrackIndex = i
+                audioFormat = format
+            }
+        }
+
+        if (videoTrackIndex < 0 || videoFormat == null) {
+            extractor.release()
+            return false
+        }
+
+        val duration = videoFormat.getLong(MediaFormat.KEY_DURATION)
+        val width = videoFormat.getInteger(MediaFormat.KEY_WIDTH)
+        val height = videoFormat.getInteger(MediaFormat.KEY_HEIGHT)
+        val frameRate = if (videoFormat.containsKey(MediaFormat.KEY_FRAME_RATE)) {
+            videoFormat.getInteger(MediaFormat.KEY_FRAME_RATE)
+        } else {
+            30
+        }
+
+        // 使用 retriever 获取更精确的帧提取
         val retriever = android.media.MediaMetadataRetriever()
         retriever.setDataSource(inputPath)
 
-        val durationStr = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)
-        val duration = durationStr?.toLongOrNull() ?: 0L
-        val widthStr = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
-        val heightStr = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
-        val width = widthStr?.toIntOrNull() ?: 1080
-        val height = heightStr?.toIntOrNull() ?: 1920
-        val frameRate = 30
-
-        // 创建编码器
+        // ═══════════════════════════════════════════════════════════════
+        // 阶段 2：创建编码器和 Muxer
+        // ═══════════════════════════════════════════════════════════════
         val mime = "video/avc"
+        val colorFormat = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible
+        } else {
+            MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar
+        }
         val outputFormat = MediaFormat.createVideoFormat(mime, width, height).apply {
-            setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
+            setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat)
             setInteger(MediaFormat.KEY_BIT_RATE, 6_000_000)
             setInteger(MediaFormat.KEY_FRAME_RATE, (frameRate * params.speedMultiplier).toInt().coerceIn(1, 60))
             setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2)
@@ -466,57 +552,62 @@ class VideoBeautyEngine {
         encoder.start()
 
         val muxer = MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
-        var muxerTrackIndex = -1
+        var videoMuxerTrack = -1
+        var audioMuxerTrack = -1
         var muxerStarted = false
+
+        // 如果有音频轨道，预先添加到 muxer
+        if (audioFormat != null) {
+            audioMuxerTrack = muxer.addTrack(audioFormat)
+        }
 
         val info = MediaCodec.BufferInfo()
         val timeoutUs = 10_000L
         val frameIntervalUs = (1_000_000L / frameRate)
 
         val trimStart = params.trimStartMs * 1000
-        val trimEnd = minOf(params.trimEndMs * 1000, duration * 1000)
+        val trimEnd = minOf(params.trimEndMs * 1000, duration)
 
-        // 逐帧提取和处理
+        // ═══════════════════════════════════════════════════════════════
+        // 阶段 3：逐帧提取、处理、编码
+        // ═══════════════════════════════════════════════════════════════
         var timeUs = trimStart
         while (timeUs <= trimEnd) {
-            // 提取帧
             val frameBitmap = retriever.getFrameAtTime(
                 timeUs,
                 android.media.MediaMetadataRetriever.OPTION_CLOSEST
             )
 
             if (frameBitmap != null) {
-                // 处理帧
                 val processedFrame = processFrame(frameBitmap, params)
                 frameBitmap.recycle()
 
-                // 编码帧
                 val inputBufferIndex = encoder.dequeueInputBuffer(timeoutUs)
                 if (inputBufferIndex >= 0) {
                     val inputBuffer = encoder.getInputBuffer(inputBufferIndex)
-                    // 将 Bitmap 转为 YUV 格式比较复杂，这里使用 COLOR_FormatSurface 模式
-                    // 简化实现：直接将处理后的帧数据写入
                     val adjustedTime = ((timeUs - trimStart) / params.speedMultiplier).toLong()
                     if (inputBuffer != null) {
-                        inputBuffer.clear()
-                        // 将 Bitmap 的像素数据写入 buffer
-                        val byteBuffer = ByteBuffer.allocate(processedFrame.byteCount)
-                        processedFrame.copyPixelsToBuffer(byteBuffer)
-                        byteBuffer.rewind()
-                        if (inputBuffer.capacity() >= byteBuffer.limit()) {
-                            inputBuffer.put(byteBuffer)
+                        val nv21Data = bitmapToNv21(processedFrame)
+                        if (inputBuffer.capacity() >= nv21Data.size) {
+                            inputBuffer.clear()
+                            inputBuffer.put(nv21Data)
+                            encoder.queueInputBuffer(inputBufferIndex, 0, nv21Data.size, adjustedTime, 0)
+                        } else {
+                            encoder.queueInputBuffer(inputBufferIndex, 0, 0, adjustedTime, 0)
                         }
+                    } else {
+                        encoder.queueInputBuffer(inputBufferIndex, 0, 0, adjustedTime, 0)
                     }
-                    encoder.queueInputBuffer(inputBufferIndex, 0, 0, adjustedTime, 0)
                     processedFrame.recycle()
                 }
 
-                // 从 encoder 读取编码数据
                 drainEncoder(encoder, muxer, info, timeoutUs, false) { trackIndex, started ->
                     if (!started && trackIndex >= 0) {
-                        muxerTrackIndex = trackIndex
-                        muxer.start()
-                        muxerStarted = true
+                        videoMuxerTrack = trackIndex
+                        if (!muxerStarted) {
+                            muxer.start()
+                            muxerStarted = true
+                        }
                     }
                 }
             }
@@ -524,18 +615,43 @@ class VideoBeautyEngine {
             timeUs += frameIntervalUs
         }
 
-        // 发送 EOS 并排空
         drainEncoder(encoder, muxer, info, timeoutUs, true) { trackIndex, started ->
             if (!started && trackIndex >= 0) {
-                muxerTrackIndex = trackIndex
-                muxer.start()
-                muxerStarted = true
+                videoMuxerTrack = trackIndex
+                if (!muxerStarted) {
+                    muxer.start()
+                    muxerStarted = true
+                }
             }
         }
 
         encoder.stop()
         encoder.release()
         retriever.release()
+
+        // ═══════════════════════════════════════════════════════════════
+        // 阶段 4：复制音频轨道（保持音视频同步）
+        // ═══════════════════════════════════════════════════════════════
+        if (audioTrackIndex >= 0 && audioMuxerTrack >= 0 && muxerStarted) {
+            extractor.selectTrack(audioTrackIndex)
+            val audioInfo = MediaCodec.BufferInfo()
+            val buffer = ByteBuffer.allocate(1024 * 1024)
+            while (true) {
+                buffer.clear()
+                val sampleSize = extractor.readSampleData(buffer, 0)
+                if (sampleSize < 0) break
+                val sampleTime = extractor.sampleTime
+                // 只复制裁剪范围内的音频
+                if (sampleTime in trimStart..trimEnd) {
+                    val adjustedTime = ((sampleTime - trimStart) / params.speedMultiplier).toLong()
+                    audioInfo.set(0, sampleSize, adjustedTime, extractor.sampleFlags)
+                    muxer.writeSampleData(audioMuxerTrack, buffer, audioInfo)
+                }
+                extractor.advance()
+            }
+        }
+
+        extractor.release()
         if (muxerStarted) muxer.stop()
         muxer.release()
 

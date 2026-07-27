@@ -220,10 +220,14 @@ object VideoMerger {
             if (!muxerReleased && muxer != null) {
                 try {
                     muxer.stop()
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    android.util.Log.w("VideoMerger", "muxer stop error", e)
+                }
                 try {
                     muxer.release()
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    android.util.Log.w("VideoMerger", "muxer release error", e)
+                }
                 muxerReleased = true
             }
             if (outputFile.exists() && outputFile.length() == 0L) {

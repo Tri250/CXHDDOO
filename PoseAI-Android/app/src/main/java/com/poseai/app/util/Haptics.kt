@@ -75,7 +75,8 @@ class HapticController(private val context: Context) {
                     Haptics.Level.SUCCESS -> 50
                 })
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            android.util.Log.w("Haptics", "Vibration failed", e)
             // 部分厂商ROM有自定义Vibrator实现，吞掉异常避免崩溃
         }
     }

@@ -199,7 +199,9 @@ class PoseSimilarityModel(context: Context) {
         isClosed = true
         try {
             interpreter?.close()
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            android.util.Log.w("PoseSimilarityModel", "Operation failed", e)
+        }
         interpreter = null
     }
 }

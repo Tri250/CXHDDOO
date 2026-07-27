@@ -392,7 +392,9 @@ class CameraManager(private val context: Context) {
         try {
             activeRecording?.stop()
             activeRecording = null
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Log.w(TAG, "shutdown stop recording error", e)
+        }
         camera?.let { oldCam ->
             torchObserver?.let { oldCam.cameraInfo.torchState.removeObserver(it) }
         }
@@ -400,7 +402,9 @@ class CameraManager(private val context: Context) {
         currentAnalyzer = null
         try {
             cameraProvider?.unbindAll()
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Log.w(TAG, "shutdown unbind error", e)
+        }
         camera = null
         cameraProvider = null
         preview = null

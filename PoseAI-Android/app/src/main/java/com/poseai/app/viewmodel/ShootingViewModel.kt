@@ -187,6 +187,10 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     private val _isVlogMerging = MutableStateFlow(false)
     val isVlogMerging: StateFlow<Boolean> = _isVlogMerging.asStateFlow()
 
+    /** 普通视频录制状态（非 Vlog 模式） */
+    private val _isNormalVideoRecording = MutableStateFlow(false)
+    val isNormalVideoRecording: StateFlow<Boolean> = _isNormalVideoRecording.asStateFlow()
+
     private val _activeVlogClipIndex = MutableStateFlow(0)
     val activeVlogClipIndex: StateFlow<Int> = _activeVlogClipIndex.asStateFlow()
 
@@ -677,7 +681,9 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         if (!sensorRegistered) return
         try {
             sensorManager?.unregisterListener(sensorListener)
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Log.w(TAG, "Operation failed", e)
+        }
         sensorRegistered = false
     }
 
@@ -1035,30 +1041,112 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    // ====== 拍照 ======
+    // ====== 拍摄模式 ======
+
+    /** 0=拍照, 1=视频, 2=Vlog */
+    private val _shootingMode = MutableStateFlow(0)
+    val shootingMode: StateFlow<Int> = _shootingMode.asStateFlow()
+
+    fun setShootingMode(mode: Int) {
+        val clamped = mode.coerceIn(0, 2)
+        if (clamped == _shootingMode.value) return
+        // 切换模式前停止当前进行中的录制
+        if (_isNormalVideoRecording.value) {
+            stopNormalVideoRecording()
+        }
+        if (_isVlogRecording.value || _isVlogMerging.value) {
+            stopVlog()
+        }
+        _shootingMode.value = clamped
+        // 切换到 Vlog 模式时自动打开模板选择器
+        if (clamped == 2) {
+            _showVlogTemplateSelector.value = true
+        }
+    }
+
+    // ====== 拍照 / 视频录制 ======
 
     /**
-     * 拍照入口：若 timerSeconds > 0 则启动倒计时，倒计时结束触发实际拍照；
-     * 否则直接拍照。倒计时进行中再次点击会取消并重排。
+     * 拍摄入口：根据当前模式决定拍照或录制视频
      */
     fun takePhoto() {
         if (_isVlogRecording.value || _isVlogMerging.value) return
-        // 连拍模式：直接执行连拍
-        if (_isBurstMode.value) {
-            executeBurstCapture()
-            return
+        when (_shootingMode.value) {
+            1 -> {
+                toggleNormalVideoRecording()
+                return
+            }
+            else -> {
+                // 连拍模式：直接执行连拍
+                if (_isBurstMode.value) {
+                    executeBurstCapture()
+                    return
+                }
+                if (_countdownValue.value > 0) {
+                    cancelCountdown()
+                    executeCapture()
+                    return
+                }
+                val seconds = _timerSeconds.value
+                if (seconds > 0) {
+                    startCountdown(seconds)
+                } else {
+                    executeCapture()
+                }
+            }
         }
-        if (_countdownValue.value > 0) {
-            // 倒计时进行中：取消并立即触发
-            cancelCountdown()
-            executeCapture()
-            return
-        }
-        val seconds = _timerSeconds.value
-        if (seconds > 0) {
-            startCountdown(seconds)
+    }
+
+    /**
+     * 切换普通视频录制（非 Vlog 模式）
+     */
+    fun toggleNormalVideoRecording() {
+        if (_isVlogRecording.value || _isVlogMerging.value) return
+        if (_isNormalVideoRecording.value) {
+            stopNormalVideoRecording()
         } else {
-            executeCapture()
+            startNormalVideoRecording()
+        }
+    }
+
+    private fun startNormalVideoRecording() {
+        val manager = cameraManager ?: return
+        // 先重置之前的 video chunks，确保只保留本次录制的文件
+        manager.resetVideoChunks()
+        val started = manager.startVideoChunk()
+        if (started) {
+            _isNormalVideoRecording.value = true
+            playShutterSound()
+            vibrateShutter()
+        } else {
+            _photoSaveError.value = "视频录制启动失败"
+        }
+    }
+
+    private fun stopNormalVideoRecording() {
+        if (!_isNormalVideoRecording.value) return
+        cameraManager?.stopVideoChunk()
+        _isNormalVideoRecording.value = false
+        // 稍等 Finalize 回调完成后获取文件并展示预览
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(800)
+            val chunks = cameraManager?.videoChunks ?: emptyList()
+            val lastChunk = chunks.lastOrNull()
+            if (lastChunk != null && lastChunk.exists() && lastChunk.length() > 0) {
+                // 将临时文件移动到视频输出目录
+                val destFile = File(videoOutputDir, "${UUID.randomUUID()}.mp4")
+                try {
+                    lastChunk.copyTo(destFile, overwrite = true)
+                    _exportedVlogPath.value = destFile.absolutePath
+                    _isReviewingVlog.value = true
+                } catch (e: Exception) {
+                    Log.e(TAG, "Video copy failed", e)
+                    _photoSaveError.value = "视频保存失败"
+                }
+            } else {
+                _photoSaveError.value = "视频保存失败"
+            }
+            cameraManager?.resetVideoChunks()
         }
     }
 
@@ -1330,14 +1418,18 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                 @Suppress("DEPRECATION")
                 vibrator?.vibrate(pattern, -1)
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Log.w(TAG, "Operation failed", e)
+        }
     }
 
     private fun playCountdownTick() {
         viewModelScope.launch {
             try {
                 toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP, 80)
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+            Log.w(TAG, "Operation failed", e)
+        }
         }
     }
 
@@ -1393,16 +1485,27 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                     bitmap = whitened
                 }
 
-                // 瘦脸需要人脸关键点，暂用默认估算（脸中心 = 图片中上区域）
+                // 瘦脸：基于真实人脸关键点（若未检测到人脸则回退到默认估算）
                 if (_slimmingLevel.value > 0 && bitmap != null) {
-                    val w = bitmap!!.width
-                    val h = bitmap!!.height
-                    val landmarks = BeautyEngine.FaceLandmarks(
-                        leftCheek = android.graphics.PointF(w * 0.35f, h * 0.4f),
-                        rightCheek = android.graphics.PointF(w * 0.65f, h * 0.4f),
-                        faceWidth = w * 0.5f,
-                        faceCenter = android.graphics.PointF(w * 0.5f, h * 0.35f)
-                    )
+                    val faceDataList = faceLandmarkDetector.detect(bitmap!!)
+                    val faceData = faceDataList.firstOrNull()
+                    val landmarks = if (faceData != null) {
+                        BeautyEngine.FaceLandmarks(
+                            leftCheek = faceData.leftCheek,
+                            rightCheek = faceData.rightCheek,
+                            faceWidth = faceData.faceWidth,
+                            faceCenter = faceData.faceCenter
+                        )
+                    } else {
+                        val w = bitmap!!.width
+                        val h = bitmap!!.height
+                        BeautyEngine.FaceLandmarks(
+                            leftCheek = android.graphics.PointF(w * 0.35f, h * 0.4f),
+                            rightCheek = android.graphics.PointF(w * 0.65f, h * 0.4f),
+                            faceWidth = w * 0.5f,
+                            faceCenter = android.graphics.PointF(w * 0.5f, h * 0.35f)
+                        )
+                    }
                     val slimmed = BeautyEngine.applyFaceSlimming(bitmap!!, _slimmingLevel.value, landmarks)
                     if (slimmed !== bitmap) {
                         bitmap?.recycle()
@@ -1586,7 +1689,9 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             try {
                 toneGenerator?.startTone(ToneGenerator.TONE_CDMA_PIP, 100)
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+            Log.w(TAG, "Operation failed", e)
+        }
         }
     }
 
@@ -1607,7 +1712,9 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                     vibrator.vibrate(30)
                 }
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Log.w(TAG, "Operation failed", e)
+        }
     }
 
     // ====== 姿势/场景切换 ======
@@ -1859,7 +1966,9 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         cancelCountdown()
         try {
             tts?.stop()
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Log.w(TAG, "Operation failed", e)
+        }
         unregisterSensorListener()
     }
 
@@ -2731,10 +2840,14 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         faceLandmarkDetector.close()
         try {
             toneGenerator?.release()
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Log.w(TAG, "Operation failed", e)
+        }
         try {
             tts?.stop()
             tts?.shutdown()
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Log.w(TAG, "Operation failed", e)
+        }
     }
 }

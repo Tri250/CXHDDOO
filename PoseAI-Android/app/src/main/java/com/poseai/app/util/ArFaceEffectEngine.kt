@@ -33,10 +33,10 @@ import kotlin.math.sqrt
 class ArFaceEffectEngine {
 
     /**
-     * 人脸关键点检测器占位类。
+     * AR 引擎专用的人脸关键点数据结构。
      *
-     * 项目中完整的 [FaceLandmarkDetector] 实现可能尚未存在，此处提供精简版 [FaceData]，
-     * 以保证 [ArFaceEffectEngine] 可独立编译。所有坐标均为位图像素坐标。
+     * 与 engine/FaceLandmarkDetector 解耦，确保 AR 引擎可独立使用。
+     * 所有坐标均为位图像素坐标。
      */
     class FaceLandmarkDetector {
         data class FaceData(

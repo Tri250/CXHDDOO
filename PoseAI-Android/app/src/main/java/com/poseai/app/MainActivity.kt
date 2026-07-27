@@ -292,7 +292,9 @@ class MainActivity : ComponentActivity() {
         super.onStop()
         try {
             unregisterReceiver(batteryReceiver)
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            android.util.Log.w("MainActivity", "Operation failed", e)
+        }
     }
 }
 
@@ -319,7 +321,8 @@ fun PoseAINavHost(
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
-    val showBottomBar = bottomNavItems.any { it.route == currentDestination?.route }
+    // 拍摄页面全屏沉浸，隐藏底部导航栏
+    val showBottomBar = currentDestination?.route in listOf("gallery", "ootd")
 
     val configuration = LocalConfiguration.current
     val isCompactHeight = configuration.screenHeightDp < 600
