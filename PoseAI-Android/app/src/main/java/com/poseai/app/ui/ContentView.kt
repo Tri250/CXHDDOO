@@ -4581,6 +4581,8 @@ fun FilterItem(
                         PhotoFilterEngine.Filter.NOIR -> Color(0xFF212121)
                         PhotoFilterEngine.Filter.LIGHT -> Color(0xFFFFF8E1)
                         PhotoFilterEngine.Filter.NEON -> Color(0xFF00BCD4)
+                        // 扩展滤镜库新增枚举值统一回退到中性灰，避免 when 非穷尽报错
+                        else -> Color(0xFF9E9E9E)
                     }
                 )
                 .border(
