@@ -9,6 +9,7 @@ import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Rect
+import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
 import android.net.Uri
@@ -251,7 +252,7 @@ object ShareEngine {
         val path = Path()
         val r = capsuleH / 2f
         path.addRoundRect(
-            Rect(left.toInt(), top.toInt(), right.toInt(), bottom.toInt()),
+            RectF(left, top, right, bottom),
             r, r,
             Path.Direction.CW
         )

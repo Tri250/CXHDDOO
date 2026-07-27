@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -67,6 +68,7 @@ import com.poseai.app.util.StickerEngine
 import com.poseai.app.ui.theme.Dimens
 import com.poseai.app.viewmodel.ShootingViewModel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.*
 
 // ═══════════════════════════════════════════════════════════════
@@ -994,7 +996,7 @@ fun AlignmentCelebrationOverlay() {
         // 先播放粒子扩散
         particleProgress.animateTo(1f, animationSpec = tween(600, easing = FastOutSlowInEasing))
         // 粒子到达后播放对勾 + 文字
-        checkmarkProgress.animateTo(1f, animationSpec = spring(DampingRatioMediumBouncy, StiffnessMedium))
+        checkmarkProgress.animateTo(1f, animationSpec = spring(dampingRatio = 0.5f, stiffness = 1500f))
     }
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

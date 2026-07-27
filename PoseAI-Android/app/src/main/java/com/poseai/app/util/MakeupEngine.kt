@@ -6,12 +6,15 @@ import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.PointF
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
 import com.poseai.app.engine.FaceLandmarkDetector.FaceData
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
@@ -151,7 +154,7 @@ class MakeupEngine {
 
         // 叠加一层柔光，让颜色更自然
         val softPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.argb((strength * 60).toInt(), Color.red(color), Color.green(color), Color.blue(color))
+            this.color = Color.argb((strength * 60).toInt(), Color.red(color), Color.green(color), Color.blue(color))
             xfermode = PorterDuffXfermode(PorterDuff.Mode.SCREEN)
         }
         canvas.save()

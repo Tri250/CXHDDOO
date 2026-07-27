@@ -232,7 +232,7 @@ class VideoBeautyEngine {
         val inputSurface = encoder.createInputSurface()
         encoder.start()
 
-        val muxer = MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_MPEG_4)
+        val muxer = MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
         var muxerTrackIndex = -1
         var muxerStarted = false
 
@@ -359,7 +359,7 @@ class VideoBeautyEngine {
         val inputSurface = encoder.createInputSurface()
         encoder.start()
 
-        val muxer = MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_MPEG_4)
+        val muxer = MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
         var muxerTrackIndex = -1
         var muxerStarted = false
 
@@ -455,7 +455,7 @@ class VideoBeautyEngine {
         // 创建编码器
         val mime = "video/avc"
         val outputFormat = MediaFormat.createVideoFormat(mime, width, height).apply {
-            setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatColor565)
+            setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
             setInteger(MediaFormat.KEY_BIT_RATE, 6_000_000)
             setInteger(MediaFormat.KEY_FRAME_RATE, (frameRate * params.speedMultiplier).toInt().coerceIn(1, 60))
             setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2)
@@ -465,7 +465,7 @@ class VideoBeautyEngine {
         encoder.configure(outputFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
         encoder.start()
 
-        val muxer = MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_MPEG_4)
+        val muxer = MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
         var muxerTrackIndex = -1
         var muxerStarted = false
 

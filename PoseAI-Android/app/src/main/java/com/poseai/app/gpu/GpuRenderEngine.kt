@@ -27,7 +27,7 @@ object GpuRenderEngine {
     private const val TAG = "GpuRenderEngine"
 
     // 顶点坐标（全屏四边形）
-    private val VERTEX_COORDS = floatArrayOf(
+    internal val VERTEX_COORDS = floatArrayOf(
         -1f, -1f, 0f,  // 左下
          1f, -1f, 0f,  // 右下
         -1f,  1f, 0f,  // 左上
@@ -35,7 +35,7 @@ object GpuRenderEngine {
     )
 
     // 纹理坐标（与顶点对应）
-    private val TEX_COORDS = floatArrayOf(
+    internal val TEX_COORDS = floatArrayOf(
         0f, 0f,  // 左下
         1f, 0f,  // 右下
         0f, 1f,  // 左上

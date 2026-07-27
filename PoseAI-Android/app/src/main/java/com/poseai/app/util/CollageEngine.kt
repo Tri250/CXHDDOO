@@ -102,7 +102,7 @@ object CollageEngine {
         val spacing = (min(bitmaps[0].width, bitmaps[0].height) * SPACING_RATIO).toInt()
         val radius = (min(bitmaps[0].width, bitmaps[0].height) * CORNER_RADIUS_RATIO)
 
-        val w = min(bitmaps[0].width, bitmaps[1].width, bitmaps[2].width)
+        val w = minOf(bitmaps[0].width, bitmaps[1].width, bitmaps[2].width)
         val h = (w * 1.3f).toInt()  // 统一高度
         val bigW = w * 2 / 3
         val smallW = w - bigW - spacing
@@ -125,7 +125,7 @@ object CollageEngine {
         val spacing = (min(bitmaps[0].width, bitmaps[0].height) * SPACING_RATIO).toInt()
         val radius = (min(bitmaps[0].width, bitmaps[0].height) * CORNER_RADIUS_RATIO)
 
-        val w = min(bitmaps[0].width, bitmaps[1].width, bitmaps[2].width, bitmaps[3].width)
+        val w = minOf(bitmaps[0].width, bitmaps[1].width, bitmaps[2].width, bitmaps[3].width)
         // 方形容器
         val cellSize = (w - spacing) / 2
         val canvasSize = cellSize * 2 + spacing

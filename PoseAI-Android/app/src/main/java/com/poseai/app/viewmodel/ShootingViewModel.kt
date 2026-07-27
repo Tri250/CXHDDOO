@@ -99,11 +99,6 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     private val storeManager: StoreManager = app.storeManager
     private val customPoseStore = app.customPoseStore
 
-    init {
-        // 加载已保存的自定义姿势
-        _customPoses.value = customPoseStore.loadAll()
-    }
-
     private var cameraManager: CameraManager? = null
     private var poseDetector: PoseDetectorEngine? = null
     private var sceneClassifier: SceneClassifier? = null
@@ -341,7 +336,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     val shareCaption: StateFlow<String> = _shareCaption.asStateFlow()
 
     // ── 自定义姿势 ──
-    private val _customPoses = MutableStateFlow<List<com.poseai.app.store.CustomPose>>(emptyList())
+    private val _customPoses = MutableStateFlow<List<com.poseai.app.store.CustomPose>>(customPoseStore.loadAll())
     val customPoses: StateFlow<List<com.poseai.app.store.CustomPose>> = _customPoses.asStateFlow()
 
     private val _showCustomPoseSheet = MutableStateFlow(false)

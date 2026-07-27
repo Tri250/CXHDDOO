@@ -746,7 +746,7 @@ fun GalleryScreen(
                                 } else {
                                     Text(
                                         text = (selectedCollageIds.size + 1).toString()
-                                            .takeIf { !isSelected },
+                                            .takeIf { !isSelected } ?: "",
                                         color = Color.White,
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Medium
