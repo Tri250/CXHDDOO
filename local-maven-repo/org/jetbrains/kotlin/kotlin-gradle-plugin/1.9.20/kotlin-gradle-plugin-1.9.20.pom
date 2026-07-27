@@ -430,5 +430,11 @@
         </exclusion>
       </exclusions>
     </dependency>
+    <dependency>
+      <groupId>org.jetbrains.kotlin</groupId>
+      <artifactId>kotlin-daemon-client</artifactId>
+      <version>1.9.20</version>
+      <scope>runtime</scope>
+    </dependency>
   </dependencies>
 </project>
