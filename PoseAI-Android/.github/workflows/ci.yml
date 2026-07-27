@@ -1,0 +1,68 @@
+name: CI Build Check
+
+# ──────────────────────────────────────────────────────────────
+# PoseAI Android CI 构建检查
+# 触发条件：push 到 main/分支 + PR
+# 目的：确保代码编译通过，不产生构建产物
+# ──────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+env:
+  JAVA_VERSION: '17'
+  JAVA_DISTRIBUTION: 'temurin'
+  ANDROID_SDK_VERSION: '35'
+  GRADLE_OPTS: '-Xmx2048m -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true'
+
+jobs:
+  compile-check:
+    name: Compile Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: |
+            platforms;android-${{ env.ANDROID_SDK_VERSION }}
+            build-tools;34.0.0
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', '**/*.gradle', 'gradle.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Compile Debug Kotlin
+        run: ./gradlew :app:compileDebugKotlin --no-daemon --stacktrace
+
+      - name: Compile Release Kotlin
+        run: ./gradlew :app:compileReleaseKotlin --no-daemon --stacktrace
+
+      - name: Lint Check
+        run: ./gradlew :app:lintDebug --no-daemon --stacktrace || true
+        continue-on-error: true

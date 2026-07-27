@@ -105,14 +105,15 @@ class FaceLandmarkDetector {
 
     /**
      * 从 Bitmap 检测所有人脸
+     * 注意：此方法同步阻塞等待 ML Kit 结果，必须在 IO 线程调用，禁止在主线程使用。
      */
     fun detect(bitmap: Bitmap): List<FaceData> {
         val image = InputImage.fromBitmap(bitmap, 0)
         val result = mutableListOf<FaceData>()
         // ML Kit detect 返回 Task<List<Face>>，此处使用同步等待
         val latch = java.util.concurrent.CountDownLatch(1)
-        var faces: List<Face> = emptyList()
-        var error: Exception? = null
+        @Volatile var faces: List<Face> = emptyList()
+        @Volatile var error: Exception? = null
 
         detector.process(image)
             .addOnSuccessListener { detectedFaces ->
@@ -124,7 +125,11 @@ class FaceLandmarkDetector {
                 latch.countDown()
             }
 
-        latch.await(5, java.util.concurrent.TimeUnit.SECONDS)
+        val completed = latch.await(5, java.util.concurrent.TimeUnit.SECONDS)
+        if (!completed) {
+            android.util.Log.w("FaceLandmarkDetector", "detect timed out after 5s")
+            return emptyList()
+        }
 
         error?.let { return emptyList() }
 
@@ -136,6 +141,7 @@ class FaceLandmarkDetector {
 
     /**
      * 从 ImageProxy 检测（实时相机预览用）
+     * 注意：此方法同步阻塞等待 ML Kit 结果，必须在 IO 线程调用，禁止在主线程使用。
      */
     fun detectFromImageProxy(imageProxy: ImageProxy): List<FaceData> {
         val image = InputImage.fromMediaImage(
@@ -143,8 +149,8 @@ class FaceLandmarkDetector {
             imageProxy.imageInfo.rotationDegrees
         )
         val latch = java.util.concurrent.CountDownLatch(1)
-        var faces: List<Face> = emptyList()
-        var error: Exception? = null
+        @Volatile var faces: List<Face> = emptyList()
+        @Volatile var error: Exception? = null
 
         detector.process(image)
             .addOnSuccessListener { detectedFaces ->
@@ -156,7 +162,11 @@ class FaceLandmarkDetector {
                 latch.countDown()
             }
 
-        latch.await(3, java.util.concurrent.TimeUnit.SECONDS)
+        val completed = latch.await(3, java.util.concurrent.TimeUnit.SECONDS)
+        if (!completed) {
+            android.util.Log.w("FaceLandmarkDetector", "detectFromImageProxy timed out after 3s")
+            return emptyList()
+        }
 
         error?.let { return emptyList() }
 

@@ -59,35 +59,53 @@ class AdvancedBeautyEngine {
         if (faceData == null) return bitmap
         var result = bitmap.copy(Bitmap.Config.ARGB_8888, true)
 
-        // 变形类效果（按顺序执行）
+        // 变形类效果（按顺序执行）— 每步回收旧 Bitmap 避免 OOM
         if (params.enlargeEyes > 0) {
-            result = enlargeEyes(result, faceData, params.enlargeEyes)
+            val temp = enlargeEyes(result, faceData, params.enlargeEyes)
+            result.recycle()
+            result = temp
         }
         if (params.slimNose > 0) {
-            result = slimNose(result, faceData, params.slimNose)
+            val temp = slimNose(result, faceData, params.slimNose)
+            result.recycle()
+            result = temp
         }
         if (params.shrinkChin > 0) {
-            result = shrinkChin(result, faceData, params.shrinkChin)
+            val temp = shrinkChin(result, faceData, params.shrinkChin)
+            result.recycle()
+            result = temp
         }
         if (params.enlargeForehead > 0) {
-            result = enlargeForehead(result, faceData, params.enlargeForehead)
+            val temp = enlargeForehead(result, faceData, params.enlargeForehead)
+            result.recycle()
+            result = temp
         }
         if (params.slimCheekbone > 0) {
-            result = slimCheekbone(result, faceData, params.slimCheekbone)
+            val temp = slimCheekbone(result, faceData, params.slimCheekbone)
+            result.recycle()
+            result = temp
         }
         if (params.slimJawline > 0) {
-            result = slimJawline(result, faceData, params.slimJawline)
+            val temp = slimJawline(result, faceData, params.slimJawline)
+            result.recycle()
+            result = temp
         }
         if (params.slimFace > 0) {
-            result = slimFace(result, faceData, params.slimFace)
+            val temp = slimFace(result, faceData, params.slimFace)
+            result.recycle()
+            result = temp
         }
 
         // 颜色类效果
         if (params.brightenEyes > 0) {
-            result = brightenEyes(result, faceData, params.brightenEyes)
+            val temp = brightenEyes(result, faceData, params.brightenEyes)
+            result.recycle()
+            result = temp
         }
         if (params.whitenTeeth > 0) {
-            result = whitenTeeth(result, faceData, params.whitenTeeth)
+            val temp = whitenTeeth(result, faceData, params.whitenTeeth)
+            result.recycle()
+            result = temp
         }
 
         return result
@@ -128,8 +146,9 @@ class AdvancedBeautyEngine {
         // 左鼻翼向右推
         var result = radialWarp(bitmap, face.noseLeft, warpRadius, 1f - pushDist / warpRadius, false)
         // 右鼻翼向左推
-        result = radialWarp(result, face.noseRight, warpRadius, 1f - pushDist / warpRadius, false)
-        return result
+        val temp = radialWarp(result, face.noseRight, warpRadius, 1f - pushDist / warpRadius, false)
+        result.recycle()
+        return temp
     }
 
     /**
@@ -175,14 +194,15 @@ class AdvancedBeautyEngine {
             pushAmount
         )
         // 右颧骨向中心推
-        result = directionalWarp(
+        val temp = directionalWarp(
             result,
             face.rightCheek,
             face.faceCenter,
             cheekRadius,
             pushAmount
         )
-        return result
+        result.recycle()
+        return temp
     }
 
     /**
@@ -202,8 +222,9 @@ class AdvancedBeautyEngine {
         val pushAmount = face.faceWidth * 0.1f * strength
 
         var result = directionalWarp(bitmap, leftJaw, face.faceCenter, jawRadius, pushAmount)
-        result = directionalWarp(result, rightJaw, face.faceCenter, jawRadius, pushAmount)
-        return result
+        val temp = directionalWarp(result, rightJaw, face.faceCenter, jawRadius, pushAmount)
+        result.recycle()
+        return temp
     }
 
     /**

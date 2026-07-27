@@ -568,6 +568,10 @@ class VideoBeautyEngine {
                     muxerStarted = true
                     onFormatChange(muxerTrackIndex, muxerStarted)
                 }
+                encoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER -> {
+                    // 编码器暂无输出：非 EOS 模式下退出避免无限循环；EOS 模式下继续等待
+                    if (!endOfStream) break
+                }
                 encoderStatus >= 0 -> {
                     val encodedBuffer = encoder.getOutputBuffer(encoderStatus)
                     if (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {

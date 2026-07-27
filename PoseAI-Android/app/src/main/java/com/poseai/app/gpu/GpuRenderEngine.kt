@@ -73,10 +73,10 @@ object GpuRenderEngine {
             // 2. 编译着色器程序
             val program = createProgram(VERTEX_SHADER, fragmentShaderSource)
             if (program == 0) {
-                bitmap.recycle()
-                return output.also { canvas ->
-                    android.graphics.Canvas(output).drawBitmap(bitmap, 0f, 0f, null)
-                }
+                // 着色器编译失败，用 Canvas 兜底（不回收输入 bitmap）
+                val canvas = android.graphics.Canvas(output)
+                canvas.drawBitmap(bitmap, 0f, 0f, null)
+                return output
             }
 
             val shaderProgram = ShaderProgram(program)
@@ -133,14 +133,15 @@ object GpuRenderEngine {
             // 注意：GL 原点在左下，Bitmap 原点在左上，需要垂直翻转
             val flipped = flipVertical(output, width, height)
 
-            // 10. 清理
+            // 10. 清理 GL 资源
             GLES20.glDeleteTextures(1, textures, 0)
             GLES20.glDeleteProgram(program)
 
             if (flipped != output) output.recycle()
             return flipped
         } catch (e: Exception) {
-            // GPU 处理失败，返回原图副本
+            // GPU 处理失败，回收 output 并返回原图副本
+            output.recycle()
             return bitmap.copy(Bitmap.Config.ARGB_8888, true)
         }
     }
