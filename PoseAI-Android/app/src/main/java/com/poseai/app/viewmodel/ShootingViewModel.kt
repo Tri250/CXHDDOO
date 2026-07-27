@@ -44,9 +44,15 @@ import com.poseai.app.model.VlogTemplate
 import com.poseai.app.store.StoreManager
 import com.poseai.app.util.PhotoFilterEngine
 import com.poseai.app.util.BeautyEngine
+import com.poseai.app.util.AdvancedBeautyEngine
+import com.poseai.app.util.MakeupEngine
+import com.poseai.app.util.SkinRepairEngine
+import com.poseai.app.util.ArFaceEffectEngine
 import com.poseai.app.util.ShareEngine
 import com.poseai.app.util.StickerEngine
 import com.poseai.app.util.VideoMerger
+import com.poseai.app.engine.FaceLandmarkDetector
+import com.poseai.app.model.PoseTemplateLibrary
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -265,6 +271,33 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     /** 当前选中的贴纸 */
     private val _currentSticker = MutableStateFlow(StickerEngine.Sticker.NONE)
     val currentSticker: StateFlow<StickerEngine.Sticker> = _currentSticker.asStateFlow()
+
+    // ── 高级美颜参数 ──
+    private val faceLandmarkDetector = FaceLandmarkDetector()
+    private val advancedBeautyEngine = AdvancedBeautyEngine()
+    private val makeupEngine = MakeupEngine()
+    private val skinRepairEngine = SkinRepairEngine()
+    private val arFaceEffectEngine = ArFaceEffectEngine()
+
+    private val _advancedBeautyParams = MutableStateFlow(AdvancedBeautyEngine.BeautyParams())
+    val advancedBeautyParams: StateFlow<AdvancedBeautyEngine.BeautyParams> = _advancedBeautyParams.asStateFlow()
+
+    private val _makeupParams = MutableStateFlow(MakeupEngine.MakeupParams())
+    val makeupParams: StateFlow<MakeupEngine.MakeupParams> = _makeupParams.asStateFlow()
+
+    private val _skinRepairParams = MutableStateFlow(SkinRepairEngine.SkinRepairParams())
+    val skinRepairParams: StateFlow<SkinRepairEngine.SkinRepairParams> = _skinRepairParams.asStateFlow()
+
+    // ── AR人脸特效 ──
+    private val _activeArEffects = MutableStateFlow<Set<ArFaceEffectEngine.ArEffect>>(emptySet())
+    val activeArEffects: StateFlow<Set<ArFaceEffectEngine.ArEffect>> = _activeArEffects.asStateFlow()
+
+    // ── 扩展姿势模板 ──
+    private val _showPoseTemplateSelector = MutableStateFlow(false)
+    val showPoseTemplateSelector: StateFlow<Boolean> = _showPoseTemplateSelector.asStateFlow()
+
+    private val _currentTemplateScene = MutableStateFlow<PoseTemplateLibrary.SceneTemplate?>(null)
+    val currentTemplateScene: StateFlow<PoseTemplateLibrary.SceneTemplate?> = _currentTemplateScene.asStateFlow()
 
     private val _showSceneSelector = MutableStateFlow(false)
     val showSceneSelector: StateFlow<Boolean> = _showSceneSelector.asStateFlow()
@@ -1402,6 +1435,85 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                 }
             }
 
+            // 高级美颜 + 美妆 + 皮肤修复 + AR特效（基于人脸关键点）
+            if (bitmap != null) {
+                val advParams = _advancedBeautyParams.value
+                val makeupParams = _makeupParams.value
+                val skinParams = _skinRepairParams.value
+                val arEffects = _activeArEffects.value
+                val hasAdvBeauty = advParams.enlargeEyes > 0 || advParams.slimNose > 0 ||
+                    advParams.shrinkChin > 0 || advParams.enlargeForehead > 0 ||
+                    advParams.slimCheekbone > 0 || advParams.slimJawline > 0 ||
+                    advParams.slimFace > 0 || advParams.brightenEyes > 0 ||
+                    advParams.whitenTeeth > 0
+                val hasMakeup = makeupParams.lipstickIntensity > 0 || makeupParams.blushIntensity > 0 ||
+                    makeupParams.eyebrowIntensity > 0 || makeupParams.eyeshadowIntensity > 0 ||
+                    makeupParams.eyelinerIntensity > 0 || makeupParams.eyelashIntensity > 0
+                val hasSkinRepair = skinParams.removeAcne > 0 || skinParams.removeSpots > 0 ||
+                    skinParams.removeDarkCircles > 0 || skinParams.brightenSkinTone > 0
+                val hasArEffects = arEffects.isNotEmpty()
+
+                if (hasAdvBeauty || hasMakeup || hasSkinRepair || hasArEffects) {
+                    // 人脸检测
+                    val faceDataList = faceLandmarkDetector.detect(bitmap!!)
+                    val faceData = faceDataList.firstOrNull()
+
+                    // 构建 AR 引擎所需的 FaceData
+                    val arFaceData = faceData?.let {
+                        ArFaceEffectEngine.FaceLandmarkDetector.FaceData(
+                            leftEye = it.leftEyeCenter,
+                            rightEye = it.rightEyeCenter,
+                            noseBase = it.noseBase,
+                            mouthLeft = it.mouthLeft,
+                            mouthRight = it.mouthRight,
+                            mouthBottom = it.mouthBottom,
+                            faceCenter = it.faceCenter,
+                            faceWidth = it.faceWidth,
+                            faceHeight = it.faceHeight,
+                            rollAngle = it.rollAngle
+                        )
+                    }
+
+                    // 皮肤修复（最先处理）
+                    if (hasSkinRepair && faceData != null) {
+                        val temp = skinRepairEngine.applyAll(bitmap!!, faceData, skinParams)
+                        if (temp !== bitmap) {
+                            bitmap?.recycle()
+                            bitmap = temp
+                        }
+                    }
+
+                    // 高级美颜
+                    if (hasAdvBeauty && faceData != null) {
+                        val temp = advancedBeautyEngine.applyAll(bitmap!!, faceData, advParams)
+                        if (temp !== bitmap) {
+                            bitmap?.recycle()
+                            bitmap = temp
+                        }
+                    }
+
+                    // 美妆
+                    if (hasMakeup && faceData != null) {
+                        val temp = makeupEngine.applyAll(bitmap!!, faceData, makeupParams)
+                        if (temp !== bitmap) {
+                            bitmap?.recycle()
+                            bitmap = temp
+                        }
+                    }
+
+                    // AR人脸特效
+                    if (hasArEffects) {
+                        for (effect in arEffects) {
+                            val temp = arFaceEffectEngine.applyEffect(bitmap!!, effect, arFaceData)
+                            if (temp !== bitmap) {
+                                bitmap?.recycle()
+                                bitmap = temp
+                            }
+                        }
+                    }
+                }
+            }
+
             // 水印
             if (_watermarkEnabled.value && bitmap != null) {
                 val watermarked = PhotoFilterEngine.addWatermark(bitmap!!)
@@ -2159,6 +2271,172 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         _currentSticker.value = sticker
     }
 
+    // ====== 高级美颜控制 ======
+
+    /** 更新高级美颜参数 */
+    fun updateAdvancedBeautyParams(params: AdvancedBeautyEngine.BeautyParams) {
+        _advancedBeautyParams.value = params
+    }
+
+    /** 设置单项高级美颜参数 */
+    fun setAdvancedBeautyParam(field: String, value: Int) {
+        val current = _advancedBeautyParams.value
+        _advancedBeautyParams.value = when (field) {
+            "enlargeEyes" -> current.copy(enlargeEyes = value)
+            "slimNose" -> current.copy(slimNose = value)
+            "shrinkChin" -> current.copy(shrinkChin = value)
+            "enlargeForehead" -> current.copy(enlargeForehead = value)
+            "slimCheekbone" -> current.copy(slimCheekbone = value)
+            "slimJawline" -> current.copy(slimJawline = value)
+            "slimFace" -> current.copy(slimFace = value)
+            "brightenEyes" -> current.copy(brightenEyes = value)
+            "whitenTeeth" -> current.copy(whitenTeeth = value)
+            else -> current
+        }
+    }
+
+    /** 重置高级美颜参数 */
+    fun resetAdvancedBeauty() {
+        _advancedBeautyParams.value = AdvancedBeautyEngine.BeautyParams()
+    }
+
+    // ====== 美妆控制 ======
+
+    /** 更新美妆参数 */
+    fun updateMakeupParams(params: MakeupEngine.MakeupParams) {
+        _makeupParams.value = params
+    }
+
+    /** 设置美妆单项 */
+    fun setMakeupParam(field: String, value: Int) {
+        val current = _makeupParams.value
+        _makeupParams.value = when (field) {
+            "lipstickIntensity" -> current.copy(lipstickIntensity = value)
+            "blushIntensity" -> current.copy(blushIntensity = value)
+            "eyebrowIntensity" -> current.copy(eyebrowIntensity = value)
+            "eyeshadowIntensity" -> current.copy(eyeshadowIntensity = value)
+            "eyelinerIntensity" -> current.copy(eyelinerIntensity = value)
+            "eyelashIntensity" -> current.copy(eyelashIntensity = value)
+            else -> current
+        }
+    }
+
+    /** 设置美妆颜色 */
+    fun setMakeupColor(field: String, color: Int) {
+        val current = _makeupParams.value
+        _makeupParams.value = when (field) {
+            "lipstickColor" -> current.copy(lipstickColor = color)
+            "blushColor" -> current.copy(blushColor = color)
+            "eyebrowColor" -> current.copy(eyebrowColor = color)
+            "eyeshadowColor" -> current.copy(eyeshadowColor = color)
+            "eyelinerColor" -> current.copy(eyelinerColor = color)
+            "eyelashColor" -> current.copy(eyelashColor = color)
+            else -> current
+        }
+    }
+
+    /** 重置美妆 */
+    fun resetMakeup() {
+        _makeupParams.value = MakeupEngine.MakeupParams()
+    }
+
+    // ====== 皮肤修复控制 ======
+
+    /** 更新皮肤修复参数 */
+    fun updateSkinRepairParams(params: SkinRepairEngine.SkinRepairParams) {
+        _skinRepairParams.value = params
+    }
+
+    /** 设置皮肤修复单项 */
+    fun setSkinRepairParam(field: String, value: Int) {
+        val current = _skinRepairParams.value
+        _skinRepairParams.value = when (field) {
+            "removeAcne" -> current.copy(removeAcne = value)
+            "removeSpots" -> current.copy(removeSpots = value)
+            "removeDarkCircles" -> current.copy(removeDarkCircles = value)
+            "brightenSkinTone" -> current.copy(brightenSkinTone = value)
+            else -> current
+        }
+    }
+
+    /** 重置皮肤修复 */
+    fun resetSkinRepair() {
+        _skinRepairParams.value = SkinRepairEngine.SkinRepairParams()
+    }
+
+    // ====== AR人脸特效控制 ======
+
+    /** 切换AR特效 */
+    fun toggleArEffect(effect: ArFaceEffectEngine.ArEffect) {
+        val current = _activeArEffects.value.toMutableSet()
+        if (effect in current) {
+            current.remove(effect)
+        } else {
+            current.add(effect)
+        }
+        _activeArEffects.value = current
+    }
+
+    /** 清除所有AR特效 */
+    fun clearArEffects() {
+        _activeArEffects.value = emptySet()
+    }
+
+    // ====== 姿势模板控制 ======
+
+    /** 打开姿势模板选择器 */
+    fun showPoseTemplateSelector() {
+        _showPoseTemplateSelector.value = true
+    }
+
+    /** 关闭姿势模板选择器 */
+    fun hidePoseTemplateSelector() {
+        _showPoseTemplateSelector.value = false
+    }
+
+    /** 选择模板场景 — 应用首个姿势到拍摄引导 */
+    fun selectTemplateScene(scene: PoseTemplateLibrary.SceneTemplate) {
+        _currentTemplateScene.value = scene
+        // 取场景首个姿势作为当前拍摄方案
+        val firstPose = scene.poses.firstOrNull() ?: return
+        val plan = ShootingPlan(
+            poseName = firstPose.name,
+            poseDescription = firstPose.description.ifEmpty { scene.description },
+            posePoints = firstPose.posePoints,
+            composition = firstPose.composition
+        )
+        _customActivePlan = plan
+        _currentPlanIndex.value = 0
+        _poseScore.value = 0f
+        _currentSequenceIndex.value = 0
+        _currentAngleIndex.value = 0
+        _useSecondaryPose.value = false
+        _activeCustomPoseId.value = null
+        cancelCountdown()
+        _showPoseTemplateSelector.value = false
+    }
+
+    /** 选择模板场景中的指定姿势 */
+    fun selectTemplatePose(scene: PoseTemplateLibrary.SceneTemplate, poseIndex: Int) {
+        val pose = scene.poses.getOrNull(poseIndex) ?: return
+        _currentTemplateScene.value = scene
+        val plan = ShootingPlan(
+            poseName = pose.name,
+            poseDescription = pose.description.ifEmpty { scene.description },
+            posePoints = pose.posePoints,
+            composition = pose.composition
+        )
+        _customActivePlan = plan
+        _currentPlanIndex.value = 0
+        _poseScore.value = 0f
+        _currentSequenceIndex.value = 0
+        _currentAngleIndex.value = 0
+        _useSecondaryPose.value = false
+        _activeCustomPoseId.value = null
+        cancelCountdown()
+        _showPoseTemplateSelector.value = false
+    }
+
     // ====== 分享控制 ======
 
     /** 打开分享面板 */
@@ -2455,6 +2733,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         sceneClassifier?.close()
         smileDetector?.close()
         poseSimilarityModel?.close()
+        faceLandmarkDetector.close()
         try {
             toneGenerator?.release()
         } catch (_: Exception) {}

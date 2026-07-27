@@ -114,6 +114,8 @@ fun ShootingScreen(
     val currentSticker by viewModel.currentSticker.collectAsState()
     val showSceneSelector by viewModel.showSceneSelector.collectAsState()
     val showFilterSelector by viewModel.showFilterSelector.collectAsState()
+    val showPoseTemplateSelector by viewModel.showPoseTemplateSelector.collectAsState()
+    var showBeautyEffectPanel by remember { mutableStateOf(false) }
     val showShareSheet by viewModel.showShareSheet.collectAsState()
     val sharePhotoPath by viewModel.sharePhotoPath.collectAsState()
     val watermarkStyle by viewModel.watermarkStyle.collectAsState()
@@ -599,6 +601,8 @@ fun ShootingScreen(
             onToggleSmile = { viewModel.toggleSmile(!smileEnabled) },
             onToggleGrid = { viewModel.toggleGrid(!gridEnabled) },
             onToggleFilter = { viewModel.toggleFilterSelector() },
+            onToggleBeautyEffect = { showBeautyEffectPanel = true },
+            onTogglePoseTemplate = { viewModel.showPoseTemplateSelector() },
             onToggleExposure = { showExposurePanel = !showExposurePanel },
             onToggleScreenFillLight = { viewModel.toggleScreenFillLight() },
             onToggleVlog = { viewModel.toggleVlogTemplateSelector() },
@@ -738,6 +742,22 @@ fun ShootingScreen(
                 onQuickBeauty = { viewModel.applyQuickBeauty() },
                 onDisableBeauty = { viewModel.disableBeauty() },
                 onDismiss = { viewModel.toggleFilterSelector() }
+            )
+        }
+
+        // ── 高级美颜特效面板 ──
+        if (showBeautyEffectPanel) {
+            BeautyEffectPanel(
+                viewModel = viewModel,
+                onDismiss = { showBeautyEffectPanel = false }
+            )
+        }
+
+        // ── 姿势模板选择器 ──
+        if (showPoseTemplateSelector) {
+            PoseTemplateSelector(
+                viewModel = viewModel,
+                onDismiss = { viewModel.hidePoseTemplateSelector() }
             )
         }
 
@@ -1380,6 +1400,8 @@ fun BottomPanel(
     onToggleSmile: () -> Unit,
     onToggleGrid: () -> Unit,
     onToggleFilter: () -> Unit,
+    onToggleBeautyEffect: () -> Unit = {},
+    onTogglePoseTemplate: () -> Unit = {},
     onToggleExposure: () -> Unit,
     onToggleScreenFillLight: () -> Unit,
     onToggleVlog: () -> Unit,
@@ -1453,7 +1475,92 @@ fun BottomPanel(
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            // ── 快捷功能工具栏（国产 App 标配：水平滚动 icon 按钮）──
+            // 激活 onToggleAuto/onToggleSmile/onToggleGrid/onToggleFilter/
+            // onToggleBeautyEffect/onTogglePoseTemplate/onToggleExposure/
+            // onToggleScreenFillLight/onToggleTorch 死代码
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.screenMarginH),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+                contentPadding = PaddingValues(vertical = 2.dp)
+            ) {
+                item {
+                    QuickActionButton(
+                        icon = Icons.Default.AutoAwesome,
+                        label = "自动",
+                        active = isAutoCapturing,
+                        onClick = onToggleAuto
+                    )
+                }
+                item {
+                    QuickActionButton(
+                        icon = Icons.Default.SentimentSatisfied,
+                        label = "微笑",
+                        active = smileEnabled,
+                        onClick = onToggleSmile
+                    )
+                }
+                item {
+                    QuickActionButton(
+                        icon = Icons.Default.GridOn,
+                        label = "网格",
+                        active = gridEnabled,
+                        onClick = onToggleGrid
+                    )
+                }
+                item {
+                    QuickActionButton(
+                        icon = Icons.Default.FilterVintage,
+                        label = "滤镜",
+                        active = currentFilterName != "原图" && currentFilterName.isNotBlank(),
+                        onClick = onToggleFilter
+                    )
+                }
+                item {
+                    QuickActionButton(
+                        icon = Icons.Default.Face,
+                        label = "美颜",
+                        active = false,
+                        onClick = onToggleBeautyEffect
+                    )
+                }
+                item {
+                    QuickActionButton(
+                        icon = Icons.Default.Accessibility,
+                        label = "姿势",
+                        active = false,
+                        onClick = onTogglePoseTemplate
+                    )
+                }
+                item {
+                    QuickActionButton(
+                        icon = Icons.Default.Exposure,
+                        label = "曝光",
+                        active = false,
+                        onClick = onToggleExposure
+                    )
+                }
+                item {
+                    QuickActionButton(
+                        icon = Icons.Default.WbIncandescent,
+                        label = "补光",
+                        active = screenFillLightEnabled,
+                        onClick = onToggleScreenFillLight
+                    )
+                }
+                item {
+                    QuickActionButton(
+                        icon = if (isTorchOn) Icons.Default.FlashlightOn else Icons.Default.FlashlightOff,
+                        label = "手电",
+                        active = isTorchOn,
+                        onClick = onToggleTorch
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
         } else {
             Spacer(modifier = Modifier.height(20.dp))
         }
@@ -1605,6 +1712,48 @@ fun BottomPanel(
                 Spacer(modifier = Modifier.size(Dimens.thumbSize))
             }
         }
+    }
+}
+
+// ── 快捷功能按钮（国产 App 工具栏标配：图标 + 文字，激活态高亮）──
+@Composable
+fun QuickActionButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    active: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(Dimens.radiusMd))
+            .background(
+                if (active) Accent.copy(alpha = 0.22f) else Color.Black.copy(alpha = 0.35f)
+            )
+            .border(
+                width = if (active) Dimens.strokeRegular else Dimens.strokeThin,
+                color = if (active) Accent.copy(alpha = 0.7f) else Border,
+                shape = RoundedCornerShape(Dimens.radiusMd)
+            )
+            .clickable { onClick() }
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs + 2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = if (active) Accent else TextPrimary,
+            modifier = Modifier.size(Dimens.iconSm)
+        )
+        Text(
+            text = label,
+            color = if (active) Accent else TextSecondary,
+            fontSize = Dimens.fontCaption,
+            fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+            lineHeight = Dimens.lineHeightCaption,
+            maxLines = 1
+        )
     }
 }
 
