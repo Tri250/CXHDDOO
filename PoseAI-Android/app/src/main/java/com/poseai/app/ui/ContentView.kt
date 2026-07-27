@@ -373,7 +373,7 @@ fun ShootingScreen(
             )
         }
 
-        // Layer 6: Clean top bar (single row, minimal visual weight)
+        // Layer 6: Top bar + plan picker (unified, minimal)
         AnimatedVisibility(
             visible = !isImmersiveMode,
             enter = fadeIn(animationSpec = tween(220)) +
@@ -385,7 +385,7 @@ fun ShootingScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = statusBarPadding.calculateTopPadding() + 12.dp)
+                    .padding(top = statusBarPadding.calculateTopPadding() + 8.dp)
                     .padding(horizontal = Dimens.screenMarginH)
             ) {
                 TopBar(
@@ -406,9 +406,8 @@ fun ShootingScreen(
                     onToggleSettings = { showSettings = true }
                 )
 
-                // PlanPicker: only when scene is ready, with breathing room
                 if (isSceneReady && currentScene.plans.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     PlanPicker(
                         plans = currentScene.plans,
                         currentPlanIndex = currentPlanIndex,
@@ -416,58 +415,43 @@ fun ShootingScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
+
+                // Vlog subtitle: inline below plan picker instead of floating overlay
+                if (vlogText.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    VlogSubtitleInline(
+                        text = vlogText,
+                        isRecording = isVlogRecording,
+                        clipInfo = if (isVlogRecording || isVlogMerging) "${activeClipIndex + 1}/${activeTemplate?.clips?.size ?: 0}" else null
+                    )
+                }
             }
         }
 
-        // Layer 7: Vlog subtitle (fixed position below top bar)
-        if (vlogText.isNotEmpty()) {
-            val vlogTopPadding = when {
-                isImmersiveMode -> statusBarPadding.calculateTopPadding() + 16.dp
-                isSceneReady && currentScene.plans.isNotEmpty() -> statusBarPadding.calculateTopPadding() + 88.dp
-                else -> statusBarPadding.calculateTopPadding() + 52.dp
+        // Layer 7: Ephemeral zoom indicator (center-top, auto-fades)
+        var showZoom by remember { mutableStateOf(false) }
+        LaunchedEffect(zoomLevel) {
+            if (zoomLevel > 1.01f) {
+                showZoom = true
             }
-            VlogSubtitle(
-                text = vlogText,
-                isRecording = isVlogRecording,
-                clipInfo = if (isVlogRecording || isVlogMerging) "${activeClipIndex + 1}/${activeTemplate?.clips?.size ?: 0}" else null,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = vlogTopPadding)
-            )
         }
-
-        // Layer 8: Zoom indicator (subtle, top-center)
-        if (zoomLevel > 1.01f) {
-            ZoomIndicator(
-                zoomLevel = zoomLevel,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = statusBarPadding.calculateTopPadding() + if (isSceneReady && currentScene.plans.isNotEmpty()) 88.dp else 52.dp)
-            )
+        LaunchedEffect(showZoom) {
+            if (showZoom) {
+                kotlinx.coroutines.delay(1500)
+                showZoom = false
+            }
         }
-
-        // Layer 9: Right side quick actions (top-aligned, minimal)
         AnimatedVisibility(
-            visible = !isImmersiveMode && isSceneReady,
-            enter = fadeIn(tween(200)) + slideInHorizontally(initialOffsetX = { it / 4 }),
-            exit = fadeOut(tween(180)) + slideOutHorizontally(targetOffsetX = { it / 4 }),
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(end = 12.dp, top = statusBarPadding.calculateTopPadding() + if (isSceneReady && currentScene.plans.isNotEmpty()) 88.dp else 52.dp)
+            visible = showZoom && zoomLevel > 1.01f && !isImmersiveMode,
+            enter = fadeIn(tween(150)),
+            exit = fadeOut(tween(400)),
+            modifier = Modifier.align(Alignment.TopCenter)
+                .padding(top = statusBarPadding.calculateTopPadding() + 120.dp)
         ) {
-            RightSideQuickActions(
-                isAutoCapturing = isAutoCapturing,
-                gridEnabled = gridEnabled,
-                filterName = currentFilter.displayName,
-                beautyEnabled = beautyEnabled,
-                onToggleAuto = { viewModel.toggleAutoCapture() },
-                onToggleGrid = { viewModel.toggleGrid(!gridEnabled) },
-                onToggleFilter = { viewModel.toggleFilterSelector() },
-                onToggleBeauty = { showBeautyEffectPanel = true }
-            )
+            ZoomIndicator(zoomLevel = zoomLevel)
         }
 
-        // Layer 10: Distance hint (bottom-center, subtle, above shutter)
+        // Layer 8: Distance hint (bottom-center, compact)
         val hintText = distanceHint
         AnimatedVisibility(
             visible = !isImmersiveMode && isSceneReady && !hintText.isNullOrEmpty(),
@@ -475,7 +459,7 @@ fun ShootingScreen(
             exit = fadeOut(tween(200)),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = navBarPadding.calculateBottomPadding() + 140.dp)
+                .padding(bottom = navBarPadding.calculateBottomPadding() + 172.dp)
         ) {
             DistanceHintText(
                 text = hintText ?: "",
@@ -483,7 +467,7 @@ fun ShootingScreen(
             )
         }
 
-        // Layer 11: Bottom panel (clean, uncluttered)
+        // Layer 9: Bottom panel (tools + shutter unified)
         BottomPanel(
             isSceneReady = isSceneReady,
             isAligned = isAligned,
@@ -511,6 +495,13 @@ fun ShootingScreen(
             onCycleAspectRatio = { viewModel.cycleAspectRatio() },
             onOpenGallery = onNavigateToGallery,
             onModeSelected = { viewModel.setShootingMode(it) },
+            // Tools row callbacks
+            gridEnabled = gridEnabled,
+            onToggleGrid = { viewModel.toggleGrid(!gridEnabled) },
+            filterName = currentFilter.displayName,
+            onToggleFilter = { viewModel.toggleFilterSelector() },
+            beautyEnabled = beautyEnabled,
+            onToggleBeauty = { showBeautyEffectPanel = true },
             modifier = Modifier.align(Alignment.BottomCenter)
         )
 
@@ -1235,6 +1226,13 @@ fun BottomPanel(
     onCycleAspectRatio: () -> Unit,
     onOpenGallery: () -> Unit,
     onModeSelected: (Int) -> Unit,
+    // Tools row
+    gridEnabled: Boolean,
+    onToggleGrid: () -> Unit,
+    filterName: String,
+    onToggleFilter: () -> Unit,
+    beautyEnabled: Boolean,
+    onToggleBeauty: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
@@ -1251,10 +1249,10 @@ fun BottomPanel(
                     )
                 )
             )
-            .padding(bottom = navBarPadding.calculateBottomPadding() + 16.dp)
+            .padding(bottom = navBarPadding.calculateBottomPadding() + 12.dp)
     ) {
         if (!isImmersiveMode) {
-            // Mode selector: 精致胶囊分段控件
+            // Row 1: Mode selector (ultra-compact pill)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1282,13 +1280,13 @@ fun BottomPanel(
                                     if (isSelected) Color.White.copy(alpha = 0.18f) else Color.Transparent
                                 )
                                 .clickable(enabled = isEnabled) { onModeSelected(modeValue) }
-                                .padding(horizontal = 16.dp, vertical = 5.dp),
+                                .padding(horizontal = 14.dp, vertical = 4.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = label,
                                 color = if (isSelected) TextPrimary else TextSecondary.copy(alpha = 0.6f),
-                                fontSize = if (isCompactHeight) 12.sp else 13.sp,
+                                fontSize = if (isCompactHeight) 11.sp else 12.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                             )
                         }
@@ -1296,10 +1294,10 @@ fun BottomPanel(
                 }
             }
 
-            // 状态行：仅在真正有内容时显示，避免常驻占用空间
+            // Row 2: Status line (ephemeral, compact)
             val hasStatus = isNormalVideoRecording || isBurstMode || isAutoCapturing || (timerSeconds > 0 && !isNormalVideoRecording)
             if (hasStatus) {
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1310,51 +1308,92 @@ fun BottomPanel(
                     if (isNormalVideoRecording) {
                         Box(
                             modifier = Modifier
-                                .size(6.dp)
+                                .size(5.dp)
                                 .background(Danger, CircleShape)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(5.dp))
                         Text(
                             text = "录制中",
                             color = Danger,
-                            fontSize = 11.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Bold
                         )
                     } else if (isBurstMode) {
                         Text(
                             text = "连拍",
                             color = Accent.copy(alpha = 0.8f),
-                            fontSize = 11.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Medium
                         )
                     } else if (isAutoCapturing) {
                         Text(
                             text = "自动",
                             color = Accent.copy(alpha = 0.8f),
-                            fontSize = 11.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Medium
                         )
                     }
                     if ((isBurstMode || isAutoCapturing) && timerSeconds > 0) {
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                     }
                     if (timerSeconds > 0 && !isNormalVideoRecording) {
                         Text(
                             text = "${timerSeconds}s",
                             color = Accent,
-                            fontSize = 11.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            // Row 3: Quick tools (horizontal, compact, replaces right-side vertical stack)
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.screenMarginH),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                ToolIcon(
+                    icon = Icons.Default.AutoAwesome,
+                    label = "自动",
+                    active = isAutoCapturing,
+                    onClick = onToggleAuto
+                )
+                ToolIcon(
+                    icon = Icons.Default.GridOn,
+                    label = "网格",
+                    active = gridEnabled,
+                    onClick = onToggleGrid
+                )
+                ToolIcon(
+                    icon = Icons.Default.FilterVintage,
+                    label = "滤镜",
+                    active = filterName != "原图" && filterName.isNotBlank(),
+                    onClick = onToggleFilter
+                )
+                ToolIcon(
+                    icon = Icons.Default.Face,
+                    label = "美颜",
+                    active = beautyEnabled,
+                    onClick = onToggleBeauty
+                )
+                ToolIcon(
+                    icon = Icons.Default.AspectRatio,
+                    label = currentAspectRatioName,
+                    active = false,
+                    onClick = onCycleAspectRatio
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
         } else {
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // Main control row: Gallery | Shutter | Switch Camera
+        // Row 4: Gallery | Shutter | Switch Camera
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1476,6 +1515,49 @@ private fun CompactIconButton(
             contentDescription = contentDescription,
             tint = if (active) Accent else TextPrimary,
             modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+// ── 底部工具栏图标（带文字标签，水平排列）──
+@Composable
+fun ToolIcon(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    active: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = Modifier.clickable { onClick() }
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(
+                    if (active) Accent.copy(alpha = 0.22f) else Color.Black.copy(alpha = 0.25f)
+                )
+                .border(
+                    width = if (active) 1.dp else 0.5.dp,
+                    color = if (active) Accent.copy(alpha = 0.5f) else Border.copy(alpha = 0.2f),
+                    shape = CircleShape
+                )
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = if (active) Accent else TextPrimary.copy(alpha = 0.9f),
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        Text(
+            text = label,
+            color = if (active) Accent else TextPrimary.copy(alpha = 0.7f),
+            fontSize = 9.sp,
+            fontWeight = if (active) FontWeight.SemiBold else FontWeight.Medium
         )
     }
 }
@@ -2585,6 +2667,56 @@ fun VlogSubtitle(
                 lineHeight = Dimens.lineHeightHeadline
             )
         }
+    }
+}
+
+// ── Vlog 内联字幕（更紧凑，适合嵌入 TopBar 下方列）──
+@Composable
+fun VlogSubtitleInline(
+    text: String,
+    isRecording: Boolean = false,
+    clipInfo: String? = null
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Dimens.radiusMd))
+            .background(
+                if (isRecording) Danger.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.45f)
+            )
+            .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm)
+    ) {
+        if (isRecording && clipInfo != null) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .background(Error, CircleShape)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = clipInfo,
+                color = Color.White,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(10.dp)
+                    .background(Color.White.copy(alpha = 0.25f))
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+        }
+        Text(
+            text = text,
+            color = Color.White.copy(alpha = 0.95f),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+        )
     }
 }
 
