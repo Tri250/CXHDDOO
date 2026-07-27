@@ -111,6 +111,7 @@ fun ShootingScreen(
     val smoothingLevel by viewModel.smoothingLevel.collectAsState()
     val whiteningLevel by viewModel.whiteningLevel.collectAsState()
     val slimmingLevel by viewModel.slimmingLevel.collectAsState()
+    val currentSticker by viewModel.currentSticker.collectAsState()
     val showSceneSelector by viewModel.showSceneSelector.collectAsState()
     val showFilterSelector by viewModel.showFilterSelector.collectAsState()
     val showShareSheet by viewModel.showShareSheet.collectAsState()
@@ -723,6 +724,7 @@ fun ShootingScreen(
                 smoothingLevel = smoothingLevel,
                 whiteningLevel = whiteningLevel,
                 slimmingLevel = slimmingLevel,
+                currentSticker = currentSticker,
                 onFilterSelected = {
                     viewModel.setFilter(it)
                     viewModel.toggleFilterSelector()
@@ -732,6 +734,7 @@ fun ShootingScreen(
                 onSmoothingChanged = { viewModel.setSmoothingLevel(it) },
                 onWhiteningChanged = { viewModel.setWhiteningLevel(it) },
                 onSlimmingChanged = { viewModel.setSlimmingLevel(it) },
+                onStickerSelected = { viewModel.setSticker(it) },
                 onQuickBeauty = { viewModel.applyQuickBeauty() },
                 onDisableBeauty = { viewModel.disableBeauty() },
                 onDismiss = { viewModel.toggleFilterSelector() }
@@ -2855,6 +2858,9 @@ fun SettingsDialog(
     val outputFormat by viewModel.outputFormat.collectAsState()
     val hdrEnabled by viewModel.hdrEnabled.collectAsState()
     var smileThreshold by remember { mutableStateOf(viewModel.getCurrentSmileThreshold()) }
+    val storeManager = com.poseai.app.PoseAIApp.getStoreManager()
+    val themeMode by storeManager.themeMode.collectAsState(initial = 0)
+    val scope = rememberCoroutineScope()
 
     Dialog(onDismissRequest = onDismiss) {
         Column(
@@ -2871,6 +2877,59 @@ fun SettingsDialog(
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(16.dp))
+
+            // ── 主题模式 ──
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = "主题模式", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                    Text(
+                        text = when (themeMode) {
+                            1 -> "强制暗色"
+                            2 -> "强制亮色"
+                            else -> "跟随系统"
+                        },
+                        color = TextSecondary,
+                        fontSize = 12.sp
+                    )
+                }
+                Row(
+                    modifier = Modifier
+                        .background(Surface, RoundedCornerShape(16.dp))
+                        .padding(2.dp)
+                ) {
+                    val modes = listOf(
+                        "自动" to 0,
+                        "暗色" to 1,
+                        "亮色" to 2
+                    )
+                    modes.forEach { (label, value) ->
+                        val isSelected = themeMode == value
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(if (isSelected) Accent else Color.Transparent)
+                                .clickable {
+                                    scope.launch { storeManager.setThemeMode(value) }
+                                }
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            Text(
+                                text = label,
+                                color = if (isSelected) Color.White else TextSecondary,
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+
             SettingToggle(
                 title = "微笑快门",
                 description = "检测到微笑时自动拍照",
@@ -3280,8 +3339,6 @@ fun SceneItem(scene: SceneType, isSelected: Boolean, onClick: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 fun FilterSelectorBottomSheet(
     currentFilter: PhotoFilterEngine.Filter,
     filterIntensity: Int,
@@ -3289,18 +3346,20 @@ fun FilterSelectorBottomSheet(
     smoothingLevel: Int,
     whiteningLevel: Int,
     slimmingLevel: Int,
+    currentSticker: StickerEngine.Sticker,
     onFilterSelected: (PhotoFilterEngine.Filter) -> Unit,
     onFilterIntensityChanged: (Int) -> Unit,
     onBeautyEnabledChanged: (Boolean) -> Unit,
     onSmoothingChanged: (Int) -> Unit,
     onWhiteningChanged: (Int) -> Unit,
     onSlimmingChanged: (Int) -> Unit,
+    onStickerSelected: (StickerEngine.Sticker) -> Unit,
     onQuickBeauty: () -> Unit,
     onDisableBeauty: () -> Unit,
     onDismiss: () -> Unit
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("滤镜", "美颜")
+    val tabs = listOf("滤镜", "美颜", "贴纸")
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -3510,6 +3569,29 @@ fun FilterSelectorBottomSheet(
                         onValueChange = { onSlimmingChanged(it) }
                     )
                 }
+                2 -> {
+                    // ── 贴纸 Tab ──
+                    Text(
+                        text = "选择贴纸装饰",
+                        color = TextSecondary,
+                        fontSize = Dimens.fontCaption,
+                        fontWeight = FontWeight.Medium,
+                        lineHeight = Dimens.lineHeightCaption,
+                        modifier = Modifier.padding(bottom = Dimens.spacingMd)
+                    )
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(StickerEngine.Sticker.values()) { sticker ->
+                            StickerItem(
+                                sticker = sticker,
+                                isSelected = sticker == currentSticker,
+                                onClick = { onStickerSelected(sticker) }
+                            )
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(Dimens.spacingXxl))
@@ -3564,6 +3646,58 @@ private fun BeautySliderItem(
             fontWeight = FontWeight.Bold,
             lineHeight = Dimens.lineHeightLabel,
             modifier = Modifier.width(32.dp)
+        )
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 贴纸项组件
+// ═══════════════════════════════════════════════════════════════
+
+/** 贴纸图标映射 */
+private val stickerIcons = mapOf(
+    StickerEngine.Sticker.NONE to "⊗",
+    StickerEngine.Sticker.DATE to "📅",
+    StickerEngine.Sticker.WHITE_FRAME to "⬜",
+    StickerEngine.Sticker.ROUNDED_FRAME to "🔲",
+    StickerEngine.Sticker.GLOW to "✨",
+    StickerEngine.Sticker.VIGNETTE to "🌑",
+    StickerEngine.Sticker.RETRO_DATE to "🕐",
+    StickerEngine.Sticker.FILM_FRAME to "🎞"
+)
+
+@Composable
+private fun StickerItem(
+    sticker: StickerEngine.Sticker,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(RoundedCornerShape(Dimens.radiusMd))
+            .background(
+                if (isSelected) Accent.copy(alpha = 0.15f) else Color.Transparent
+            )
+            .border(
+                width = if (isSelected) Dimens.strokeThick else Dimens.strokeThin,
+                color = if (isSelected) Accent else Border,
+                shape = RoundedCornerShape(Dimens.radiusMd)
+            )
+            .clickable { onClick() }
+            .padding(Dimens.spacingSm)
+    ) {
+        Text(
+            text = stickerIcons[sticker] ?: "?",
+            fontSize = 24.sp
+        )
+        Spacer(modifier = Modifier.height(Dimens.spacingXs))
+        Text(
+            text = sticker.displayName,
+            color = if (isSelected) Accent else TextSecondary,
+            fontSize = Dimens.fontCaption,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            lineHeight = Dimens.lineHeightCaption
         )
     }
 }

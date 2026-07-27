@@ -4,13 +4,102 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#FF8A65"
-        android:pathData="M54,32m-18,0a18,18 0,1 1,36 0a18,18 0,1 1,-36 0" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,26c-8.837,0 -16,7.163 -16,16s7.163,16 16,16s16,-7.163 16,-16S62.837,26 54,26zM54,50c-4.418,0 -8,-3.582 -8,-8s3.582,-8 8,-8s8,3.582 8,8S58.418,50 54,50z" />
+
+    <!-- 相机镜头外圈 -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M32,64h44v12H32z" />
+        android:fillAlpha="0.95"
+        android:pathData="M54,28m-22,0a22,22 0,1 0,44 0a22,22 0,1 0,-44 0" />
+
+    <!-- 镜头内圈（暗色） -->
+    <path
+        android:fillColor="#0D9488"
+        android:pathData="M54,35m-15,0a15,15 0,1 0,30 0a15,15 0,1 0,-30 0" />
+
+    <!-- 镜头内圈（更亮） -->
+    <path
+        android:fillColor="#14B8A6"
+        android:fillAlpha="0.3"
+        android:pathData="M54,38m-12,0a12,12 0,1 0,24 0a12,12 0,1 0,-24 0" />
+
+    <!-- 上部叶片（左上） -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.8"
+        android:pathData="M54,35 L54,48 L41,41 Z" />
+
+    <!-- 上部叶片（右上） -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.8"
+        android:pathData="M54,35 L54,48 L67,41 Z" />
+
+    <!-- 下部叶片（左下） -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.8"
+        android:pathData="M54,50 L54,37 L41,47 Z" />
+
+    <!-- 下部叶片（右下） -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.8"
+        android:pathData="M54,50 L54,37 L67,47 Z" />
+
+    <!-- 人物剪影：头部 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,39m-3.5,0a3.5,3.5 0,1 1,7 0a3.5,3.5 0,1 1,-7 0" />
+
+    <!-- 人物剪影：身体 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M54,43 L54,54" />
+
+    <!-- 人物剪影：左臂（弯曲向上） -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M54,46 L48,42 L46,38" />
+
+    <!-- 人物剪影：右臂（弯曲向上） -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M54,46 L60,42 L62,38" />
+
+    <!-- 人物剪影：左腿 -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M54,54 L49,62" />
+
+    <!-- 人物剪影：右腿 -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M54,54 L59,62" />
+
+    <!-- 相机顶部取景器凸起 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.9"
+        android:pathData="M48,28h12v4h-12z" />
+
+    <!-- 相机底部装饰线 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.6"
+        android:pathData="M42,50h24v2h-24z" />
 </vector>

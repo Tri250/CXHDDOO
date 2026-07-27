@@ -34,6 +34,8 @@ class StoreManager(private val context: Context) {
         val KEY_OUTPUT_FORMAT = intPreferencesKey("output_format")
         // HDR 开关
         val KEY_HDR_ENABLED = booleanPreferencesKey("hdr_enabled")
+        // 主题模式：0=跟随系统, 1=强制暗色, 2=强制亮色
+        val KEY_THEME_MODE = intPreferencesKey("theme_mode")
     }
 
     val onboardingCompleted: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -162,5 +164,14 @@ class StoreManager(private val context: Context) {
 
     suspend fun setHdrEnabled(value: Boolean) {
         context.dataStore.edit { it[KEY_HDR_ENABLED] = value }
+    }
+
+    /** 主题模式：0=跟随系统, 1=强制暗色, 2=强制亮色 */
+    val themeMode: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_THEME_MODE] ?: 0
+    }
+
+    suspend fun setThemeMode(value: Int) {
+        context.dataStore.edit { it[KEY_THEME_MODE] = value.coerceIn(0, 2) }
     }
 }

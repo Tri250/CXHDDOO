@@ -45,6 +45,7 @@ import com.poseai.app.store.StoreManager
 import com.poseai.app.util.PhotoFilterEngine
 import com.poseai.app.util.BeautyEngine
 import com.poseai.app.util.ShareEngine
+import com.poseai.app.util.StickerEngine
 import com.poseai.app.util.VideoMerger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -259,6 +260,11 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     /** HDR 开关（软件 HDR 色调映射，所有设备可用） */
     private val _hdrEnabled = MutableStateFlow(false)
     val hdrEnabled: StateFlow<Boolean> = _hdrEnabled.asStateFlow()
+
+    // ── 贴纸 ──
+    /** 当前选中的贴纸 */
+    private val _currentSticker = MutableStateFlow(StickerEngine.Sticker.NONE)
+    val currentSticker: StateFlow<StickerEngine.Sticker> = _currentSticker.asStateFlow()
 
     private val _showSceneSelector = MutableStateFlow(false)
     val showSceneSelector: StateFlow<Boolean> = _showSceneSelector.asStateFlow()
@@ -1405,9 +1411,26 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                 }
             }
 
-            // 智能裁切（使用当前画幅预设）+ 按画质设置保存
+            // 智能裁切（使用当前画幅预设）
             if (bitmap != null) {
                 val cropped = PhotoFilterEngine.applySmartCropByRatio(bitmap!!, _currentAspectRatio.value)
+                if (cropped !== bitmap) {
+                    bitmap?.recycle()
+                    bitmap = cropped
+                }
+            }
+
+            // AR 贴纸（裁切后应用，确保边框/装饰完整覆盖）
+            if (_currentSticker.value != StickerEngine.Sticker.NONE && bitmap != null) {
+                val stickered = StickerEngine.applySticker(bitmap!!, _currentSticker.value)
+                if (stickered !== bitmap) {
+                    bitmap?.recycle()
+                    bitmap = stickered
+                }
+            }
+
+            // 按画质设置保存
+            if (bitmap != null) {
                 // 画质设置：JPEG 质量 + 输出格式（JPEG/WEBP）
                 val quality = _jpegQuality.value.coerceIn(50, 100)
                 val useWebp = _outputFormat.value == 1
@@ -1416,7 +1439,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                     val webpFile = File(path.substringBeforeLast('.') + ".webp")
                     savedPath = webpFile.absolutePath
                     FileOutputStream(webpFile).use { out ->
-                        cropped.compress(Bitmap.CompressFormat.WEBP, quality, out)
+                        bitmap!!.compress(Bitmap.CompressFormat.WEBP, quality, out)
                     }
                     // 删除原始 jpg 文件（已写入 webp 副本）
                     try {
@@ -1426,11 +1449,8 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                     }
                 } else {
                     FileOutputStream(path).use { out ->
-                        cropped.compress(Bitmap.CompressFormat.JPEG, quality, out)
+                        bitmap!!.compress(Bitmap.CompressFormat.JPEG, quality, out)
                     }
-                }
-                if (cropped !== bitmap) {
-                    cropped.recycle()
                 }
             }
 
@@ -2132,6 +2152,11 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     fun setHdrEnabled(value: Boolean) {
         _hdrEnabled.value = value
         viewModelScope.launch { storeManager.setHdrEnabled(value) }
+    }
+
+    /** 设置当前贴纸 */
+    fun setSticker(sticker: StickerEngine.Sticker) {
+        _currentSticker.value = sticker
     }
 
     // ====== 分享控制 ======
