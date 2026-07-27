@@ -1385,43 +1385,43 @@ class ArFaceEffectEngine {
 
     /** 线性插值。 */
     private fun lerp(a: Int, b: Int, t: Float): Int = (a + (b - a) * t).toInt()
-}
 
-/**
- * AR 特效枚举（按分类组织）。
- */
-enum class ArEffect(val displayName: String, val category: String) {
-    // 动物脸
-    CAT_EARS("猫耳朵", "动物"),
-    CAT_NOSE("猫鼻胡须", "动物"),
-    DOG_NOSE("狗鼻子", "动物"),
-    DOG_EARS("狗耳朵", "动物"),
-    BUNNY_EARS("兔耳朵", "动物"),
-    PANDA_EYES("熊猫眼", "动物"),
-    FOX_EARS("狐狸耳朵", "动物"),
-    // 头饰
-    CROWN("皇冠", "头饰"),
-    FLOWER_CROWN("花环", "头饰"),
-    HAT("礼帽", "头饰"),
-    CAP("棒球帽", "头饰"),
-    HALO("光环", "头饰"),
-    // 面部装饰
-    GLASSES("眼镜", "装饰"),
-    SUNGLASSES("墨镜", "装饰"),
-    MASK("面具", "装饰"),
-    BUTTERFLY("蝴蝶贴", "装饰"),
-    STAR("星星贴", "装饰"),
-    // 动态特效
-    SPARKLE("闪烁星光", "动态"),
-    HEART_RAIN("爱心雨", "动态"),
-    PETAL_RAIN("花瓣雨", "动态"),
-    SNOW("雪花飘落", "动态"),
-    BUBBLES("气泡", "动态"),
-    FIREWORKS("烟花", "动态"),
-    LIGHTNING("闪电", "动态"),
-    // 滤镜特效
-    RAINBOW("彩虹", "滤镜"),
-    GALAXY("银河", "滤镜"),
-    AURORA("极光", "滤镜"),
-    NEON_GLOW("霓虹光晕", "滤镜")
+    /**
+     * AR 特效枚举（按分类组织）。
+     */
+    enum class ArEffect(val displayName: String, val category: String) {
+        // 动物脸
+        CAT_EARS("猫耳朵", "动物"),
+        CAT_NOSE("猫鼻胡须", "动物"),
+        DOG_NOSE("狗鼻子", "动物"),
+        DOG_EARS("狗耳朵", "动物"),
+        BUNNY_EARS("兔耳朵", "动物"),
+        PANDA_EYES("熊猫眼", "动物"),
+        FOX_EARS("狐狸耳朵", "动物"),
+        // 头饰
+        CROWN("皇冠", "头饰"),
+        FLOWER_CROWN("花环", "头饰"),
+        HAT("礼帽", "头饰"),
+        CAP("棒球帽", "头饰"),
+        HALO("光环", "头饰"),
+        // 面部装饰
+        GLASSES("眼镜", "装饰"),
+        SUNGLASSES("墨镜", "装饰"),
+        MASK("面具", "装饰"),
+        BUTTERFLY("蝴蝶贴", "装饰"),
+        STAR("星星贴", "装饰"),
+        // 动态特效
+        SPARKLE("闪烁星光", "动态"),
+        HEART_RAIN("爱心雨", "动态"),
+        PETAL_RAIN("花瓣雨", "动态"),
+        SNOW("雪花飘落", "动态"),
+        BUBBLES("气泡", "动态"),
+        FIREWORKS("烟花", "动态"),
+        LIGHTNING("闪电", "动态"),
+        // 滤镜特效
+        RAINBOW("彩虹", "滤镜"),
+        GALAXY("银河", "滤镜"),
+        AURORA("极光", "滤镜"),
+        NEON_GLOW("霓虹光晕", "滤镜")
+    }
 }

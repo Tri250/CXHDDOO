@@ -109,19 +109,18 @@ class FaceLandmarkDetector {
      */
     fun detect(bitmap: Bitmap): List<FaceData> {
         val image = InputImage.fromBitmap(bitmap, 0)
-        val result = mutableListOf<FaceData>()
         // ML Kit detect 返回 Task<List<Face>>，此处使用同步等待
         val latch = java.util.concurrent.CountDownLatch(1)
-        @Volatile var faces: List<Face> = emptyList()
-        @Volatile var error: Exception? = null
+        val facesRef = java.util.concurrent.atomic.AtomicReference<List<Face>>(emptyList())
+        val errorRef = java.util.concurrent.atomic.AtomicReference<Exception?>(null)
 
         detector.process(image)
             .addOnSuccessListener { detectedFaces ->
-                faces = detectedFaces
+                facesRef.set(detectedFaces)
                 latch.countDown()
             }
             .addOnFailureListener { e ->
-                error = e
+                errorRef.set(e)
                 latch.countDown()
             }
 
@@ -131,9 +130,10 @@ class FaceLandmarkDetector {
             return emptyList()
         }
 
-        error?.let { return emptyList() }
+        errorRef.get()?.let { return emptyList() }
 
-        for (face in faces) {
+        val result = mutableListOf<FaceData>()
+        for (face in facesRef.get()) {
             result.add(convertFace(face, bitmap.width, bitmap.height))
         }
         return result
@@ -149,16 +149,16 @@ class FaceLandmarkDetector {
             imageProxy.imageInfo.rotationDegrees
         )
         val latch = java.util.concurrent.CountDownLatch(1)
-        @Volatile var faces: List<Face> = emptyList()
-        @Volatile var error: Exception? = null
+        val facesRef = java.util.concurrent.atomic.AtomicReference<List<Face>>(emptyList())
+        val errorRef = java.util.concurrent.atomic.AtomicReference<Exception?>(null)
 
         detector.process(image)
             .addOnSuccessListener { detectedFaces ->
-                faces = detectedFaces
+                facesRef.set(detectedFaces)
                 latch.countDown()
             }
             .addOnFailureListener { e ->
-                error = e
+                errorRef.set(e)
                 latch.countDown()
             }
 
@@ -168,10 +168,10 @@ class FaceLandmarkDetector {
             return emptyList()
         }
 
-        error?.let { return emptyList() }
+        errorRef.get()?.let { return emptyList() }
 
         val result = mutableListOf<FaceData>()
-        for (face in faces) {
+        for (face in facesRef.get()) {
             result.add(convertFace(face, imageProxy.width, imageProxy.height))
         }
         return result

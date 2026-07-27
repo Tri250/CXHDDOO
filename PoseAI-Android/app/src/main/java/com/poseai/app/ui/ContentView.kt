@@ -63,6 +63,7 @@ import com.poseai.app.model.ShootingPlan
 import com.poseai.app.ui.theme.*
 import com.poseai.app.util.PhotoFilterEngine
 import com.poseai.app.util.ShareEngine
+import com.poseai.app.util.StickerEngine
 import com.poseai.app.ui.theme.Dimens
 import com.poseai.app.viewmodel.ShootingViewModel
 import kotlinx.coroutines.launch
