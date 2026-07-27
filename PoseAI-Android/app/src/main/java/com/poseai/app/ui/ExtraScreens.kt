@@ -292,8 +292,10 @@ private fun generateOOTDAnalysis(imagePath: String): OOTDAnalysisResult {
 
     val decodeOptions = android.graphics.BitmapFactory.Options().apply {
         this.inSampleSize = inSampleSize
+        // 强制软件位图，确保 getPixel 可访问（Android 9+ HARDWARE 位图不支持像素读取）
+        inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888
     }
-    val bitmap = android.graphics.BitmapFactory.decodeFile(imagePath, decodeOptions) ?: return OOTDAnalysisResult(
+    val rawBitmap = android.graphics.BitmapFactory.decodeFile(imagePath, decodeOptions) ?: return OOTDAnalysisResult(
         overallScore = 0f,
         colorHarmony = 0f,
         proportionScore = 0f,
@@ -301,6 +303,12 @@ private fun generateOOTDAnalysis(imagePath: String): OOTDAnalysisResult {
         suggestions = emptyList(),
         styleTags = emptyList()
     )
+    // HARDWARE 位图无法直接读取像素，复制到软件位图
+    val bitmap = if (rawBitmap.config == android.graphics.Bitmap.Config.HARDWARE) {
+        rawBitmap.copy(android.graphics.Bitmap.Config.ARGB_8888, false) ?: rawBitmap
+    } else {
+        rawBitmap
+    }
     val width = bitmap.width
     val height = bitmap.height
     val avgR = mutableListOf<Int>()

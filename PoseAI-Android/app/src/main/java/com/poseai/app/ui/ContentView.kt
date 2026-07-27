@@ -451,27 +451,26 @@ fun ShootingScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 沉浸模式下隐藏次要警告（过热/电量），保留俯拍警告独立显示
-                if (!isImmersiveMode) {
-                    if (heatWarning) {
-                        WarningBanner(text = "设备过热，已降频优化", color = Warning)
-                    } else if (batteryLow) {
-                        WarningBanner(text = "电量低，已进入省电模式", color = Error)
+                // 合并警告区域：只显示最高优先级的一条，避免重叠
+                if (!isImmersiveMode && isSceneReady) {
+                    val priorityWarning = when {
+                        heatWarning -> "设备过热，已降频优化" to Warning
+                        batteryLow -> "电量低，已进入省电模式" to Error
+                        lowLightWarning && lowLightMode -> "光线较暗，建议开启补光" to Warning
+                        isTopDownWarning -> "请平行或低角度拍摄，显腿更长" to Danger
+                        isHeadroomWarning -> "上方留白过多，请将人物上移" to Warning
+                        else -> null
+                    }
+                    if (priorityWarning != null) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        WarningBanner(
+                            text = priorityWarning.first,
+                            color = priorityWarning.second,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
             }
-        }
-
-        // ── 俯拍警告（独立于沉浸模式，始终显示）──
-        if (isTopDownWarning && isSceneReady) {
-            WarningBanner(
-                text = "请平行或低角度拍摄，显腿更长",
-                color = Danger,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = statusBarPadding.calculateTopPadding() + 70.dp)
-                    .padding(horizontal = 18.dp)
-            )
         }
 
         // ── Vlog 字幕（独立于沉浸模式，始终显示）──
@@ -481,19 +480,7 @@ fun ShootingScreen(
                 isRecording = isVlogRecording,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = if (isImmersiveMode) statusBarPadding.calculateTopPadding() + 16.dp else statusBarPadding.calculateTopPadding() + 120.dp)
-            )
-        }
-
-        // ── 留白智能提醒（头部上方空间过多）──
-        if (isHeadroomWarning && isSceneReady && !isImmersiveMode) {
-            WarningBanner(
-                text = "上方留白过多，请将人物上移",
-                color = Warning,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = statusBarPadding.calculateTopPadding() + 150.dp)
-                    .padding(horizontal = 18.dp)
+                    .padding(top = if (isImmersiveMode) statusBarPadding.calculateTopPadding() + 16.dp else statusBarPadding.calculateTopPadding() + 100.dp)
             )
         }
 
@@ -504,7 +491,7 @@ fun ShootingScreen(
                 Row(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 260.dp)
+                        .padding(bottom = 280.dp)
                         .background(Accent.copy(alpha = 0.9f), RoundedCornerShape(Dimens.radiusXl))
                         .clickable { viewModel.acceptRecommendedPlan() }
                         .padding(horizontal = Dimens.spacingXl, vertical = Dimens.spacingSm),
@@ -518,7 +505,7 @@ fun ShootingScreen(
                     )
                     Spacer(modifier = Modifier.width(Dimens.spacingSm))
                     Text(
-                        text = "推荐方案: ${recPlan.poseName}",
+                        text = "推荐: ${recPlan.poseName}",
                         color = Color.Black,
                         fontSize = Dimens.fontLabel,
                         fontWeight = FontWeight.Bold,
@@ -532,15 +519,6 @@ fun ShootingScreen(
         if (shouldShowReviewPrompt) {
             ReviewPromptDialog(
                 onDismiss = { viewModel.dismissReviewPrompt() }
-            )
-        }
-
-        // ── 暗光提示 Banner（沉浸模式隐藏）──
-        if (lowLightWarning && isSceneReady && lowLightMode && !isImmersiveMode) {
-            LowLightBanner(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = statusBarPadding.calculateTopPadding() + 110.dp)
             )
         }
 
@@ -1103,27 +1081,28 @@ fun TopBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 左侧：场景 + 方案信息
+        // 左侧：紧凑场景标签 + 方案名称
         if (isSceneReady && plan != null) {
             Row(
                 modifier = Modifier
-                    .background(Surface, RoundedCornerShape(Dimens.radiusLg))
-                    .border(Dimens.strokeThin, Border, RoundedCornerShape(Dimens.radiusLg))
-                    .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
+                    .clip(RoundedCornerShape(Dimens.radiusFull))
+                    .background(Color.Black.copy(alpha = 0.45f))
+                    .clickable { onSceneClick() }
+                    .padding(start = Dimens.spacingSm, end = Dimens.spacingMd, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 场景图标
+                // 场景小徽章
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
-                        .background(Surface, CircleShape),
+                        .size(28.dp)
+                        .background(Accent.copy(alpha = 0.2f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.LocationOn,
                         contentDescription = null,
                         tint = Accent,
-                        modifier = Modifier.size(Dimens.iconSm)
+                        modifier = Modifier.size(14.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(Dimens.spacingSm))
@@ -1131,138 +1110,109 @@ fun TopBar(
                     Text(
                         text = scene.displayName,
                         color = TextSecondary,
-                        fontSize = Dimens.fontCaption,
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.Medium,
-                        lineHeight = Dimens.lineHeightCaption
+                        lineHeight = 14.sp
                     )
-                    // 根据当前模式显示不同信息
-                    if (plan.vlogScript != null && isVlogRecording) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .background(
-                                        if (isVlogRecording) Color.Red else Color.Gray,
-                                        CircleShape
-                                    )
-                            )
-                            Spacer(modifier = Modifier.width(Dimens.spacingXs))
-                            Text(
-                                text = "Vlog · 分镜 ${activeVlogClipIndex + 1}/${plan.vlogScript!!.clips.size}",
-                                color = Danger,
-                                fontSize = Dimens.fontTitle,
-                                fontWeight = FontWeight.Black,
-                                lineHeight = Dimens.lineHeightTitle
-                            )
-                        }
-                    } else if (plan.sequence.isNotEmpty()) {
-                        Text(
-                            text = "${currentSequenceIndex + 1}/${plan.sequence.size} · ${plan.sequence[currentSequenceIndex].title}",
-                            color = Success,
-                            fontSize = Dimens.fontTitle,
-                            fontWeight = FontWeight.Bold,
-                            lineHeight = Dimens.lineHeightTitle
-                        )
-                    } else if (plan.multiAngles.isNotEmpty()) {
-                        Text(
-                            text = "${currentAngleIndex + 1}/${plan.multiAngles.size} · ${plan.multiAngles[currentAngleIndex].title}",
-                            color = Danger,
-                            fontSize = Dimens.fontTitle,
-                            fontWeight = FontWeight.Bold,
-                            lineHeight = Dimens.lineHeightTitle
-                        )
-                    } else {
-                        Text(
-                            text = plan.poseName,
-                            color = TextPrimary,
-                            fontSize = Dimens.fontTitle,
-                            fontWeight = FontWeight.Bold,
-                            lineHeight = Dimens.lineHeightTitle
-                        )
+                    val statusText = when {
+                        plan.vlogScript != null && isVlogRecording ->
+                            "Vlog ${activeVlogClipIndex + 1}/${plan.vlogScript!!.clips.size}"
+                        plan.sequence.isNotEmpty() ->
+                            "${currentSequenceIndex + 1}/${plan.sequence.size} ${plan.sequence[currentSequenceIndex].title}"
+                        plan.multiAngles.isNotEmpty() ->
+                            "${currentAngleIndex + 1}/${plan.multiAngles.size} ${plan.multiAngles[currentAngleIndex].title}"
+                        else -> plan.poseName
                     }
+                    Text(
+                        text = statusText,
+                        color = TextPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 18.sp,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
                 }
+            }
+        } else {
+            // 未就绪状态：轻触切换场景
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(Dimens.radiusFull))
+                    .background(Color.Black.copy(alpha = 0.35f))
+                    .clickable { onSceneClick() }
+                    .padding(horizontal = Dimens.spacingMd, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = null,
+                    tint = Accent,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(Dimens.spacingXs))
+                Text(
+                    text = "选择场景",
+                    color = TextPrimary,
+                    fontSize = Dimens.fontBody,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // 右侧：倒计时徽章 + 拍照计数 + 分数环 + 设置 + 帮助按钮
-        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm), verticalAlignment = Alignment.CenterVertically) {
-            // 倒计时徽章（timerSeconds > 0 时显示）
+        // 右侧：精简为 计时器徽章 + 分数环 + 设置
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             if (timerSeconds > 0) {
                 Box(
                     modifier = Modifier
                         .background(Accent.copy(alpha = 0.2f), RoundedCornerShape(Dimens.radiusFull))
                         .border(Dimens.strokeThin, Accent.copy(alpha = 0.6f), RoundedCornerShape(Dimens.radiusFull))
-                        .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs)
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
                         text = "${timerSeconds}s",
                         color = Accent,
-                        fontSize = Dimens.fontCaption,
-                        fontWeight = FontWeight.Bold,
-                        lineHeight = Dimens.lineHeightCaption
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
-            // 拍照计数徽章（captureCount > 0 时显示，激活 captureCount 死代码）
             if (captureCount > 0) {
                 Box(
                     modifier = Modifier
                         .background(Success.copy(alpha = 0.18f), RoundedCornerShape(Dimens.radiusFull))
-                        .border(Dimens.strokeThin, Success.copy(alpha = 0.6f), RoundedCornerShape(Dimens.radiusFull))
-                        .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs),
-                    contentAlignment = Alignment.Center
+                        .border(Dimens.strokeThin, Success.copy(alpha = 0.5f), RoundedCornerShape(Dimens.radiusFull))
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.PhotoCamera,
-                            contentDescription = null,
-                            tint = Success,
-                            modifier = Modifier.size(Dimens.iconXs)
-                        )
-                        Spacer(modifier = Modifier.width(Dimens.spacingXs))
-                        Text(
-                            text = "已拍 $captureCount",
-                            color = Success,
-                            fontSize = Dimens.fontCaption,
-                            fontWeight = FontWeight.Bold,
-                            lineHeight = Dimens.lineHeightCaption
-                        )
-                    }
+                    Text(
+                        text = "$captureCount",
+                        color = Success,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
             if (isSceneReady) {
                 ScoreRing(score = score, isAligned = isAligned)
             }
-            // 设置按钮
+            // 设置按钮（合并帮助入口到设置面板内）
             IconButton(
                 onClick = onSettings,
                 modifier = Modifier
-                    .size(Dimens.buttonIcon)
-                    .background(Surface, CircleShape)
-                    .border(Dimens.strokeThin, Border, CircleShape)
+                    .size(36.dp)
+                    .background(Color.Black.copy(alpha = 0.35f), CircleShape)
+                    .border(Dimens.strokeThin, Border.copy(alpha = 0.5f), CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.Default.Settings,
                     contentDescription = "设置",
                     tint = TextPrimary,
-                    modifier = Modifier.size(Dimens.iconSm)
-                )
-            }
-            // 帮助按钮
-            IconButton(
-                onClick = onHelp,
-                modifier = Modifier
-                    .size(Dimens.buttonIcon)
-                    .background(Surface, CircleShape)
-                    .border(Dimens.strokeThin, Border, CircleShape)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.QuestionMark,
-                    contentDescription = "帮助",
-                    tint = TextPrimary,
-                    modifier = Modifier.size(Dimens.iconSm)
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
@@ -1598,117 +1548,158 @@ fun BottomPanel(
                 isCompactHeight = isCompactHeight
             )
 
-            // 右：切换摄像头 + 计时器 + 手电筒（沉浸模式隐藏）
+            // 右：精简为 切换摄像头 + 计时器 + 更多菜单（沉浸模式隐藏）
             if (!isImmersiveMode) {
-                Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)) {
+                var showMoreMenu by remember { mutableStateOf(false) }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     IconButton(
                         onClick = onSwitchCamera,
                         modifier = Modifier
-                            .size(Dimens.buttonAction)
-                            .background(Surface, CircleShape)
-                            .border(Dimens.strokeThin, Border, CircleShape)
+                            .size(40.dp)
+                            .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                            .border(Dimens.strokeThin, Border.copy(alpha = 0.4f), CircleShape)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Cameraswitch,
                             contentDescription = "切换摄像头",
                             tint = TextPrimary,
-                            modifier = Modifier.size(Dimens.iconMd)
+                            modifier = Modifier.size(20.dp)
                         )
                     }
 
                     IconButton(
                         onClick = onToggleTimer,
                         modifier = Modifier
-                            .size(Dimens.buttonAction)
+                            .size(40.dp)
                             .background(
-                                if (timerSeconds > 0) Accent.copy(alpha = 0.25f) else Surface,
+                                if (timerSeconds > 0) Accent.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.4f),
                                 CircleShape
                             )
                             .border(
                                 width = if (timerSeconds > 0) Dimens.strokeRegular else Dimens.strokeThin,
-                                color = if (timerSeconds > 0) Accent.copy(alpha = 0.7f) else Border,
+                                color = if (timerSeconds > 0) Accent.copy(alpha = 0.7f) else Border.copy(alpha = 0.4f),
                                 shape = CircleShape
                             )
                     ) {
                         Icon(
                             imageVector = Icons.Default.Timer,
                             contentDescription = "计时器",
-                            tint = if (timerSeconds > 0) Accent else TextSecondary,
-                            modifier = Modifier.size(Dimens.iconMd)
+                            tint = if (timerSeconds > 0) Accent else TextPrimary,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
 
-                    // 连拍模式按钮
-                    IconButton(
-                        onClick = onToggleBurstMode,
-                        modifier = Modifier
-                            .size(Dimens.buttonAction)
-                            .background(
-                                if (isBurstMode) Accent.copy(alpha = 0.25f) else Surface,
-                                CircleShape
+                    // 更多菜单按钮（合并 连拍/闪光/画幅/手电筒）
+                    Box {
+                        IconButton(
+                            onClick = { showMoreMenu = true },
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                                .border(Dimens.strokeThin, Border.copy(alpha = 0.4f), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "更多",
+                                tint = TextPrimary,
+                                modifier = Modifier.size(20.dp)
                             )
-                            .border(
-                                width = if (isBurstMode) Dimens.strokeRegular else Dimens.strokeThin,
-                                color = if (isBurstMode) Accent.copy(alpha = 0.7f) else Border,
-                                shape = CircleShape
+                        }
+                        // 弹出菜单
+                        androidx.compose.material3.DropdownMenu(
+                            expanded = showMoreMenu,
+                            onDismissRequest = { showMoreMenu = false },
+                            containerColor = SurfaceDark.copy(alpha = 0.95f)
+                        ) {
+                            // 闪光灯
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = when (currentFlashMode) {
+                                                1 -> Icons.Default.FlashAuto
+                                                2 -> Icons.Default.FlashOn
+                                                else -> Icons.Default.FlashOff
+                                            },
+                                            contentDescription = null,
+                                            tint = if (currentFlashMode != 0) Accent else TextSecondary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = when (currentFlashMode) {
+                                                1 -> "闪光: 自动"
+                                                2 -> "闪光: 常亮"
+                                                else -> "闪光: 关闭"
+                                            },
+                                            color = TextPrimary,
+                                            fontSize = 14.sp
+                                        )
+                                    }
+                                },
+                                onClick = { onCycleFlashMode(); showMoreMenu = false }
                             )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.BurstMode,
-                            contentDescription = "连拍",
-                            tint = if (isBurstMode) Accent else TextSecondary,
-                            modifier = Modifier.size(Dimens.iconMd)
-                        )
-                    }
-
-                    // 三态闪光灯按钮（激活 cycleFlashMode/setFlashMode 死代码）
-                    // 0=关闭, 1=自动, 2=常亮
-                    val flashActive = currentFlashMode != 0
-                    IconButton(
-                        onClick = onCycleFlashMode,
-                        modifier = Modifier
-                            .size(Dimens.buttonAction)
-                            .background(
-                                if (flashActive) Accent.copy(alpha = 0.25f) else Surface,
-                                CircleShape
+                            // 连拍
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.BurstMode,
+                                            contentDescription = null,
+                                            tint = if (isBurstMode) Accent else TextSecondary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = if (isBurstMode) "连拍: 开" else "连拍: 关",
+                                            color = TextPrimary,
+                                            fontSize = 14.sp
+                                        )
+                                    }
+                                },
+                                onClick = { onToggleBurstMode(); showMoreMenu = false }
                             )
-                            .border(
-                                width = if (flashActive) Dimens.strokeRegular else Dimens.strokeThin,
-                                color = if (flashActive) Accent.copy(alpha = 0.7f) else Border,
-                                shape = CircleShape
+                            // 画幅
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.AspectRatio,
+                                            contentDescription = null,
+                                            tint = TextSecondary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "画幅: $currentAspectRatioName",
+                                            color = TextPrimary,
+                                            fontSize = 14.sp
+                                        )
+                                    }
+                                },
+                                onClick = { onCycleAspectRatio(); showMoreMenu = false }
                             )
-                    ) {
-                        Icon(
-                            imageVector = when (currentFlashMode) {
-                                1 -> Icons.Default.FlashAuto
-                                2 -> Icons.Default.FlashOn
-                                else -> Icons.Default.FlashOff
-                            },
-                            contentDescription = when (currentFlashMode) {
-                                1 -> "自动闪光"
-                                2 -> "常亮闪光"
-                                else -> "闪光关闭"
-                            },
-                            tint = if (flashActive) Accent else TextSecondary,
-                            modifier = Modifier.size(Dimens.iconMd)
-                        )
-                    }
-
-                    // 画幅切换按钮（激活 AspectRatio 死代码）
-                    IconButton(
-                        onClick = onCycleAspectRatio,
-                        modifier = Modifier
-                            .size(Dimens.buttonAction)
-                            .background(Surface, CircleShape)
-                            .border(Dimens.strokeThin, Border, CircleShape)
-                    ) {
-                        Text(
-                            text = currentAspectRatioName,
-                            color = TextPrimary,
-                            fontSize = Dimens.fontCaption,
-                            fontWeight = FontWeight.Bold,
-                            lineHeight = Dimens.lineHeightCaption
-                        )
+                            // 手电筒
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = if (isTorchOn) Icons.Default.FlashlightOn else Icons.Default.FlashlightOff,
+                                            contentDescription = null,
+                                            tint = if (isTorchOn) Accent else TextSecondary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = if (isTorchOn) "手电筒: 开" else "手电筒: 关",
+                                            color = TextPrimary,
+                                            fontSize = 14.sp
+                                        )
+                                    }
+                                },
+                                onClick = { onToggleTorch(); showMoreMenu = false }
+                            )
+                        }
                     }
                 }
             } else {
@@ -1718,7 +1709,7 @@ fun BottomPanel(
     }
 }
 
-// ── 快捷功能按钮（国产 App 工具栏标配：图标 + 文字，激活态高亮）──
+// ── 快捷功能按钮（精简图标 + 微标签，激活态高亮）──
 @Composable
 fun QuickActionButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -1729,33 +1720,37 @@ fun QuickActionButton(
 ) {
     Column(
         modifier = modifier
+            .widthIn(min = 52.dp, max = 64.dp)
             .clip(RoundedCornerShape(Dimens.radiusMd))
             .background(
                 if (active) Accent.copy(alpha = 0.22f) else Color.Black.copy(alpha = 0.35f)
             )
             .border(
                 width = if (active) Dimens.strokeRegular else Dimens.strokeThin,
-                color = if (active) Accent.copy(alpha = 0.7f) else Border,
+                color = if (active) Accent.copy(alpha = 0.7f) else Border.copy(alpha = 0.4f),
                 shape = RoundedCornerShape(Dimens.radiusMd)
             )
             .clickable { onClick() }
-            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs + 2.dp),
+            .padding(horizontal = 6.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+        verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
             tint = if (active) Accent else TextPrimary,
-            modifier = Modifier.size(Dimens.iconSm)
+            modifier = Modifier.size(20.dp)
         )
         Text(
             text = label,
             color = if (active) Accent else TextSecondary,
-            fontSize = Dimens.fontCaption,
+            fontSize = 10.sp,
             fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
-            lineHeight = Dimens.lineHeightCaption,
-            maxLines = 1
+            lineHeight = 14.sp,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Clip,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -2483,13 +2478,13 @@ fun SilhouetteGuideOverlay(
             centerY = h - silH / 2f - 140f
         }
 
-        // 绘制剪影
+        // 绘制剪影：更淡雅，减少视觉干扰
         val silColor = if (isAligned) Success else Color.White
-        // 沉浸模式降低透明度
-        val immersiveFactor = if (isImmersiveMode) 0.35f else 1f
-        val silAlpha = (if (isAligned) 0.22f else 0.12f) * immersiveFactor
-        val strokeAlpha = (if (isAligned) 1f else 0.35f) * immersiveFactor
-        val strokeWidth = if (isAligned) 3.dp.toPx() else 1.8.dp.toPx()
+        // 沉浸模式进一步降低透明度
+        val immersiveFactor = if (isImmersiveMode) 0.2f else 0.75f
+        val silAlpha = (if (isAligned) 0.15f else 0.06f) * immersiveFactor
+        val strokeAlpha = (if (isAligned) 0.7f else 0.22f) * immersiveFactor
+        val strokeWidth = if (isAligned) 2.2.dp.toPx() else 1.2.dp.toPx()
 
         if (isDualMode) {
             // 双人模式：左右各偏移 18% 屏宽渲染两个剪影
