@@ -1832,6 +1832,31 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * 替换照片文件：更新数据库记录的 imagePath 触发相册 Flow 刷新
+     * 由照片编辑器在保存编辑结果后调用，新文件路径与旧路径不同可避免 Coil 缓存命中旧图
+     *
+     * @param recordId 拍摄记录 ID
+     * @param newImagePath 编辑后新照片文件路径
+     */
+    fun replacePhotoFile(recordId: Long, newImagePath: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val record = app.database.shootingDao().getById(recordId) ?: return@launch
+                val oldPath = record.imagePath
+                // 更新数据库记录的 imagePath，触发 Flow 发射，相册自动刷新
+                app.database.shootingDao().update(record.copy(imagePath = newImagePath))
+                // 数据库更新成功后再删除旧文件（避免竞态导致记录指向已删文件）
+                if (oldPath != newImagePath) {
+                    val oldFile = File(oldPath)
+                    if (oldFile.exists()) oldFile.delete()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "replacePhotoFile failed", e)
+            }
+        }
+    }
+
     // ====== 滤镜控制 ======
 
     fun setFilter(filter: PhotoFilterEngine.Filter) {

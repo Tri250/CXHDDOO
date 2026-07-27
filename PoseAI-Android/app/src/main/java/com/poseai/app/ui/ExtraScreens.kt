@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Mood
@@ -513,7 +514,10 @@ fun OOTDScoreBar(label: String, score: Float) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GalleryScreen(viewModel: ShootingViewModel) {
+fun GalleryScreen(
+    viewModel: ShootingViewModel,
+    onEditPhoto: (Long) -> Unit = {}
+) {
     val records by viewModel.getCaptureHistory().collectAsState(initial = emptyList())
     var sceneStats by remember { mutableStateOf<List<com.poseai.app.data.SceneCount>>(emptyList()) }
     var showFavoritesOnly by remember { mutableStateOf(false) }
@@ -637,6 +641,10 @@ fun GalleryScreen(viewModel: ShootingViewModel) {
             onDelete = {
                 viewModel.deleteRecordById(record.id)
                 selectedRecord = null
+            },
+            onEdit = {
+                selectedRecord = null
+                onEditPhoto(record.id)
             }
         )
     }
@@ -744,7 +752,8 @@ fun PhotoDetailBottomSheet(
     record: com.poseai.app.data.ShootingRecord,
     onDismiss: () -> Unit,
     onToggleFavorite: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit = {}
 ) {
     val sceneDisplayName = try {
         SceneType.valueOf(record.scene).displayName
@@ -832,24 +841,51 @@ fun PhotoDetailBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 删除按钮
-            OutlinedButton(
-                onClick = onDelete,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = androidx.compose.ui.graphics.Color(0xFFFF6B6B)
-                )
+            // 操作按钮：编辑 + 删除
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("删除照片", fontSize = 15.sp)
+                // 编辑按钮（主操作）
+                Button(
+                    onClick = onEdit,
+                    enabled = record.imagePath.isNotEmpty(),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Accent,
+                        contentColor = androidx.compose.ui.graphics.Color.Black
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("编辑", fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                }
+                // 删除按钮（危险操作）
+                OutlinedButton(
+                    onClick = onDelete,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = androidx.compose.ui.graphics.Color(0xFFFF6B6B)
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("删除照片", fontSize = 15.sp)
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))

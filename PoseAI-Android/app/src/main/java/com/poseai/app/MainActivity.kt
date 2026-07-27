@@ -33,18 +33,24 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.poseai.app.ui.GalleryScreen
 import com.poseai.app.ui.OOTDAnalysisScreen
 import com.poseai.app.ui.OnboardingScreen
+import com.poseai.app.ui.PhotoEditorScreen
 import com.poseai.app.ui.ProScreen
 import com.poseai.app.ui.ShootingScreen
+import com.poseai.app.ui.theme.Accent
 import com.poseai.app.ui.theme.PoseAITheme
 import com.poseai.app.viewmodel.ShootingViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
 
@@ -468,7 +474,56 @@ fun PoseAINavHost(
 
                 composable("gallery") {
                     val viewModel: ShootingViewModel = viewModel()
-                    GalleryScreen(viewModel = viewModel)
+                    GalleryScreen(
+                        viewModel = viewModel,
+                        onEditPhoto = { recordId ->
+                            navController.navigate("photo_editor/$recordId")
+                        }
+                    )
+                }
+
+                composable(
+                    route = "photo_editor/{recordId}",
+                    arguments = listOf(navArgument("recordId") { type = NavType.LongType })
+                ) { backStackEntry ->
+                    val recordId = backStackEntry.arguments?.getLong("recordId") ?: return@composable
+                    val editorViewModel: ShootingViewModel = viewModel()
+                    // 从数据库异步加载记录以获取 imagePath
+                    var imagePath by remember { mutableStateOf<String?>(null) }
+                    var loadFailed by remember { mutableStateOf(false) }
+                    LaunchedEffect(recordId) {
+                        val path = withContext(Dispatchers.IO) {
+                            PoseAIApp.getDatabase().shootingDao().getById(recordId)?.imagePath
+                        }
+                        if (path != null) imagePath = path else loadFailed = true
+                    }
+                    when {
+                        loadFailed -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("照片记录不存在", color = Accent)
+                            }
+                        }
+                        imagePath != null -> {
+                            PhotoEditorScreen(
+                                recordId = recordId,
+                                imagePath = imagePath!!,
+                                viewModel = editorViewModel,
+                                onBack = { navController.popBackStack() },
+                                onSaved = { navController.popBackStack() }
+                            )
+                        }
+                        else -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(color = Accent)
+                            }
+                        }
+                    }
                 }
 
                 composable("ootd") {
