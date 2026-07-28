@@ -4828,6 +4828,7 @@ fun VlogTemplateItem(template: com.poseai.app.model.VlogTemplate, onClick: () ->
                 tint = Accent,
                 modifier = Modifier.size(24.dp)
             )
+        }
         Spacer(modifier = Modifier.width(Dimens.spacingMd))
         Column(modifier = Modifier.weight(1f)) {
             Text(
