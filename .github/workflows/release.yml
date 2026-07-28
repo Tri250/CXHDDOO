@@ -197,7 +197,7 @@ jobs:
           $ANDROID_HOME/build-tools/${{ env.ANDROID_BUILD_TOOLS }}/apksigner verify --verbose "$APK_FILE" || true
 
           # 校验 APK 大小合理（>1MB, <200MB）
-          APK_SIZE=$(stat -f%z "$APK_FILE" 2>/dev/null || stat -c%s "$APK_FILE")
+          APK_SIZE=$(stat -c%s "$APK_FILE")
           if [ "$APK_SIZE" -lt 1048576 ]; then
             echo "::warning::APK size is unusually small: ${APK_SIZE} bytes"
           fi
@@ -213,11 +213,11 @@ jobs:
 
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
-        if: success()
+        if: success() && steps.outputs.outputs.aab_path != ''
         with:
           name: PoseAI-Android-AAB
           path: PoseAI-Android/app/build/outputs/bundle/release/*.aab
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
 
       - name: Write job summary

@@ -28,6 +28,11 @@
 	<string>PoseAI 需要读取你的相册以展示拍摄历史和回顾已保存的作品。</string>
 	<key>UIStatusBarHidden</key>
 	<true/>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+	</dict>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
