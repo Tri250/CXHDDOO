@@ -15,14 +15,14 @@ import android.graphics.Typeface
 import android.net.Uri
 import android.text.TextPaint
 import androidx.core.content.FileProvider
+import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
-import android.util.Log
 import java.text.SimpleDateFormat
-
-private const val TAG = "ShareEngine"
 import java.util.Date
 import java.util.Locale
+
+private const val TAG = "ShareEngine"
 
 /**
  * 分享引擎：水印定制 + 话题叠加 + 系统分享

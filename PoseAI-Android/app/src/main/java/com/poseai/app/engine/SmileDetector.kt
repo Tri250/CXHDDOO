@@ -1,14 +1,14 @@
 package com.poseai.app.engine
 
 import android.util.Log
-
-private const val TAG = "SmileDetector"
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
+
+private const val TAG = "SmileDetector"
 
 class SmileDetector(
     triggerThreshold: Float = 0.7f,

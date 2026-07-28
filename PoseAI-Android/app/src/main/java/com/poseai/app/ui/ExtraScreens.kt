@@ -2,11 +2,9 @@ package com.poseai.app.ui
 
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
-
-private const val TAG = "ExtraScreens"
-
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -61,6 +59,8 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
+
+private const val TAG = "ExtraScreens"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
