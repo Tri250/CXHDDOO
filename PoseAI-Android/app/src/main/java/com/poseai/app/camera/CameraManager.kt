@@ -178,6 +178,7 @@ class CameraManager(private val context: Context) {
             val selector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
             cameraProvider.hasCamera(selector)
         } catch (e: Exception) {
+            Log.w(TAG, "Failed to check camera lens facing", e)
             false
         }
     }

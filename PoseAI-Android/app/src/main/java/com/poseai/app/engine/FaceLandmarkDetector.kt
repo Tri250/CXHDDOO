@@ -92,14 +92,15 @@ class FaceLandmarkDetector {
     private val detector: FaceDetector
 
     init {
-        val options = FaceDetectorOptions.Builder()
+        val optionsBuilder = FaceDetectorOptions.Builder()
             .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
             .setContourMode(FaceDetectorOptions.CONTOUR_MODE_ALL)
             .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
             .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
             .setMinFaceSize(0.15f)
-            .enableTracking()
-            .build()
+        @Suppress("DEPRECATION")
+        optionsBuilder.enableTracking()
+        val options = optionsBuilder.build()
         detector = FaceDetection.getClient(options)
     }
 
@@ -130,7 +131,10 @@ class FaceLandmarkDetector {
             return emptyList()
         }
 
-        errorRef.get()?.let { return emptyList() }
+        errorRef.get()?.let {
+            android.util.Log.e("FaceLandmarkDetector", "Face detection failed", it)
+            return emptyList()
+        }
 
         val result = mutableListOf<FaceData>()
         for (face in facesRef.get()) {
@@ -168,7 +172,10 @@ class FaceLandmarkDetector {
             return emptyList()
         }
 
-        errorRef.get()?.let { return emptyList() }
+        errorRef.get()?.let {
+            android.util.Log.e("FaceLandmarkDetector", "Face detection failed", it)
+            return emptyList()
+        }
 
         val result = mutableListOf<FaceData>()
         for (face in facesRef.get()) {

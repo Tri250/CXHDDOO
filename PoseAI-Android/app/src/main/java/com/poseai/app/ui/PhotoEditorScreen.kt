@@ -148,6 +148,7 @@ private fun loadBitmapFromFile(path: String, maxDim: Int = 2048): Bitmap? {
         val opts = BitmapFactory.Options().apply { inSampleSize = sampleSize }
         BitmapFactory.decodeFile(path, opts)
     } catch (e: Exception) {
+        android.util.Log.w("PhotoEditorScreen", "Failed to decode bitmap from path", e)
         null
     }
 }
@@ -343,9 +344,12 @@ fun PhotoEditorScreen(
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     LaunchedEffect(currentBitmap, selectedFilter, filterIntensity) {
         val src = currentBitmap ?: return@LaunchedEffect
+        val oldPreview = previewBitmap
         previewBitmap = withContext(Dispatchers.Default) {
             applyFilterWithIntensity(src, selectedFilter, filterIntensity)
         }
+        // 回收上一帧预览 Bitmap，避免内存泄漏
+        oldPreview?.recycle()
     }
 
     // ── 撤销操作 ──

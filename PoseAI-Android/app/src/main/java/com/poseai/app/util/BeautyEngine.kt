@@ -468,6 +468,7 @@ object BeautyEngine {
                 faceCenter = PointF(centerX, centerY)
             )
         } catch (e: Exception) {
+            android.util.Log.e("BeautyEngine", "Failed to extract face landmarks", e)
             null
         }
     }

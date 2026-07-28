@@ -54,6 +54,7 @@ object CollageEngine {
                 Layout.GRID_6 -> createGrid6(sources, background)
             }
         } catch (e: Exception) {
+            android.util.Log.e("CollageEngine", "Failed to create collage", e)
             null
         }
     }

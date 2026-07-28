@@ -383,6 +383,8 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
 
     /** 暴露运行时状态供诊断 UI 使用 */
     fun isModelLoaded(): Boolean = !useFallback
+    private val useKeywordMapper = useFallback
+
     fun isUsingKeywordMapper(): Boolean = useKeywordMapper
     fun getPreprocessingParams(): String =
         "scale=$channelScale, biases=[$redBias, $greenBias, $blueBias]"

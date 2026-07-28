@@ -50,6 +50,7 @@ class CustomPoseStore(private val context: Context) {
             val dtos: List<CustomPoseDto> = gson.fromJson(json, posesListType) ?: emptyList()
             dtos.map { it.toDomain() }
         } catch (e: Exception) {
+            android.util.Log.e("CustomPoseStore", "Failed to load custom poses", e)
             emptyList()
         }
     }
@@ -63,6 +64,7 @@ class CustomPoseStore(private val context: Context) {
             saveAll(current)
             true
         } catch (e: Exception) {
+            android.util.Log.e("CustomPoseStore", "Failed to save pose", e)
             false
         }
     }
@@ -75,6 +77,7 @@ class CustomPoseStore(private val context: Context) {
             if (removed) saveAll(current)
             removed
         } catch (e: Exception) {
+            android.util.Log.e("CustomPoseStore", "Failed to delete pose", e)
             false
         }
     }

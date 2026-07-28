@@ -551,6 +551,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         toneGenerator = try {
             ToneGenerator(AudioManager.STREAM_SYSTEM, 80)
         } catch (e: Exception) {
+            Log.w(TAG, "ToneGenerator init failed", e)
             null
         }
 
@@ -921,6 +922,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             val out = ByteArrayOutputStream()
             yuvImage.compressToJpeg(Rect(0, 0, width, height), 50, out)
             val imageBytes = out.toByteArray()
+            out.close()
             BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
         } catch (e: Exception) {
             Log.e(TAG, "imageProxyToBitmap failed", e)
@@ -966,7 +968,8 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                 }
             }
         } catch (e: Exception) {
-            // buffer 读取可能失败，忽略
+            // buffer 读取可能失败，记录日志
+            Log.w(TAG, "Low light check failed", e)
         }
     }
 
@@ -1006,6 +1009,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             }
             if (count > 0) sum.toFloat() / count else null
         } catch (e: Exception) {
+            Log.w(TAG, "Face region brightness sampling failed", e)
             null
         }
     }

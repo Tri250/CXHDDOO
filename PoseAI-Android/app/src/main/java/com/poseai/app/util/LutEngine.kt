@@ -2,6 +2,9 @@ package com.poseai.app.util
 
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.util.Log
+
+private const val TAG = "LutEngine"
 
 // ═══════════════════════════════════════════════════════════════
 // LUT 滤镜引擎
@@ -178,6 +181,7 @@ class Lut3D(val size: Int) {
             result.setPixels(outPixels, 0, width, 0, 0, width, height)
             result
         } catch (e: Exception) {
+            Log.e(TAG, "Failed to apply LUT to bitmap", e)
             source.copy(source.config ?: Bitmap.Config.ARGB_8888, true)
         }
     }
@@ -215,6 +219,7 @@ fun applyLut(bitmap: Bitmap, lut: Lut3D, intensity: Float): Bitmap {
         result.setPixels(outPixels, 0, width, 0, 0, width, height)
         result
     } catch (e: Exception) {
+        Log.e(TAG, "Failed to apply LUT with intensity", e)
         bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true)
     }
 }

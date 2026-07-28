@@ -1,5 +1,6 @@
 package com.poseai.app.ui
 
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -276,6 +277,7 @@ private fun copyUriToFile(context: android.content.Context, uri: android.net.Uri
             outputFile.absolutePath
         }
     } catch (e: Exception) {
+        Log.w("ExtraScreens", "Failed to copy URI to cache", e)
         null
     }
 }
@@ -1105,6 +1107,7 @@ private suspend fun generateCollage(
                         }
                         android.graphics.BitmapFactory.decodeFile(path, options)
                     } catch (e: Exception) {
+                        Log.w("ExtraScreens", "Failed to decode bitmap: $path", e)
                         null
                     }
                 } else null
@@ -1132,7 +1135,7 @@ private suspend fun generateCollage(
 
             outputFile.absolutePath
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("ExtraScreens", "Failed to create collage", e)
             null
         }
     }
@@ -1185,6 +1188,7 @@ fun SceneStatsCard(stats: List<com.poseai.app.data.SceneCount>, totalCount: Int)
             val sceneDisplayName = try {
                 SceneType.valueOf(stat.scene).displayName
             } catch (e: IllegalArgumentException) {
+                Log.w("ExtraScreens", "Unknown scene type: ${stat.scene}", e)
                 stat.scene
             }
             val ratio = if (maxCount > 0) stat.count.toFloat() / maxCount else 0f
@@ -1246,6 +1250,7 @@ fun PhotoDetailBottomSheet(
     val sceneDisplayName = try {
         SceneType.valueOf(record.scene).displayName
     } catch (e: IllegalArgumentException) {
+        Log.w("ExtraScreens", "Unknown scene type: ${record.scene}", e)
         record.scene
     }
 

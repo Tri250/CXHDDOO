@@ -7,9 +7,12 @@ import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
 import android.graphics.Rect
+import android.util.Log
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
+
+private const val TAG = "PhotoFilterEngine"
 
 object PhotoFilterEngine {
 

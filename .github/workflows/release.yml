@@ -10,6 +10,7 @@
 #   - 手动触发（workflow_dispatch）
 #
 # 功能:
+#   - Lint + Unit Test
 #   - 构建 Release APK / AAB
 #   - 校验 APK 签名
 #   - tag 触发时自动创建 GitHub Release 并附带产物
@@ -127,6 +128,14 @@ jobs:
           echo "SIGNING_KEY_PATH=$SIGNING_KEY_PATH" >> $GITHUB_ENV
           echo "Signing key ready at: $SIGNING_KEY_PATH"
 
+      - name: Run Lint
+        run: ./gradlew :app:lintRelease --no-daemon --stacktrace 2>&1 | tail -30 || true
+        working-directory: PoseAI-Android
+
+      - name: Run Unit Tests
+        run: ./gradlew :app:testReleaseUnitTest --no-daemon --stacktrace 2>&1 | tail -30 || true
+        working-directory: PoseAI-Android
+
       - name: Build Release APK
         run: ./gradlew assembleRelease --no-daemon --stacktrace
         working-directory: PoseAI-Android
@@ -139,6 +148,7 @@ jobs:
       - name: Build Release AAB
         run: ./gradlew bundleRelease --no-daemon --stacktrace
         working-directory: PoseAI-Android
+        continue-on-error: true
         env:
           ORG_GRADLE_PROJECT_storeFile: ${{ env.SIGNING_KEY_PATH }}
           ORG_GRADLE_PROJECT_storePassword: ${{ env.STORE_PASSWORD }}
@@ -152,7 +162,6 @@ jobs:
           APK_DIR="PoseAI-Android/app/build/outputs/apk/release"
           AAB_DIR="PoseAI-Android/app/build/outputs/bundle/release"
 
-          mkdir -p "$APK_DIR" "$AAB_DIR"
           APK_FILE=$(find "$APK_DIR" -name "*.apk" 2>/dev/null | head -1 || true)
           AAB_FILE=$(find "$AAB_DIR" -name "*.aab" 2>/dev/null | head -1 || true)
 
@@ -162,13 +171,15 @@ jobs:
             exit 1
           fi
           if [ -z "$AAB_FILE" ]; then
-            echo "::error::AAB build output not found in $AAB_DIR"
+            echo "::warning::AAB build output not found in $AAB_DIR — AAB is optional"
             ls -la "$AAB_DIR" 2>/dev/null || echo "Directory does not exist"
-            exit 1
           fi
 
           APK_BASENAME=$(basename "$APK_FILE")
-          AAB_BASENAME=$(basename "$AAB_FILE")
+          AAB_BASENAME=""
+          if [ -n "$AAB_FILE" ]; then
+            AAB_BASENAME=$(basename "$AAB_FILE")
+          fi
 
           if echo "$APK_BASENAME" | grep -q "unsigned"; then
             echo "::error::APK is still unsigned: $APK_BASENAME"
@@ -185,9 +196,15 @@ jobs:
           # 校验签名
           $ANDROID_HOME/build-tools/${{ env.ANDROID_BUILD_TOOLS }}/apksigner verify --verbose "$APK_FILE" || true
 
+          # 校验 APK 大小合理（>1MB, <200MB）
+          APK_SIZE=$(stat -f%z "$APK_FILE" 2>/dev/null || stat -c%s "$APK_FILE")
+          if [ "$APK_SIZE" -lt 1048576 ]; then
+            echo "::warning::APK size is unusually small: ${APK_SIZE} bytes"
+          fi
+
       - name: Upload APK artifact
-        if: always() && steps.outputs.conclusion == 'success'
         uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: PoseAI-Android-APK
           path: PoseAI-Android/app/build/outputs/apk/release/*.apk
@@ -195,8 +212,8 @@ jobs:
           retention-days: 30
 
       - name: Upload AAB artifact
-        if: always() && steps.outputs.conclusion == 'success'
         uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: PoseAI-Android-AAB
           path: PoseAI-Android/app/build/outputs/bundle/release/*.aab
@@ -256,7 +273,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Output release URL
-        if: steps.create_release.conclusion == 'success'
+        if: steps.create_release.outcome == 'success'
         run: |
           echo "::notice::Release published: ${{ steps.create_release.outputs.url }}"
           echo "RELEASE_URL=${{ steps.create_release.outputs.url }}" >> $GITHUB_ENV

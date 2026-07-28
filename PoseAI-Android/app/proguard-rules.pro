@@ -179,3 +179,12 @@
     java.lang.Object writeReplace();
     java.lang.Object readResolve();
 }
+
+# ===== Gson TypeToken 保留（防止泛型擦除导致反序列化失败）=====
+-keep class * extends com.google.gson.reflect.TypeToken
+-keepclassmembers class * extends com.google.gson.reflect.TypeToken {
+    <fields>;
+}
+
+# ===== CustomPoseStore 内部 DTO（Gson 反射序列化）=====
+-keep class com.poseai.app.store.CustomPoseStore$CustomPoseDto { *; }

@@ -51,6 +51,7 @@ object StickerEngine {
                 Sticker.FILM_FRAME -> applyFilmFrame(source)
             }
         } catch (e: Exception) {
+            android.util.Log.e("StickerEngine", "Failed to apply sticker", e)
             source.copy(source.config ?: Bitmap.Config.ARGB_8888, true)
         }
     }

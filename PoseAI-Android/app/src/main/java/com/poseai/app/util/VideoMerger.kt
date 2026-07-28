@@ -280,6 +280,7 @@ object VideoMerger {
             }
             duration
         } catch (e: Exception) {
+            Log.e(TAG, "Failed to get video duration", e)
             0L
         } finally {
             extractor.release()

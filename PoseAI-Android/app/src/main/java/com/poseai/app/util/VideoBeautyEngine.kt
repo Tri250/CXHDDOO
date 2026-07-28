@@ -10,11 +10,14 @@ import android.media.MediaCodecInfo
 import android.media.MediaFormat
 import android.media.MediaMuxer
 import android.os.Build
+import android.util.Log
 import android.view.Surface
 import com.poseai.app.engine.FaceLandmarkDetector
 import java.io.File
 import java.nio.ByteBuffer
 import kotlin.math.abs
+
+private const val TAG = "VideoBeautyEngine"
 
 /**
  * Bitmap ARGB 转 NV21 完整实现
@@ -193,6 +196,7 @@ class VideoBeautyEngine {
         return try {
             changeSpeedInternal(inputPath, outputPath, speedMultiplier)
         } catch (e: Exception) {
+            Log.e(TAG, "Failed to change speed", e)
             false
         }
     }
@@ -204,6 +208,7 @@ class VideoBeautyEngine {
         return try {
             trimVideoInternal(inputPath, outputPath, startMs, endMs)
         } catch (e: Exception) {
+            Log.e(TAG, "Failed to trim video", e)
             false
         }
     }
@@ -221,6 +226,7 @@ class VideoBeautyEngine {
         return try {
             processVideoInternal(inputPath, outputPath, params)
         } catch (e: Exception) {
+            Log.e(TAG, "Failed to process video", e)
             false
         }
     }

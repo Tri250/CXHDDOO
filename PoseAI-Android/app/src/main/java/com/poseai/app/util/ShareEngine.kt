@@ -289,6 +289,7 @@ object ShareEngine {
             }
             outFile
         } catch (e: Exception) {
+            android.util.Log.e("ShareEngine", "Failed to prepare share image", e)
             null
         }
     }
@@ -340,6 +341,7 @@ object ShareEngine {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
         } catch (e: Exception) {
+            android.util.Log.e("ShareEngine", "Failed to build share intent", e)
             null
         }
     }
@@ -381,6 +383,7 @@ object ShareEngine {
             )
             true
         } catch (e: Exception) {
+            android.util.Log.e("ShareEngine", "Failed to share to system", e)
             false
         }
     }

@@ -353,6 +353,7 @@ class AIModelManager(context: Context) {
             val hex = hash.joinToString("") { "%02x".format(it) }
             hex == expectedMd5
         } catch (e: Exception) {
+            Log.e(TAG, "MD5 verification failed", e)
             false
         }
     }

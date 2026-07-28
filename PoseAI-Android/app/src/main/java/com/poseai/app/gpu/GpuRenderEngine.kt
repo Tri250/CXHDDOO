@@ -141,6 +141,7 @@ object GpuRenderEngine {
             return flipped
         } catch (e: Exception) {
             // GPU 处理失败，回收 output 并返回原图副本
+            android.util.Log.e(TAG, "GPU processBitmap failed", e)
             output.recycle()
             return bitmap.copy(Bitmap.Config.ARGB_8888, true)
         }
@@ -587,10 +588,12 @@ class RealtimeFilterRenderer : GLSurfaceView.Renderer {
         GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uVignette"), vignette)
         GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uSharpen"), sharpen)
 
-        // 设置纹理像素大小（用于锐化采样）
+        // 设置纹理像素大小（用于锐化采样）— 使用 SurfaceView 实际尺寸
+        val texW = cameraTexture?.defaultVideoWidth?.toFloat() ?: 1080f
+        val texH = cameraTexture?.defaultVideoHeight?.toFloat() ?: 1920f
         GLES20.glUniform2f(
             GLES20.glGetUniformLocation(program, "uTexelSize"),
-            1f / 1080f, 1f / 1920f
+            1f / texW, 1f / texH
         )
 
         // 绘制

@@ -197,6 +197,7 @@ class MainActivity : ComponentActivity() {
                 permissionLauncher.launch(permsToRequest.toTypedArray())
             } catch (e: Exception) {
                 // 权限请求框架可能在某些设备上崩溃,捕获异常
+                android.util.Log.e("MainActivity", "Permission request failed", e)
                 Toast.makeText(this, "权限请求失败,请在设置中手动授权", Toast.LENGTH_LONG).show()
             }
         }
