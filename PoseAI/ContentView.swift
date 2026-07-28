@@ -114,7 +114,7 @@ struct ContentView: View {
                 .onTapGesture { vm.toggleImmersiveMode() }
 
             // 2. 构图辅助线（全屏三分法网格）
-            if vm.isSceneReady && !vm.isImmersiveMode {
+            if vm.isSceneReady && !vm.isImmersiveMode && selectedMode == .guide {
                 CompositionGuideLines(composition: vm.currentPlan?.composition)
             }
 
@@ -123,8 +123,8 @@ struct ContentView: View {
                 sceneScanningOverlay
             }
 
-            // 4. 剪影引导
-            if let plan = vm.currentPlan {
+            // 4. 剪影引导（仅智能导拍模式）
+            if selectedMode == .guide, let plan = vm.currentPlan {
                 if vm.requiresProUnlock {
                     paywallTeaser
                 } else {
@@ -162,14 +162,14 @@ struct ContentView: View {
                 }
             }
 
-            // 5. AR 脚印（全身模式）
-            if !vm.requiresProUnlock && !vm.isImmersiveMode,
+            // 5. AR 脚印（全身模式，仅导拍）
+            if selectedMode == .guide, !vm.requiresProUnlock && !vm.isImmersiveMode,
                vm.isSceneReady, vm.currentPlan?.frameRatio == .fullBody {
                 arFootprintsOverlay
             }
 
             // 6. 人脸对焦框
-            if !vm.isImmersiveMode, let _ = vm.detectedPoses.first {
+            if !vm.isImmersiveMode, let _ = vm.detectedPoses.first, selectedMode == .guide {
                 faceFocusFrame
             }
 
@@ -185,7 +185,7 @@ struct ContentView: View {
             }
 
             // 8. 左侧提示
-            if !vm.isImmersiveMode && vm.isSceneReady {
+            if !vm.isImmersiveMode && vm.isSceneReady && selectedMode == .guide {
                 HStack {
                     leftGuidePanel
                         .padding(.leading, 12)
@@ -275,6 +275,7 @@ struct ContentView: View {
             vm.bind()
             vm.startScanTimeout()
             vm.customShootingPlans = storedCustomPlans.map { $0.asShootingPlan }
+            startScanAnimations()
         }
         .onDisappear { vm.manager.stop() }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
@@ -340,6 +341,18 @@ struct ContentView: View {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - 扫描动画启动（确保只执行一次）
+    @State private var scanAnimationsStarted = false
+
+    private func startScanAnimations() {
+        guard !scanAnimationsStarted else { return }
+        scanAnimationsStarted = true
+        scanPulse = true
+        withAnimation(.linear(duration: 1.6).repeatForever(autoreverses: false)) {
+            scanRotation = 360
         }
     }
 
@@ -549,53 +562,63 @@ struct ContentView: View {
         .accessibilityLabel("匹配度 \(Int(vm.score))%")
     }
 
-    // MARK: - 左侧提示面板（参考图风格）
+    // MARK: - 左侧提示面板（参考图风格，动态状态）
     private var leftGuidePanel: some View {
         VStack(alignment: .leading, spacing: 10) {
-            // 构图对齐提示
             if let composition = vm.currentPlan?.composition {
+                let aligned = vm.isReady
                 HStack(spacing: 8) {
-                    Image(systemName: composition == .center ? "align.vertical.center" : "align.horizontal.center")
+                    Image(systemName: aligned ? "checkmark.circle.fill" : (composition == .center ? "align.vertical.center" : "align.horizontal.center"))
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.white.opacity(0.8))
-                    Text(composition == .center ? "保持中轴对齐" : "保持构图偏移")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.white.opacity(0.85))
+                        .foregroundColor(aligned ? Design.success : .white.opacity(0.8))
+                    Text(aligned ? "构图已对齐" : (composition == .center ? "保持中轴对齐" : "保持构图偏移"))
+                        .font(.system(size: 12, weight: aligned ? .bold : .medium))
+                        .foregroundColor(aligned ? Design.success : .white.opacity(0.85))
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .background(Design.surfaceStrong, in: Capsule())
-                .overlay(Capsule().stroke(Design.border, lineWidth: 1))
+                .overlay(
+                    Capsule().stroke(
+                        aligned ? Design.success.opacity(0.6) : Design.border,
+                        lineWidth: aligned ? 1.5 : 1
+                    )
+                )
+                .animation(.spring(response: 0.25, dampingFraction: 0.6), value: aligned)
             }
 
-            // 水平仪提示
+            let isLevel = abs(vm.manager.deviceRoll) < 0.1
             HStack(spacing: 8) {
-                Image(systemName: "level")
+                Image(systemName: isLevel ? "level.fill" : "level")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.white.opacity(0.8))
-                Text("手机保持水平")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.white.opacity(0.85))
+                    .foregroundColor(isLevel ? Design.success : .white.opacity(0.8))
+                Text(isLevel ? "手机已水平" : "手机保持水平")
+                    .font(.system(size: 12, weight: isLevel ? .bold : .medium))
+                    .foregroundColor(isLevel ? Design.success : .white.opacity(0.85))
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(Design.surfaceStrong, in: Capsule())
-            .overlay(Capsule().stroke(Design.border, lineWidth: 1))
+            .overlay(
+                Capsule().stroke(
+                    isLevel ? Design.success.opacity(0.6) : Design.border,
+                    lineWidth: isLevel ? 1.5 : 1
+                )
+            )
+            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: isLevel)
         }
     }
 
-    // MARK: - 人脸对焦框（黄色角括号）
+    // MARK: - 人脸对焦框（黄色角括号，跟随检测到的人脸）
     private var faceFocusFrame: some View {
         GeometryReader { geo in
             let w = geo.size.width
             let h = geo.size.height
-            let boxW: CGFloat = 80
-            let boxH: CGFloat = 100
-            let centerX = w / 2
-            let centerY = h / 2 - 20
-            let cornerLen: CGFloat = 16
+            let cornerLen: CGFloat = 14
             let thickness: CGFloat = 2.5
-            let color = Design.accent
+            let color = vm.isReady ? Design.success : Design.accent
+
+            let (centerX, centerY, boxW, boxH) = resolveFaceBox(screenW: w, screenH: h)
 
             Canvas { ctx, _ in
                 let corners: [(CGPoint, CGPoint, CGPoint)] = [
@@ -621,6 +644,20 @@ struct ContentView: View {
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
+        .animation(.easeInOut(duration: 0.25), value: vm.detectedPoses.first?.bbox)
+    }
+
+    private func resolveFaceBox(screenW: CGFloat, screenH: CGFloat) -> (CGFloat, CGFloat, CGFloat, CGFloat) {
+        guard let pose = vm.detectedPoses.first, pose.bbox.height > 0.05 else {
+            return (screenW / 2, screenH / 2 - 20, 80, 100)
+        }
+        let bbox = pose.bbox
+        let headRatio: CGFloat = 0.18
+        let faceW = bbox.width * screenW * 0.75
+        let faceH = bbox.height * screenH * headRatio
+        let faceX = bbox.midX * screenW
+        let faceY = (bbox.minY + headRatio * 0.5) * screenH
+        return (faceX, faceY, max(60, faceW), max(75, faceH))
     }
 
     // MARK: - 场景扫描引导
@@ -656,11 +693,6 @@ struct ContentView: View {
                                 )
                                 .frame(width: 44, height: 44)
                                 .rotationEffect(.degrees(scanRotation))
-                                .onAppear {
-                                    withAnimation(.linear(duration: 1.6).repeatForever(autoreverses: false)) {
-                                        scanRotation = 360
-                                    }
-                                }
 
                             Image(systemName: "viewfinder")
                                 .font(.system(size: 22, weight: .ultraLight))
@@ -685,7 +717,6 @@ struct ContentView: View {
             }
             .padding(.bottom, 200)
         }
-        .onAppear { scanPulse = true }
     }
 
     // MARK: - AR 地面脚印
@@ -709,26 +740,27 @@ struct ContentView: View {
     // MARK: - 底部整体区域
     private var bottomArea: some View {
         VStack(spacing: 0) {
-            // 对齐状态提示条（参考图：人物下方）
-            if vm.isSceneReady && vm.isReady && !vm.isImmersiveMode {
+            // 对齐状态提示条（参考图：人物下方，仅导拍）
+            if selectedMode == .guide && vm.isSceneReady && vm.isReady && !vm.isImmersiveMode {
                 HStack(spacing: 8) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 14))
                         .foregroundColor(Design.accent)
-                    Text("对称构图已优化")
+                    Text(alignmentStatusText)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.white.opacity(0.9))
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .background(Design.surfaceStrong, in: Capsule())
-                .overlay(Capsule().stroke(Design.border, lineWidth: 1))
+                .overlay(Capsule().stroke(Design.accent.opacity(0.4), lineWidth: 1))
                 .padding(.bottom, 10)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
+                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: vm.isReady)
             }
 
-            // 方案选择器
-            if vm.isSceneReady && !vm.isImmersiveMode {
+            // 方案选择器（仅导拍模式）
+            if selectedMode == .guide && vm.isSceneReady && !vm.isImmersiveMode {
                 planPickerSection
                     .padding(.bottom, 12)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -873,43 +905,59 @@ struct ContentView: View {
         }
     }
 
+    // MARK: - 对齐状态文案
+    private var alignmentStatusText: String {
+        guard let plan = vm.currentPlan else { return "构图已优化" }
+        switch plan.composition {
+        case .center: return "对称构图已优化"
+        case .goldenLeft, .goldenRight: return "黄金分割构图已优化"
+        case .ruleOfThirdsTop: return "三分法构图已优化"
+        case .ruleOfThirdsBottom: return "三分法构图已优化"
+        }
+    }
+
     // MARK: - 快门按钮（参考图：白色圆形）
     private var shutterButton: some View {
         ZStack {
             // 外圈（对齐时呼吸动效）
             if vm.isReady {
                 Circle()
-                    .stroke(Design.accent.opacity(0.4), lineWidth: 3)
+                    .stroke(Design.accent.opacity(breathingOpacity), lineWidth: 3)
                     .frame(width: 76, height: 76)
-                    .scaleEffect(vm.breathingScale)
-                    .opacity(2.0 - vm.breathingScale)
-                    .onAppear {
-                        withAnimation(.easeOut(duration: 1.1).repeatForever(autoreverses: false)) {
-                            vm.breathingScale = 1.4
-                        }
-                    }
+                    .scaleEffect(breathingScale)
             }
 
             // 外环
             Circle()
-                .stroke(vm.isReady ? Design.accent.opacity(0.8) : Color.white.opacity(0.6), lineWidth: 3.5)
+                .stroke(vm.isReady ? Design.accent.opacity(0.85) : Color.white.opacity(0.6), lineWidth: 3.5)
                 .frame(width: 68, height: 68)
 
             // 内圆主体
             Circle()
                 .fill(vm.isReady ? Design.accent : Color.white)
                 .frame(width: 58, height: 58)
-
-            // 中心小圆点（未对齐时）
-            if !vm.isReady {
-                Circle()
-                    .fill(Color.black.opacity(0.12))
-                    .frame(width: 22, height: 22)
-            }
+                .shadow(color: vm.isReady ? Design.accentGlow : .clear, radius: vm.isReady ? 12 : 0)
         }
         .frame(width: 84, height: 84)
         .scaleEffect(vm.isCapturing ? 0.92 : (vm.isReady ? 1.05 : 1.0))
         .animation(.spring(response: 0.3, dampingFraction: 0.55), value: vm.isReady)
+        .onChange(of: vm.isReady) { newValue in
+            if newValue {
+                startBreathing()
+            }
+        }
+    }
+
+    @State private var breathingScale: CGFloat = 1.0
+    @State private var breathingOpacity: Double = 0.4
+
+    private func startBreathing() {
+        breathingScale = 1.0
+        breathingOpacity = 0.4
+        withAnimation(.easeOut(duration: 1.2).repeatForever(autoreverses: true)) {
+            breathingScale = 1.35
+            breathingOpacity = 0.05
+        }
     }
 
     // MARK: - 内购拦截浮层
