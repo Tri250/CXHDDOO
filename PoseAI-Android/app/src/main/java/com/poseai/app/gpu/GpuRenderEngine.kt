@@ -588,9 +588,9 @@ class RealtimeFilterRenderer : GLSurfaceView.Renderer {
         GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uVignette"), vignette)
         GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uSharpen"), sharpen)
 
-        // 设置纹理像素大小（用于锐化采样）— 使用 SurfaceView 实际尺寸
-        val texW = cameraTexture?.defaultVideoWidth?.toFloat() ?: 1080f
-        val texH = cameraTexture?.defaultVideoHeight?.toFloat() ?: 1920f
+        // 设置纹理像素大小（用于锐化采样）
+        val texW = 1080f
+        val texH = 1920f
         GLES20.glUniform2f(
             GLES20.glGetUniformLocation(program, "uTexelSize"),
             1f / texW, 1f / texH
