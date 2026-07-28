@@ -4,30 +4,37 @@ import AVFoundation
 import AVFAudio
 import StoreKit
 
-// MARK: - 品牌设计常量
+// MARK: - 品牌设计常量（参考图：黑白高对比 + 金黄点缀）
 enum Design {
-    // 主题色（青墨绿 + 深空黑）
-    static let accent = Color(red: 0.05, green: 0.58, blue: 0.50)         // #0D9488 青墨绿
-    static let accentGlow = Color(red: 0.05, green: 0.58, blue: 0.50).opacity(0.35)
-    static let success = Color(red: 0.10, green: 0.75, blue: 0.55)       // #1ABF8C 翡翠绿
-    static let successGlow = Color(red: 0.10, green: 0.75, blue: 0.55).opacity(0.35)
-    static let danger = Color(red: 0.95, green: 0.35, blue: 0.35)         // #F25959 珊瑚红
-    static let surface = Color.white.opacity(0.08)
-    static let surfaceStrong = Color.white.opacity(0.15)
-    static let border = Color.white.opacity(0.18)
-    static let borderActive = Color.white.opacity(0.75)
+    static let accent = Color(red: 1.0, green: 0.84, blue: 0.25)         // #FFD53F 金黄
+    static let accentGlow = Color(red: 1.0, green: 0.84, blue: 0.25).opacity(0.35)
+    static let success = Color(red: 1.0, green: 0.84, blue: 0.25)       // 金黄
+    static let successGlow = Color(red: 1.0, green: 0.84, blue: 0.25).opacity(0.35)
+    static let danger = Color(red: 1.0, green: 0.35, blue: 0.35)         // 珊瑚红
+    static let surface = Color.black.opacity(0.45)
+    static let surfaceStrong = Color.black.opacity(0.65)
+    static let border = Color.white.opacity(0.12)
+    static let borderActive = Color.white.opacity(0.55)
     static let textPrimary = Color.white
-    static let textSecondary = Color.white.opacity(0.55)
+    static let textSecondary = Color.white.opacity(0.50)
     static let overlayBg = Color.black.opacity(0.55)
-    static let deepSpaceBlack = Color(red: 0.04, green: 0.06, blue: 0.05)  // 深空黑底色
+    static let deepSpaceBlack = Color.black
     static let blur: Material = .ultraThinMaterial
-    static let cornerCard: CGFloat = 18
+    static let cornerCard: CGFloat = 16
     static let cornerBadge: CGFloat = 8
+}
+
+// MARK: - 拍摄模式（底部栏视觉状态）
+enum CaptureMode: String, CaseIterable {
+    case guide = "智能导拍"
+    case photo = "照片"
+    case portrait = "人像"
+    case panorama = "全景"
 }
 
 struct ContentView: View {
 
-    // MARK: - SwiftData (Step 2 & Step 7)
+    // MARK: - SwiftData
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \ShootingRecord.createdAt, order: .reverse) private var recentRecords: [ShootingRecord]
     @Query(sort: \CustomPlan.createdAt, order: .reverse) private var storedCustomPlans: [CustomPlan]
@@ -35,10 +42,15 @@ struct ContentView: View {
     // MARK: - ViewModel
     @StateObject private var vm = ShootingViewModel()
 
-    // MARK: - StoreKit 2 内购管理器（从 App 层注入）
+    // MARK: - StoreKit
     @EnvironmentObject var storeManager: StoreManager
 
-    // MARK: - 保存照片记录（从 body 提取以降低类型推导复杂度）
+    // MARK: - UI 状态
+    @State private var selectedMode: CaptureMode = .guide
+    @State private var scanPulse: Bool = false
+    @State private var scanRotation: Double = 0
+
+    // MARK: - 保存照片记录
     private func savePhotoRecord(image: UIImage, filter: PhotoFilter) {
         Task {
             do {
@@ -61,11 +73,7 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - 扫描动画（纯 UI 驱动，保留在 View 层）
-    @State private var scanPulse: Bool = false
-    @State private var scanRotation: Double = 0
-
-    // MARK: - 倒计时覆盖层（提取以降低 body 类型推导复杂度）
+    // MARK: - 倒计时覆盖层
     @ViewBuilder
     private var countdownOverlay: some View {
         if vm.countdown > 0 {
@@ -97,25 +105,30 @@ struct ContentView: View {
     // MARK: - Body
     var body: some View {
         ZStack {
+            // 0. 摄像头层
             cameraLayer
 
-            // 点击进入/退出沉浸模式的手势层
+            // 1. 沉浸模式手势层
             Color.clear
                 .contentShape(Rectangle())
                 .onTapGesture { vm.toggleImmersiveMode() }
 
+            // 2. 构图辅助线（全屏三分法网格）
             if vm.isSceneReady && !vm.isImmersiveMode {
                 CompositionGuideLines(composition: vm.currentPlan?.composition)
             }
 
+            // 3. 场景扫描引导
             if !vm.isSceneReady {
                 sceneScanningOverlay
-            } else if let plan = vm.currentPlan {
+            }
+
+            // 4. 剪影引导
+            if let plan = vm.currentPlan {
                 if vm.requiresProUnlock {
                     paywallTeaser
                 } else {
                     if plan.secondaryPosePoints != nil {
-                        // 双人模式：渲染两个互相偏移的剪影
                         let width = UIScreen.main.bounds.width
                         SilhouetteGuideOverlay(
                             isAligned: Binding(get: { vm.isReady }, set: { _ in }),
@@ -126,7 +139,7 @@ struct ContentView: View {
                         .opacity(vm.isImmersiveMode ? 0.35 : 1.0)
                         .transition(.opacity.animation(.easeInOut(duration: 0.5)))
                         .animation(.easeInOut(duration: 0.4), value: vm.currentPlanIndex)
-                        
+
                         SilhouetteGuideOverlay(
                             isAligned: Binding(get: { vm.isReady }, set: { _ in }),
                             plan: plan,
@@ -137,7 +150,6 @@ struct ContentView: View {
                         .transition(.opacity.animation(.easeInOut(duration: 0.5)))
                         .animation(.easeInOut(duration: 0.4), value: vm.currentPlanIndex)
                     } else {
-                        // 单人模式：渲染单个剪影
                         SilhouetteGuideOverlay(
                             isAligned: Binding(get: { vm.isReady }, set: { _ in }),
                             plan: plan,
@@ -150,32 +162,47 @@ struct ContentView: View {
                 }
             }
 
-            if !vm.requiresProUnlock && !vm.isImmersiveMode {
-                if vm.isSceneReady, vm.currentPlan?.frameRatio == .fullBody {
-                    arFootprintsOverlay
-                }
+            // 5. AR 脚印（全身模式）
+            if !vm.requiresProUnlock && !vm.isImmersiveMode,
+               vm.isSceneReady, vm.currentPlan?.frameRatio == .fullBody {
+                arFootprintsOverlay
             }
 
-            // 顶部信息栏
+            // 6. 人脸对焦框
+            if !vm.isImmersiveMode, let _ = vm.detectedPoses.first {
+                faceFocusFrame
+            }
+
+            // 7. 顶部栏
             if !vm.isImmersiveMode {
                 VStack(spacing: 0) {
                     topBar
-                        .padding(.top, 58)
-                        .padding(.horizontal, 18)
+                        .padding(.top, 54)
+                        .padding(.horizontal, 16)
                     Spacer()
                 }
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
 
-            // 构图提示浮层
+            // 8. 左侧提示
+            if !vm.isImmersiveMode && vm.isSceneReady {
+                HStack {
+                    leftGuidePanel
+                        .padding(.leading, 12)
+                        .padding(.top, 120)
+                    Spacer()
+                }
+                .transition(.move(edge: .leading).combined(with: .opacity))
+            }
+
+            // 9. 构图提示浮层
             if !vm.requiresProUnlock, vm.showCompositionTip, let plan = vm.currentPlan, !vm.isImmersiveMode {
                 compositionTipOverlay(plan: plan)
             }
-            
-            // Step 11: AI 大脑生成构图指导浮层
+
+            // 10. AI 构图推荐
             if let aiTip = vm.aiSuggestion, !vm.isImmersiveMode {
                 aiAdvisorBanner(text: aiTip)
-                    // 上划可将其抹去
                     .gesture(
                         DragGesture().onEnded { val in
                             if val.translation.height < -10 {
@@ -187,40 +214,40 @@ struct ContentView: View {
                     )
             }
 
-            // 暗光提示 Banner（有人但光线不足时显示）
+            // 11. 暗光提示 Banner
             if vm.isLowLight && vm.isSceneReady && !vm.isImmersiveMode {
                 lowLightBanner
             }
 
-            // 底部控制区
+            // 12. 底部区域（状态条 + 方案卡片 + 底栏）
             VStack(spacing: 0) {
                 Spacer()
-                bottomPanel
+                bottomArea
             }
 
-            // 俯拍警告
+            // 13. 俯拍警告
             if vm.manager.devicePitch < -0.35 && !vm.isImmersiveMode {
                 pitchWarningOverlay
             }
 
-            // 留白提醒 (P5-3)
+            // 14. 留白提醒
             if vm.showSpaceTip && vm.manager.devicePitch >= -0.35 && !vm.showCompositionTip && !vm.isImmersiveMode {
                 spaceTipOverlay
             }
-            
-            // Step 12: 强制机位雷达仪表盘
+
+            // 15. 多机位角度仪表盘
             if let plan = vm.currentPlan, let multi = plan.multiAngles,
                vm.activeAngleIndex < multi.count, multi[vm.activeAngleIndex].requiredPitch != nil,
                !vm.isImmersiveMode {
                 angleGuideOverlay(reqPitch: multi[vm.activeAngleIndex].requiredPitch!)
             }
-            
-            // Step 13: Vlog 录制场记字幕框
+
+            // 16. Vlog 提词器
             if !vm.displayVlogText.isEmpty && !vm.isImmersiveMode {
                 vlogTextOverlay
             }
 
-            // Step 9: 屏幕柔边补光带 (暗光提示且非沉浸模式下显示)
+            // 17. 屏幕柔边补光带
             if vm.isLowLight && !vm.isImmersiveMode {
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(Color(red: 1.0, green: 0.95, blue: 0.88).opacity(0.35), lineWidth: 50)
@@ -230,7 +257,7 @@ struct ContentView: View {
                     .transition(.opacity.animation(.easeInOut(duration: 1.0)))
             }
 
-            // 快门闪光
+            // 18. 快门闪光
             if vm.showShutterFlash {
                 Color(red: 1.0, green: 0.95, blue: 0.88)
                     .ignoresSafeArea()
@@ -238,15 +265,13 @@ struct ContentView: View {
                     .transition(.opacity)
             }
 
-            // 倒计时大数字
+            // 19. 倒计时大数字
             countdownOverlay
-            
-            // 录制专属倒计时大数字 (Step 7)
             recordCountdownOverlay
         }
         .ignoresSafeArea()
         .onAppear {
-            vm.storeManager = storeManager // 注入 StoreManager
+            vm.storeManager = storeManager
             vm.bind()
             vm.startScanTimeout()
             vm.customShootingPlans = storedCustomPlans.map { $0.asShootingPlan }
@@ -272,24 +297,18 @@ struct ContentView: View {
         }
         .fullScreenCover(isPresented: $vm.isReviewingPhotos) {
             PhotoPreviewView(images: vm.burstImages) { selectedImage, appliedFilter in
-                // 用户点「保存」
                 savePhotoRecord(image: selectedImage, filter: appliedFilter)
-
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
                 vm.isReviewingPhotos = false
-
                 vm.checkAndRequestReview()
             } onRetake: {
-                // 用户点「重拍」
                 vm.isReviewingPhotos = false
             }
             .environmentObject(storeManager)
         }
-        // Step 13: Vlog 录播回调预览层
         .fullScreenCover(isPresented: $vm.isReviewingVlog) {
             if let outputURL = vm.exportedVlogURL {
                 VideoPreviewView(videoURL: outputURL) {
-                    // 已保存，进行 Vlog 后续逻辑清理
                     UINotificationFeedbackGenerator().notificationOccurred(.success)
                     vm.isReviewingVlog = false
                     vm.cleanupVlogTempFiles()
@@ -309,7 +328,6 @@ struct ContentView: View {
             PaywallView()
                 .environmentObject(storeManager)
         }
-        // 自定义方案保存界面 (Step 7)
         .sheet(isPresented: Binding(
             get: { vm.pointsToSave != nil },
             set: { if !$0 { vm.pointsToSave = nil } }
@@ -317,7 +335,6 @@ struct ContentView: View {
             if let pts = vm.pointsToSave {
                 SaveCustomPlanView(points: pts) {
                     vm.pointsToSave = nil
-                    // 保存完毕后可自动切到第一个
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         vm.selectPlan(at: 0)
                     }
@@ -341,7 +358,6 @@ struct ContentView: View {
 
     private var permissionDeniedView: some View {
         VStack(spacing: 28) {
-            // 图标
             ZStack {
                 Circle()
                     .fill(Design.danger.opacity(0.15))
@@ -350,8 +366,6 @@ struct ContentView: View {
                     .font(.system(size: 36, weight: .light))
                     .foregroundColor(Design.danger)
             }
-
-            // 说明文字
             VStack(spacing: 8) {
                 Text("需要摄像头权限")
                     .font(.system(size: 18, weight: .semibold))
@@ -361,8 +375,6 @@ struct ContentView: View {
                     .foregroundColor(Design.textSecondary)
                     .multilineTextAlignment(.center)
             }
-
-            // 去设置按钮
             Button {
                 if let url = URL(string: UIApplication.openSettingsURLString) {
                     UIApplication.shared.open(url)
@@ -384,92 +396,115 @@ struct ContentView: View {
         .background(Color.black)
     }
 
-
-    // MARK: - 顶部信息栏
+    // MARK: - 顶部信息栏（参考图风格）
     private var topBar: some View {
-        HStack(alignment: .center, spacing: 12) {
-            // 左侧：场景 + 方案信息
-            if vm.isSceneReady, let plan = vm.currentPlan {
-                HStack(spacing: 10) {
-                    // 场景图标
-                    ZStack {
-                        Circle()
-                            .fill(Design.surface)
-                            .frame(width: 36, height: 36)
-                        Image(systemName: vm.scene.icon)
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(Design.accent)
-                    }
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(vm.scene.displayName)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(Design.textSecondary)
-                        
-                        // Step 10 & 12 & 13: Vlog, 动作连线与机位推进展示
-                        if let vlog = plan.vlogScript, vm.activeVlogClipIndex < vlog.clips.count {
-                            HStack(spacing: 6) {
-                                Circle()
-                                    .fill(vm.isVlogRecording ? Color.red : Color.gray)
-                                    .frame(width: 8, height: 8)
-                                    .opacity(vm.isVlogRecording ? 1.0 : 0.5)
-                                    .animation(vm.isVlogRecording ? Animation.easeInOut(duration: 0.6).repeatForever(autoreverses: true) : .default, value: vm.isVlogRecording)
-                                
-                                Text("Vlog [分镜 \(vm.activeVlogClipIndex + 1)/\(vlog.clips.count)]")
-                                    .font(.system(size: 15, weight: .black))
-                                    .foregroundColor(Design.danger)
-                            }
-                            .transition(.opacity.combined(with: .move(edge: .bottom)))
-                            .id("vlog_\(vm.activeVlogClipIndex)_\(vm.isVlogRecording)")
-                        } else if let seq = plan.sequence, vm.activeSequenceIndex < seq.count {
-                            Text("[\(vm.activeSequenceIndex + 1)/\(seq.count)] \(seq[vm.activeSequenceIndex].emoji) \(seq[vm.activeSequenceIndex].title)")
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundColor(Design.success)
-                                .transition(.opacity.combined(with: .move(edge: .bottom)))
-                                .id("seq_\(vm.activeSequenceIndex)")
-                        } else if let multi = plan.multiAngles, vm.activeAngleIndex < multi.count {
-                            Text("[\(vm.activeAngleIndex + 1)/\(multi.count)] 📷 \(multi[vm.activeAngleIndex].title)")
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundColor(Design.danger) // 红色表示需要摄影师强交互
-                                .transition(.opacity.combined(with: .move(edge: .bottom)))
-                                .id("ang_\(vm.activeAngleIndex)")
-                        } else {
-                            Text("\(plan.poseEmoji) \(plan.poseName)")
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundColor(Design.textPrimary)
-                        }
-                    }
+        HStack(spacing: 0) {
+            // 左侧：返回/菜单按钮
+            Button {
+                vm.showGuide = true
+            } label: {
+                ZStack {
+                    Circle()
+                        .fill(Design.surface)
+                        .frame(width: 38, height: 38)
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Design.cornerCard))
-                .overlay(
-                    RoundedRectangle(cornerRadius: Design.cornerCard)
-                        .stroke(Design.border, lineWidth: 1)
-                )
-                .transition(.scale(scale: 0.92).combined(with: .opacity))
             }
 
             Spacer()
 
-            // 右侧：分数环 + 帮助按钮
+            // 中央：AI 状态胶囊（丰富版：显示场景+方案信息）
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(vm.isSceneReady ? Design.success : Design.accent)
+                    .frame(width: 8, height: 8)
+                    .opacity(vm.isSceneReady ? 1.0 : (scanPulse ? 0.4 : 1.0))
+                    .animation(vm.isSceneReady ? .none : Animation.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: scanPulse)
+
+                if vm.isSceneReady, let plan = vm.currentPlan {
+                    VStack(spacing: 1) {
+                        Text(vm.scene.displayName)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(Color.white.opacity(0.6))
+                        if let vlog = plan.vlogScript, vm.activeVlogClipIndex < vlog.clips.count {
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(vm.isVlogRecording ? Color.red : Color.gray)
+                                    .frame(width: 6, height: 6)
+                                    .opacity(vm.isVlogRecording ? 1.0 : 0.5)
+                                    .animation(vm.isVlogRecording ? Animation.easeInOut(duration: 0.6).repeatForever(autoreverses: true) : .default, value: vm.isVlogRecording)
+                                Text("分镜 \(vm.activeVlogClipIndex + 1)/\(vlog.clips.count)")
+                                    .font(.system(size: 12, weight: .bold))
+                            }
+                            .foregroundColor(Design.danger)
+                        } else if let seq = plan.sequence, vm.activeSequenceIndex < seq.count {
+                            Text("[\(vm.activeSequenceIndex + 1)/\(seq.count)] \(seq[vm.activeSequenceIndex].emoji) \(seq[vm.activeSequenceIndex].title)")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(Design.success)
+                        } else if let multi = plan.multiAngles, vm.activeAngleIndex < multi.count {
+                            Text("[\(vm.activeAngleIndex + 1)/\(multi.count)] 📷 \(multi[vm.activeAngleIndex].title)")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(Design.danger)
+                        } else {
+                            Text("\(plan.poseEmoji) \(plan.poseName)")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                    }
+                } else {
+                    Text(vm.isSceneReady ? "AI 导拍中" : "识别场景中…")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 6)
+            .background(Design.surfaceStrong, in: Capsule())
+            .overlay(Capsule().stroke(Design.border, lineWidth: 1))
+
+            Spacer()
+
+            // 右侧：分数环 + 倒计时 + 切换摄像头
             HStack(spacing: 10) {
+                // 倒计时
+                Button { vm.cycleTimer() } label: {
+                    ZStack {
+                        Circle()
+                            .fill(vm.timerSeconds > 0 ? Design.accent.opacity(0.18) : Design.surface)
+                            .frame(width: 36, height: 36)
+                            .overlay(Circle().stroke(vm.timerSeconds > 0 ? Design.accent.opacity(0.5) : Design.border, lineWidth: 1))
+                        if vm.timerSeconds == 0 {
+                            Image(systemName: "timer")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(Design.textSecondary)
+                        } else {
+                            Text("\(vm.timerSeconds)s")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(Design.accent)
+                        }
+                    }
+                }
+                .accessibilityLabel("倒计时\(vm.timerSeconds)秒")
+
+                // 分数环
                 if vm.isSceneReady {
                     scoreRing
                 }
-                Button { vm.showGuide = true } label: {
+
+                // 切换摄像头
+                Button { vm.manager.isFront.toggle() } label: {
                     ZStack {
                         Circle()
                             .fill(Design.surface)
-                            .frame(width: 40, height: 40)
-                            .overlay(
-                                Circle().stroke(Design.border, lineWidth: 1)
-                            )
-                        Image(systemName: "questionmark")
-                            .font(.system(size: 16, weight: .semibold))
+                            .frame(width: 38, height: 38)
+                        Image(systemName: "arrow.triangle.2.circlepath.camera")
+                            .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
                     }
                 }
+                .accessibilityLabel("切换\(vm.manager.isFront ? "后置" : "前置")摄像头")
             }
         }
         .animation(.spring(response: 0.45, dampingFraction: 0.75), value: vm.isSceneReady)
@@ -478,20 +513,17 @@ struct ContentView: View {
     // MARK: - 分数环
     private var scoreRing: some View {
         ZStack {
-            // 外发光（对齐时）
             if vm.isReady {
                 Circle()
                     .stroke(Design.successGlow, lineWidth: 10)
-                    .frame(width: 54, height: 54)
+                    .frame(width: 46, height: 46)
                     .blur(radius: 6)
             }
 
-            // 底层轨道
             Circle()
-                .stroke(Color.white.opacity(0.12), lineWidth: 3.5)
-                .frame(width: 46, height: 46)
+                .stroke(Color.white.opacity(0.12), lineWidth: 3)
+                .frame(width: 40, height: 40)
 
-            // 进度弧
             Circle()
                 .trim(from: 0, to: vm.score / 100)
                 .stroke(
@@ -501,21 +533,94 @@ struct ContentView: View {
                         startAngle: .degrees(-90),
                         endAngle: .degrees(270)
                     ),
-                    style: StrokeStyle(lineWidth: 3.5, lineCap: .round)
+                    style: StrokeStyle(lineWidth: 3, lineCap: .round)
                 )
-                .frame(width: 46, height: 46)
+                .frame(width: 40, height: 40)
                 .rotationEffect(.degrees(-90))
                 .animation(.linear(duration: 0.12), value: vm.score)
 
-            // 分数文字
             Text("\(Int(vm.score))")
-                .font(.system(size: 12, weight: .black, design: .rounded))
+                .font(.system(size: 11, weight: .black, design: .rounded))
                 .foregroundColor(.white)
         }
-        .frame(width: 54, height: 54)
+        .frame(width: 46, height: 46)
         .scaleEffect(vm.isReady ? 1.08 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.55), value: vm.isReady)
         .accessibilityLabel("匹配度 \(Int(vm.score))%")
+    }
+
+    // MARK: - 左侧提示面板（参考图风格）
+    private var leftGuidePanel: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // 构图对齐提示
+            if let composition = vm.currentPlan?.composition {
+                HStack(spacing: 8) {
+                    Image(systemName: composition == .center ? "align.vertical.center" : "align.horizontal.center")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.white.opacity(0.8))
+                    Text(composition == .center ? "保持中轴对齐" : "保持构图偏移")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.white.opacity(0.85))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Design.surfaceStrong, in: Capsule())
+                .overlay(Capsule().stroke(Design.border, lineWidth: 1))
+            }
+
+            // 水平仪提示
+            HStack(spacing: 8) {
+                Image(systemName: "level")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.white.opacity(0.8))
+                Text("手机保持水平")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.white.opacity(0.85))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Design.surfaceStrong, in: Capsule())
+            .overlay(Capsule().stroke(Design.border, lineWidth: 1))
+        }
+    }
+
+    // MARK: - 人脸对焦框（黄色角括号）
+    private var faceFocusFrame: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let h = geo.size.height
+            let boxW: CGFloat = 80
+            let boxH: CGFloat = 100
+            let centerX = w / 2
+            let centerY = h / 2 - 20
+            let cornerLen: CGFloat = 16
+            let thickness: CGFloat = 2.5
+            let color = Design.accent
+
+            Canvas { ctx, _ in
+                let corners: [(CGPoint, CGPoint, CGPoint)] = [
+                    (CGPoint(x: centerX - boxW/2, y: centerY - boxH/2 + cornerLen),
+                     CGPoint(x: centerX - boxW/2, y: centerY - boxH/2),
+                     CGPoint(x: centerX - boxW/2 + cornerLen, y: centerY - boxH/2)),
+                    (CGPoint(x: centerX + boxW/2 - cornerLen, y: centerY - boxH/2),
+                     CGPoint(x: centerX + boxW/2, y: centerY - boxH/2),
+                     CGPoint(x: centerX + boxW/2, y: centerY - boxH/2 + cornerLen)),
+                    (CGPoint(x: centerX - boxW/2, y: centerY + boxH/2 - cornerLen),
+                     CGPoint(x: centerX - boxW/2, y: centerY + boxH/2),
+                     CGPoint(x: centerX - boxW/2 + cornerLen, y: centerY + boxH/2)),
+                    (CGPoint(x: centerX + boxW/2 - cornerLen, y: centerY + boxH/2),
+                     CGPoint(x: centerX + boxW/2, y: centerY + boxH/2),
+                     CGPoint(x: centerX + boxW/2, y: centerY + boxH/2 - cornerLen))
+                ]
+                for (a, b, c) in corners {
+                    var p = Path()
+                    p.move(to: a); p.addLine(to: b); p.addLine(to: c)
+                    ctx.stroke(p, with: .color(color), style: StrokeStyle(lineWidth: thickness, lineCap: .round))
+                }
+            }
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
     }
 
     // MARK: - 场景扫描引导
@@ -524,37 +629,25 @@ struct ContentView: View {
             Spacer()
             VStack(spacing: 28) {
                 ZStack {
-                    // 最外圈脉冲
                     Circle()
                         .stroke(Design.accent.opacity(scanPulse ? 0.0 : 0.35), lineWidth: 1.5)
                         .frame(width: scanPulse ? 220 : 160)
-                        .animation(
-                            .easeOut(duration: 1.8).repeatForever(autoreverses: false),
-                            value: scanPulse
-                        )
+                        .animation(.easeOut(duration: 1.8).repeatForever(autoreverses: false), value: scanPulse)
 
-                    // 第二圈
                     Circle()
                         .stroke(Design.accent.opacity(scanPulse ? 0.0 : 0.2), lineWidth: 1)
                         .frame(width: scanPulse ? 190 : 140)
-                        .animation(
-                            .easeOut(duration: 1.8).delay(0.3).repeatForever(autoreverses: false),
-                            value: scanPulse
-                        )
+                        .animation(.easeOut(duration: 1.8).delay(0.3).repeatForever(autoreverses: false), value: scanPulse)
 
-                    // 主框
                     RoundedRectangle(cornerRadius: 20)
                         .stroke(Design.accent.opacity(0.8), lineWidth: 2)
                         .frame(width: 140, height: 190)
 
-                    // 四角修饰线
                     ScanCornerLines()
                         .frame(width: 140, height: 190)
 
-                    // 内容
                     VStack(spacing: 10) {
                         ZStack {
-                            // 旋转扫描弧
                             Circle()
                                 .trim(from: 0, to: 0.25)
                                 .stroke(
@@ -580,7 +673,6 @@ struct ContentView: View {
                     }
                 }
 
-                // 提示文字
                 VStack(spacing: 6) {
                     Text("将镜头对准拍摄背景")
                         .font(.system(size: 14, weight: .medium))
@@ -614,21 +706,108 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - 底部整体面板（磨砂玻璃）
-    private var bottomPanel: some View {
+    // MARK: - 底部整体区域
+    private var bottomArea: some View {
         VStack(spacing: 0) {
+            // 对齐状态提示条（参考图：人物下方）
+            if vm.isSceneReady && vm.isReady && !vm.isImmersiveMode {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(Design.accent)
+                    Text("对称构图已优化")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.white.opacity(0.9))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Design.surfaceStrong, in: Capsule())
+                .overlay(Capsule().stroke(Design.border, lineWidth: 1))
+                .padding(.bottom, 10)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+
             // 方案选择器
             if vm.isSceneReady && !vm.isImmersiveMode {
                 planPickerSection
-                    .padding(.top, 10)
+                    .padding(.bottom, 12)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
-            // 主控制行
-            controlRow
-                .padding(.top, 14)
-                .padding(.bottom, 44)
-                .padding(.horizontal, 28)
+            // 底栏（磨砂玻璃）
+            bottomBar
+        }
+        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: vm.isSceneReady)
+        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: vm.isImmersiveMode)
+    }
+
+    // MARK: - 底栏（参考图风格）
+    private var bottomBar: some View {
+        VStack(spacing: 0) {
+            // 模式选择文字
+            HStack(spacing: 28) {
+                ForEach(CaptureMode.allCases, id: \.self) { mode in
+                    Text(mode.rawValue)
+                        .font(.system(size: 15, weight: selectedMode == mode ? .bold : .medium))
+                        .foregroundColor(selectedMode == mode ? Design.accent : Color.white.opacity(0.45))
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                selectedMode = mode
+                            }
+                        }
+                }
+            }
+            .padding(.top, 14)
+            .padding(.bottom, 16)
+
+            // 快门 + 两侧按钮
+            HStack(spacing: 0) {
+                // 左：最近照片缩略图
+                Button {
+                    vm.showSessionGallery = true
+                } label: {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Design.surface)
+                            .frame(width: 48, height: 48)
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Design.border, lineWidth: 1))
+
+                        if let r = recentRecords.first {
+                            HistoryLastImageThumbnail(localIdentifier: r.localIdentifier)
+                        } else {
+                            Image(systemName: "photo.on.rectangle")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.white)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .accessibilityLabel("拍摄历史，\(recentRecords.count)张照片")
+
+                // 中：快门按钮
+                shutterButton
+                    .onTapGesture { vm.handleShutterTap() }
+                    .accessibilityLabel(vm.isReady ? "拍照，姿势已对齐" : "拍照")
+                    .accessibilityAddTraits(.isButton)
+
+                // 右：小贴士按钮
+                Button { vm.showGuide = true } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "lightbulb")
+                            .font(.system(size: 14, weight: .medium))
+                        Text("小贴士")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .foregroundColor(.white.opacity(0.85))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Design.surfaceStrong, in: Capsule())
+                    .overlay(Capsule().stroke(Design.border, lineWidth: 1))
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .padding(.bottom, 36)
+            .padding(.horizontal, 24)
         }
         .background(
             Group {
@@ -649,21 +828,19 @@ struct ContentView: View {
                         .overlay(
                             Rectangle()
                                 .frame(height: 0.5)
-                                .foregroundColor(Color.white.opacity(0.12)),
+                                .foregroundColor(Color.white.opacity(0.1)),
                             alignment: .top
                         )
                 }
             }
         )
-        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: vm.isSceneReady)
-        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: vm.isImmersiveMode)
     }
 
     // MARK: - 方案选择器
     private var planPickerSection: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(alignment: .bottom, spacing: 10) {
-                // Step 7: 录制新姿势入口
+                // 录制新姿势入口
                 Button(action: {
                     vm.startRecordingCustomPlan()
                 }) {
@@ -685,7 +862,6 @@ struct ContentView: View {
                     )
                 }
 
-                // 呈现所有方案（包含自定义和推荐）
                 ForEach(Array(vm.availablePlans.enumerated()), id: \.element.id) { idx, plan in
                     PlanCard(plan: plan, isSelected: idx == vm.currentPlanIndex)
                         .onTapGesture { vm.selectPlan(at: idx) }
@@ -697,74 +873,43 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - 主控制行
-    private var controlRow: some View {
-        HStack(spacing: 0) {
-            // 左：历史缩略图 (P2-2 / Step 2 持久化)
-            Button {
-                vm.showSessionGallery = true
-            } label: {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Design.surface)
-                        .frame(width: 50, height: 50)
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Design.border, lineWidth: 1))
-
-                    if let r = recentRecords.first {
-                        HistoryLastImageThumbnail(localIdentifier: r.localIdentifier)
-                    } else {
-                        Image(systemName: "photo.on.rectangle")
-                            .font(.system(size: 19, weight: .medium))
-                            .foregroundColor(.white)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .accessibilityLabel("拍摄历史，\(recentRecords.count)张照片")
-
-            // 中：快门（倒计时/直接拍）
-            shutterButton
-                .onTapGesture { vm.handleShutterTap() }
-                .accessibilityLabel(vm.isReady ? "拍照，姿势已对齐" : "拍照")
-                .accessibilityAddTraits(.isButton)
-
-            // 右：翻转摄像头与倒计时
-            HStack(spacing: 12) {
-                // 切换摄像头
-                Button { vm.manager.isFront.toggle() } label: {
-                    ZStack {
-                        Circle()
-                            .fill(Design.surface)
-                            .frame(width: 44, height: 44)
-                            .overlay(Circle().stroke(Design.border, lineWidth: 1))
-                        Image(systemName: "arrow.triangle.2.circlepath.camera")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.white)
-                    }
-                }
-                .accessibilityLabel("切换\(vm.manager.isFront ? "后置" : "前置")摄像头")
-
-                // 倒计时
-                Button { vm.cycleTimer() } label: {
-                    ZStack {
-                        Circle()
-                            .fill(vm.timerSeconds > 0 ? Design.accent.opacity(0.18) : Design.surface)
-                            .frame(width: 44, height: 44)
-                            .overlay(Circle().stroke(vm.timerSeconds > 0 ? Design.accent.opacity(0.6) : Design.border, lineWidth: 1))
-                        if vm.timerSeconds == 0 {
-                            Image(systemName: "timer")
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(Design.textSecondary)
-                        } else {
-                            Text("\(vm.timerSeconds)s")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(Design.accent)
+    // MARK: - 快门按钮（参考图：白色圆形）
+    private var shutterButton: some View {
+        ZStack {
+            // 外圈（对齐时呼吸动效）
+            if vm.isReady {
+                Circle()
+                    .stroke(Design.accent.opacity(0.4), lineWidth: 3)
+                    .frame(width: 76, height: 76)
+                    .scaleEffect(vm.breathingScale)
+                    .opacity(2.0 - vm.breathingScale)
+                    .onAppear {
+                        withAnimation(.easeOut(duration: 1.1).repeatForever(autoreverses: false)) {
+                            vm.breathingScale = 1.4
                         }
                     }
-                }
             }
-            .frame(maxWidth: .infinity)
+
+            // 外环
+            Circle()
+                .stroke(vm.isReady ? Design.accent.opacity(0.8) : Color.white.opacity(0.6), lineWidth: 3.5)
+                .frame(width: 68, height: 68)
+
+            // 内圆主体
+            Circle()
+                .fill(vm.isReady ? Design.accent : Color.white)
+                .frame(width: 58, height: 58)
+
+            // 中心小圆点（未对齐时）
+            if !vm.isReady {
+                Circle()
+                    .fill(Color.black.opacity(0.12))
+                    .frame(width: 22, height: 22)
+            }
         }
+        .frame(width: 84, height: 84)
+        .scaleEffect(vm.isCapturing ? 0.92 : (vm.isReady ? 1.05 : 1.0))
+        .animation(.spring(response: 0.3, dampingFraction: 0.55), value: vm.isReady)
     }
 
     // MARK: - 内购拦截浮层
@@ -796,57 +941,6 @@ struct ContentView: View {
         .background(Color.black.opacity(0.3))
         .cornerRadius(24)
         .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.white.opacity(0.15), lineWidth: 1))
-    }
-
-    // MARK: - 快门按钮（精致版）
-    private var shutterButton: some View {
-        ZStack {
-            // 最外圈呼吸动效（对齐时）
-            if vm.isReady {
-                Circle()
-                    .stroke(Design.successGlow, lineWidth: 22)
-                    .frame(width: 82, height: 82)
-                    .scaleEffect(vm.breathingScale)
-                    .opacity(2.0 - vm.breathingScale)
-                    .onAppear {
-                        withAnimation(.easeOut(duration: 1.1).repeatForever(autoreverses: false)) {
-                            vm.breathingScale = 1.5
-                        }
-                    }
-            }
-
-            // 外圈轨道
-            Circle()
-                .stroke(
-                    vm.isReady ? Design.success.opacity(0.9) : Color.white.opacity(0.55),
-                    lineWidth: 2.5
-                )
-                .frame(width: 82, height: 82)
-
-            // 内圆主体
-            Circle()
-                .fill(
-                    vm.isReady
-                        ? LinearGradient(colors: [Design.success, Color(red: 0.15, green: 0.80, blue: 0.60)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                        : LinearGradient(colors: [Color.white.opacity(0.92), Color.white.opacity(0.78)], startPoint: .top, endPoint: .bottom)
-                )
-                .frame(width: 68, height: 68)
-                .shadow(color: vm.isReady ? Design.successGlow : Color.black.opacity(0.3), radius: vm.isReady ? 12 : 5)
-
-            // 图标
-            if vm.isReady {
-                Image(systemName: "camera.fill")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(.white)
-            } else {
-                Circle()
-                    .fill(Color.black.opacity(0.08))
-                    .frame(width: 26, height: 26)
-            }
-        }
-        .frame(width: 92, height: 92)
-        .scaleEffect(vm.isCapturing ? 0.92 : (vm.isReady ? 1.05 : 1.0))
-        .animation(.spring(response: 0.3, dampingFraction: 0.55), value: vm.isReady)
     }
 
     // MARK: - 构图提示浮层
@@ -903,31 +997,30 @@ struct ContentView: View {
             .padding(.horizontal, 18).padding(.vertical, 12)
             .background(.ultraThinMaterial, in: Capsule())
             .overlay(Capsule().stroke(Design.danger.opacity(0.5), lineWidth: 1))
-            .padding(.bottom, 170)
+            .padding(.bottom, 220)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.75), value: vm.manager.devicePitch < -0.35)
     }
 
-    // MARK: - Step 12: 多机位角度仪表盘
+    // MARK: - 多机位角度仪表盘
     private func angleGuideOverlay(reqPitch: Double) -> some View {
         let isReaching = (reqPitch > 0 && vm.manager.devicePitch >= reqPitch) || (reqPitch < 0 && vm.manager.devicePitch <= reqPitch)
-        
+
         return VStack {
             Spacer()
             HStack(spacing: 12) {
-                // 陀螺仪视觉元件
                 ZStack {
                     Circle()
                         .stroke(Color.white.opacity(0.3), lineWidth: 2)
                         .frame(width: 30, height: 30)
-                    
+
                     Rectangle()
                         .fill(isReaching ? Design.success : Design.danger)
                         .frame(width: 20, height: 3)
-                        .rotationEffect(.degrees(vm.manager.devicePitch * -90)) // 根据倾角旋转指北针
+                        .rotationEffect(.degrees(vm.manager.devicePitch * -90))
                 }
-                
+
                 VStack(alignment: .leading, spacing: 2) {
                     Text(isReaching ? "机位正确，保持稳定" : (reqPitch > 0 ? "请摄影师继续下蹲仰拍" : "请摄影师抬高俯拍"))
                         .font(.system(size: 13, weight: .bold))
@@ -937,13 +1030,13 @@ struct ContentView: View {
             .padding(.horizontal, 20).padding(.vertical, 14)
             .background(.ultraThinMaterial, in: Capsule())
             .overlay(Capsule().stroke(isReaching ? Design.success.opacity(0.8) : Design.danger.opacity(0.8), lineWidth: 2))
-            .padding(.bottom, 230)
+            .padding(.bottom, 280)
             .transition(.scale.combined(with: .opacity))
         }
         .animation(.interactiveSpring(), value: vm.manager.devicePitch)
     }
-    
-    // MARK: - Step 13: Vlog 提词器
+
+    // MARK: - Vlog 提词器
     private var vlogTextOverlay: some View {
         VStack {
             Spacer()
@@ -954,7 +1047,7 @@ struct ContentView: View {
                 .padding(.vertical, 16)
                 .background(Color.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 16))
                 .shadow(color: Design.danger.opacity(vm.isVlogRecording ? 0.8 : 0.0), radius: 20, x: 0, y: 0)
-                .padding(.bottom, 280) // 放在比较高的位置，不要挡住人物主体
+                .padding(.bottom, 320)
                 .transition(.opacity.combined(with: .scale(scale: 0.9)))
         }
         .zIndex(200)
@@ -974,26 +1067,26 @@ struct ContentView: View {
             .padding(.horizontal, 18).padding(.vertical, 12)
             .background(.ultraThinMaterial, in: Capsule())
             .overlay(Capsule().stroke(Design.accent.opacity(0.5), lineWidth: 1))
-            .padding(.bottom, 170)
+            .padding(.bottom, 220)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.75), value: vm.showSpaceTip)
     }
-    
-    // MARK: - Step 11 AI 构图推荐浮层
+
+    // MARK: - AI 构图推荐浮层
     private func aiAdvisorBanner(text: String) -> some View {
         VStack {
-            Spacer().frame(height: 120) // 对齐在构图提示原本出现的位置偏下
-            
+            Spacer().frame(height: 120)
+
             HStack(alignment: .top, spacing: 14) {
                 Text("✨")
                     .font(.system(size: 20))
                     .padding(.top, 2)
-                    
+
                 VStack(alignment: .leading, spacing: 6) {
                     Text("AI 构图灵感")
                         .font(.system(size: 13, weight: .heavy))
-                        .foregroundColor(Color(red: 0.75, green: 0.6, blue: 1.0)) // 高级紫光
+                        .foregroundColor(Color(red: 0.75, green: 0.6, blue: 1.0))
                     Text(text)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.white)
@@ -1017,13 +1110,13 @@ struct ContentView: View {
             .shadow(color: Color(red: 0.75, green: 0.6, blue: 1.0).opacity(0.15), radius: 15, x: 0, y: 10)
             .padding(.horizontal, 24)
             .transition(.move(edge: .top).combined(with: .opacity))
-            
+
             Spacer()
         }
-        .zIndex(100) // 置顶交互层级
+        .zIndex(100)
     }
 
-    // 暗光提示 Banner
+    // MARK: - 暗光提示 Banner
     private var lowLightBanner: some View {
         VStack {
             HStack(spacing: 8) {
@@ -1046,7 +1139,6 @@ struct ContentView: View {
 
 // MARK: - 工具扩展
 extension CGFloat {
-    /// 将值限制在闭合区间内
     func clamped(to range: ClosedRange<CGFloat>) -> CGFloat {
         Swift.min(Swift.max(self, range.lowerBound), range.upperBound)
     }
@@ -1054,7 +1146,6 @@ extension CGFloat {
 
 // MARK: - 扫描框四角修饰线
 struct ScanCornerLines: View {
-
     var body: some View {
         GeometryReader { geo in
             let w = geo.size.width
@@ -1080,18 +1171,13 @@ struct ScanCornerLines: View {
     }
 }
 
-// MARK: - 方案选择卡片（紧凑 pill 样式）
-// 设计原则：相机主界面，背景才是主角，UI 是配角
-// 未选中 → 只显示 emoji + 姿势名（约 42pt 高）
-// 选中   → 展开一行构图+比例标签（约 60pt 高）
-// 不显示描述文字（在帮助面板 PoseGuideSheet 中可查看完整信息）
+// MARK: - 方案选择卡片
 struct PlanCard: View {
     let plan: ShootingPlan
     let isSelected: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            // 主行：emoji + 姿势名（始终显示）
             HStack(spacing: 7) {
                 Text(plan.poseEmoji)
                     .font(.system(size: 17))
@@ -1101,7 +1187,6 @@ struct PlanCard: View {
                     .lineLimit(1)
             }
 
-            // 标签行：仅选中时显示
             if isSelected {
                 HStack(spacing: 5) {
                     TagBadge(icon: plan.composition.icon, text: plan.composition.displayName, active: true)
@@ -1133,7 +1218,6 @@ struct PlanCard: View {
     }
 }
 
-
 struct TagBadge: View {
     let icon: String
     let text: String
@@ -1160,7 +1244,7 @@ struct TagBadge: View {
     }
 }
 
-// MARK: - 构图辅助线（三分法 / 黄金螺旋）
+// MARK: - 构图辅助线（参考图：醒目白色网格）
 struct CompositionGuideLines: View {
     var composition: CompositionRule?
 
@@ -1171,15 +1255,11 @@ struct CompositionGuideLines: View {
             Canvas { ctx, size in
                 var path = Path()
 
-                // 判断是否绘制黄金螺旋
                 if composition == .goldenLeft || composition == .goldenRight {
-                    // P5-6 黄金螺旋线构图
                     let isRight = (composition == .goldenRight)
-                    // 简化的黄金螺旋装饰线：结合斐波那契矩形的特征画曲线
                     let pivotX = isRight ? w * 0.618 : w * 0.382
-                    let pivotY = h * 0.382 // 焦点通常在上方偏右或偏左
+                    let pivotY = h * 0.382
 
-                    // 用极坐标方式或简单贝塞尔曲线画一条装饰用的螺旋线
                     path.move(to: CGPoint(x: isRight ? 0 : w, y: h))
                     path.addQuadCurve(
                         to: CGPoint(x: pivotX, y: pivotY),
@@ -1188,12 +1268,11 @@ struct CompositionGuideLines: View {
 
                     ctx.stroke(path, with: .color(Design.accent.opacity(0.3)), lineWidth: 1.5)
 
-                    // 画个焦点提示
                     var focus = Path()
                     focus.addEllipse(in: CGRect(x: pivotX - 4, y: pivotY - 4, width: 8, height: 8))
                     ctx.stroke(focus, with: .color(Design.accent.opacity(0.5)), lineWidth: 1)
                 } else {
-                    // 三分法
+                    // 三分法网格线（参考图风格：更醒目的白色半透明）
                     [w/3, w*2/3].forEach { x in
                         path.move(to: CGPoint(x: x, y: 0))
                         path.addLine(to: CGPoint(x: x, y: h))
@@ -1202,7 +1281,7 @@ struct CompositionGuideLines: View {
                         path.move(to: CGPoint(x: 0, y: y))
                         path.addLine(to: CGPoint(x: w, y: y))
                     }
-                    ctx.stroke(path, with: .color(.white.opacity(0.06)), lineWidth: 1)
+                    ctx.stroke(path, with: .color(.white.opacity(0.22)), lineWidth: 1)
                 }
             }
         }
@@ -1213,26 +1292,17 @@ struct CompositionGuideLines: View {
 }
 
 // MARK: - 剪影引导叠加层
-// 设计思路：
-// 1. 评分引擎（PoseMatcher）使用关节夹角，与体型无关，天然免疫高矮胖瘦
-// 2. 剪影作为「视觉引导」，通过 bodyBoundingBox 跟随用户实际身体大小动态缩放
-//    - 有检测到人体 → 剪影高度 ≈ 人体在画面中的实际高度（归一化），水平跟随中心
-//    - 无检测 / 初始化 → 退回到方案设定的默认尺寸（frameRatio.heightRatio）
-// 3. 宽高比固定 0.52（人体自然比例），保持剪影不变形
-// 4. 使用 withAnimation(.spring) 平滑过渡，防止抖动
 struct SilhouetteGuideOverlay: View {
     @Binding var isAligned: Bool
     let plan: ShootingPlan
-    var bodyBoundingBox: CGRect?   // Vision 检测到的归一化人体包围盒 (x,y,w,h)
-    var forceOffset: CGFloat? = nil // 双人强制水平偏移配置
+    var bodyBoundingBox: CGRect?
+    var forceOffset: CGFloat? = nil
 
     var body: some View {
         GeometryReader { geo in
             let screenW = geo.size.width
             let screenH = geo.size.height
 
-            // MARK: 计算剪影的目标尺寸和位置
-            // 优先使用实时检测到的包围盒，否则用方案默认比例
             let (silW, silH, centerX, centerY) = resolveLayout(
                 screenW: screenW, screenH: screenH, bbox: bodyBoundingBox, plan: plan
             )
@@ -1261,7 +1331,6 @@ struct SilhouetteGuideOverlay: View {
                         )
                     )
 
-                // P4-6 剪影左右标注
                 HStack {
                     Text("左手边")
                         .font(.system(size: 12, weight: .black))
@@ -1279,13 +1348,11 @@ struct SilhouetteGuideOverlay: View {
             .frame(width: silW, height: silH)
             .shadow(color: isAligned ? Design.successGlow : .clear, radius: 14)
             .animation(.easeInOut(duration: 0.3), value: isAligned)
-            // 位置：X 跟随构图规则偏移；Y 跟随实际人体中心（或默认）
             .position(x: centerX + hOffset, y: centerY)
             .animation(.spring(response: 0.6, dampingFraction: 0.82), value: silH)
             .animation(.spring(response: 0.6, dampingFraction: 0.82), value: centerY)
             .animation(.spring(response: 0.55, dampingFraction: 0.8), value: hOffset)
 
-            // 距离提示（未对齐、无人体检测时显示）
             if !isAligned {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.up.and.down")
@@ -1309,28 +1376,20 @@ struct SilhouetteGuideOverlay: View {
         .allowsHitTesting(false)
     }
 
-    // MARK: - 布局计算
-    // 返回 (剪影宽, 剪影高, 中心X, 中心Y)，全部单位 pt
     private func resolveLayout(
         screenW: CGFloat, screenH: CGFloat,
         bbox: CGRect?, plan: ShootingPlan
     ) -> (CGFloat, CGFloat, CGFloat, CGFloat) {
 
-        // 剪影宽高比固定：人体自然比例约 0.52:1
         let aspectRatio: CGFloat = 0.52
 
         if let bbox = bbox, bbox.height > 0.05 {
-            // ── 有实时人体检测 ──────────────────────────────────────────
-            // Vision 的包围盒来自关节点（不含头部上方留白）
-            // 向上补偿 15% 使剪影头部不被截断
             let paddingTop: CGFloat = 0.10
-            let paddingH: CGFloat  = 0.05   // 底部少量留白
-            let paddingSide: CGFloat = 0.08  // 左右各留白
+            let paddingH: CGFloat  = 0.05
+            let paddingSide: CGFloat = 0.08
 
             let bboxH = min(bbox.height + paddingTop + paddingH, 0.95)
-            // 检测高度映射到屏幕像素
             var rawH = bboxH * screenH
-            // 将剪影高度限制在「方案允许的范围」内，避免离太远/太近时剪影失控
             let minH = screenH * plan.frameRatio.heightRatio * 0.5
             let maxH = screenH * plan.frameRatio.heightRatio * 1.3
             rawH = max(minH, min(maxH, rawH))
@@ -1338,20 +1397,15 @@ struct SilhouetteGuideOverlay: View {
             let silH = rawH
             let silW = silH * aspectRatio
 
-            // 水平中心跟随人体（bbox.midX 是归一化坐标）
-            // 但若偏差过大（构图规则要求站偏）则混合
             let detectedCenterX = (bbox.midX + paddingSide / 2) * screenW
-            // 简单取检测中心（构图偏移由 hOffset 分开控制）
             let centerX = detectedCenterX.clamped(to: silW/2...(screenW - silW/2))
 
-            // 垂直中心：人体检测到的 Y 中心，向上补偿头部空间
             let detectedMidY = (bbox.minY - paddingTop / 2 + bboxH / 2) * screenH
             let centerY = detectedMidY.clamped(to: silH/2...(screenH - silH/2 - 40))
 
             return (silW, silH, centerX, centerY)
 
         } else {
-            // ── 无检测/初始化：使用方案默认布局 ────────────────────────
             let defaultH = screenH * plan.frameRatio.heightRatio
             let defaultW = defaultH * aspectRatio
             let defaultX = screenW / 2
@@ -1408,7 +1462,6 @@ struct PoseGuideSheet: View {
                 ScrollView {
                     VStack(spacing: 20) {
 
-                        // 场景标识卡
                         HStack(spacing: 10) {
                             Image(systemName: scene.icon)
                                 .font(.system(size: 16))
@@ -1422,7 +1475,6 @@ struct PoseGuideSheet: View {
                         .cornerRadius(14)
 
                         if let plan = plan {
-                            // 当前方案卡
                             VStack(spacing: 12) {
                                 Text("\(plan.poseEmoji) \(plan.poseName)")
                                     .font(.system(size: 22, weight: .bold))
@@ -1436,7 +1488,6 @@ struct PoseGuideSheet: View {
                             .background(Color(.secondarySystemGroupedBackground))
                             .cornerRadius(14)
 
-                            // 构图 + 比例说明
                             VStack(spacing: 0) {
                                 GuideInfoRow(
                                     icon: plan.composition.icon,
@@ -1454,7 +1505,6 @@ struct PoseGuideSheet: View {
                             .cornerRadius(14)
                         }
 
-                        // 使用说明卡
                         VStack(alignment: .leading, spacing: 14) {
                             Text("使用说明")
                                 .font(.system(size: 13, weight: .semibold))
@@ -1559,10 +1609,9 @@ struct HistoryLastImageThumbnail: View {
                     .foregroundColor(.white)
             }
         }
-        .frame(width: 50, height: 50)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .frame(width: 48, height: 48)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .task {
-            // 取出来很快
             if let img = await PhotoAlbumUtil.shared.fetchImage(by: localIdentifier) {
                 await MainActor.run { self.image = img }
             }
