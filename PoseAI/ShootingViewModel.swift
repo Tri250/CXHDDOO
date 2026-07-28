@@ -27,7 +27,6 @@ final class ShootingViewModel: ObservableObject {
     @Published var stableStartTime: Date? = nil
     @Published var showShutterFlash: Bool = false
     @Published var hapticCooldown: Bool = false
-    @Published var breathingScale: CGFloat = 1.0
     @Published var isCapturing: Bool = false
 
     // MARK: - UI 状态

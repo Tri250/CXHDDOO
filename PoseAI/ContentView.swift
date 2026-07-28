@@ -568,10 +568,10 @@ struct ContentView: View {
             if let composition = vm.currentPlan?.composition {
                 let aligned = vm.isReady
                 HStack(spacing: 8) {
-                    Image(systemName: aligned ? "checkmark.circle.fill" : (composition == .center ? "align.vertical.center" : "align.horizontal.center"))
+                    Image(systemName: aligned ? "checkmark.circle.fill" : composition.icon)
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(aligned ? Design.success : .white.opacity(0.8))
-                    Text(aligned ? "构图已对齐" : (composition == .center ? "保持中轴对齐" : "保持构图偏移"))
+                    Text(aligned ? "构图已对齐" : composition.voiceHint)
                         .font(.system(size: 12, weight: aligned ? .bold : .medium))
                         .foregroundColor(aligned ? Design.success : .white.opacity(0.85))
                 }
@@ -818,7 +818,14 @@ struct ContentView: View {
 
                 // 中：快门按钮
                 shutterButton
-                    .onTapGesture { vm.handleShutterTap() }
+                    .onTapGesture {
+                        if selectedMode == .guide {
+                            vm.handleShutterTap()
+                        } else {
+                            // 非导拍模式：直接拍照，跳过 AI 匹配/Vlog/序列/多机位逻辑
+                            vm.takeBurst(count: 1)
+                        }
+                    }
                     .accessibilityLabel(vm.isReady ? "拍照，姿势已对齐" : "拍照")
                     .accessibilityAddTraits(.isButton)
 
@@ -911,8 +918,7 @@ struct ContentView: View {
         switch plan.composition {
         case .center: return "对称构图已优化"
         case .goldenLeft, .goldenRight: return "黄金分割构图已优化"
-        case .ruleOfThirdsTop: return "三分法构图已优化"
-        case .ruleOfThirdsBottom: return "三分法构图已优化"
+        case .leftThird, .rightThird: return "三分法构图已优化"
         }
     }
 
