@@ -2,6 +2,7 @@ package com.poseai.app.ui
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.util.Log
 import android.graphics.Matrix
 import android.graphics.Rect
 import androidx.compose.animation.AnimatedContent

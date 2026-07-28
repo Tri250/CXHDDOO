@@ -2,6 +2,7 @@ package com.poseai.app.gpu
 
 import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
+import android.util.Log
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
