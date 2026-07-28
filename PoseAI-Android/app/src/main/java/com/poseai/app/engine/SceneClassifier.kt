@@ -112,7 +112,7 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
             }
             if (summaries.isNotEmpty()) summaries.joinToString("; ") else null
         } catch (e: Exception) {
-            android.util.Log.w("SceneClassifier", "Metadata load failed", e)
+            Log.w(TAG, "Metadata load failed", e)
             null
         }
 
@@ -377,7 +377,8 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
         try {
             interpreter?.close()
         } catch (e: Exception) {
-            android.util.Log.w("SceneClassifier", "Operation failed", e)}
+            Log.w(TAG, "Operation failed", e)
+        }
         interpreter = null
     }
 

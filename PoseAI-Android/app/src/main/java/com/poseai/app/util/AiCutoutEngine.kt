@@ -56,8 +56,14 @@ class AiCutoutEngine {
         }
 
         val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        result.setPixels(outPixels, 0, w, 0, 0, w, h)
-        mask.recycle()
+        try {
+            result.setPixels(outPixels, 0, w, 0, 0, w, h)
+        } catch (e: Exception) {
+            result.recycle()
+            throw e
+        } finally {
+            mask.recycle()
+        }
         return result
     }
 
@@ -73,11 +79,17 @@ class AiCutoutEngine {
         val w = bitmap.width
         val h = bitmap.height
         val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(result)
-        // 填充背景色
-        canvas.drawColor(color)
-        // 绘制抠出的前景（透明区域露出背景色）
-        canvas.drawBitmap(cutout, 0f, 0f, null)
+        try {
+            val canvas = Canvas(result)
+            // 填充背景色
+            canvas.drawColor(color)
+            // 绘制抠出的前景（透明区域露出背景色）
+            canvas.drawBitmap(cutout, 0f, 0f, null)
+        } catch (e: Exception) {
+            result.recycle()
+            cutout.recycle()
+            throw e
+        }
         cutout.recycle()
         return result
     }
@@ -93,18 +105,25 @@ class AiCutoutEngine {
         val cutout = cutout(foreground)
         val w = foreground.width
         val h = foreground.height
-        val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(result)
         // 缩放背景图到前景尺寸
         val scaledBg = if (background.width == w && background.height == h) {
             background.copy(Bitmap.Config.ARGB_8888, true)
         } else {
             Bitmap.createScaledBitmap(background, w, h, true)
         }
-        canvas.drawBitmap(scaledBg, 0f, 0f, null)
+        val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        try {
+            val canvas = Canvas(result)
+            canvas.drawBitmap(scaledBg, 0f, 0f, null)
+            // 绘制前景
+            canvas.drawBitmap(cutout, 0f, 0f, null)
+        } catch (e: Exception) {
+            result.recycle()
+            scaledBg.recycle()
+            cutout.recycle()
+            throw e
+        }
         scaledBg.recycle()
-        // 绘制前景
-        canvas.drawBitmap(cutout, 0f, 0f, null)
         cutout.recycle()
         return result
     }
@@ -122,34 +141,41 @@ class AiCutoutEngine {
         val w = bitmap.width
         val h = bitmap.height
         val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(result)
+        var skyMask: Bitmap? = null
+        var temp: Bitmap? = null
+        try {
+            val canvas = Canvas(result)
 
-        // 构建垂直渐变（覆盖上半部分）
-        val positions = FloatArray(skyGradient.size) { i -> i.toFloat() / (skyGradient.size - 1).coerceAtLeast(1) }
-        val gradient = LinearGradient(
-            0f, 0f, 0f, h * 0.7f,
-            skyGradient, positions,
-            Shader.TileMode.CLAMP
-        )
-        val gradPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { shader = gradient }
-        canvas.drawRect(0f, 0f, w.toFloat(), h.toFloat(), gradPaint)
+            // 构建垂直渐变（覆盖上半部分）
+            val positions = FloatArray(skyGradient.size) { i -> i.toFloat() / (skyGradient.size - 1).coerceAtLeast(1) }
+            val gradient = LinearGradient(
+                0f, 0f, 0f, h * 0.7f,
+                skyGradient, positions,
+                Shader.TileMode.CLAMP
+            )
+            val gradPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { shader = gradient }
+            canvas.drawRect(0f, 0f, w.toFloat(), h.toFloat(), gradPaint)
 
-        // 检测天空掩码
-        val skyMask = detectSkyMask(bitmap)
+            // 检测天空掩码
+            skyMask = detectSkyMask(bitmap)
 
-        // 在临时位图上绘制原图，再用 DST_OUT 挖去天空区域
-        val temp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        val tempCanvas = Canvas(temp)
-        tempCanvas.drawBitmap(bitmap, 0f, 0f, null)
-        val maskPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-        maskPaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
-        tempCanvas.drawBitmap(skyMask, 0f, 0f, maskPaint)
+            // 在临时位图上绘制原图，再用 DST_OUT 挖去天空区域
+            temp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            val tempCanvas = Canvas(temp)
+            tempCanvas.drawBitmap(bitmap, 0f, 0f, null)
+            val maskPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+            maskPaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
+            tempCanvas.drawBitmap(skyMask, 0f, 0f, maskPaint)
 
-        // 将挖空后的原图叠加到渐变背景上
-        canvas.drawBitmap(temp, 0f, 0f, null)
-
-        skyMask.recycle()
-        temp.recycle()
+            // 将挖空后的原图叠加到渐变背景上
+            canvas.drawBitmap(temp, 0f, 0f, null)
+        } catch (e: Exception) {
+            result.recycle()
+            throw e
+        } finally {
+            skyMask?.recycle()
+            temp?.recycle()
+        }
         return result
     }
 
@@ -164,32 +190,39 @@ class AiCutoutEngine {
         val w = bitmap.width
         val h = bitmap.height
         val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(result)
-
         // 缩放天空图
         val scaledSky = if (skyBitmap.width == w && skyBitmap.height == h) {
             skyBitmap.copy(Bitmap.Config.ARGB_8888, true)
         } else {
             Bitmap.createScaledBitmap(skyBitmap, w, h, true)
         }
-        canvas.drawBitmap(scaledSky, 0f, 0f, null)
+        var skyMask: Bitmap? = null
+        var temp: Bitmap? = null
+        try {
+            val canvas = Canvas(result)
+            canvas.drawBitmap(scaledSky, 0f, 0f, null)
+
+            // 检测天空掩码
+            skyMask = detectSkyMask(bitmap)
+
+            // 原图挖去天空区域后叠加
+            temp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            val tempCanvas = Canvas(temp)
+            tempCanvas.drawBitmap(bitmap, 0f, 0f, null)
+            val maskPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+            maskPaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
+            tempCanvas.drawBitmap(skyMask, 0f, 0f, maskPaint)
+
+            canvas.drawBitmap(temp, 0f, 0f, null)
+        } catch (e: Exception) {
+            result.recycle()
+            scaledSky.recycle()
+            throw e
+        } finally {
+            skyMask?.recycle()
+            temp?.recycle()
+        }
         scaledSky.recycle()
-
-        // 检测天空掩码
-        val skyMask = detectSkyMask(bitmap)
-
-        // 原图挖去天空区域后叠加
-        val temp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        val tempCanvas = Canvas(temp)
-        tempCanvas.drawBitmap(bitmap, 0f, 0f, null)
-        val maskPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-        maskPaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
-        tempCanvas.drawBitmap(skyMask, 0f, 0f, maskPaint)
-
-        canvas.drawBitmap(temp, 0f, 0f, null)
-
-        skyMask.recycle()
-        temp.recycle()
         return result
     }
 

@@ -62,12 +62,15 @@ import com.poseai.app.ui.theme.SurfaceGlass
 import com.poseai.app.ui.theme.TextPrimary
 import com.poseai.app.ui.theme.TextSecondary
 import com.poseai.app.util.PhotoFilterEngine
+import com.poseai.app.util.MediaStoreHelper
 import com.poseai.app.viewmodel.ShootingViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+
+private const val TAG = "PhotoEditorScreen"
 
 // ═══════════════════════════════════════════════════════════════
 // 编辑状态与编辑动作数据模型
@@ -148,7 +151,7 @@ private fun loadBitmapFromFile(path: String, maxDim: Int = 2048): Bitmap? {
         val opts = BitmapFactory.Options().apply { inSampleSize = sampleSize }
         BitmapFactory.decodeFile(path, opts)
     } catch (e: Exception) {
-        android.util.Log.w("PhotoEditorScreen", "Failed to decode bitmap from path", e)
+        Log.w(TAG, "Failed to decode bitmap from path", e)
         null
     }
 }
@@ -279,9 +282,10 @@ fun PhotoEditorScreen(
 
     // 当原图加载完成时，初始化 currentBitmap
     LaunchedEffect(originalBitmap) {
-        if (originalBitmap != null && currentBitmap == null) {
-            currentBitmap = originalBitmap!!.copy(
-                originalBitmap!!.config ?: Bitmap.Config.ARGB_8888,
+        val ob = originalBitmap
+        if (ob != null && currentBitmap == null) {
+            currentBitmap = ob.copy(
+                ob.config ?: Bitmap.Config.ARGB_8888,
                 true
             )
         }
@@ -325,10 +329,11 @@ fun PhotoEditorScreen(
     // ── 滤镜缩略图缓存 ──
     var filterThumbnails by remember { mutableStateOf<Map<PhotoFilterEngine.Filter, Bitmap>>(emptyMap()) }
     LaunchedEffect(originalBitmap) {
-        if (originalBitmap != null) {
+        val ob = originalBitmap
+        if (ob != null) {
             withContext(Dispatchers.IO) {
                 // 用一张小图批量生成 12 种滤镜缩略图，避免在主线程重复计算
-                val thumbSource = downscaleForThumbnail(originalBitmap!!)
+                val thumbSource = downscaleForThumbnail(ob)
                 val result = linkedMapOf<PhotoFilterEngine.Filter, Bitmap>()
                 PhotoFilterEngine.Filter.values().forEach { f ->
                     result[f] = PhotoFilterEngine.applyFilter(thumbSource, f)
@@ -359,20 +364,25 @@ fun PhotoEditorScreen(
         currentBitmap = last.bitmapBefore
     }
 
-    // ── 应用旋转 ──
+    // ── 应用旋转（Bitmap 操作在后台线程执行，避免 ANR） ──
     fun applyRotation(degrees: Int) {
         val src = currentBitmap ?: return
         val snapshot = EditSnapshot(
             bitmapBefore = src,
             action = EditAction.Rotate(degrees)
         )
-        currentBitmap = rotateBitmap(src, degrees)
-        editHistory.add(snapshot)
-        // 旋转后重置裁剪框
-        cropRect = CropRect()
+        scope.launch {
+            val rotated = withContext(Dispatchers.Default) {
+                rotateBitmap(src, degrees)
+            }
+            currentBitmap = rotated
+            editHistory.add(snapshot)
+            // 旋转后重置裁剪框
+            cropRect = CropRect()
+        }
     }
 
-    // ── 应用裁剪 ──
+    // ── 应用裁剪（Bitmap 操作在后台线程执行，避免 ANR） ──
     fun applyCrop() {
         val src = currentBitmap ?: return
         val left = (cropRect.left * src.width).toInt().coerceIn(0, src.width - 1)
@@ -384,10 +394,15 @@ fun PhotoEditorScreen(
             bitmapBefore = src,
             action = EditAction.Crop(Rect(left, top, right, bottom))
         )
-        currentBitmap = cropBitmap(src, Rect(left, top, right, bottom))
-        editHistory.add(snapshot)
-        // 裁剪后重置裁剪框
-        cropRect = CropRect()
+        scope.launch {
+            val cropped = withContext(Dispatchers.Default) {
+                cropBitmap(src, Rect(left, top, right, bottom))
+            }
+            currentBitmap = cropped
+            editHistory.add(snapshot)
+            // 裁剪后重置裁剪框
+            cropRect = CropRect()
+        }
     }
 
     // ── 保存 ──
@@ -408,6 +423,13 @@ fun PhotoEditorScreen(
                 // 更新数据库记录的 imagePath，触发相册 Flow 刷新
                 // replacePhotoFile 内部会在 DB 更新成功后安全删除旧文件
                 viewModel.replacePhotoFile(recordId, newFile.absolutePath)
+
+                // 写入 MediaStore 并通知系统相册，使编辑后的照片在 Gallery 中可见
+                try {
+                    MediaStoreHelper.addImageToGallery(context, newFile)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to add edited photo to system gallery", e)
+                }
 
                 withContext(Dispatchers.Main) {
                     snackbarHostState.showSnackbar("已保存", duration = SnackbarDuration.Short)
@@ -491,13 +513,16 @@ fun PhotoEditorScreen(
                     .weight(1f)
                     .background(BackgroundDark)
             ) {
-                EditorPreview(
-                    bitmap = previewBitmap ?: currentBitmap!!,
-                    showCropOverlay = currentTool == EditorTool.CROP,
-                    cropRect = cropRect,
-                    selectedRatio = selectedRatio,
-                    onCropChange = { cropRect = it }
-                )
+                val displayBitmap = previewBitmap ?: currentBitmap
+                if (displayBitmap != null) {
+                    EditorPreview(
+                        bitmap = displayBitmap,
+                        showCropOverlay = currentTool == EditorTool.CROP,
+                        cropRect = cropRect,
+                        selectedRatio = selectedRatio,
+                        onCropChange = { cropRect = it }
+                    )
+                }
             }
 
             // ── 当前工具面板（固定高度，不滚出屏幕） ──

@@ -1,6 +1,7 @@
 package com.poseai.app.ui
 
 import android.graphics.PointF
+import android.util.Log
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -76,6 +77,8 @@ import kotlin.math.*
 // ═══════════════════════════════════════════════════════════════
 // 主拍摄界面 — 对齐 iOS ContentView 的 UI/UX
 // ═══════════════════════════════════════════════════════════════
+
+private const val TAG = "ContentView"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -542,26 +545,32 @@ fun ShootingScreen(
             )
         }
         if (isReviewing && lastPhotoPath != null) {
-            PhotoReviewDialog(
-                photoPath = lastPhotoPath!!,
-                onDismiss = { viewModel.closePhotoReview() },
-                onShare = {
-                    viewModel.openShareSheet(lastPhotoPath!!)
-                },
-                onDelete = {
-                    viewModel.deletePhoto(lastPhotoPath!!)
-                    viewModel.closePhotoReview()
-                },
-                onRetake = {
-                    viewModel.closePhotoReview()
-                }
-            )
+            val currentPhotoPath = lastPhotoPath
+            if (currentPhotoPath != null) {
+                PhotoReviewDialog(
+                    photoPath = currentPhotoPath,
+                    onDismiss = { viewModel.closePhotoReview() },
+                    onShare = {
+                        viewModel.openShareSheet(currentPhotoPath)
+                    },
+                    onDelete = {
+                        viewModel.deletePhoto(currentPhotoPath)
+                        viewModel.closePhotoReview()
+                    },
+                    onRetake = {
+                        viewModel.closePhotoReview()
+                    }
+                )
+            }
         }
         if (isReviewingVlog && vlogPath != null) {
-            VlogReviewDialog(
-                videoPath = vlogPath!!,
-                onDismiss = { viewModel.closeVlogReview() }
-            )
+            val currentVlogPath = vlogPath
+            if (currentVlogPath != null) {
+                VlogReviewDialog(
+                    videoPath = currentVlogPath,
+                    onDismiss = { viewModel.closeVlogReview() }
+                )
+            }
         }
         if (showSettings) {
             SettingsDialog(
@@ -839,7 +848,7 @@ fun ScanCornerLines(modifier: Modifier = Modifier, color: Color = Accent) {
 @Composable
 fun AlignmentCelebrationOverlay() {
     val particleCount = 12
-    val particleColors = listOf(Success, Accent, Color(0xFF33D970), Color(0xFF0D9488), SuccessGlow)
+    val particleColors = remember { listOf(Success, Accent, Color(0xFF33D970), Color(0xFF0D9488), SuccessGlow) }
     // 粒子扩散动画
     val particleProgress = remember { Animatable(0f) }
     val checkmarkProgress = remember { Animatable(0f) }
@@ -989,7 +998,7 @@ fun TopBar(
                     )
                     val statusText = when {
                         plan.vlogScript != null && isVlogRecording ->
-                            "Vlog ${activeVlogClipIndex + 1}/${plan.vlogScript!!.clips.size}"
+                            "Vlog ${activeVlogClipIndex + 1}/${plan.vlogScript?.clips?.size ?: 0}"
                         plan.sequence.isNotEmpty() ->
                             "${currentSequenceIndex + 1}/${plan.sequence.size} ${plan.sequence[currentSequenceIndex].title}"
                         plan.multiAngles.isNotEmpty() ->
@@ -1266,7 +1275,7 @@ fun BottomPanel(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val modes = listOf("拍照" to 0, "视频" to 1, "Vlog" to 2)
+                    val modes = remember { listOf("拍照" to 0, "视频" to 1, "Vlog" to 2) }
                     modes.forEachIndexed { _, (label, modeValue) ->
                         val isEnabled = when (modeValue) {
                             2 -> currentPlan?.vlogScript != null
@@ -2006,7 +2015,7 @@ fun LowLightBanner(modifier: Modifier = Modifier) {
         Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm), verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = Icons.Default.Lightbulb,
-                contentDescription = null,
+                contentDescription = "暗光提示",
                 tint = Color.Yellow,
                 modifier = Modifier.size(Dimens.iconXs)
             )
@@ -2885,7 +2894,9 @@ private fun ReviewActionButton(
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable(onClick = onClick)
+        modifier = Modifier
+            .clip(RoundedCornerShape(28.dp))
+            .clickable(onClick = onClick)
     ) {
         Box(
             modifier = Modifier
@@ -3026,11 +3037,11 @@ fun SettingsDialog(
                         .background(Surface, RoundedCornerShape(16.dp))
                         .padding(2.dp)
                 ) {
-                    val modes = listOf(
+                    val modes = remember { listOf(
                         "自动" to 0,
                         "暗色" to 1,
                         "亮色" to 2
-                    )
+                    ) }
                     modes.forEach { (label, value) ->
                         val isSelected = themeMode == value
                         Box(
@@ -3222,7 +3233,7 @@ fun SettingsDialog(
                         .background(Surface, RoundedCornerShape(16.dp))
                         .padding(2.dp)
                 ) {
-                    val formats = listOf("JPEG" to 0, "WEBP" to 1)
+                    val formats = remember { listOf("JPEG" to 0, "WEBP" to 1) }
                     formats.forEach { (label, value) ->
                         val isSelected = outputFormat == value
                         Box(
@@ -3429,11 +3440,12 @@ fun SceneItem(scene: SceneType, isSelected: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp)
+            .clip(RoundedCornerShape(12.dp))
             .background(
                 if (isSelected) Accent.copy(alpha = 0.15f) else Color.Transparent,
                 RoundedCornerShape(12.dp)
             )
+            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -3453,7 +3465,7 @@ fun SceneItem(scene: SceneType, isSelected: Boolean, onClick: () -> Unit) {
         if (isSelected) {
             Icon(
                 imageVector = Icons.Default.Star,
-                contentDescription = null,
+                contentDescription = "已选中",
                 tint = Accent,
                 modifier = Modifier.size(24.dp)
             )
@@ -3483,7 +3495,7 @@ fun FilterSelectorBottomSheet(
     onDismiss: () -> Unit
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("滤镜", "美颜", "贴纸")
+    val tabs = remember { listOf("滤镜", "美颜", "贴纸") }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -3888,7 +3900,7 @@ fun ShareBottomSheet(
                 )
                 ShareEngine.applyWatermarkAndTopics(src, config)
             } catch (e: Exception) {
-                android.util.Log.w("ShareSheet", "Watermark apply failed", e)
+                Log.w(TAG, "Watermark apply failed", e)
                 src
             }
         }
@@ -4635,11 +4647,9 @@ private fun CustomPoseItem(
 /** 用 Canvas 绘制姿势骨架缩略图 */
 @Composable
 private fun PoseSkeletonPreview(posePoints: Map<String, PointF>) {
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        val w = size.width
-        val h = size.height
-        // 完整关节连接关系（COCO 关键点标准）
-        val connections = listOf(
+    // 完整关节连接关系（COCO 关键点标准）
+    val connections = remember {
+        listOf(
             // 躯干
             "nose" to "leftEye",
             "nose" to "rightEye",
@@ -4672,6 +4682,10 @@ private fun PoseSkeletonPreview(posePoints: Map<String, PointF>) {
             "rightAnkle" to "rightHeel",
             "rightHeel" to "rightFootIndex"
         )
+    }
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val w = size.width
+        val h = size.height
         // 绘制连线
         connections.forEach { (a, b) ->
             val pa = posePoints[a]
@@ -4810,10 +4824,9 @@ fun VlogTemplateItem(template: com.poseai.app.model.VlogTemplate, onClick: () ->
         ) {
             Icon(
                 imageVector = Icons.Default.Videocam,
-                contentDescription = null,
+                contentDescription = "Vlog模板",
                 tint = Accent,
                 modifier = Modifier.size(24.dp)
-            )
         }
         Spacer(modifier = Modifier.width(Dimens.spacingMd))
         Column(modifier = Modifier.weight(1f)) {
@@ -5535,7 +5548,7 @@ fun ReviewPromptDialog(
                             }
                             context.startActivity(intent)
                         } catch (e: Exception) {
-                            android.util.Log.w("ReviewPrompt", "Play Store not found", e)
+                            Log.w(TAG, "Play Store not found", e)
                             // 没有 Play Store 时打开网页版
                             try {
                                 val packageName = context.packageName
@@ -5547,7 +5560,7 @@ fun ReviewPromptDialog(
                                 }
                                 context.startActivity(intent)
                             } catch (e2: Exception) {
-                                android.util.Log.w("ReviewPrompt", "Web store also failed", e2)
+                                Log.w(TAG, "Web store also failed", e2)
                             }
                         }
                         onRateNow()

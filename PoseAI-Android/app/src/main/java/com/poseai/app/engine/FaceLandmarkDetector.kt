@@ -11,7 +11,10 @@ import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import com.google.mlkit.vision.face.FaceLandmark
+import android.util.Log
 import kotlin.math.sqrt
+
+private const val TAG = "FaceLandmarkDetector"
 
 /**
  * 人脸关键点检测系统
@@ -127,12 +130,12 @@ class FaceLandmarkDetector {
 
         val completed = latch.await(5, java.util.concurrent.TimeUnit.SECONDS)
         if (!completed) {
-            android.util.Log.w("FaceLandmarkDetector", "detect timed out after 5s")
+            Log.w(TAG, "detect timed out after 5s")
             return emptyList()
         }
 
         errorRef.get()?.let {
-            android.util.Log.e("FaceLandmarkDetector", "Face detection failed", it)
+            Log.e(TAG, "Face detection failed", it)
             return emptyList()
         }
 
@@ -168,12 +171,12 @@ class FaceLandmarkDetector {
 
         val completed = latch.await(3, java.util.concurrent.TimeUnit.SECONDS)
         if (!completed) {
-            android.util.Log.w("FaceLandmarkDetector", "detectFromImageProxy timed out after 3s")
+            Log.w(TAG, "detectFromImageProxy timed out after 3s")
             return emptyList()
         }
 
         errorRef.get()?.let {
-            android.util.Log.e("FaceLandmarkDetector", "Face detection failed", it)
+            Log.e(TAG, "Face detection failed", it)
             return emptyList()
         }
 

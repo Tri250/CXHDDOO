@@ -166,10 +166,10 @@ class Lut3D(val size: Int) {
 
     /** 应用 LUT 到整张 Bitmap（全强度） */
     fun applyToBitmap(source: Bitmap): Bitmap {
-        return try {
-            val width = source.width
-            val height = source.height
-            val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val width = source.width
+        val height = source.height
+        val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        try {
             val pixels = IntArray(width * height)
             val outPixels = IntArray(width * height)
             source.getPixels(pixels, 0, width, 0, 0, width, height)
@@ -179,10 +179,11 @@ class Lut3D(val size: Int) {
                 outPixels[i] = Color.rgb(nr, ng, nb)
             }
             result.setPixels(outPixels, 0, width, 0, 0, width, height)
-            result
+            return result
         } catch (e: Exception) {
             Log.e(TAG, "Failed to apply LUT to bitmap", e)
-            source.copy(source.config ?: Bitmap.Config.ARGB_8888, true)
+            result.recycle()
+            return source.copy(source.config ?: Bitmap.Config.ARGB_8888, true)
         }
     }
 }
@@ -196,10 +197,10 @@ class Lut3D(val size: Int) {
 fun applyLut(bitmap: Bitmap, lut: Lut3D, intensity: Float): Bitmap {
     val w = intensity.coerceIn(0f, 1f)
     if (w <= 0f) return bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true)
-    return try {
-        val width = bitmap.width
-        val height = bitmap.height
-        val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    val width = bitmap.width
+    val height = bitmap.height
+    val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    try {
         val pixels = IntArray(width * height)
         val outPixels = IntArray(width * height)
         bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
@@ -217,10 +218,11 @@ fun applyLut(bitmap: Bitmap, lut: Lut3D, intensity: Float): Bitmap {
             )
         }
         result.setPixels(outPixels, 0, width, 0, 0, width, height)
-        result
+        return result
     } catch (e: Exception) {
         Log.e(TAG, "Failed to apply LUT with intensity", e)
-        bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true)
+        result.recycle()
+        return bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true)
     }
 }
 

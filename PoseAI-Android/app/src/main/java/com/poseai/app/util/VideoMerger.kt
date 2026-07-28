@@ -221,12 +221,12 @@ object VideoMerger {
                 try {
                     muxer.stop()
                 } catch (e: Exception) {
-                    android.util.Log.w("VideoMerger", "muxer stop error", e)
+                    Log.w(TAG, "muxer stop error", e)
                 }
                 try {
                     muxer.release()
                 } catch (e: Exception) {
-                    android.util.Log.w("VideoMerger", "muxer release error", e)
+                    Log.w(TAG, "muxer release error", e)
                 }
                 muxerReleased = true
             }

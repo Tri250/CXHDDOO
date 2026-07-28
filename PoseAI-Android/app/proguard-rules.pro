@@ -55,8 +55,17 @@
 
 # Room 生成的实现类 (KSP 生成)
 -keep class * extends androidx.room.RoomDatabase_Impl { *; }
+-keep class * implements androidx.room.Dao_Impl { *; }
 -keep class com.poseai.app.data.AppDatabase_Impl { *; }
 -keep class com.poseai.app.data.ShootingDao_Impl { *; }
+
+# Room TypeConverter 保留
+-keep class * implements androidx.room.TypeConverter { *; }
+-keepclassmembers class * {
+    @androidx.room.TypeConverter *;
+}
+-keep @androidx.room.Entity class * { <fields>; }
+-keep @androidx.room.Dao class * { <methods>; }
 
 # ===== DataStore =====
 -keep class androidx.datastore.** { *; }
@@ -75,6 +84,11 @@
 # Gson 序列化模型
 -keep class com.poseai.app.model.** { *; }
 -keepclassmembers class com.poseai.app.model.** { *; }
+
+# Gson @SerializedName 注解保留
+-keepclassmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
 
 # ===== Kotlin Coroutines =====
 -keep class kotlinx.coroutines.** { *; }
@@ -96,6 +110,13 @@
 
 # ===== Coil 图片加载 =====
 -keep class coil.** { *; }
+-keep class coil.size.** { *; }
+-keep class coil.key.** { *; }
+-keep class coil.decode.** { *; }
+-keep class coil.fetch.** { *; }
+-keep class coil.request.** { *; }
+-keep class coil.memory.** { *; }
+-keep class coil.disk.** { *; }
 -dontwarn coil.**
 
 # ===== Media3 / ExoPlayer =====

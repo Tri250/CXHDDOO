@@ -2,11 +2,15 @@ package com.poseai.app.ui
 
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
+
+private const val TAG = "ExtraScreens"
+
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -40,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.poseai.app.engine.OotdAnalyzer
 import com.poseai.app.model.SceneType
 import com.poseai.app.ui.theme.Accent
 import com.poseai.app.ui.theme.BackgroundDark
@@ -102,9 +107,20 @@ fun SceneSelectorBottomSheet(
 fun OOTDAnalysisScreen(viewModel: ShootingViewModel) {
     var selectedImagePath by remember { mutableStateOf<String?>(null) }
     var isAnalyzing by remember { mutableStateOf(false) }
-    var analysisResult by remember { mutableStateOf<OOTDAnalysisResult?>(null) }
+    var analysisResult by remember { mutableStateOf<OotdAnalyzer.Result?>(null) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    // OotdAnalyzer 实例：remember 保证单例，onDispose 时释放资源
+    val ootdAnalyzer = remember {
+        OotdAnalyzer(context)
+    }
+    DisposableEffect(ootdAnalyzer) {
+        onDispose {
+            ootdAnalyzer.close()
+        }
+    }
 
     val launcher = rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()
@@ -113,6 +129,7 @@ fun OOTDAnalysisScreen(viewModel: ShootingViewModel) {
             val path = copyUriToFile(context, it)
             selectedImagePath = path
             analysisResult = null
+            errorMessage = null
         }
     }
 
@@ -142,7 +159,7 @@ fun OOTDAnalysisScreen(viewModel: ShootingViewModel) {
             if (selectedImagePath != null) {
                 coil.compose.AsyncImage(
                     model = selectedImagePath,
-                    contentDescription = null,
+                    contentDescription = "穿搭照片",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = androidx.compose.ui.layout.ContentScale.Fit
                 )
@@ -164,7 +181,7 @@ fun OOTDAnalysisScreen(viewModel: ShootingViewModel) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
                         imageVector = Icons.Default.Style,
-                        contentDescription = null,
+                        contentDescription = "上传照片",
                         tint = Accent,
                         modifier = Modifier.size(48.dp)
                     )
@@ -186,8 +203,34 @@ fun OOTDAnalysisScreen(viewModel: ShootingViewModel) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        if (analysisResult != null) {
-            OOTDAnalysisCard(result = analysisResult!!)
+        // 错误提示
+        errorMessage?.let { msg ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFFF6B6B).copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                    .padding(12.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = null,
+                        tint = Color(0xFFFF6B6B),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = msg,
+                        color = Color(0xFFFF6B6B),
+                        fontSize = 13.sp
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        analysisResult?.let { result ->
+            OOTDAnalysisCard(result = result)
             Spacer(modifier = Modifier.height(16.dp))
         }
 
@@ -216,11 +259,28 @@ fun OOTDAnalysisScreen(viewModel: ShootingViewModel) {
 
             Button(
                 onClick = {
-                    if (selectedImagePath != null) {
+                    val currentPath = selectedImagePath
+                    if (currentPath != null) {
                         isAnalyzing = true
+                        errorMessage = null
                         scope.launch {
-                            kotlinx.coroutines.delay(1500)
-                            analysisResult = generateOOTDAnalysis(selectedImagePath!!)
+                            val result = withContext(Dispatchers.IO) {
+                                try {
+                                    ootdAnalyzer.analyze(currentPath)
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "OOTD analysis failed", e)
+                                    OotdAnalyzer.Result(
+                                        overallScore = 0f, colorHarmony = 0f,
+                                        proportionScore = 0f, styleMatch = 0f,
+                                        suggestions = emptyList(), styleTags = emptyList(),
+                                        error = "分析失败：${e.message ?: "未知错误"}"
+                                    )
+                                }
+                            }
+                            analysisResult = result
+                            if (result.error != null) {
+                                errorMessage = result.error
+                            }
                             isAnalyzing = false
                         }
                     }
@@ -244,26 +304,12 @@ fun OOTDAnalysisScreen(viewModel: ShootingViewModel) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "支持全身照穿搭分析：色彩搭配、比例建议、风格评分",
+            text = "支持全身照穿搭分析：场景识别、色彩搭配、比例建议、风格评分",
             color = TextSecondary,
             fontSize = 12.sp,
             textAlign = TextAlign.Center
         )
     }
-}
-
-private fun calculateInSampleSize(
-    options: android.graphics.BitmapFactory.Options,
-    reqWidth: Int,
-    reqHeight: Int
-): Int {
-    val height = options.outHeight
-    val width = options.outWidth
-    var inSampleSize = 1
-    while (height / inSampleSize >= reqHeight || width / inSampleSize >= reqWidth) {
-        inSampleSize *= 2
-    }
-    return inSampleSize
 }
 
 private fun copyUriToFile(context: android.content.Context, uri: android.net.Uri): String? {
@@ -277,120 +323,13 @@ private fun copyUriToFile(context: android.content.Context, uri: android.net.Uri
             outputFile.absolutePath
         }
     } catch (e: Exception) {
-        Log.w("ExtraScreens", "Failed to copy URI to cache", e)
+        Log.w(TAG, "Failed to copy URI to cache", e)
         null
     }
 }
 
-private fun generateOOTDAnalysis(imagePath: String): OOTDAnalysisResult {
-    // 先解码图片尺寸，避免大图 OOM
-    val options = android.graphics.BitmapFactory.Options().apply {
-        inJustDecodeBounds = true
-    }
-    android.graphics.BitmapFactory.decodeFile(imagePath, options)
-    val reqWidth = 512
-    val reqHeight = 512
-    val inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
-
-    val decodeOptions = android.graphics.BitmapFactory.Options().apply {
-        this.inSampleSize = inSampleSize
-        // 强制软件位图，确保 getPixel 可访问（Android 9+ HARDWARE 位图不支持像素读取）
-        inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888
-    }
-    val rawBitmap = android.graphics.BitmapFactory.decodeFile(imagePath, decodeOptions) ?: return OOTDAnalysisResult(
-        overallScore = 0f,
-        colorHarmony = 0f,
-        proportionScore = 0f,
-        styleMatch = 0f,
-        suggestions = emptyList(),
-        styleTags = emptyList()
-    )
-    // HARDWARE 位图无法直接读取像素，复制到软件位图
-    val bitmap = if (rawBitmap.config == android.graphics.Bitmap.Config.HARDWARE) {
-        rawBitmap.copy(android.graphics.Bitmap.Config.ARGB_8888, false) ?: rawBitmap
-    } else {
-        rawBitmap
-    }
-    val width = bitmap.width
-    val height = bitmap.height
-    val avgR = mutableListOf<Int>()
-    val avgG = mutableListOf<Int>()
-    val avgB = mutableListOf<Int>()
-    val sampleSize = (kotlin.math.max(width, height) / 32).coerceAtLeast(4)
-    for (y in 0 until height step sampleSize) {
-        for (x in 0 until width step sampleSize) {
-            val pixel = bitmap.getPixel(x, y)
-            avgR.add(android.graphics.Color.red(pixel))
-            avgG.add(android.graphics.Color.green(pixel))
-            avgB.add(android.graphics.Color.blue(pixel))
-        }
-    }
-    val meanR = avgR.average().toFloat()
-    val meanG = avgG.average().toFloat()
-    val meanB = avgB.average().toFloat()
-    val brightness = (0.299 * meanR + 0.587 * meanG + 0.114 * meanB).toFloat()
-    val maxColor = maxOf(meanR, meanG, meanB)
-    val minColor = minOf(meanR, meanG, meanB)
-    val saturation = if (maxColor > 0f) (maxColor - minColor) / maxColor else 0f
-    val colorHarmony = (1f - kotlin.math.abs(saturation - 0.4f) * 2f).coerceIn(0f, 1f) * 100f
-    val ratio = width.toFloat() / height.toFloat()
-    val proportionScore = if (ratio in 0.4f..0.6f) 85f else 70f
-    val styleMatch = if (brightness > 120f) 80f else 75f
-    val overallScore = (colorHarmony * 0.4f + proportionScore * 0.3f + styleMatch * 0.3f).coerceIn(0f, 100f)
-    val suggestions = mutableListOf<String>()
-    if (saturation < 0.2f) {
-        suggestions.add("整体色彩偏淡，建议添加亮色配饰提升亮点")
-    }
-    if (brightness > 180f) {
-        suggestions.add("整体偏亮色调，适合春夏清爽风格")
-    }
-    if (brightness < 80f) {
-        suggestions.add("整体偏暗色调，建议搭配亮色系单品增加层次")
-    }
-    if (ratio > 0.6f) {
-        suggestions.add("照片比例偏宽，建议竖拍更好展示全身搭配")
-    }
-    if (suggestions.isEmpty()) {
-        suggestions.add("整体搭配和谐，继续保持！")
-    }
-    val styleTags = mutableListOf<String>()
-    if (brightness > 150f && saturation > 0.3f) {
-        styleTags.add("清新")
-        styleTags.add("活力")
-    }
-    if (brightness < 100f) {
-        styleTags.add("沉稳")
-        styleTags.add("高级感")
-    }
-    if (saturation < 0.25f) {
-        styleTags.add("极简")
-        styleTags.add("简约")
-    }
-    if (styleTags.isEmpty()) {
-        styleTags.add("日常")
-        styleTags.add("休闲")
-    }
-    return OOTDAnalysisResult(
-        overallScore = overallScore,
-        colorHarmony = colorHarmony,
-        proportionScore = proportionScore,
-        styleMatch = styleMatch,
-        suggestions = suggestions,
-        styleTags = styleTags
-    )
-}
-
-data class OOTDAnalysisResult(
-    val overallScore: Float,
-    val colorHarmony: Float,
-    val proportionScore: Float,
-    val styleMatch: Float,
-    val suggestions: List<String>,
-    val styleTags: List<String>
-)
-
 @Composable
-fun OOTDAnalysisCard(result: OOTDAnalysisResult) {
+fun OOTDAnalysisCard(result: OotdAnalyzer.Result) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -430,6 +369,27 @@ fun OOTDAnalysisCard(result: OOTDAnalysisResult) {
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        // 场景识别结果
+        if (result.detectedScene != SceneType.UNKNOWN) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = null,
+                    tint = Accent,
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "识别场景：${result.detectedScene.displayName}",
+                    color = TextSecondary,
+                    fontSize = 12.sp
+                )
+            }
+        }
 
         OOTDScoreBar(label = "色彩和谐", score = result.colorHarmony)
         Spacer(modifier = Modifier.height(8.dp))
@@ -671,7 +631,7 @@ fun GalleryScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
                         imageVector = if (showFavoritesOnly) Icons.Default.StarBorder else Icons.Default.Palette,
-                        contentDescription = null,
+                        contentDescription = if (showFavoritesOnly) "暂无收藏" else "暂无照片",
                         tint = TextSecondary.copy(alpha = 0.5f),
                         modifier = Modifier.size(48.dp)
                     )
@@ -943,7 +903,7 @@ fun CollageLayoutBottomSheet(
                     }
                     Icon(
                         imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = null,
+                        contentDescription = "拼图布局",
                         tint = Accent,
                         modifier = Modifier.size(18.dp)
                     )
@@ -1107,7 +1067,7 @@ private suspend fun generateCollage(
                         }
                         android.graphics.BitmapFactory.decodeFile(path, options)
                     } catch (e: Exception) {
-                        Log.w("ExtraScreens", "Failed to decode bitmap: $path", e)
+                        Log.w(TAG, "Failed to decode bitmap: $path", e)
                         null
                     }
                 } else null
@@ -1135,7 +1095,7 @@ private suspend fun generateCollage(
 
             outputFile.absolutePath
         } catch (e: Exception) {
-            Log.e("ExtraScreens", "Failed to create collage", e)
+            Log.e(TAG, "Failed to create collage", e)
             null
         }
     }
@@ -1159,7 +1119,7 @@ fun SceneStatsCard(stats: List<com.poseai.app.data.SceneCount>, totalCount: Int)
         ) {
             Icon(
                 imageVector = Icons.Default.LocationOn,
-                contentDescription = null,
+                contentDescription = "场景分布",
                 tint = Accent,
                 modifier = Modifier.size(18.dp)
             )
@@ -1188,7 +1148,7 @@ fun SceneStatsCard(stats: List<com.poseai.app.data.SceneCount>, totalCount: Int)
             val sceneDisplayName = try {
                 SceneType.valueOf(stat.scene).displayName
             } catch (e: IllegalArgumentException) {
-                Log.w("ExtraScreens", "Unknown scene type: ${stat.scene}", e)
+                Log.w(TAG, "Unknown scene type: ${stat.scene}", e)
                 stat.scene
             }
             val ratio = if (maxCount > 0) stat.count.toFloat() / maxCount else 0f
@@ -1250,7 +1210,7 @@ fun PhotoDetailBottomSheet(
     val sceneDisplayName = try {
         SceneType.valueOf(record.scene).displayName
     } catch (e: IllegalArgumentException) {
-        Log.w("ExtraScreens", "Unknown scene type: ${record.scene}", e)
+        Log.w(TAG, "Unknown scene type: ${record.scene}", e)
         record.scene
     }
 
@@ -1268,7 +1228,7 @@ fun PhotoDetailBottomSheet(
             if (record.imagePath.isNotEmpty()) {
                 coil.compose.AsyncImage(
                     model = record.imagePath,
-                    contentDescription = null,
+                    contentDescription = "照片预览",
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(360.dp)

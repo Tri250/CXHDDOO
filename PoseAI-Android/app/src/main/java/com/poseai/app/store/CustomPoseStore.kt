@@ -4,7 +4,10 @@ import android.content.Context
 import android.graphics.PointF
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import android.util.Log
 import java.util.UUID
+
+private const val TAG = "CustomPoseStore"
 
 /**
  * 自定义姿势数据模型
@@ -50,7 +53,7 @@ class CustomPoseStore(private val context: Context) {
             val dtos: List<CustomPoseDto> = gson.fromJson(json, posesListType) ?: emptyList()
             dtos.map { it.toDomain() }
         } catch (e: Exception) {
-            android.util.Log.e("CustomPoseStore", "Failed to load custom poses", e)
+            Log.e(TAG, "Failed to load custom poses", e)
             emptyList()
         }
     }
@@ -64,7 +67,7 @@ class CustomPoseStore(private val context: Context) {
             saveAll(current)
             true
         } catch (e: Exception) {
-            android.util.Log.e("CustomPoseStore", "Failed to save pose", e)
+            Log.e(TAG, "Failed to save pose", e)
             false
         }
     }
@@ -77,7 +80,7 @@ class CustomPoseStore(private val context: Context) {
             if (removed) saveAll(current)
             removed
         } catch (e: Exception) {
-            android.util.Log.e("CustomPoseStore", "Failed to delete pose", e)
+            Log.e(TAG, "Failed to delete pose", e)
             false
         }
     }

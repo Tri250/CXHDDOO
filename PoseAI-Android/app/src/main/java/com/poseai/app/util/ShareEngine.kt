@@ -17,7 +17,10 @@ import android.text.TextPaint
 import androidx.core.content.FileProvider
 import java.io.File
 import java.io.FileOutputStream
+import android.util.Log
 import java.text.SimpleDateFormat
+
+private const val TAG = "ShareEngine"
 import java.util.Date
 import java.util.Locale
 
@@ -289,7 +292,7 @@ object ShareEngine {
             }
             outFile
         } catch (e: Exception) {
-            android.util.Log.e("ShareEngine", "Failed to prepare share image", e)
+            Log.e(TAG, "Failed to prepare share image", e)
             null
         }
     }
@@ -341,7 +344,7 @@ object ShareEngine {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
         } catch (e: Exception) {
-            android.util.Log.e("ShareEngine", "Failed to build share intent", e)
+            Log.e(TAG, "Failed to build share intent", e)
             null
         }
     }
@@ -383,7 +386,7 @@ object ShareEngine {
             )
             true
         } catch (e: Exception) {
-            android.util.Log.e("ShareEngine", "Failed to share to system", e)
+            Log.e(TAG, "Failed to share to system", e)
             false
         }
     }

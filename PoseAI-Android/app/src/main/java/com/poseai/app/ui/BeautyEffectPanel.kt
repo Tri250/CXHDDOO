@@ -1,5 +1,6 @@
 package com.poseai.app.ui
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -17,6 +18,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,7 +45,7 @@ fun BeautyEffectPanel(
     val scope = rememberCoroutineScope()
     var selectedTab by remember { mutableStateOf(0) }
 
-    val tabs = listOf("高级美颜", "美妆", "皮肤修复", "AR特效")
+    val tabs = remember { listOf("高级美颜", "美妆", "皮肤修复", "AR特效") }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -99,11 +102,13 @@ fun BeautyEffectPanel(
             Spacer(modifier = Modifier.height(12.dp))
 
             // 内容区
-            when (selectedTab) {
-                0 -> AdvancedBeautyTab(viewModel)
-                1 -> MakeupTab(viewModel)
-                2 -> SkinRepairTab(viewModel)
-                3 -> ArEffectTab(viewModel)
+            Crossfade(targetState = selectedTab, label = "beautyTab") { tab ->
+                when (tab) {
+                    0 -> AdvancedBeautyTab(viewModel)
+                    1 -> MakeupTab(viewModel)
+                    2 -> SkinRepairTab(viewModel)
+                    3 -> ArEffectTab(viewModel)
+                }
             }
         }
     }
@@ -117,17 +122,19 @@ fun BeautyEffectPanel(
 private fun AdvancedBeautyTab(viewModel: ShootingViewModel) {
     val params by viewModel.advancedBeautyParams.collectAsState()
 
-    val items = listOf(
-        "enlargeEyes" to "大眼",
-        "slimNose" to "瘦鼻",
-        "shrinkChin" to "缩下巴",
-        "enlargeForehead" to "额头",
-        "slimCheekbone" to "颧骨",
-        "slimJawline" to "下颌线",
-        "slimFace" to "整体瘦脸",
-        "brightenEyes" to "亮眼",
-        "whitenTeeth" to "白牙"
-    )
+    val items = remember {
+        listOf(
+            "enlargeEyes" to "大眼",
+            "slimNose" to "瘦鼻",
+            "shrinkChin" to "缩下巴",
+            "enlargeForehead" to "额头",
+            "slimCheekbone" to "颧骨",
+            "slimJawline" to "下颌线",
+            "slimFace" to "整体瘦脸",
+            "brightenEyes" to "亮眼",
+            "whitenTeeth" to "白牙"
+        )
+    }
 
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -163,20 +170,31 @@ private fun AdvancedBeautyTab(viewModel: ShootingViewModel) {
 private fun MakeupTab(viewModel: ShootingViewModel) {
     val params by viewModel.makeupParams.collectAsState()
 
-    val items = listOf(
-        Triple("lipstickIntensity", "口红", params.lipstickIntensity),
-        Triple("blushIntensity", "腮红", params.blushIntensity),
-        Triple("eyebrowIntensity", "眉毛", params.eyebrowIntensity),
-        Triple("eyeshadowIntensity", "眼影", params.eyeshadowIntensity),
-        Triple("eyelinerIntensity", "眼线", params.eyelinerIntensity),
-        Triple("eyelashIntensity", "睫毛", params.eyelashIntensity)
-    )
+    val itemDefs = remember {
+        listOf(
+            "lipstickIntensity" to "口红",
+            "blushIntensity" to "腮红",
+            "eyebrowIntensity" to "眉毛",
+            "eyeshadowIntensity" to "眼影",
+            "eyelinerIntensity" to "眼线",
+            "eyelashIntensity" to "睫毛"
+        )
+    }
 
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(bottom = 32.dp)
     ) {
-        items(items) { (field, label, value) ->
+        items(itemDefs) { (field, label) ->
+            val value = when (field) {
+                "lipstickIntensity" -> params.lipstickIntensity
+                "blushIntensity" -> params.blushIntensity
+                "eyebrowIntensity" -> params.eyebrowIntensity
+                "eyeshadowIntensity" -> params.eyeshadowIntensity
+                "eyelinerIntensity" -> params.eyelinerIntensity
+                "eyelashIntensity" -> params.eyelashIntensity
+                else -> 0
+            }
             BeautySliderItem(
                 label = label,
                 value = value,
@@ -194,12 +212,14 @@ private fun MakeupTab(viewModel: ShootingViewModel) {
 private fun SkinRepairTab(viewModel: ShootingViewModel) {
     val params by viewModel.skinRepairParams.collectAsState()
 
-    val items = listOf(
-        "removeAcne" to "祛痘",
-        "removeSpots" to "祛斑",
-        "removeDarkCircles" to "祛黑眼圈",
-        "brightenSkinTone" to "均匀肤色"
-    )
+    val items = remember {
+        listOf(
+            "removeAcne" to "祛痘",
+            "removeSpots" to "祛斑",
+            "removeDarkCircles" to "祛黑眼圈",
+            "brightenSkinTone" to "均匀肤色"
+        )
+    }
 
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -230,7 +250,7 @@ private fun SkinRepairTab(viewModel: ShootingViewModel) {
 private fun ArEffectTab(viewModel: ShootingViewModel) {
     val activeEffects by viewModel.activeArEffects.collectAsState()
 
-    val categories = listOf("动物", "头饰", "装饰", "动态", "滤镜")
+    val categories = remember { listOf("动物", "头饰", "装饰", "动态", "滤镜") }
 
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -280,7 +300,8 @@ private fun ArEffectTab(viewModel: ShootingViewModel) {
                                         contentAlignment = Alignment.Center
                                     ) {
                                         if (isActive) {
-                                            Text("✓", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                            Text("✓", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.semantics { contentDescription = "已激活" })
                                         }
                                     }
                                     Spacer(modifier = Modifier.height(4.dp))

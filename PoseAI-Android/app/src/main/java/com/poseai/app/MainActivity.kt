@@ -51,6 +51,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+private const val TAG = "MainActivity"
+
 class MainActivity : ComponentActivity() {
 
     private var hasCameraPermission by mutableStateOf(false)
@@ -197,7 +199,7 @@ class MainActivity : ComponentActivity() {
                 permissionLauncher.launch(permsToRequest.toTypedArray())
             } catch (e: Exception) {
                 // 权限请求框架可能在某些设备上崩溃,捕获异常
-                android.util.Log.e("MainActivity", "Permission request failed", e)
+                Log.e(TAG, "Permission request failed", e)
                 Toast.makeText(this, "权限请求失败,请在设置中手动授权", Toast.LENGTH_LONG).show()
             }
         }
@@ -294,7 +296,7 @@ class MainActivity : ComponentActivity() {
         try {
             unregisterReceiver(batteryReceiver)
         } catch (e: Exception) {
-            android.util.Log.w("MainActivity", "Operation failed", e)
+            Log.w(TAG, "Operation failed", e)
         }
     }
 }
@@ -509,13 +511,16 @@ fun PoseAINavHost(
                             }
                         }
                         imagePath != null -> {
-                            PhotoEditorScreen(
-                                recordId = recordId,
-                                imagePath = imagePath!!,
+                            val currentImagePath = imagePath
+                            if (currentImagePath != null) {
+                                PhotoEditorScreen(
+                                    recordId = recordId,
+                                    imagePath = currentImagePath,
                                 viewModel = editorViewModel,
                                 onBack = { navController.popBackStack() },
                                 onSaved = { navController.popBackStack() }
                             )
+                            }
                         }
                         else -> {
                             Box(

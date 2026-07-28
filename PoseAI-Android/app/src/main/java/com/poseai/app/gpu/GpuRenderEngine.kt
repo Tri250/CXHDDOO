@@ -59,11 +59,29 @@ object GpuRenderEngine {
         fragmentShaderSource: String,
         params: ((ShaderProgram) -> Unit)? = null
     ): Bitmap {
-        val width = bitmap.width
-        val height = bitmap.height
+        // 大图降采样：超过 4096x4096 时缩小到 4096 以内，避免 GPU OOM
+        val maxDim = 4096
+        var inputBitmap = bitmap
+        var needsRecycleInput = false
+        if (bitmap.width > maxDim || bitmap.height > maxDim) {
+            val scale = maxDim.toFloat() / maxOf(bitmap.width, bitmap.height)
+            inputBitmap = Bitmap.createScaledBitmap(
+                bitmap,
+                (bitmap.width * scale).toInt().coerceAtLeast(1),
+                (bitmap.height * scale).toInt().coerceAtLeast(1),
+                true
+            )
+            needsRecycleInput = true
+        }
+
+        val width = inputBitmap.width
+        val height = inputBitmap.height
 
         // 创建输出 Bitmap
         val output = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        var flipped: Bitmap? = null
+        var program = 0
+        var texId = 0
 
         try {
             // 1. 创建顶点/纹理缓冲区
@@ -71,11 +89,12 @@ object GpuRenderEngine {
             val texBuffer = createFloatBuffer(TEX_COORDS)
 
             // 2. 编译着色器程序
-            val program = createProgram(VERTEX_SHADER, fragmentShaderSource)
+            program = createProgram(VERTEX_SHADER, fragmentShaderSource)
             if (program == 0) {
                 // 着色器编译失败，用 Canvas 兜底（不回收输入 bitmap）
                 val canvas = android.graphics.Canvas(output)
-                canvas.drawBitmap(bitmap, 0f, 0f, null)
+                canvas.drawBitmap(inputBitmap, 0f, 0f, null)
+                if (needsRecycleInput) inputBitmap.recycle()
                 return output
             }
 
@@ -85,7 +104,7 @@ object GpuRenderEngine {
             // 3. 创建纹理并上传 Bitmap
             val textures = IntArray(1)
             GLES20.glGenTextures(1, textures, 0)
-            val texId = textures[0]
+            texId = textures[0]
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texId)
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
@@ -94,7 +113,7 @@ object GpuRenderEngine {
 
             // 将 Bitmap 上传为 GL 纹理
             val bitmapBuffer = ByteBuffer.allocateDirect(width * height * 4).order(ByteOrder.nativeOrder())
-            bitmap.copyPixelsToBuffer(bitmapBuffer)
+            inputBitmap.copyPixelsToBuffer(bitmapBuffer)
             bitmapBuffer.rewind()
             GLES20.glTexImage2D(
                 GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA,
@@ -131,18 +150,25 @@ object GpuRenderEngine {
             output.copyPixelsFromBuffer(pixelBuffer)
 
             // 注意：GL 原点在左下，Bitmap 原点在左上，需要垂直翻转
-            val flipped = flipVertical(output, width, height)
+            flipped = flipVertical(output, width, height)
 
             // 10. 清理 GL 资源
-            GLES20.glDeleteTextures(1, textures, 0)
+            GLES20.glDeleteTextures(1, intArrayOf(texId), 0)
             GLES20.glDeleteProgram(program)
+            program = 0
+            texId = 0
 
-            if (flipped != output) output.recycle()
+            output.recycle()
+            if (needsRecycleInput) inputBitmap.recycle()
             return flipped
         } catch (e: Exception) {
-            // GPU 处理失败，回收 output 并返回原图副本
-            android.util.Log.e(TAG, "GPU processBitmap failed", e)
+            // GPU 处理失败，回收所有已创建的资源
+            Log.e(TAG, "GPU processBitmap failed", e)
+            flipped?.recycle()
             output.recycle()
+            if (texId != 0) GLES20.glDeleteTextures(1, intArrayOf(texId), 0)
+            if (program != 0) GLES20.glDeleteProgram(program)
+            if (needsRecycleInput) inputBitmap.recycle()
             return bitmap.copy(Bitmap.Config.ARGB_8888, true)
         }
     }
@@ -615,8 +641,14 @@ class RealtimeFilterRenderer : GLSurfaceView.Renderer {
             GLES20.glDeleteTextures(1, intArrayOf(cameraTexId), 0)
             cameraTexId = 0
         }
+        if (lutTextureId != 0) {
+            GLES20.glDeleteTextures(1, intArrayOf(lutTextureId), 0)
+            lutTextureId = 0
+        }
         cameraTexture?.release()
         cameraTexture = null
+        vertexBuffer = null
+        texBuffer = null
     }
 
     private fun createFloatBuffer(array: FloatArray): FloatBuffer {

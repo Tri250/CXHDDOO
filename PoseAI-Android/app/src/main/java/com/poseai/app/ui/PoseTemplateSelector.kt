@@ -1,5 +1,9 @@
 package com.poseai.app.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -12,6 +16,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,7 +37,7 @@ fun PoseTemplateSelector(
 ) {
     var selectedCategory by remember { mutableStateOf("全部") }
     val allScenes = PoseTemplateLibrary.ALL_SCENES
-    val categories = listOf("全部") + PoseTemplateLibrary.getAllCategories()
+    val categories = remember { listOf("全部") + PoseTemplateLibrary.getAllCategories() }
 
     val displayScenes = if (selectedCategory == "全部") {
         allScenes
@@ -140,11 +146,19 @@ private fun SceneCard(
             }
             Text(
                 text = if (expanded) "▲" else "▼",
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.semantics {
+                    contentDescription = if (expanded) "收起" else "展开"
+                }
             )
         }
 
-        if (expanded) {
+        AnimatedVisibility(
+            visible = expanded,
+            enter = fadeIn(tween(200)),
+            exit = fadeOut(tween(150))
+        ) {
+            Column {
             Spacer(modifier = Modifier.height(12.dp))
 
             // 拍摄提示
@@ -208,6 +222,7 @@ private fun SceneCard(
                     }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
+            }
             }
         }
     }

@@ -8,7 +8,10 @@ import android.graphics.Rect
 import android.graphics.RectF
 import kotlin.math.ceil
 import kotlin.math.min
+import android.util.Log
 import kotlin.math.sqrt
+
+private const val TAG = "CollageEngine"
 
 /**
  * 拼图引擎：将多张照片拼接为网格布局
@@ -54,7 +57,7 @@ object CollageEngine {
                 Layout.GRID_6 -> createGrid6(sources, background)
             }
         } catch (e: Exception) {
-            android.util.Log.e("CollageEngine", "Failed to create collage", e)
+            Log.e(TAG, "Failed to create collage", e)
             null
         }
     }

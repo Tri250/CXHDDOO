@@ -1,6 +1,8 @@
 package com.poseai.app.engine
 
 import android.util.Log
+
+private const val TAG = "SmileDetector"
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
@@ -48,7 +50,7 @@ class SmileDetector(
         detector.process(image)
             .addOnSuccessListener { faces -> cont.resume(faces) }
             .addOnFailureListener { e ->
-                Log.e("SmileDetector", "Face detection failed", e)
+                Log.e(TAG, "Face detection failed", e)
                 cont.resume(null)
             }
             .addOnCanceledListener { cont.cancel() }
@@ -106,7 +108,7 @@ class SmileDetector(
         try {
             detector.close()
         } catch (e: Exception) {
-            Log.e("SmileDetector", "Failed to close detector", e)
+            Log.e(TAG, "Failed to close detector", e)
         }
     }
 }

@@ -4,8 +4,11 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.PointF
 import android.graphics.RectF
+import android.util.Log
 import kotlin.math.exp
 import kotlin.math.sqrt
+
+private const val TAG = "BeautyEngine"
 
 /**
  * 美颜引擎（端侧纯算法实现）
@@ -109,6 +112,7 @@ object BeautyEngine {
 
             result
         } catch (e: Exception) {
+            Log.e(TAG, "Smoothing failed, returning copy", e)
             bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true)
         }
     }
@@ -280,6 +284,7 @@ object BeautyEngine {
             result.setPixels(outPixels, 0, width, 0, 0, width, height)
             result
         } catch (e: Exception) {
+            Log.e(TAG, "Whitening failed, returning copy", e)
             bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true)
         }
     }
@@ -370,6 +375,7 @@ object BeautyEngine {
             result.setPixels(outPixels, 0, width, 0, 0, width, height)
             result
         } catch (e: Exception) {
+            Log.e(TAG, "Face slimming failed, returning copy", e)
             bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true)
         }
     }
@@ -468,7 +474,7 @@ object BeautyEngine {
                 faceCenter = PointF(centerX, centerY)
             )
         } catch (e: Exception) {
-            android.util.Log.e("BeautyEngine", "Failed to extract face landmarks", e)
+            Log.e(TAG, "Failed to extract face landmarks", e)
             null
         }
     }

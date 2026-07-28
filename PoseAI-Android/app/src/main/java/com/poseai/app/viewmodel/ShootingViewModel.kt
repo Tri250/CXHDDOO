@@ -45,6 +45,7 @@ import com.poseai.app.store.StoreManager
 import com.poseai.app.util.PhotoFilterEngine
 import com.poseai.app.util.BeautyEngine
 import com.poseai.app.util.AdvancedBeautyEngine
+import com.poseai.app.util.MediaStoreHelper
 import com.poseai.app.util.MakeupEngine
 import com.poseai.app.util.SkinRepairEngine
 import com.poseai.app.util.ArFaceEffectEngine
@@ -537,7 +538,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         try {
             sceneClassifier = SceneClassifier(app)
         } catch (e: Exception) {
-            Log.w(TAG, "Scene classifier not available")
+            Log.w(TAG, "Scene classifier not available", e)
         }
         smileDetector = SmileDetector()
         // 激活 pose_similarity 模型：从 AIModelManager 下载目录或 assets 加载
@@ -1143,6 +1144,12 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                     lastChunk.copyTo(destFile, overwrite = true)
                     _exportedVlogPath.value = destFile.absolutePath
                     _isReviewingVlog.value = true
+                    // 写入 MediaStore 并通知系统相册，使视频在 Gallery 中可见
+                    try {
+                        MediaStoreHelper.addVideoToGallery(app, destFile)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to add video to system gallery", e)
+                    }
                 } catch (e: Exception) {
                     Log.e(TAG, "Video copy failed", e)
                     _photoSaveError.value = "视频保存失败"
@@ -1455,7 +1462,8 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         try {
             // 暗光降噪
             if (_lowLightMode.value && _isLowLightWarning.value) {
-                val denoised = PhotoFilterEngine.applyLowLightDenoise(bitmap!!)
+                val currentBitmap = bitmap ?: return null
+                val denoised = PhotoFilterEngine.applyLowLightDenoise(currentBitmap)
                 if (denoised !== bitmap) {
                     bitmap?.recycle()
                     bitmap = denoised
@@ -1463,8 +1471,9 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             }
 
             // HDR 色调映射（画质设置：暗部提亮 + 高光压缩）
-            if (_hdrEnabled.value && bitmap != null) {
-                val hdr = PhotoFilterEngine.applyHdrToneMapping(bitmap!!)
+            if (_hdrEnabled.value) {
+                val currentBitmap = bitmap ?: return null
+                val hdr = PhotoFilterEngine.applyHdrToneMapping(currentBitmap)
                 if (hdr !== bitmap) {
                     bitmap?.recycle()
                     bitmap = hdr
@@ -1472,26 +1481,29 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             }
 
             // 美颜处理（磨皮 → 美白 → 瘦脸）
-            if (_beautyEnabled.value && bitmap != null) {
+            if (_beautyEnabled.value) {
+                val bmp1 = bitmap ?: return null
                 val smoothed = if (_smoothingLevel.value > 0) {
-                    BeautyEngine.applySmoothing(bitmap!!, _smoothingLevel.value)
-                } else bitmap!!
+                    BeautyEngine.applySmoothing(bmp1, _smoothingLevel.value)
+                } else bmp1
                 if (smoothed !== bitmap) {
                     bitmap?.recycle()
                     bitmap = smoothed
                 }
 
+                val bmp2 = bitmap ?: return null
                 val whitened = if (_whiteningLevel.value > 0) {
-                    BeautyEngine.applyWhitening(bitmap!!, _whiteningLevel.value)
-                } else bitmap!!
+                    BeautyEngine.applyWhitening(bmp2, _whiteningLevel.value)
+                } else bmp2
                 if (whitened !== bitmap) {
                     bitmap?.recycle()
                     bitmap = whitened
                 }
 
                 // 瘦脸：基于真实人脸关键点（若未检测到人脸则回退到默认估算）
-                if (_slimmingLevel.value > 0 && bitmap != null) {
-                    val faceDataList = faceLandmarkDetector.detect(bitmap!!)
+                if (_slimmingLevel.value > 0) {
+                    val bmp3 = bitmap ?: return null
+                    val faceDataList = faceLandmarkDetector.detect(bmp3)
                     val faceData = faceDataList.firstOrNull()
                     val landmarks = if (faceData != null) {
                         BeautyEngine.FaceLandmarks(
@@ -1501,8 +1513,8 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                             faceCenter = faceData.faceCenter
                         )
                     } else {
-                        val w = bitmap!!.width
-                        val h = bitmap!!.height
+                        val w = bmp3.width
+                        val h = bmp3.height
                         BeautyEngine.FaceLandmarks(
                             leftCheek = android.graphics.PointF(w * 0.35f, h * 0.4f),
                             rightCheek = android.graphics.PointF(w * 0.65f, h * 0.4f),
@@ -1510,7 +1522,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                             faceCenter = android.graphics.PointF(w * 0.5f, h * 0.35f)
                         )
                     }
-                    val slimmed = BeautyEngine.applyFaceSlimming(bitmap!!, _slimmingLevel.value, landmarks)
+                    val slimmed = BeautyEngine.applyFaceSlimming(bmp3, _slimmingLevel.value, landmarks)
                     if (slimmed !== bitmap) {
                         bitmap?.recycle()
                         bitmap = slimmed
@@ -1520,13 +1532,14 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
 
             // 应用滤镜（含强度调节）
             val filter = _currentFilter.value
-            if (filter != PhotoFilterEngine.Filter.ORIGINAL && bitmap != null) {
-                val filtered = PhotoFilterEngine.applyFilter(bitmap!!, filter)
+            if (filter != PhotoFilterEngine.Filter.ORIGINAL) {
+                val bmp4 = bitmap ?: return null
+                val filtered = PhotoFilterEngine.applyFilter(bmp4, filter)
                 if (filtered !== bitmap) {
                     // 滤镜强度混合：intensity=100 → 完全滤镜，intensity=0 → 完全原图
                     val intensity = _filterIntensity.value / 100f
                     if (intensity < 1f) {
-                        val blended = PhotoFilterEngine.blendBitmaps(bitmap!!, filtered, 1f - intensity)
+                        val blended = PhotoFilterEngine.blendBitmaps(bmp4, filtered, 1f - intensity)
                         filtered.recycle()
                         bitmap?.recycle()
                         bitmap = blended
@@ -1539,6 +1552,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
 
             // 高级美颜 + 美妆 + 皮肤修复 + AR特效（基于人脸关键点）
             if (bitmap != null) {
+                val bmp5 = bitmap
                 val advParams = _advancedBeautyParams.value
                 val makeupParams = _makeupParams.value
                 val skinParams = _skinRepairParams.value
@@ -1557,7 +1571,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
 
                 if (hasAdvBeauty || hasMakeup || hasSkinRepair || hasArEffects) {
                     // 人脸检测
-                    val faceDataList = faceLandmarkDetector.detect(bitmap!!)
+                    val faceDataList = faceLandmarkDetector.detect(bmp5)
                     val faceData = faceDataList.firstOrNull()
 
                     // 构建 AR 引擎所需的 FaceData
@@ -1578,7 +1592,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
 
                     // 皮肤修复（最先处理）
                     if (hasSkinRepair && faceData != null) {
-                        val temp = skinRepairEngine.applyAll(bitmap!!, faceData, skinParams)
+                        val temp = skinRepairEngine.applyAll(bmp5, faceData, skinParams)
                         if (temp !== bitmap) {
                             bitmap?.recycle()
                             bitmap = temp
@@ -1587,7 +1601,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
 
                     // 高级美颜
                     if (hasAdvBeauty && faceData != null) {
-                        val temp = advancedBeautyEngine.applyAll(bitmap!!, faceData, advParams)
+                        val temp = advancedBeautyEngine.applyAll(bmp5, faceData, advParams)
                         if (temp !== bitmap) {
                             bitmap?.recycle()
                             bitmap = temp
@@ -1596,7 +1610,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
 
                     // 美妆
                     if (hasMakeup && faceData != null) {
-                        val temp = makeupEngine.applyAll(bitmap!!, faceData, makeupParams)
+                        val temp = makeupEngine.applyAll(bmp5, faceData, makeupParams)
                         if (temp !== bitmap) {
                             bitmap?.recycle()
                             bitmap = temp
@@ -1606,7 +1620,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                     // AR人脸特效
                     if (hasArEffects) {
                         for (effect in arEffects) {
-                            val temp = arFaceEffectEngine.applyEffect(bitmap!!, effect, arFaceData)
+                            val temp = arFaceEffectEngine.applyEffect(bmp5, effect, arFaceData)
                             if (temp !== bitmap) {
                                 bitmap?.recycle()
                                 bitmap = temp
@@ -1617,8 +1631,9 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             }
 
             // 水印
-            if (_watermarkEnabled.value && bitmap != null) {
-                val watermarked = PhotoFilterEngine.addWatermark(bitmap!!)
+            if (_watermarkEnabled.value) {
+                val bmp6 = bitmap ?: return null
+                val watermarked = PhotoFilterEngine.addWatermark(bmp6)
                 if (watermarked !== bitmap) {
                     bitmap?.recycle()
                     bitmap = watermarked
@@ -1627,7 +1642,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
 
             // 智能裁切（使用当前画幅预设）
             if (bitmap != null) {
-                val cropped = PhotoFilterEngine.applySmartCropByRatio(bitmap!!, _currentAspectRatio.value)
+                val cropped = PhotoFilterEngine.applySmartCropByRatio(bitmap, _currentAspectRatio.value)
                 if (cropped !== bitmap) {
                     bitmap?.recycle()
                     bitmap = cropped
@@ -1635,8 +1650,9 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             }
 
             // AR 贴纸（裁切后应用，确保边框/装饰完整覆盖）
-            if (_currentSticker.value != StickerEngine.Sticker.NONE && bitmap != null) {
-                val stickered = StickerEngine.applySticker(bitmap!!, _currentSticker.value)
+            if (_currentSticker.value != StickerEngine.Sticker.NONE) {
+                val bmp7 = bitmap ?: return null
+                val stickered = StickerEngine.applySticker(bmp7, _currentSticker.value)
                 if (stickered !== bitmap) {
                     bitmap?.recycle()
                     bitmap = stickered
@@ -1648,12 +1664,13 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                 // 画质设置：JPEG 质量 + 输出格式（JPEG/WEBP）
                 val quality = _jpegQuality.value.coerceIn(50, 100)
                 val useWebp = _outputFormat.value == 1
+                val bmp8 = bitmap
                 // WEBP 格式时更换文件扩展名，避免 .jpg 文件写入 WEBP 数据导致解码失败
                 if (useWebp && path.endsWith(".jpg", ignoreCase = true)) {
                     val webpFile = File(path.substringBeforeLast('.') + ".webp")
                     savedPath = webpFile.absolutePath
                     FileOutputStream(webpFile).use { out ->
-                        bitmap!!.compress(Bitmap.CompressFormat.WEBP, quality, out)
+                        bmp8.compress(Bitmap.CompressFormat.WEBP, quality, out)
                     }
                     // 删除原始 jpg 文件（已写入 webp 副本）
                     try {
@@ -1663,7 +1680,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                     }
                 } else {
                     FileOutputStream(path).use { out ->
-                        bitmap!!.compress(Bitmap.CompressFormat.JPEG, quality, out)
+                        bmp8.compress(Bitmap.CompressFormat.JPEG, quality, out)
                     }
                 }
             }
@@ -1677,6 +1694,13 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             )
             app.database.shootingDao().insert(record)
             _captureCount.value += 1
+
+            // 写入 MediaStore 并通知系统相册，使照片在 Gallery 中可见
+            try {
+                MediaStoreHelper.addImageToGallery(app, File(savedPath))
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to add photo to system gallery", e)
+            }
 
             // 更新 UI 状态（切到主线程）
             withContext(Dispatchers.Main) {
@@ -2103,6 +2127,12 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                         if (merged != null) {
                             _exportedVlogPath.value = merged.absolutePath
                             _isReviewingVlog.value = true
+                            // 写入 MediaStore 并通知系统相册，使 Vlog 视频在 Gallery 中可见
+                            try {
+                                MediaStoreHelper.addVideoToGallery(app, merged)
+                            } catch (e: Exception) {
+                                Log.w(TAG, "Failed to add vlog to system gallery", e)
+                            }
                         } else {
                             _vlogErrorMessage.value = "Vlog 合成失败，请重试"
                         }

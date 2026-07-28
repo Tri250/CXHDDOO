@@ -234,7 +234,7 @@ class AIModelManager(context: Context) {
             val assetList = appContext.assets.list("") ?: return false
             IOS_MODEL_ASSETS.any { assetList.contains(it) }
         } catch (e: Exception) {
-            android.util.Log.w("AIModelManager", "Model download failed", e)
+            Log.w(TAG, "Model download failed", e)
             false
         }
     }

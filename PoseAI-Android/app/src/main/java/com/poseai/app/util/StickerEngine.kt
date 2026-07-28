@@ -11,7 +11,10 @@ import android.graphics.Typeface
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import android.util.Log
 import kotlin.math.min
+
+private const val TAG = "StickerEngine"
 
 /**
  * AR 贴纸引擎：在照片上叠加装饰性贴纸
@@ -51,7 +54,7 @@ object StickerEngine {
                 Sticker.FILM_FRAME -> applyFilmFrame(source)
             }
         } catch (e: Exception) {
-            android.util.Log.e("StickerEngine", "Failed to apply sticker", e)
+            Log.e(TAG, "Failed to apply sticker", e)
             source.copy(source.config ?: Bitmap.Config.ARGB_8888, true)
         }
     }

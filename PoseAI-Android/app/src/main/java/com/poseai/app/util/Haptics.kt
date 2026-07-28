@@ -7,7 +7,10 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import android.util.Log
 import androidx.compose.ui.platform.LocalContext
+
+private const val TAG = "Haptics"
 
 /**
  * 统一触觉反馈工具，对齐国内主流摄影 App（轻颜/B612/一甜）的反馈强度档位
@@ -76,7 +79,7 @@ class HapticController(private val context: Context) {
                 })
             }
         } catch (e: Exception) {
-            android.util.Log.w("Haptics", "Vibration failed", e)
+            Log.w(TAG, "Vibration failed", e)
             // 部分厂商ROM有自定义Vibrator实现，吞掉异常避免崩溃
         }
     }

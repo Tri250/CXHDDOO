@@ -264,7 +264,11 @@ class VideoBeautyEngine {
 
         extractor.selectTrack(videoTrackIndex)
 
-        val mime = videoFormat.getString(MediaFormat.KEY_MIME)!!
+        val mime = videoFormat.getString(MediaFormat.KEY_MIME) ?: run {
+            Log.e(TAG, "Video MIME type is null in changeSpeed")
+            extractor.release()
+            return false
+        }
         val duration = videoFormat.getLong(MediaFormat.KEY_DURATION)
         val width = videoFormat.getInteger(MediaFormat.KEY_WIDTH)
         val height = videoFormat.getInteger(MediaFormat.KEY_HEIGHT)
@@ -302,8 +306,8 @@ class VideoBeautyEngine {
             // 输入：从 extractor 读取数据到 decoder
             val inputBufferIndex = decoder.dequeueInputBuffer(timeoutUs)
             if (inputBufferIndex >= 0) {
-                val inputBuffer = decoder.getInputBuffer(inputBufferIndex)
-                val sampleSize = extractor.readSampleData(inputBuffer!!, 0)
+                val inputBuffer = decoder.getInputBuffer(inputBufferIndex) ?: continue
+                val sampleSize = extractor.readSampleData(inputBuffer, 0)
                 if (sampleSize > 0) {
                     // 修改时间戳实现变速
                     val presentationTime = extractor.sampleTime
@@ -343,10 +347,10 @@ class VideoBeautyEngine {
                     if (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
                         info.size = 0
                     }
-                    if (info.size > 0 && muxerStarted) {
-                        encodedBuffer?.position(info.offset)
-                        encodedBuffer?.limit(info.offset + info.size)
-                        muxer.writeSampleData(muxerTrackIndex, encodedBuffer!!, info)
+                    if (info.size > 0 && muxerStarted && encodedBuffer != null) {
+                        encodedBuffer.position(info.offset)
+                        encodedBuffer.limit(info.offset + info.size)
+                        muxer.writeSampleData(muxerTrackIndex, encodedBuffer, info)
                     }
                     encoder.releaseOutputBuffer(encoderStatus, false)
                     if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) break
@@ -393,7 +397,11 @@ class VideoBeautyEngine {
         extractor.selectTrack(videoTrackIndex)
         extractor.seekTo(startMs * 1000, android.media.MediaExtractor.SEEK_TO_CLOSEST_SYNC)
 
-        val mime = videoFormat.getString(MediaFormat.KEY_MIME)!!
+        val mime = videoFormat.getString(MediaFormat.KEY_MIME) ?: run {
+            Log.e(TAG, "Video MIME type is null in trimVideo")
+            extractor.release()
+            return false
+        }
         val width = videoFormat.getInteger(MediaFormat.KEY_WIDTH)
         val height = videoFormat.getInteger(MediaFormat.KEY_HEIGHT)
         val frameRate = if (videoFormat.containsKey(MediaFormat.KEY_FRAME_RATE)) {
@@ -427,12 +435,12 @@ class VideoBeautyEngine {
         while (true) {
             val inputBufferIndex = decoder.dequeueInputBuffer(timeoutUs)
             if (inputBufferIndex >= 0) {
-                val inputBuffer = decoder.getInputBuffer(inputBufferIndex)
+                val inputBuffer = decoder.getInputBuffer(inputBufferIndex) ?: continue
                 val sampleTime = extractor.sampleTime
                 if (sampleTime < 0 || sampleTime > endMs * 1000) {
                     decoder.queueInputBuffer(inputBufferIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
                 } else {
-                    val sampleSize = extractor.readSampleData(inputBuffer!!, 0)
+                    val sampleSize = extractor.readSampleData(inputBuffer, 0)
                     if (sampleSize > 0) {
                         val adjustedTime = sampleTime - startMs * 1000
                         decoder.queueInputBuffer(inputBufferIndex, 0, sampleSize, adjustedTime, extractor.sampleFlags)
