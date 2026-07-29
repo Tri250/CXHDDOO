@@ -3744,6 +3744,7 @@ private fun BeautySliderItem(
     alpha: Float,
     onValueChange: (Int) -> Unit
 ) {
+    val haptics = com.poseai.app.util.Haptics.rememberHapticController()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -3761,7 +3762,15 @@ private fun BeautySliderItem(
         Spacer(modifier = Modifier.width(Dimens.spacingSm))
         Slider(
             value = value.toFloat(),
-            onValueChange = { if (enabled) onValueChange(it.toInt()) },
+            onValueChange = {
+                if (enabled) {
+                    val snapped = it.toInt()
+                    if (snapped != value) {
+                        onValueChange(snapped)
+                        haptics.perform(com.poseai.app.util.Haptics.Level.TICK)
+                    }
+                }
+            },
             valueRange = 0f..100f,
             enabled = enabled,
             modifier = Modifier.weight(1f),

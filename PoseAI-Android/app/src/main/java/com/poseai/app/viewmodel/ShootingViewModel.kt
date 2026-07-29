@@ -1,6 +1,7 @@
 package com.poseai.app.viewmodel
 
 import android.app.Application
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
@@ -23,6 +24,7 @@ import android.view.View
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.view.PreviewView
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewModelScope
@@ -30,6 +32,7 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.pose.Pose
 import com.poseai.app.PoseAIApp
 import com.poseai.app.camera.CameraManager
+import com.poseai.app.service.RecordingForegroundService
 import com.poseai.app.data.ShootingRecord
 import com.poseai.app.engine.PoseDetectorEngine
 import com.poseai.app.engine.PoseSimilarityModel
@@ -78,7 +81,9 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         private const val SCENE_DETECTION_INTERVAL = 3000L
         private const val SMILE_FRAME_INTERVAL = 150L
         private const val LOW_LIGHT_THRESHOLD = 50
-        private const val AUTO_CAPTURE_SCORE_THRESHOLD = 80f
+        private const val AUTO_CAPTURE_SCORE_THRESHOLD = 85f
+        // 自动拍照稳定性检查：评分持续超过阈值 0.8 秒才触发
+        private const val AUTO_CAPTURE_STABILITY_MS = 800L
         private const val SCREEN_FILL_LIGHT_BRIGHTNESS = 0.4f
         // 关节坐标 EMA 平滑系数：新值权重，越大越灵敏但越抖动
         private const val POSE_EMA_ALPHA = 0.4f
@@ -517,7 +522,13 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             // orientationValues[1] = pitch，单位弧度；负值表示设备向前倾（俯拍）
             val pitch = orientationValues[1]
             _devicePitch.value = pitch
-            _isTopDownWarning.value = pitch < -0.35f
+            val wasTopDown = _isTopDownWarning.value
+            val isTopDown = pitch < -0.35f
+            _isTopDownWarning.value = isTopDown
+            // 首次进入俯拍角度时触发 WARN 触觉反馈
+            if (isTopDown && !wasTopDown) {
+                vibrateWarn()
+            }
         }
     }
 
@@ -951,7 +962,13 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
 
             val avg = if (count > 0) sum / count else 128
             val isLow = avg < LOW_LIGHT_THRESHOLD
+            val wasLow = _isLowLightWarning.value
             _isLowLightWarning.value = isLow
+
+            // 首次进入暗光时触发 WARN 触觉反馈
+            if (isLow && !wasLow && _lowLightMode.value) {
+                vibrateWarn()
+            }
 
             if (isLow && _lowLightMode.value) {
                 cameraManager?.setExposureCompensation(2)
@@ -1123,6 +1140,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             _isNormalVideoRecording.value = true
             playShutterSound()
             vibrateShutter()
+            startRecordingForegroundService()
         } else {
             _photoSaveError.value = "视频录制启动失败"
         }
@@ -1130,6 +1148,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
 
     private fun stopNormalVideoRecording() {
         if (!_isNormalVideoRecording.value) return
+        stopRecordingForegroundService()
         cameraManager?.stopVideoChunk()
         _isNormalVideoRecording.value = false
         // 稍等 Finalize 回调完成后获取文件并展示预览
@@ -1158,6 +1177,37 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                 _photoSaveError.value = "视频保存失败"
             }
             cameraManager?.resetVideoChunks()
+        }
+    }
+
+    /**
+     * 启动录制前台服务并显示通知，保证录制在后台继续（TC-M11-09）
+     */
+    private fun startRecordingForegroundService() {
+        try {
+            ContextCompat.startForegroundService(
+                app,
+                Intent(app, RecordingForegroundService::class.java).apply {
+                    action = RecordingForegroundService.ACTION_START
+                }
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to start recording foreground service", e)
+        }
+    }
+
+    /**
+     * 停止录制前台服务并移除通知
+     */
+    private fun stopRecordingForegroundService() {
+        try {
+            app.startService(
+                Intent(app, RecordingForegroundService::class.java).apply {
+                    action = RecordingForegroundService.ACTION_STOP
+                }
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to stop recording foreground service", e)
         }
     }
 
@@ -1203,7 +1253,12 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         // 快门闪光反馈
         triggerShutterFlash()
         playShutterSound()
-        vibrateShutter()
+        // 倒计时拍照使用 SUCCESS 反馈，手动拍照使用 HEAVY 反馈
+        if (_timerSeconds.value > 0 || _countdownValue.value > 0) {
+            vibrateSuccess()
+        } else {
+            vibrateShutter()
+        }
 
         val photoFile = File(photoOutputDir, "${UUID.randomUUID()}.jpg")
 
@@ -1264,6 +1319,8 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                 if (success) {
                     val originalPath = photoFile.absolutePath
                     capturedPaths.add(originalPath)
+                    // 每张连拍 CLICK 触觉反馈
+                    vibrateClick()
                     // 后台处理保存：使用返回的最终路径替换原始路径（WEBP 时会变更）
                     viewModelScope.launch(Dispatchers.IO) {
                         try {
@@ -1413,8 +1470,9 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
      */
     private fun vibrateSuccess() {
         try {
-            val pattern = longArrayOf(0, 40, 60, 80)
-            val amplitudes = intArrayOf(0, 180, 0, 220)
+            // 对齐 Haptics.kt SUCCESS 档位：短-长双段"咔嚓"手感
+            val pattern = longArrayOf(0, 18, 40, 35)
+            val amplitudes = intArrayOf(0, 120, 0, 220)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     (app.getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
@@ -1728,13 +1786,13 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val vibratorManager = app.getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
                 vibratorManager.defaultVibrator.vibrate(
-                    VibrationEffect.createOneShot(30, VibrationEffect.DEFAULT_AMPLITUDE)
+                    VibrationEffect.createOneShot(30, 180)
                 )
             } else {
                 @Suppress("DEPRECATION")
                 val vibrator = app.getSystemService(android.content.Context.VIBRATOR_SERVICE) as Vibrator
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    vibrator.vibrate(VibrationEffect.createOneShot(30, VibrationEffect.DEFAULT_AMPLITUDE))
+                    vibrator.vibrate(VibrationEffect.createOneShot(30, 180))
                 } else {
                     @Suppress("DEPRECATION")
                     vibrator.vibrate(30)
@@ -1742,6 +1800,40 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             }
         } catch (e: Exception) {
             Log.w(TAG, "Operation failed", e)
+        }
+    }
+
+    /** 轻量点击反馈（20ms, 80）— 用于连拍、按钮按下 */
+    private fun vibrateClick() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    (app.getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
+                } else {
+                    @Suppress("DEPRECATION")
+                    app.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? Vibrator
+                }
+                vibrator?.vibrate(VibrationEffect.createOneShot(20, 80))
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Click vibration failed", e)
+        }
+    }
+
+    /** 重反馈（50ms, 255）— 用于暗光/俯拍警告 */
+    private fun vibrateWarn() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    (app.getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
+                } else {
+                    @Suppress("DEPRECATION")
+                    app.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? Vibrator
+                }
+                vibrator?.vibrate(VibrationEffect.createOneShot(50, 255))
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Warn vibration failed", e)
         }
     }
 
@@ -1832,18 +1924,31 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         _isAutoCapturing.value = true
 
         autoCaptureJob = viewModelScope.launch {
+            var scoreStableSince = 0L
             while (_isAutoCapturing.value) {
                 // 直接读取缓存的 StateFlow 值，避免每次循环查 DataStore
                 val interval = _autoRecommendInterval.value.toLong()
                     .coerceIn(500L, 5000L)
                 delay(interval)
 
-                if (_poseScore.value >= AUTO_CAPTURE_SCORE_THRESHOLD
+                val scoreOk = _poseScore.value >= AUTO_CAPTURE_SCORE_THRESHOLD
                     && !_isVlogRecording.value
                     && !_isVlogMerging.value
-                ) {
-                    takePhoto()
-                    delay(interval)
+
+                if (scoreOk) {
+                    // 首次达到阈值，记录开始时间
+                    if (scoreStableSince == 0L) {
+                        scoreStableSince = System.currentTimeMillis()
+                    }
+                    // 评分持续超过阈值 0.8 秒才触发拍照
+                    if (System.currentTimeMillis() - scoreStableSince >= AUTO_CAPTURE_STABILITY_MS) {
+                        takePhoto()
+                        scoreStableSince = 0L
+                        delay(interval)
+                    }
+                } else {
+                    // 评分低于阈值，重置稳定性计时器
+                    scoreStableSince = 0L
                 }
             }
         }
@@ -2051,6 +2156,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                     return@launch
                 }
                 _isVlogRecording.value = true
+                startRecordingForegroundService()
 
                 // 4. 录制指定时长
                 delay((clip.duration * 1000).toLong())
@@ -2155,6 +2261,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         vlogCaptureJob = null
         _isVlogRecording.value = false
         _isVlogMerging.value = false
+        stopRecordingForegroundService()
         cameraManager?.stopVideoChunk()
         cameraManager?.resetVideoChunks()
         _displayVlogText.value = ""
@@ -2279,7 +2386,7 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
                 if (record != null) {
                     val file = File(record.imagePath)
                     if (file.exists()) file.delete()
-                    app.database.shootingDao().deleteById(id.toInt())
+                    app.database.shootingDao().deleteById(id)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "deleteRecordById failed", e)
@@ -2791,6 +2898,11 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         val plan = currentPlan ?: return
         if (plan.sequence.isEmpty()) return
         _currentSequenceIndex.value = (_currentSequenceIndex.value + 1) % plan.sequence.size
+        // 语音播报下一步骤描述
+        val shot = getCurrentSequenceShot()
+        if (shot != null) {
+            speak(shot.description)
+        }
     }
 
     fun previousSequenceStep() {
@@ -2807,6 +2919,18 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         val plan = currentPlan ?: return
         if (plan.multiAngles.isEmpty()) return
         _currentAngleIndex.value = (_currentAngleIndex.value + 1) % plan.multiAngles.size
+    }
+
+    /**
+     * 检查当前机位俯仰角是否达标
+     * @return true 表示当前设备角度满足机位要求
+     */
+    fun isCurrentAngleMet(): Boolean {
+        val angle = getCurrentAngle() ?: return true
+        if (angle.requiredPitch == 0) return true
+        val currentPitchDeg = Math.toDegrees(_devicePitch.value.toDouble()).toFloat()
+        // 允许 ±10° 误差
+        return kotlin.math.abs(currentPitchDeg - angle.requiredPitch) < 10f
     }
 
     fun getCurrentSequenceShot() = currentPlan?.sequence?.getOrNull(_currentSequenceIndex.value)

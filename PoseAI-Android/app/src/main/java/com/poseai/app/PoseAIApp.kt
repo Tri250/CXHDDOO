@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.room.Room
 import com.poseai.app.data.AppDatabase
 import com.poseai.app.engine.AIModelManager
+import com.poseai.app.store.BillingManager
 import com.poseai.app.store.CustomPoseStore
 import com.poseai.app.store.StoreManager
 
@@ -25,6 +26,8 @@ class PoseAIApp : Application() {
         fun getAIModelManager(): AIModelManager = instance.aiModelManager
 
         fun getCustomPoseStore(): CustomPoseStore = instance.customPoseStore
+
+        fun getBillingManager(): BillingManager = instance.billingManager
     }
 
     lateinit var database: AppDatabase
@@ -37,6 +40,9 @@ class PoseAIApp : Application() {
         private set
 
     lateinit var customPoseStore: CustomPoseStore
+        private set
+
+    lateinit var billingManager: BillingManager
         private set
 
     override fun onCreate() {
@@ -78,6 +84,14 @@ class PoseAIApp : Application() {
             Log.i(TAG, "CustomPoseStore initialized")
         } catch (e: Exception) {
             Log.e(TAG, "CustomPoseStore init failed", e)
+        }
+        try {
+            billingManager = BillingManager(this)
+            Log.i(TAG, "BillingManager initialized")
+            // 建立 BillingClient 连接，连接成功后会主动恢复已有购买
+            billingManager.startConnection()
+        } catch (e: Exception) {
+            Log.e(TAG, "BillingManager init failed", e)
         }
     }
 

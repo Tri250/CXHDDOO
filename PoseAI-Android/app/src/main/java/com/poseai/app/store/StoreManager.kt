@@ -28,7 +28,7 @@ class StoreManager(private val context: Context) {
         val KEY_TIMER_SECONDS = intPreferencesKey("timer_seconds")
         val KEY_AUTO_RECOMMEND_ENABLED = booleanPreferencesKey("auto_recommend_enabled")
         // KEY_FLASH_MODE 已在上方声明：0=off, 1=auto, 2=on
-        // 画质设置：JPEG 压缩质量 70-100
+        // 画质设置：JPEG 压缩质量 50-100
         val KEY_JPEG_QUALITY = intPreferencesKey("jpeg_quality")
         // 输出格式：0=JPEG, 1=WEBP
         val KEY_OUTPUT_FORMAT = intPreferencesKey("output_format")
@@ -36,6 +36,8 @@ class StoreManager(private val context: Context) {
         val KEY_HDR_ENABLED = booleanPreferencesKey("hdr_enabled")
         // 主题模式：0=跟随系统, 1=强制暗色, 2=强制亮色
         val KEY_THEME_MODE = intPreferencesKey("theme_mode")
+        // Pro 解锁状态：一次性购买后持久化，默认未解锁
+        val KEY_PRO_UNLOCKED = booleanPreferencesKey("pro_unlocked")
     }
 
     val onboardingCompleted: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -173,5 +175,14 @@ class StoreManager(private val context: Context) {
 
     suspend fun setThemeMode(value: Int) {
         context.dataStore.edit { it[KEY_THEME_MODE] = value.coerceIn(0, 2) }
+    }
+
+    /** Pro 解锁状态：购买或恢复购买后置为 true，默认 false */
+    val proUnlocked: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_PRO_UNLOCKED] ?: false
+    }
+
+    suspend fun setProUnlocked(value: Boolean) {
+        context.dataStore.edit { it[KEY_PRO_UNLOCKED] = value }
     }
 }

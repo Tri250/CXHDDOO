@@ -43,6 +43,7 @@ import androidx.navigation.navArgument
 import com.poseai.app.ui.GalleryScreen
 import com.poseai.app.ui.OOTDAnalysisScreen
 import com.poseai.app.ui.OnboardingScreen
+import com.poseai.app.ui.PaywallView
 import com.poseai.app.ui.PhotoEditorScreen
 import com.poseai.app.ui.ShootingScreen
 import com.poseai.app.ui.theme.Accent
@@ -61,6 +62,9 @@ class MainActivity : ComponentActivity() {
     private var hasStoragePermission by mutableStateOf(false)
     private var hasNotificationPermission by mutableStateOf(false)
     private var permissionRequestedOnce = false
+
+    // 付费墙显隐状态：由底部导航 Pro 入口或高级功能拦截触发
+    private var showPaywall by mutableStateOf(false)
 
     private val batteryReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -124,18 +128,57 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             PoseAITheme {
+                val billingManager = PoseAIApp.getBillingManager()
+                val isProUnlocked by billingManager.isProUnlocked.collectAsState()
+
+                // 购买成功后自动关闭付费墙并提示
+                LaunchedEffect(isProUnlocked) {
+                    if (isProUnlocked && showPaywall) {
+                        showPaywall = false
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Pro 已解锁，全部高级功能可用",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
                     if (hasCameraPermission) {
                         PoseAINavHost(
-                            onViewModelCreated = { vm -> lastViewModel = vm }
+                            onViewModelCreated = { vm -> lastViewModel = vm },
+                            onShowPaywall = { showPaywall = true }
                         )
                     } else {
                         PermissionRequestScreen {
                             requestCameraAndAudioPermissions()
                         }
+                    }
+
+                    // 付费墙：覆盖在主内容之上
+                    if (showPaywall) {
+                        PaywallView(
+                            onPurchaseClick = {
+                                billingManager.launchBillingFlow(this@MainActivity)
+                            },
+                            onRestoreClick = {
+                                billingManager.restorePurchases { restored ->
+                                    runOnUiThread {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            if (restored) "已恢复 Pro 权益"
+                                            else "未找到可恢复的购买记录",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        if (restored) showPaywall = false
+                                    }
+                                }
+                            },
+                            onDismiss = { showPaywall = false }
+                        )
                     }
                 }
             }
@@ -311,12 +354,14 @@ data class BottomNavItem(
 val bottomNavItems = listOf(
     BottomNavItem("shooting", "拍摄", Icons.Default.CameraAlt),
     BottomNavItem("gallery", "相册", Icons.Default.PhotoLibrary),
-    BottomNavItem("ootd", "穿搭", Icons.Default.Style)
+    BottomNavItem("ootd", "穿搭", Icons.Default.Style),
+    BottomNavItem("pro", "Pro", Icons.Default.WorkspacePremium)
 )
 
 @Composable
 fun PoseAINavHost(
-    onViewModelCreated: (ShootingViewModel) -> Unit
+    onViewModelCreated: (ShootingViewModel) -> Unit,
+    onShowPaywall: () -> Unit = {}
 ) {
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
@@ -358,12 +403,17 @@ fun PoseAINavHost(
                             },
                             selected = selected,
                             onClick = {
-                                navController.navigate(item.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                // Pro 入口触发付费墙而非导航
+                                if (item.route == "pro") {
+                                    onShowPaywall()
+                                } else {
+                                    navController.navigate(item.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
                             },
                             colors = NavigationBarItemDefaults.colors(

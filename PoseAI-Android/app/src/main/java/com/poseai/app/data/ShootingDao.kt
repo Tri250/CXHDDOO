@@ -30,7 +30,7 @@ interface ShootingDao {
     suspend fun getSceneDistribution(): List<SceneCount>
 
     @Query("DELETE FROM shooting_records WHERE id = :id")
-    suspend fun deleteById(id: Int)
+    suspend fun deleteById(id: Long)
 
     @Query("DELETE FROM shooting_records WHERE imagePath = :path")
     suspend fun deleteByPath(path: String)
