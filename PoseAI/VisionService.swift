@@ -55,6 +55,11 @@ final class VisionService {
     
     // EMA 平滑状态数组（支持双人：[Person0, Person1]）
     private var previousPointsArray: [[String: CGPoint]] = [[:], [:]]
+    /// EMA 平滑系数：0.4 = 较平滑（延迟高），0.7 = 较灵敏（延迟低）
+    /// 当检测到关节跳动（帧间距离>阈值）时自适应调高以减少延迟
+    private let emaBaseAlpha: CGFloat = 0.45
+    private let emaJitterAlpha: CGFloat = 0.7
+    private let jitterThreshold: CGFloat = 0.08 // 帧间跳变阈值（归一化距离）
 
     // MARK: - 帧处理入口
     func process(_ buffer: CMSampleBuffer, isDegraded: Bool = false) {
@@ -192,17 +197,22 @@ final class VisionService {
             
             for (jointName, key) in targetJoints {
                 guard let point = try? obs.recognizedPoint(jointName),
-                      point.confidence > 0.3 else { continue }
+                      point.confidence > 0.2 else { continue }  // 降低阈值0.3→0.2，捕捉更多关节点
                 var x = point.location.x
                 if isFrontCamera { x = 1.0 - x }
                 let y = 1.0 - point.location.y
-                
+
                 let pointRaw = CGPoint(x: x, y: y)
                 let smoothedPoint: CGPoint
                 if let oldPoint = oldPoints[key] {
+                    // 自适应 EMA：检测到跳变时增大 alpha 以减少延迟
+                    let dx = pointRaw.x - oldPoint.x
+                    let dy = pointRaw.y - oldPoint.y
+                    let distance = sqrt(dx * dx + dy * dy)
+                    let alpha = distance > jitterThreshold ? emaJitterAlpha : emaBaseAlpha
                     smoothedPoint = CGPoint(
-                        x: oldPoint.x * 0.6 + pointRaw.x * 0.4,
-                        y: oldPoint.y * 0.6 + pointRaw.y * 0.4
+                        x: oldPoint.x * (1 - alpha) + pointRaw.x * alpha,
+                        y: oldPoint.y * (1 - alpha) + pointRaw.y * alpha
                     )
                 } else {
                     smoothedPoint = pointRaw
@@ -232,8 +242,9 @@ final class VisionService {
 
         previousPointsArray = newPreviousPointsArray
 
-        // 暗光检测：总点数稀少则视为暗光
-        let lowLight = topOps.count > 0 && totalPointsCount < (topOps.count * 4)
+        // 暗光检测：综合考虑关节点稀少和平均置信度
+        let avgPointsPerPerson = topOps.count > 0 ? Double(totalPointsCount) / Double(topOps.count) : 0
+        let lowLight = topOps.count > 0 && (totalPointsCount < (topOps.count * 5) || avgPointsPerPerson < 4.0)
         let now = Date()
         if lowLight != isCurrentlyLowLight {
             if now.timeIntervalSince(lastLowLightTime) > lowLightInterval || !lowLight {

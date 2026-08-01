@@ -5,13 +5,24 @@ import CoreGraphics
 final class PoseMatcher {
 
     // MARK: 肢体三元组定义 (A, B, C) → 计算 ∠ABC
+    // 覆盖上肢/下肢/躯干共 10 组角度，提升姿势区分度
     static let jointsToCompare: [(String, String, String)] = [
+        // 上肢：肩-肘-腕（左右各一）
         ("leftShoulder",  "leftElbow",  "leftWrist"),
         ("rightShoulder", "rightElbow", "rightWrist"),
+        // 下肢：髋-膝-踝（左右各一）
+        ("leftHip",       "leftKnee",   "leftAnkle"),
+        ("rightHip",      "rightKnee",  "rightAnkle"),
+        // 肩部：颈-肩-肘（左右各一）
+        ("neck",          "leftShoulder","leftElbow"),
+        ("neck",          "rightShoulder","rightElbow"),
+        // 躯干侧面：肩-髋-膝（左右各一，检测弯腰/蹲下）
         ("leftShoulder",  "leftHip",    "leftKnee"),
         ("rightShoulder", "rightHip",   "rightKnee"),
-        ("neck",          "leftShoulder","leftElbow"),
-        ("neck",          "rightShoulder","rightElbow")
+        // 躯干正面：肩-颈-肩（检测耸肩/侧倾）
+        ("leftShoulder",  "neck",       "rightShoulder"),
+        // 髋部：髋-颈-髋（检测骨盆倾斜，较少用但可提升全身匹配）
+        ("leftHip",       "neck",       "rightHip")
     ]
 
     // MARK: 下半身关节集合（半身模式时跳过）
@@ -69,9 +80,18 @@ final class PoseMatcher {
             let currentAngle = calculateAngle(p1: cp1, center: cc, p2: cp2)
             let presetAngle  = calculateAngle(p1: pp1, center: pc, p2: pp2)
 
-            // 容错门限：5° 以内误差忽略不计（减少噪声干扰）
+            // 动态容错门限：小角度（<30°）容差3°，大角度（>150°）容差8°，中间5°
+            // 原因：小角度时噪声放大，大角度时本就模糊
+            let tolerance: Double
+            switch presetAngle {
+            case 0..<30:   tolerance = 3.0
+            case 30..<60:  tolerance = 5.0
+            case 60..<120: tolerance = 6.0
+            case 120..<150: tolerance = 7.0
+            default:       tolerance = 8.0
+            }
             let rawDiff = abs(currentAngle - presetAngle)
-            let diff = max(0, rawDiff - 5.0)
+            let diff = max(0, rawDiff - tolerance)
 
             totalDiff += diff
             count += 1

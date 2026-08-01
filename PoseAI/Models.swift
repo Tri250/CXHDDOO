@@ -627,13 +627,14 @@ class MobileNetV2SceneProvider: SceneClassificationProvider {
             }
 
             // MARK: 扩充关键词：覆盖 ImageNet 更多类别，支持全部 7 个场景识别
-            // 咖啡馆 / 餐饮场景
+            // 冲突解决：重叠词("bar","lamp","garden")分配给最特定场景，其他场景不再包含
+            // 咖啡馆 / 餐饮场景（移除 "bar"→归neon、"lamp"→归indoor）
             let coffeeKeywords = [
                 "coffee", "espresso", "cappuccino", "latte", "cup", "mug", "coffeepot",
-                "restaurant", "dining", "cafeteria", "table", "chair", "stool", "bar",
+                "restaurant", "dining", "cafeteria", "table", "chair", "stool",
                 "bakery", "wine", "beer", "bottle", "plate", "food", "bread", "cake",
                 "bookcase", "bookshelf", "library", "desk", "laptop", "computer",
-                "vase", "lamp", "pot", "counter"
+                "vase", "pot", "counter", "menu", "cafe", "bistro"
             ]
 
             // 海边 / 水景 / 户外开阔场景
@@ -645,12 +646,13 @@ class MobileNetV2SceneProvider: SceneClassificationProvider {
                 "cliff", "rock", "stone"
             ]
 
-            // 森林 / 自然 / 植物场景
+            // 森林 / 自然 / 植物场景（移除 "garden"→归park）
             let forestKeywords = [
                 "forest", "woodland", "jungle", "tree", "rainforest", "pine", "oak",
-                "fern", "plant", "leaf", "leaves", "grass", "flower", "garden",
+                "fern", "plant", "leaf", "leaves", "grass", "flower",
                 "mushroom", "moss", "bark", "branch", "bush", "shrub", "bamboo",
-                "mountain", "hill", "valley", "meadow", "wilderness", "spring"
+                "mountain", "hill", "valley", "meadow", "wilderness", "spring",
+                "canopy", "swamp", "wetland"
             ]
 
             // 城市街道场景
@@ -665,17 +667,17 @@ class MobileNetV2SceneProvider: SceneClassificationProvider {
                 "highway", "freeway", "overpass", "intersection", "sidewalk"
             ]
 
-            // 公园场景
+            // 公园场景（增加 "garden" 从 forest 移入，公园含更多休闲设施特征）
             let parkKeywords = [
                 "park", "bench", "picnic", "playground", "swing", "slide",
                 "seesaw", "fountain", "gazebo", "lawn", "path", "trail",
                 "field", "jogging", "bicycle", "scooter", "skateboard",
                 "kite", "frisbee", "tennis", "soccer", "birdhouse",
                 "squirrel", "duck", "goose", "pigeon", "swan",
-                "nature", "green", "outdoor"
+                "nature", "green", "outdoor", "garden"
             ]
 
-            // 室内家居场景
+            // 室内家居场景（增加 "lamp" 从 coffee 移入，台灯更常见于家居）
             let indoorKeywords = [
                 "bedroom", "living_room", "bathroom", "kitchen", "wardrobe",
                 "television", "monitor", "screen", "bed", "pillow",
@@ -683,16 +685,16 @@ class MobileNetV2SceneProvider: SceneClassificationProvider {
                 "interior", "room", "wall", "window", "curtain", "mirror",
                 "radiator", "refrigerator", "microwave", "toaster", "oven",
                 "dishwasher", "bathtub", "shower", "washbasin", "toilet",
-                "iron", "vacuum", "washer", "dryer"
+                "iron", "vacuum", "washer", "dryer", "lamp"
             ]
 
-            // 夜晚霓虹场景
+            // 夜晚霓虹场景（增加 "bar" 从 coffee 移入，酒吧更符合夜场景；移除 "light" 过于通用）
             let neonKeywords = [
                 "neon", "night", "lantern", "spotlight", "lamppost", "lampshade",
                 "stage", "marquee", "torch", "candle", "chandelier",
                 "disco", "entertainment", "cocktail", "lounge", "nightclub",
-                "electric", "light", "glow", "beacon", "streetlight",
-                "dark", "luminous", "fluorescent"
+                "electric", "glow", "beacon", "streetlight",
+                "dark", "luminous", "fluorescent", "bar"
             ]
 
             // top-5 结果投票（避免第一名抖动导致误判）
@@ -721,13 +723,13 @@ class MobileNetV2SceneProvider: SceneClassificationProvider {
             if let best = best, best.value > 0 {
                 scene = best.key
             } else {
-                // 完全无关键词匹配：用 top-1 的绝对置信度兜底
-                // 置信度 > 0.05 就给一个通用室内方案（咖啡馆方案最丰富）
+                // 完全无关键词匹配：使用 top-1 置信度做启发式分类
+                // 低置信度说明模型不确定，返回 unknown 而非强行分配
                 let top1 = results[0]
-                scene = top1.confidence > 0.05 ? .coffee_shop : .unknown
+                scene = top1.confidence > 0.05 ? .city_street : .unknown
                 if scene != .unknown {
                     #if DEBUG
-                    print("[Scene] 关键词未匹配，兜底coffee_shop | top1=\(top1.identifier) conf=\(top1.confidence)")
+                    print("[Scene] 关键词未匹配，启发式兜底city_street | top1=\(top1.identifier) conf=\(top1.confidence)")
                     #endif
                 }
             }

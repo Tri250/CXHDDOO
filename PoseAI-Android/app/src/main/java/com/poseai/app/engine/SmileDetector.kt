@@ -12,7 +12,7 @@ private const val TAG = "SmileDetector"
 
 class SmileDetector(
     triggerThreshold: Float = 0.7f,
-    private val stableDurationMs: Long = 800L,
+    private val stableDurationMs: Long = 600L,     // 缩短稳定时长 800→600ms，更快触发
     private val cooldownMs: Long = 3000L
 ) {
     private val options = FaceDetectorOptions.Builder()
@@ -41,7 +41,12 @@ class SmileDetector(
     private var lastTriggerTime: Long = 0L
     private var frameCount: Int = 0
 
-    private val EMA_ALPHA = 0.3f
+    // EMA 参数：0.35 比 0.3 更灵敏，减少延迟
+    private val EMA_ALPHA = 0.35f
+
+    // 双重验证：连续满足阈值的帧数计数
+    private var consecutiveSmileFrames: Int = 0
+    private val SMILE_CONFIRM_FRAMES = 2  // 至少连续2帧确认才触发
 
     val currentSmileProbability: Float
         get() = smoothedProbability
@@ -58,7 +63,8 @@ class SmileDetector(
 
     suspend fun process(image: InputImage): Boolean {
         frameCount++
-        if (frameCount % 3 != 0) {
+        // 帧采样：每2帧检测一次（之前每3帧，提升灵敏度）
+        if (frameCount % 2 != 0) {
             return false
         }
 
@@ -70,6 +76,7 @@ class SmileDetector(
         if (faces.isEmpty()) {
             smoothedProbability = 0f
             smileStableStartTime = 0L
+            consecutiveSmileFrames = 0
             return false
         }
 
@@ -83,15 +90,21 @@ class SmileDetector(
         }
 
         if (smoothedProbability >= triggerThreshold) {
-            if (smileStableStartTime == 0L) {
-                smileStableStartTime = System.currentTimeMillis()
-            } else if (System.currentTimeMillis() - smileStableStartTime >= stableDurationMs) {
-                lastTriggerTime = System.currentTimeMillis()
-                smileStableStartTime = 0L
-                return true
+            // 双重验证：连续帧确认
+            consecutiveSmileFrames++
+            if (consecutiveSmileFrames >= SMILE_CONFIRM_FRAMES) {
+                if (smileStableStartTime == 0L) {
+                    smileStableStartTime = System.currentTimeMillis()
+                } else if (System.currentTimeMillis() - smileStableStartTime >= stableDurationMs) {
+                    lastTriggerTime = System.currentTimeMillis()
+                    smileStableStartTime = 0L
+                    consecutiveSmileFrames = 0
+                    return true
+                }
             }
         } else {
             smileStableStartTime = 0L
+            consecutiveSmileFrames = 0
         }
 
         return false
@@ -102,6 +115,7 @@ class SmileDetector(
         smileStableStartTime = 0L
         lastTriggerTime = 0L
         frameCount = 0
+        consecutiveSmileFrames = 0
     }
 
     fun close() {

@@ -9,8 +9,6 @@ final class PoseMatcherTests: XCTestCase {
 
     /// 标准直角三角形的三点应计算出 90° 角
     func testAngleCalculation_rightAngle() {
-        // 三点组成直角：A(0,0) B(1,0) C(1,1)
-        // ∠ABC = 90°（以 B 为顶点）
         let a = CGPoint(x: 0, y: 0)
         let b = CGPoint(x: 1, y: 0)
         let c = CGPoint(x: 1, y: 1)
@@ -49,7 +47,11 @@ final class PoseMatcherTests: XCTestCase {
             "leftWrist":     CGPoint(x: 0.28, y: 0.65),
             "rightWrist":    CGPoint(x: 0.72, y: 0.50),
             "leftHip":       CGPoint(x: 0.44, y: 0.60),
-            "rightHip":      CGPoint(x: 0.56, y: 0.60)
+            "rightHip":      CGPoint(x: 0.56, y: 0.60),
+            "leftKnee":      CGPoint(x: 0.42, y: 0.78),
+            "rightKnee":     CGPoint(x: 0.58, y: 0.78),
+            "leftAnkle":     CGPoint(x: 0.40, y: 0.92),
+            "rightAnkle":    CGPoint(x: 0.60, y: 0.92)
         ]
 
         let score = PoseMatcher.calculateSimilarity(
@@ -83,13 +85,17 @@ final class PoseMatcherTests: XCTestCase {
             "leftHip":       CGPoint(x: 0.44, y: 0.60),
             "rightHip":      CGPoint(x: 0.56, y: 0.60),
             "leftKnee":      CGPoint(x: 0.42, y: 0.78),
-            "rightKnee":     CGPoint(x: 0.58, y: 0.78)
+            "rightKnee":     CGPoint(x: 0.58, y: 0.78),
+            "leftAnkle":     CGPoint(x: 0.40, y: 0.92),
+            "rightAnkle":    CGPoint(x: 0.60, y: 0.92)
         ]
 
         // 半身模式下把下半身关节挪到错误位置，不应影响评分
         var mismatchedLower = fullPose
         mismatchedLower["leftKnee"] = CGPoint(x: 0.1, y: 0.1)
         mismatchedLower["rightKnee"] = CGPoint(x: 0.9, y: 0.9)
+        mismatchedLower["leftAnkle"] = CGPoint(x: 0.1, y: 0.05)
+        mismatchedLower["rightAnkle"] = CGPoint(x: 0.9, y: 0.05)
 
         let scoreHalf = PoseMatcher.calculateSimilarity(
             current: mismatchedLower, preset: fullPose, isHalfBody: true
@@ -103,8 +109,8 @@ final class PoseMatcherTests: XCTestCase {
             "半身模式应忽略下半身错位，评分更高")
     }
 
-    /// 5° 容错门限验证：非常接近的角度差异应被宽容
-    func testSimilarity_toleranceThreshold() {
+    /// 动态容错门限验证：微小偏移在容差内应得高分
+    func testSimilarity_dynamicTolerance_smallAngle() {
         let pose1: [String: CGPoint] = [
             "neck":          CGPoint(x: 0.50, y: 0.28),
             "leftShoulder":  CGPoint(x: 0.38, y: 0.38),
@@ -125,7 +131,7 @@ final class PoseMatcherTests: XCTestCase {
             current: pose2, preset: pose1, isHalfBody: false
         )
         XCTAssertGreaterThan(score, 80.0,
-            "微小偏移（约 2-3°）应在 5° 容错范围内，评分应仍然很高")
+            "微小偏移（约 2-3°）应在容差范围内，评分应仍然很高")
     }
 
     /// 手臂完全反向应得低分
@@ -144,9 +150,9 @@ final class PoseMatcherTests: XCTestCase {
 
         // 手臂方向反转
         var oppositeArms = normalPose
-        oppositeArms["leftElbow"]  = CGPoint(x: 0.46, y: 0.30) // 手肘在肩膀上方
+        oppositeArms["leftElbow"]  = CGPoint(x: 0.46, y: 0.30)
         oppositeArms["rightElbow"] = CGPoint(x: 0.54, y: 0.30)
-        oppositeArms["leftWrist"]  = CGPoint(x: 0.48, y: 0.20) // 手腕更高
+        oppositeArms["leftWrist"]  = CGPoint(x: 0.48, y: 0.20)
         oppositeArms["rightWrist"] = CGPoint(x: 0.52, y: 0.20)
 
         let score = PoseMatcher.calculateSimilarity(
@@ -154,5 +160,58 @@ final class PoseMatcherTests: XCTestCase {
         )
         XCTAssertLessThan(score, 60.0,
             "手臂方向完全反向应得低分")
+    }
+
+    // MARK: - 扩展三元组覆盖测试
+
+    /// 10 组角度三元组覆盖验证：含踝关节的全身姿势应使用更多角度
+    func testSimilarity_fullBodyPose_usesMoreTriples() {
+        let fullBodyPose: [String: CGPoint] = [
+            "neck":          CGPoint(x: 0.50, y: 0.28),
+            "leftShoulder":  CGPoint(x: 0.38, y: 0.38),
+            "rightShoulder": CGPoint(x: 0.62, y: 0.38),
+            "leftElbow":     CGPoint(x: 0.30, y: 0.52),
+            "rightElbow":    CGPoint(x: 0.70, y: 0.52),
+            "leftWrist":     CGPoint(x: 0.28, y: 0.65),
+            "rightWrist":    CGPoint(x: 0.72, y: 0.50),
+            "leftHip":       CGPoint(x: 0.44, y: 0.60),
+            "rightHip":      CGPoint(x: 0.56, y: 0.60),
+            "leftKnee":      CGPoint(x: 0.42, y: 0.78),
+            "rightKnee":     CGPoint(x: 0.58, y: 0.78),
+            "leftAnkle":     CGPoint(x: 0.40, y: 0.92),
+            "rightAnkle":    CGPoint(x: 0.60, y: 0.92)
+        ]
+
+        // 完全一致的全身姿势应得满分
+        let score = PoseMatcher.calculateSimilarity(
+            current: fullBodyPose, preset: fullBodyPose, isHalfBody: false
+        )
+        XCTAssertEqual(score, 100.0, accuracy: 1.0, "全身一致姿势应得 100 分")
+    }
+
+    /// 动态容差：大角度（>150°，接近共线）应有更大容差
+    func testSimilarity_dynamicTolerance_largeAngle() {
+        // 共线姿势：肩-颈-肩 接近 180°
+        let pose1: [String: CGPoint] = [
+            "neck":          CGPoint(x: 0.50, y: 0.30),
+            "leftShoulder":  CGPoint(x: 0.30, y: 0.30),
+            "rightShoulder": CGPoint(x: 0.70, y: 0.30),
+            "leftElbow":     CGPoint(x: 0.20, y: 0.45),
+            "rightElbow":    CGPoint(x: 0.80, y: 0.45),
+            "leftWrist":     CGPoint(x: 0.15, y: 0.60),
+            "rightWrist":    CGPoint(x: 0.85, y: 0.60),
+            "leftHip":       CGPoint(x: 0.40, y: 0.60),
+            "rightHip":      CGPoint(x: 0.60, y: 0.60)
+        ]
+
+        // 微小偏移：肩膀高度变化 0.02（约 3-4°）
+        var pose2 = pose1
+        pose2["leftShoulder"] = CGPoint(x: 0.31, y: 0.32)
+
+        let score = PoseMatcher.calculateSimilarity(
+            current: pose2, preset: pose1, isHalfBody: false
+        )
+        XCTAssertGreaterThan(score, 85.0,
+            "大角度场景下微小偏移应有更大容差，评分应高")
     }
 }

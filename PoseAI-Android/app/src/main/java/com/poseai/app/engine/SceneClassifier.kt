@@ -179,7 +179,7 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
             val probabilities = output[0]
             val maxIndex = probabilities.indices.maxByOrNull { probabilities[it] } ?: -1
 
-            if (maxIndex >= 0 && maxIndex < labels.size && probabilities[maxIndex] > 0.3f) {
+            if (maxIndex >= 0 && maxIndex < labels.size && probabilities[maxIndex] > 0.2f) {
                 SceneType.valueOf(labels[maxIndex])
             } else {
                 SceneType.UNKNOWN
@@ -205,8 +205,29 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
             scores[SceneType.STREET] = scoreStreet(stats)
             scores[SceneType.NIGHT_NEON] = scoreNightNeon(stats)
 
+            // 森林检测映射到 PARK（公园与森林最相似）
+            val forestScore = scoreForest(stats)
+            if (forestScore > scores[SceneType.PARK]!!) {
+                scores[SceneType.PARK] = forestScore
+            }
+
+            // 互斥决胜逻辑：若两个场景分数接近，使用次要特征作为决胜依据
+            val sortedScores = scores.entries.sortedByDescending { it.value }
+            if (sortedScores.size >= 2) {
+                val first = sortedScores[0]
+                val second = sortedScores[1]
+                val scoreDiff = first.value - second.value
+                // 若最高分与次高分差距极小（< 0.05），使用次要特征决胜
+                if (scoreDiff < 0.05f && scoreDiff >= 0f) {
+                    val winner = resolveTie(first.key, second.key, stats)
+                    if (winner != null) {
+                        return@try winner
+                    }
+                }
+            }
+
             val best = scores.maxByOrNull { it.value }
-            if (best != null && best.value > 0.25f) {
+            if (best != null && best.value > 0.20f) {
                 best.key
             } else {
                 SceneType.UNKNOWN
@@ -217,6 +238,31 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
         } finally {
             small?.recycle()
         }
+    }
+
+    /**
+     * 互斥决胜：当两个场景分数接近时，根据次要特征判断更可能的场景
+     */
+    private fun resolveTie(scene1: SceneType, scene2: SceneType, stats: ColorStats): SceneType? {
+        // BEACH vs PARK 决胜：海滩有顶部蓝天，公园有更多绿色
+        if ((scene1 == SceneType.BEACH && scene2 == SceneType.PARK) ||
+            (scene1 == SceneType.PARK && scene2 == SceneType.BEACH)) {
+            if (stats.topSkyBlueRatio > 0.20f) return SceneType.BEACH
+            if (stats.greenRatio > 0.30f) return SceneType.PARK
+        }
+        // COFFEE_SHOP vs HOME 决胜：咖啡店更暖更暗，家居更中性
+        if ((scene1 == SceneType.COFFEE_SHOP && scene2 == SceneType.HOME) ||
+            (scene1 == SceneType.HOME && scene2 == SceneType.COFFEE_SHOP)) {
+            if (stats.warmRatio > 0.5f && stats.brightness < 100) return SceneType.COFFEE_SHOP
+            if (stats.contrast < 50 && stats.saturation < 0.3f) return SceneType.HOME
+        }
+        // STREET vs NIGHT_NEON 决胜：霓虹更暗且更多霓虹像素
+        if ((scene1 == SceneType.STREET && scene2 == SceneType.NIGHT_NEON) ||
+            (scene1 == SceneType.NIGHT_NEON && scene2 == SceneType.STREET)) {
+            if (stats.neonRatio > 0.05f && stats.darkRatio > 0.25f) return SceneType.NIGHT_NEON
+            if (stats.brightness > 90f) return SceneType.STREET
+        }
+        return null
     }
 
     data class ColorStats(
@@ -231,7 +277,8 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
         val warmRatio: Float,
         val skyBlueRatio: Float,
         val neonRatio: Float,
-        val darkRatio: Float
+        val darkRatio: Float,
+        val topSkyBlueRatio: Float
     )
 
     private fun computeColorStats(bitmap: Bitmap): ColorStats {
@@ -254,11 +301,19 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
         var darkPixels = 0
         var satSum = 0f
 
+        // 顶部 1/3 区域的天空蓝像素追踪
+        val topThirdRows = height / 3
+        val topThirdPixelCount = width * topThirdRows
+        var topSkyBluePixels = 0
+
         for (i in pixels.indices) {
             val pixel = pixels[i]
             val r = Color.red(pixel)
             val g = Color.green(pixel)
             val b = Color.blue(pixel)
+
+            val x = i % width
+            val y = i / width
 
             sumR += r
             sumG += g
@@ -281,6 +336,11 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
             if (sat > 0.6f && max > 180) neonPixels++
             // 暗区像素：亮度 < 50
             if (lum < 50) darkPixels++
+
+            // 顶部 1/3 区域天空蓝像素
+            if (y < topThirdRows && b > 150 && b > g && b > r && (r + g) < 300) {
+                topSkyBluePixels++
+            }
         }
 
         val avgR = sumR.toFloat() / total
@@ -304,7 +364,8 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
             warmRatio = warmPixels.toFloat() / total,
             skyBlueRatio = skyBluePixels.toFloat() / total,
             neonRatio = neonPixels.toFloat() / total,
-            darkRatio = darkPixels.toFloat() / total
+            darkRatio = darkPixels.toFloat() / total,
+            topSkyBlueRatio = if (topThirdPixelCount > 0) topSkyBluePixels.toFloat() / topThirdPixelCount else 0f
         )
     }
 
@@ -315,16 +376,32 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
         if (stats.brightness > 140) score += 0.2f
         if (stats.saturation > 0.3f) score += 0.15f
         if (stats.avgB > stats.avgR && stats.avgB > 110) score += 0.15f
+        // 顶部 1/3 区域天空蓝检测：海滩场景上方通常有蓝天
+        if (stats.topSkyBlueRatio > 0.15f) score += 0.20f
         return score.coerceIn(0f, 1f)
     }
 
     private fun scorePark(stats: ColorStats): Float {
         var score = 0f
         if (stats.greenRatio > 0.25f) score += 0.35f
+        // 提高绿色比例灵敏度：较低绿色比例也给予部分分数
+        if (stats.greenRatio in 0.18f..0.25f) score += 0.15f
         if (stats.avgG > stats.avgR && stats.avgG > stats.avgB) score += 0.2f
         if (stats.brightness in 80f..160f) score += 0.15f
         if (stats.saturation > 0.25f) score += 0.15f
         if (stats.avgG > 100) score += 0.15f
+        // 深绿检测：低亮度 + 高绿色比例（森林/密林特征）
+        if (stats.brightness < 80f && stats.greenRatio > 0.25f) score += 0.15f
+        return score.coerceIn(0f, 1f)
+    }
+
+    private fun scoreForest(stats: ColorStats): Float {
+        var score = 0f
+        if (stats.greenRatio > 0.30f) score += 0.35f
+        if (stats.avgG > stats.avgR && stats.avgG > stats.avgB) score += 0.20f
+        if (stats.brightness in 50f..130f) score += 0.15f
+        if (stats.saturation > 0.20f) score += 0.15f
+        if (stats.contrast in 20f..60f) score += 0.15f
         return score.coerceIn(0f, 1f)
     }
 
@@ -363,8 +440,8 @@ class SceneClassifier(context: Context, modelFilename: String = "scene_model.tfl
     private fun scoreNightNeon(stats: ColorStats): Float {
         var score = 0f
         // 霓虹场景核心特征：暗背景 + 高饱和霓虹光源
-        if (stats.darkRatio > 0.3f) score += 0.3f
-        if (stats.neonRatio > 0.08f) score += 0.3f
+        if (stats.darkRatio > 0.25f) score += 0.3f
+        if (stats.neonRatio > 0.05f) score += 0.3f
         if (stats.brightness < 90f) score += 0.15f
         if (stats.contrast > 70) score += 0.15f
         if (stats.saturation > 0.35f) score += 0.1f

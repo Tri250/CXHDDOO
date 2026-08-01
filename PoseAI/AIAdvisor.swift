@@ -147,22 +147,124 @@ actor AIAdvisor {
     // MARK: - Step 14: 多模态穿搭配合场景大模型（OOTD）
     /// 利用视觉能力解析用户的当天的衣着（OOTD）并结合当前探测到的场景，给出极具惊喜感的情感价值建议
     func analyzeOOTD(image: UIImage, currentScene: SceneType) async -> String {
-        // TODO: 预留真实多模态接口，可将 image.jpegData(compressionQuality: 0.8) 传给 GPT-4-Vision 等
-        
-        // 我们当前提供无网环境秒降级体验引擎：
-        // 模拟分析延迟，但稍微缩短一点以提升体验流畅度
-        try? await Task.sleep(nanoseconds: 800_000_000)
-        
-        // 模拟 AI 分析：随机选择一种穿搭风格
-        let allStyles = OutfitStyle.allCases
-        let currentStyle = allStyles.randomElement() ?? .casualKnit
-        
+        // 基于图像色彩特征的智能穿搭风格识别（替代随机选择）
+        let currentStyle = analyzeStyleFromImage(image)
+
         // 根据 OOTD 和具体的场景融合拼接专属语录
         let suggestion = poseSuggestion(for: currentStyle, scene: currentScene)
-        
+
         return suggestion
     }
-    
+
+    // MARK: - 基于图像色彩特征的穿搭风格识别
+    /// 从图像中提取色彩统计特征（主色调、饱和度、亮度、冷暖比），
+    /// 然后用规则映射到 OutfitStyle，替代随机选择
+    private func analyzeStyleFromImage(_ image: UIImage) -> OutfitStyle {
+        guard let cgImage = image.cgImage else { return .casualKnit }
+        let width = cgImage.width
+        let height = cgImage.height
+        guard width > 0, height > 0 else { return .casualKnit }
+
+        // 降采样至小尺寸进行色彩分析（节省性能）
+        let sampleSize = 64
+        guard let sampleCG = UIImage(cgImage: cgImage)
+            .resized(to: CGSize(width: sampleSize, height: sampleSize))?.cgImage else {
+            return .casualKnit
+        }
+
+        let pixelCount = sampleSize * sampleSize
+        let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: pixelCount * 4)
+        defer { buffer.deallocate() }
+
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        guard let context = CGContext(
+            data: buffer,
+            width: sampleSize,
+            height: sampleSize,
+            bitsPerComponent: 8,
+            bytesPerRow: sampleSize * 4,
+            space: colorSpace,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return .casualKnit }
+
+        context.draw(sampleCG, in: CGRect(x: 0, y: 0, width: sampleSize, height: sampleSize))
+
+        // 统计色彩特征
+        var warmPixels = 0
+        var coolPixels = 0
+        var brightPixels = 0
+        var darkPixels = 0
+        var highSatPixels = 0
+        var totalR: Float = 0
+        var totalG: Float = 0
+        var totalB: Float = 0
+
+        for i in 0..<(pixelCount * 4) {
+            let r = Float(buffer[i * 4])
+            let g = Float(buffer[i * 4 + 1])
+            let b = Float(buffer[i * 4 + 2])
+
+            totalR += r; totalG += g; totalB += b
+
+            let lum = 0.299 * r + 0.587 * g + 0.114 * b
+            if lum > 180 { brightPixels += 1 }
+            if lum < 60 { darkPixels += 1 }
+
+            let maxC = max(r, g, b)
+            let minC = min(r, g, b)
+            let sat = maxC > 0 ? (maxC - minC) / maxC : 0
+            if sat > 0.4 { highSatPixels += 1 }
+
+            if r > b && r > 80 && g > 60 { warmPixels += 1 }
+            if b > r && b > g && b > 100 { coolPixels += 1 }
+        }
+
+        let total = Float(pixelCount)
+        let avgR = totalR / total
+        let avgG = totalG / total
+        let avgB = totalB / total
+        let warmRatio = Float(warmPixels) / total
+        let coolRatio = Float(coolPixels) / total
+        let brightRatio = Float(brightPixels) / total
+        let darkRatio = Float(darkPixels) / total
+        let highSatRatio = Float(highSatPixels) / total
+
+        // 基于色彩特征映射到穿搭风格
+        // 深色+低饱和+冷色 → 极简/职场
+        // 暖色+中饱和 → 休闲/慵懒
+        // 高饱和+明亮 → 甜美/时尚
+        // 暖色+暗色 → 复古
+        // 冷色+亮色 → 街头
+        if darkRatio > 0.4 && highSatRatio < 0.15 && coolRatio > warmRatio {
+            return .minimalism
+        }
+        if darkRatio > 0.4 && highSatRatio < 0.15 && warmRatio > coolRatio {
+            return .business
+        }
+        if warmRatio > 0.3 && highSatRatio < 0.2 && darkRatio < 0.2 {
+            return .casualKnit
+        }
+        if warmRatio > 0.25 && darkRatio > 0.15 {
+            return .vintage
+        }
+        if brightRatio > 0.3 && highSatRatio > 0.2 && warmRatio > coolRatio {
+            return .sweetGirl
+        }
+        if brightRatio > 0.3 && highSatRatio > 0.15 {
+            return .fashionSet
+        }
+        if coolRatio > 0.15 && highSatRatio > 0.2 {
+            return .streetwear
+        }
+        if warmRatio > 0.2 && darkRatio < 0.15 {
+            return .elegantDress
+        }
+        if darkRatio > 0.3 {
+            return .trenchCoat
+        }
+        return .lazyStyle
+    }
+
     // MARK: - 构图建议（备用功能）
     /// 基于场景类型给出通用的构图建议
     func compositionTip(for scene: SceneType) -> String {
@@ -184,5 +286,15 @@ actor AIAdvisor {
         case .unknown:
             return "尝试不同的角度，有时稍微蹲下仰拍会有意想不到的好效果。"
         }
+    }
+}
+
+// MARK: - UIImage 缩放辅助
+private extension UIImage {
+    func resized(to size: CGSize) -> UIImage? {
+        UIGraphicsBeginImageContextWithOptions(size, false, scale)
+        defer { UIGraphicsEndImageContext() }
+        draw(in: CGRect(origin: .zero, size: size))
+        return UIGraphicsGetImageFromCurrentImageContext()
     }
 }

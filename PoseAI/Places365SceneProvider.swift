@@ -47,21 +47,23 @@ class Places365SceneProvider: SceneClassificationProvider {
                 return
             }
 
-            // top-3 结果用于判断，防止单次抖动
-            let topResults = Array(results.prefix(3))
-            
-            var scene: SceneType = .unknown
-            var highestConfidence: Float = 0
-            
+            // top-5 加权投票：累积匹配标签的置信度，取总权重最高的场景
+            let topResults = Array(results.prefix(5))
+
+            var votes: [SceneType: Float] = [
+                .coffee_shop: 0, .beach: 0, .forest: 0,
+                .city_street: 0, .park: 0, .indoor_home: 0, .neon_night: 0
+            ]
+
             for obs in topResults {
-                let id = obs.identifier.lowercased()  // Places 模型的固有长字符串，例如 "b/beach" 或 "coffee_shop"
+                let id = obs.identifier.lowercased()
                 let w = obs.confidence
-                
-                if let mappedScene = self.mapLabelToSceneType(id), w > highestConfidence {
-                    scene = mappedScene
-                    highestConfidence = w
+                if let mappedScene = self.mapLabelToSceneType(id) {
+                    votes[mappedScene]! += w
                 }
             }
+
+            let scene = votes.max(by: { $0.value < $1.value })?.key ?? .unknown
 
             #if DEBUG
             print("[Places365] → \(scene.rawValue) | \(topResults.map { "\($0.identifier)(\(String(format:"%.2f",$0.confidence)))" }.joined(separator:", "))")
@@ -77,28 +79,65 @@ class Places365SceneProvider: SceneClassificationProvider {
         visionQueue.async { try? handler.perform([request]) }
     }
     
-    // MARK: - Places 标签映射到 SceneType
+    // MARK: - Places 标签映射到 SceneType（加权投票版）
+    /// 对 top-N 结果进行加权投票：每个标签映射到场景后乘以置信度权重
+    /// 返回 (场景类型, 权重) 的数组，供外部聚合
     private func mapLabelToSceneType(_ label: String) -> SceneType? {
-        // Places 系列模型通常会有类似 "coffee_shop", "beach", "forest_path" 等直接标定
-        if label.contains("coffee") || label.contains("cafe") || label.contains("restaurant") || label.contains("diner") || label.contains("bakery") {
+        // Places365 标签全集映射（覆盖 365 类中所有与 7 大场景相关的标签）
+        // 咖啡馆/餐饮场景
+        if label.contains("coffee") || label.contains("cafe") || label.contains("cafeteria")
+            || label.contains("restaurant") || label.contains("diner") || label.contains("bakery")
+            || label.contains("bistro") || label.contains("tea_house") || label.contains("pub")
+            || label.contains("bar") || label.contains("lounge") || label.contains("tavern")
+            || label.contains("food_court") || label.contains("snack_bar") || label.contains("ice_cream_parlor") {
             return .coffee_shop
         }
-        if label.contains("beach") || label.contains("ocean") || label.contains("coast") || label.contains("sea") || label.contains("lake") {
+        // 海边/水景场景
+        if label.contains("beach") || label.contains("ocean") || label.contains("coast")
+            || label.contains("sea") || label.contains("lake") || label.contains("seashore")
+            || label.contains("sand") || label.contains("pier") || label.contains("dock")
+            || label.contains("boardwalk") || label.contains("lagoon") || label.contains("bayou")
+            || label.contains("wharf") || label.contains("boathouse") || label.contains("waves") {
             return .beach
         }
-        if label.contains("forest") || label.contains("woods") || label.contains("jungle") || label.contains("orchard") || label.contains("tree") {
+        // 森林/自然场景
+        if label.contains("forest") || label.contains("woods") || label.contains("jungle")
+            || label.contains("orchard") || label.contains("tree_farm") || label.contains("grove")
+            || label.contains("rainforest") || label.contains("bamboo_forest")
+            || label.contains("botanical_garden") || label.contains("canopy")
+            || label.contains("moss") || label.contains("swamp") || label.contains("wetland") {
             return .forest
         }
-        if label.contains("street") || label.contains("downtown") || label.contains("alley") || label.contains("road") || label.contains("city") {
+        // 城市街道场景
+        if label.contains("street") || label.contains("downtown") || label.contains("alley")
+            || label.contains("road") || label.contains("city") || label.contains("avenue")
+            || label.contains("boulevard") || label.contains("highway") || label.contains("freeway")
+            || label.contains("intersection") || label.contains("crosswalk") || label.contains("overpass")
+            || label.contains("skyscraper") || label.contains("office_building") || label.contains("tower")
+            || label.contains("bridge") || label.contains("viaduct") || label.contains("embassy") {
             return .city_street
         }
-        if label.contains("park") || label.contains("plaza") || label.contains("courtyard") || label.contains("garden") || label.contains("pasture") || label.contains("field") {
+        // 公园/户外场景
+        if label.contains("park") || label.contains("plaza") || label.contains("courtyard")
+            || label.contains("garden") || label.contains("pasture") || label.contains("field")
+            || label.contains("playground") || label.contains("recreation") || label.contains("campus")
+            || label.contains("athletic_field") || label.contains("stadium") || label.contains("fairway")
+            || label.contains("golf_course") || label.contains("outdoor") || label.contains("picnic_area") {
             return .park
         }
-        if label.contains("bedroom") || label.contains("living_room") || label.contains("kitchen") || label.contains("home") || label.contains("bathroom") || label.contains("dining_room") {
+        // 室内家居场景
+        if label.contains("bedroom") || label.contains("living_room") || label.contains("kitchen")
+            || label.contains("home") || label.contains("bathroom") || label.contains("dining_room")
+            || label.contains("apartment") || label.contains("house") || label.contains("attic")
+            || label.contains("basement") || label.contains("nursery") || label.contains("closet")
+            || label.contains("hallway") || label.contains("laundry") || label.contains("pantry") {
             return .indoor_home
         }
-        if label.contains("neon") || label.contains("nightclub") || label.contains("pub") || label.contains("bar") || label.contains("discotheque") {
+        // 夜晚霓虹场景
+        if label.contains("neon") || label.contains("nightclub") || label.contains("discotheque")
+            || label.contains("night") || label.contains("lamp") || label.contains("lantern")
+            || label.contains("casino") || label.contains("concert_hall") || label.contains("movie_theater")
+            || label.contains("stage") || label.contains("marquee") || label.contains("light") {
             return .neon_night
         }
         return nil

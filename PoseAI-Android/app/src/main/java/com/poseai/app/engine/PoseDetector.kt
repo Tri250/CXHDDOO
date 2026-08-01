@@ -108,6 +108,40 @@ class PoseDetectorEngine {
     }
 }
 
+class PoseSmoother(
+    private val baseAlpha: Float = 0.55f,
+    private val jitterAlpha: Float = 0.75f,
+    private val jitterThreshold: Float = 0.08f
+) {
+    private val previousPoints = mutableMapOf<String, PointF>()
+
+    fun smooth(currentPoints: Map<String, PointF>): Map<String, PointF> {
+        val smoothed = mutableMapOf<String, PointF>()
+        for ((key, point) in currentPoints) {
+            val prev = previousPoints[key]
+            if (prev != null) {
+                val dx = point.x - prev.x
+                val dy = point.y - prev.y
+                val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+                val alpha = if (distance > jitterThreshold) jitterAlpha else baseAlpha
+                smoothed[key] = PointF(
+                    prev.x * (1 - alpha) + point.x * alpha,
+                    prev.y * (1 - alpha) + point.y * alpha
+                )
+            } else {
+                smoothed[key] = point
+            }
+        }
+        previousPoints.clear()
+        previousPoints.putAll(smoothed)
+        return smoothed
+    }
+
+    fun reset() {
+        previousPoints.clear()
+    }
+}
+
 object PoseUtils {
 
     /**
@@ -135,10 +169,79 @@ object PoseUtils {
         return result
     }
 
+    fun calculateAngle(p1: PointF, center: PointF, p2: PointF): Double {
+        val v1x = (p1.x - center.x).toDouble()
+        val v1y = (p1.y - center.y).toDouble()
+        val v2x = (p2.x - center.x).toDouble()
+        val v2y = (p2.y - center.y).toDouble()
+        val dot = v1x * v2x + v1y * v2y
+        val mag1 = kotlin.math.sqrt(v1x * v1x + v1y * v1y)
+        val mag2 = kotlin.math.sqrt(v2x * v2x + v2y * v2y)
+        if (mag1 < 1e-6 || mag2 < 1e-6) return 0.0
+        val cosAngle = kotlin.math.max(-1.0, kotlin.math.min(1.0, dot / (mag1 * mag2)))
+        return kotlin.math.acos(cosAngle) * 180.0 / kotlin.math.PI
+    }
+
+    fun calculateAngleSimilarity(
+        currentPoints: Map<String, PointF>,
+        targetPoints: Map<String, PointF>,
+        isHalfBody: Boolean = false
+    ): Float {
+        val lowerBodyJoints = setOf("leftHip", "rightHip", "leftKnee", "rightKnee", "leftAnkle", "rightAnkle")
+
+        val jointTriples = listOf(
+            Triple("leftShoulder", "leftElbow", "leftWrist"),
+            Triple("rightShoulder", "rightElbow", "rightWrist"),
+            Triple("leftHip", "leftKnee", "leftAnkle"),
+            Triple("rightHip", "rightKnee", "rightAnkle"),
+            Triple("neck", "leftShoulder", "leftElbow"),
+            Triple("neck", "rightShoulder", "rightElbow"),
+            Triple("leftShoulder", "leftHip", "leftKnee"),
+            Triple("rightShoulder", "rightHip", "rightKnee"),
+            Triple("leftShoulder", "neck", "rightShoulder"),
+            Triple("leftHip", "neck", "rightHip")
+        )
+
+        var totalDiff = 0.0
+        var count = 0
+
+        for ((p1Key, centerKey, p2Key) in jointTriples) {
+            if (isHalfBody) {
+                if (lowerBodyJoints.contains(p1Key) || lowerBodyJoints.contains(centerKey) || lowerBodyJoints.contains(p2Key)) continue
+            }
+            val cp1 = currentPoints[p1Key] ?: continue
+            val cc = currentPoints[centerKey] ?: continue
+            val cp2 = currentPoints[p2Key] ?: continue
+            val tp1 = targetPoints[p1Key] ?: continue
+            val tc = targetPoints[centerKey] ?: continue
+            val tp2 = targetPoints[p2Key] ?: continue
+
+            val currentAngle = calculateAngle(cp1, cc, cp2)
+            val targetAngle = calculateAngle(tp1, tc, tp2)
+
+            val tolerance = when (targetAngle) {
+                in 0.0..30.0 -> 3.0
+                in 30.0..60.0 -> 5.0
+                in 60.0..120.0 -> 6.0
+                in 120.0..150.0 -> 7.0
+                else -> 8.0
+            }
+            val rawDiff = kotlin.math.abs(currentAngle - targetAngle)
+            val diff = kotlin.math.max(0.0, rawDiff - tolerance)
+            totalDiff += diff
+            count++
+        }
+
+        if (count == 0) return 0f
+        val penalty = (totalDiff / count) / 90.0 * 100.0
+        return (100.0 - penalty).coerceIn(0.0, 100.0).toFloat()
+    }
+
     /**
      * 计算用户姿势与目标姿势的相似度评分
      * 使用归一化欧氏距离，并对不同关节赋予不同权重
      */
+    @Deprecated("Use calculateAngleSimilarity instead", ReplaceWith("calculateAngleSimilarity(poseToNormalizedMap(pose, imageWidth, imageHeight, isFrontCamera), targetPoints)"))
     fun calculateSimilarity(
         pose: Pose,
         targetPoints: Map<String, PointF>,
@@ -148,38 +251,7 @@ object PoseUtils {
     ): Float {
         val detectedMap = poseToNormalizedMap(pose, imageWidth, imageHeight, isFrontCamera)
         if (detectedMap.isEmpty()) return 0f
-
-        // 关节权重：躯干和四肢权重更高
-        val weights = mapOf(
-            "leftShoulder" to 1.5f, "rightShoulder" to 1.5f,
-            "leftElbow" to 1.2f, "rightElbow" to 1.2f,
-            "leftWrist" to 1.0f, "rightWrist" to 1.0f,
-            "leftHip" to 1.5f, "rightHip" to 1.5f,
-            "leftKnee" to 1.0f, "rightKnee" to 1.0f,
-            "leftAnkle" to 0.8f, "rightAnkle" to 0.8f,
-            "nose" to 0.5f
-        )
-
-        var totalWeightedDistance = 0f
-        var totalWeight = 0f
-
-        for ((key, target) in targetPoints) {
-            val detected = detectedMap[key] ?: continue
-            val weight = weights[key] ?: 1.0f
-
-            val dx = detected.x - target.x
-            val dy = detected.y - target.y
-            val distance = kotlin.math.sqrt(dx * dx + dy * dy)
-
-            totalWeightedDistance += distance * weight
-            totalWeight += weight
-        }
-
-        if (totalWeight <= 0f) return 0f
-        val avgDistance = totalWeightedDistance / totalWeight
-
-        // 距离 0 = 完全匹配 = 100 分，距离 0.5+ = 0 分
-        return ((1f - (avgDistance / 0.5f).coerceIn(0f, 1f)) * 100f)
+        return calculateAngleSimilarity(detectedMap, targetPoints)
     }
 
     /**
@@ -187,9 +259,9 @@ object PoseUtils {
      */
     fun isPoseValid(pose: Pose): Boolean {
         val landmarks = pose.allPoseLandmarks
-        val validCount = landmarks.count { it.inFrameLikelihood > 0.5f }
-        // 至少需要肩膀 + 一个肘部 = 3 个关键点
-        return validCount >= 3
+        val validCount = landmarks.count { it.inFrameLikelihood > 0.3f }
+        // 至少需要 2 个关键点即可判定为有效，提高灵敏度
+        return validCount >= 2
     }
 
     /**
