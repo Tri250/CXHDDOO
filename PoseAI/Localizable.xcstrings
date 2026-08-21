@@ -1,0 +1,520 @@
+{
+  "sourceLanguage" : "zh-Hans",
+  "strings" : {
+
+    "app_name" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "PoseAI" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "PoseAI" } }
+      }
+    },
+
+    "scene_scanning" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Scanning Scene…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "识别场景中…" } }
+      }
+    },
+    "point_camera_at_background" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Point camera at the background" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "将镜头对准拍摄背景" } }
+      }
+    },
+    "scene_examples" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Café · Beach · Forest" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "咖啡馆 · 海边 · 森林" } }
+      }
+    },
+
+    "need_camera_permission" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Camera Access Required" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "需要摄像头权限" } }
+      }
+    },
+    "camera_permission_desc" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "PoseAI needs camera access\nto detect poses and scenes in real time" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "PoseAI 需要访问摄像头\n才能实时检测姿势和场景" } }
+      }
+    },
+    "go_to_settings" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open Settings" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "去设置中开启" } }
+      }
+    },
+
+    "low_light_warning" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Low light – move to a brighter area" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "光线不足，移到明亮处效果更好" } }
+      }
+    },
+    "pitch_warning" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hold phone level or lower – it makes legs look longer" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请平行或低角度拍摄，显腿更长" } }
+      }
+    },
+    "space_tip" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Try shifting to add some negative space" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "尝试平移留出一点空白，更有氛围感" } }
+      }
+    },
+
+    "composition_label" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ composition" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@ 构图" } }
+      }
+    },
+
+    "photo_retake" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Retake" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重拍" } }
+      }
+    },
+    "photo_save" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保存" } }
+      }
+    },
+    "photo_share" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "分享" } }
+      }
+    },
+    "session_photos_title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This Session (%lld)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "本次拍摄 (%lld)" } }
+      }
+    },
+    "done" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Done" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "完成" } }
+      }
+    },
+
+    "unlock_pro" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unlock PoseAI Pro" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "解锁 PoseAI Pro" } }
+      }
+    },
+    "pro_unlocked" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "PoseAI Pro Unlocked" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已解锁 PoseAI Pro" } }
+      }
+    },
+    "pro_subtitle" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unleash your full photography potential" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "释放完整拍摄潜力，拍出电影级大片" } }
+      }
+    },
+    "pro_thanks" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Thank you! Enjoy all premium features" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "感谢你的支持，尽情享受所有高级功能" } }
+      }
+    },
+    "feature_all_scenes" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "All Scene Templates" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "全场景方案库" } }
+      }
+    },
+    "feature_all_scenes_desc" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unlock street, park, home & more exclusive pose guides" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "解锁街道、公园、家居等专属姿势推荐" } }
+      }
+    },
+    "feature_burst" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unlimited Burst Shot" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "阵发无限连拍" } }
+      }
+    },
+    "feature_burst_desc" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Capture every perfect moment with high-speed burst" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "不再局限于单张，高速抓拍不错过任何瞬间" } }
+      }
+    },
+    "feature_no_watermark" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Watermark-Free Saving" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无水印纯净保存" } }
+      }
+    },
+    "feature_no_watermark_desc" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save clean photos without the PoseAI branding" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "解锁取消专属底标的功能配置" } }
+      }
+    },
+    "lifetime_price" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Special Offer: %@ / Lifetime" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "限时优惠：%@ / 终身买断" } }
+      }
+    },
+    "upgrade_now" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Upgrade Now" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "立即升级" } }
+      }
+    },
+    "processing" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Processing…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "处理中…" } }
+      }
+    },
+    "restore_purchases" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Restore Purchases" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "恢复购买" } }
+      }
+    },
+    "terms_of_service" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Terms of Service" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "服务条款" } }
+      }
+    },
+    "loading_products" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Loading product info…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在加载商品信息…" } }
+      }
+    },
+    "retry" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Retry" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重试" } }
+      }
+    },
+    "all_features_unlocked" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "All features unlocked" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已解锁全部特权" } }
+      }
+    },
+    "alert_title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Notice" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "提示" } }
+      }
+    },
+    "ok" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OK" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "好的" } }
+      }
+    },
+    "unknown_error" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "An unknown error occurred" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "发生未知错误" } }
+      }
+    },
+
+    "purchase_pending" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Purchase is pending approval (Ask to Buy)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "购买等待审批中（家长控制）" } }
+      }
+    },
+    "store_not_available" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The App Store is currently unavailable" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "App Store 暂时不可用" } }
+      }
+    },
+    "purchase_failed_generic" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Purchase failed. Please try again later" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "购买失败，请稍后再试" } }
+      }
+    },
+    "no_purchases_to_restore" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No previous purchases found" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未找到可恢复的购买记录" } }
+      }
+    },
+
+    "premium_scene_title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "\"%@\" is a premium scene" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "「%@」是高级场景" } }
+      }
+    },
+    "premium_scene_desc" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Upgrade to Pro for exclusive poses and full experience" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "升级 Pro 即可使用专属姿势与满级体验" } }
+      }
+    },
+    "learn_pro" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Learn About Pro" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "了解 Pro 特权" } }
+      }
+    },
+
+    "aligned_hold_still" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Aligned! Hold still!" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "对齐啦，保持不动！" } }
+      }
+    },
+    "shot_burst" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Got it! 3-shot burst" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "拍好了！连拍三张" } }
+      }
+    },
+    "shot_single" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Got it!" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "拍好了" } }
+      }
+    },
+    "scan_fallback" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unable to identify background. Showing generic poses. You can switch manually." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未能识别背景，展示通用方案，您可以手动切换" } }
+      }
+    },
+    "scene_detected" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Detected %@, suggesting %@, %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "识别到%@，推荐%@，%@" } }
+      }
+    },
+
+    "guide_title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shooting Guide" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "拍摄指引" } }
+      }
+    },
+    "usage_guide" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "How to Use" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "使用说明" } }
+      }
+    },
+    "guide_aligned" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Green border + green score: Aligned! Hold still for auto-capture" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "绿色边框 + 分数变绿：姿势对齐！保持不动即自动拍照" } }
+      }
+    },
+    "guide_not_aligned" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "White dashed line: Not aligned, move to match the silhouette" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "白色虚线：未对齐，请移动身体贴合剪影" } }
+      }
+    },
+    "guide_tap_card" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tap cards at the bottom to switch pose suggestions" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "点击底部卡片可切换推荐拍摄方案" } }
+      }
+    },
+    "guide_switch_camera" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Use the icon at bottom-left to switch front/rear camera" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "左下角图标可切换前后置摄像头" } }
+      }
+    },
+
+    "left_side" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "L" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "左手边" } }
+      }
+    },
+    "right_side" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "R" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "右手边" } }
+      }
+    },
+
+    "a11y_shutter_aligned" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Take photo, pose aligned" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "拍照，姿势已对齐" } }
+      }
+    },
+    "a11y_shutter" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Take photo" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "拍照" } }
+      }
+    },
+    "a11y_score" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Match score %lld%%" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "匹配度 %lld%%" } }
+      }
+    },
+    "a11y_history" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Photo history, %lld photos" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "拍摄历史，%lld张照片" } }
+      }
+    },
+    "a11y_switch_camera" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Switch to %@ camera" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "切换%@摄像头" } }
+      }
+    },
+    "front_camera" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "front" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "前置" } }
+      }
+    },
+    "rear_camera" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "rear" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "后置" } }
+      }
+    },
+
+    "scene_coffee_shop" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Café" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "咖啡馆" } }
+      }
+    },
+    "scene_beach" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Beach" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "海边" } }
+      }
+    },
+    "scene_forest" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Forest" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "森林" } }
+      }
+    },
+    "scene_city_street" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "City Street" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "城市街道" } }
+      }
+    },
+    "scene_park" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Park" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "公园" } }
+      }
+    },
+    "scene_indoor_home" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Indoor" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "室内家居" } }
+      }
+    },
+    "scene_neon_night" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Neon Night" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "夜晚霓虹" } }
+      }
+    },
+    "scene_unknown" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unknown" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未知" } }
+      }
+    },
+
+    "ratio_full_body" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Full Body" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "全身" } }
+      }
+    },
+    "ratio_half_body" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Half Body" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "半身" } }
+      }
+    },
+    "ratio_portrait" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Close-up" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "特写" } }
+      }
+    },
+    "hint_full_body" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Stand further back to fit your whole body" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "站远点，让镜头能拍到全身" } }
+      }
+    },
+    "hint_half_body" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Stand closer, waist and up" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "站近些，拍到腰部以上" } }
+      }
+    },
+    "hint_portrait" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Get close, chest and up" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "靠近镜头，拍胸部以上" } }
+      }
+    },
+
+    "comp_center" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Center" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "居中" } }
+      }
+    },
+    "comp_left_third" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Left Third" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "三分左" } }
+      }
+    },
+    "comp_right_third" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Right Third" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "三分右" } }
+      }
+    },
+    "comp_golden_left" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Golden Left" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "黄金左" } }
+      }
+    },
+    "comp_golden_right" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Golden Right" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "黄金右" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}
