@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project>
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>com.android.tools.utp</groupId>
-  <artifactId>android-test-plugin-host-additional-test-output-proto</artifactId>
-  <version>31.2.0</version>
-  <packaging>jar</packaging>
-</project>

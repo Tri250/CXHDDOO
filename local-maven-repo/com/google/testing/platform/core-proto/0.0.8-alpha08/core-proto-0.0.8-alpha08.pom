@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project>
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>com.google.testing.platform</groupId>
-  <artifactId>core-proto</artifactId>
-  <version>0.0.8-alpha08</version>
-  <packaging>jar</packaging>
-</project>

@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project>
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.jetbrains.kotlin</groupId>
-  <artifactId>kotlin-native-utils</artifactId>
-  <version>1.9.20</version>
-  <packaging>jar</packaging>
-</project>
