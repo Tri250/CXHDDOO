@@ -35,6 +35,11 @@ final class CameraManager: NSObject, ObservableObject {
     /// 设备俯仰角（弧度）：正数仰拍，负数俯拍（手机上半部向前倾）。例如 -0.4 约等于俯角 23度
     @Published var devicePitch: Double = 0.0
 
+    /// 数码变焦倍率（1.0 为原倍，人像模式自动 2.0），切换摄像头后会被系统重置，需在 configure 后重新应用
+    @Published var zoomFactor: CGFloat = 1.0 {
+        didSet { applyZoom() }
+    }
+
     // MARK: - 私有属性
     private let videoOutput = AVCaptureVideoDataOutput()
     private let photoOutput = AVCapturePhotoOutput()
@@ -131,6 +136,9 @@ final class CameraManager: NSObject, ObservableObject {
         }
 
         session.commitConfiguration()
+
+        // 切换摄像头后系统会重置变焦，这里重新应用用户选择的倍率
+        applyZoom()
     }
 
     // MARK: - Session 控制
@@ -213,6 +221,22 @@ final class CameraManager: NSObject, ObservableObject {
             
         } catch {
             print("[CameraManager] Failed to apply low light video settings.")
+        }
+    }
+
+    // MARK: - 数码变焦
+    private func applyZoom() {
+        guard let device = session.inputs.compactMap({ ($0 as? AVCaptureDeviceInput)?.device }).first else { return }
+        do {
+            try device.lockForConfiguration()
+            let maxZoom = device.activeFormat.videoMaxZoomFactor
+            let clamped = min(max(zoomFactor, 1.0), maxZoom)
+            if clamped != device.videoZoomFactor {
+                device.videoZoomFactor = clamped
+            }
+            device.unlockForConfiguration()
+        } catch {
+            print("[CameraManager] Failed to apply zoom factor.")
         }
     }
 

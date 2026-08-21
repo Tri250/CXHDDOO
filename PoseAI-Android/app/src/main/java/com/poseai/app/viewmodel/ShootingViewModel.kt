@@ -382,6 +382,10 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
     private val _isTopDownWarning = MutableStateFlow(false)
     val isTopDownWarning: StateFlow<Boolean> = _isTopDownWarning.asStateFlow()
 
+    /** 设备横滚角（弧度），|roll| < 0.1 视为手机水平 */
+    private val _deviceRoll = MutableStateFlow(0f)
+    val deviceRoll: StateFlow<Float> = _deviceRoll.asStateFlow()
+
     /** Vlog 失败兜底文案（非空时显示提示） */
     private val _vlogErrorMessage = MutableStateFlow<String?>(null)
     val vlogErrorMessage: StateFlow<String?> = _vlogErrorMessage.asStateFlow()
@@ -522,6 +526,8 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
             // orientationValues[1] = pitch，单位弧度；负值表示设备向前倾（俯拍）
             val pitch = orientationValues[1]
             _devicePitch.value = pitch
+            // orientationValues[2] = roll，单位弧度；接近 0 表示手机保持水平
+            _deviceRoll.value = orientationValues[2]
             val wasTopDown = _isTopDownWarning.value
             val isTopDown = pitch < -0.35f
             _isTopDownWarning.value = isTopDown
@@ -1065,12 +1071,12 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
 
     // ====== 拍摄模式 ======
 
-    /** 0=拍照, 1=视频, 2=Vlog */
+    /** 0=智能导拍, 1=照片, 2=人像, 3=全景（对齐 iOS 底栏四模式） */
     private val _shootingMode = MutableStateFlow(0)
     val shootingMode: StateFlow<Int> = _shootingMode.asStateFlow()
 
     fun setShootingMode(mode: Int) {
-        val clamped = mode.coerceIn(0, 2)
+        val clamped = mode.coerceIn(0, 3)
         if (clamped == _shootingMode.value) return
         // 切换模式前停止当前进行中的录制
         if (_isNormalVideoRecording.value) {
@@ -1079,23 +1085,27 @@ class ShootingViewModel(application: Application) : AndroidViewModel(application
         if (_isVlogRecording.value || _isVlogMerging.value) {
             stopVlog()
         }
+        cancelCountdown()
         _shootingMode.value = clamped
-        // 切换到 Vlog 模式时自动打开模板选择器
-        if (clamped == 2) {
-            _showVlogTemplateSelector.value = true
-        }
+        // 人像模式自动开启 2x 变焦，其余模式复位 1x
+        val targetZoom = if (clamped == 2) 2f else 1f
+        cameraManager?.setZoomRatio(targetZoom)
+        _zoomLevel.value = targetZoom
     }
 
     // ====== 拍照 / 视频录制 ======
 
     /**
-     * 拍摄入口：根据当前模式决定拍照或录制视频
+     * 拍摄入口：根据当前模式决定拍照行为（对齐 iOS captureWithCurrentMode）
+     * 0=智能导拍 AI 逻辑；1=照片 单张直拍；2=人像 2x 单张；3=全景 连拍 3 张宽幅素材
      */
     fun takePhoto() {
         if (_isVlogRecording.value || _isVlogMerging.value) return
         when (_shootingMode.value) {
-            1 -> {
-                toggleNormalVideoRecording()
+            3 -> {
+                // 全景：连拍 3 张宽幅素材，配合横向移动提示
+                speak("请匀速横向移动手机")
+                executeBurstCapture(BURST_COUNT)
                 return
             }
             else -> {

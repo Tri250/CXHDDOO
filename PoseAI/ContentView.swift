@@ -46,7 +46,6 @@ struct ContentView: View {
     @EnvironmentObject var storeManager: StoreManager
 
     // MARK: - UI 状态
-    @State private var selectedMode: CaptureMode = .guide
     @State private var scanPulse: Bool = false
     @State private var scanRotation: Double = 0
 
@@ -114,7 +113,7 @@ struct ContentView: View {
                 .onTapGesture { vm.toggleImmersiveMode() }
 
             // 2. 构图辅助线（全屏三分法网格）
-            if vm.isSceneReady && !vm.isImmersiveMode && selectedMode == .guide {
+            if vm.isSceneReady && !vm.isImmersiveMode && vm.captureMode == .guide {
                 CompositionGuideLines(composition: vm.currentPlan?.composition)
             }
 
@@ -124,7 +123,7 @@ struct ContentView: View {
             }
 
             // 4. 剪影引导（仅智能导拍模式）
-            if selectedMode == .guide, let plan = vm.currentPlan {
+            if vm.captureMode == .guide, let plan = vm.currentPlan {
                 if vm.requiresProUnlock {
                     paywallTeaser
                 } else {
@@ -163,13 +162,13 @@ struct ContentView: View {
             }
 
             // 5. AR 脚印（全身模式，仅导拍）
-            if selectedMode == .guide, !vm.requiresProUnlock && !vm.isImmersiveMode,
+            if vm.captureMode == .guide, !vm.requiresProUnlock && !vm.isImmersiveMode,
                vm.isSceneReady, vm.currentPlan?.frameRatio == .fullBody {
                 arFootprintsOverlay
             }
 
             // 6. 人脸对焦框
-            if !vm.isImmersiveMode, let _ = vm.detectedPoses.first, selectedMode == .guide {
+            if !vm.isImmersiveMode, let _ = vm.detectedPoses.first, vm.captureMode == .guide {
                 faceFocusFrame
             }
 
@@ -185,7 +184,7 @@ struct ContentView: View {
             }
 
             // 8. 左侧提示
-            if !vm.isImmersiveMode && vm.isSceneReady && selectedMode == .guide {
+            if !vm.isImmersiveMode && vm.isSceneReady && vm.captureMode == .guide {
                 HStack {
                     leftGuidePanel
                         .padding(.leading, 12)
@@ -195,13 +194,13 @@ struct ContentView: View {
                 .transition(.move(edge: .leading).combined(with: .opacity))
             }
 
-            // 9. 构图提示浮层
-            if !vm.requiresProUnlock, vm.showCompositionTip, let plan = vm.currentPlan, !vm.isImmersiveMode {
+            // 9. 构图提示浮层（仅导拍模式）
+            if vm.captureMode == .guide, !vm.requiresProUnlock, vm.showCompositionTip, let plan = vm.currentPlan, !vm.isImmersiveMode {
                 compositionTipOverlay(plan: plan)
             }
 
-            // 10. AI 构图推荐
-            if let aiTip = vm.aiSuggestion, !vm.isImmersiveMode {
+            // 10. AI 构图推荐（仅导拍模式展示）
+            if let aiTip = vm.aiSuggestion, !vm.isImmersiveMode, vm.captureMode == .guide {
                 aiAdvisorBanner(text: aiTip)
                     .gesture(
                         DragGesture().onEnded { val in
@@ -233,6 +232,11 @@ struct ContentView: View {
             // 14. 留白提醒
             if vm.showSpaceTip && vm.manager.devicePitch >= -0.35 && !vm.showCompositionTip && !vm.isImmersiveMode {
                 spaceTipOverlay
+            }
+
+            // 14b. 全景模式横向移动提示
+            if vm.captureMode == .panorama && !vm.isImmersiveMode {
+                panoramaHintOverlay
             }
 
             // 15. 多机位角度仪表盘
@@ -741,7 +745,7 @@ struct ContentView: View {
     private var bottomArea: some View {
         VStack(spacing: 0) {
             // 对齐状态提示条（参考图：人物下方，仅导拍）
-            if selectedMode == .guide && vm.isSceneReady && vm.isReady && !vm.isImmersiveMode {
+            if vm.captureMode == .guide && vm.isSceneReady && vm.isReady && !vm.isImmersiveMode {
                 HStack(spacing: 8) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 14))
@@ -760,7 +764,7 @@ struct ContentView: View {
             }
 
             // 方案选择器（仅导拍模式）
-            if selectedMode == .guide && vm.isSceneReady && !vm.isImmersiveMode {
+            if vm.captureMode == .guide && vm.isSceneReady && !vm.isImmersiveMode {
                 planPickerSection
                     .padding(.bottom, 12)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -780,12 +784,10 @@ struct ContentView: View {
             HStack(spacing: 28) {
                 ForEach(CaptureMode.allCases, id: \.self) { mode in
                     Text(mode.rawValue)
-                        .font(.system(size: 15, weight: selectedMode == mode ? .bold : .medium))
-                        .foregroundColor(selectedMode == mode ? Design.accent : Color.white.opacity(0.45))
+                        .font(.system(size: 15, weight: vm.captureMode == mode ? .bold : .medium))
+                        .foregroundColor(vm.captureMode == mode ? Design.accent : Color.white.opacity(0.45))
                         .onTapGesture {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                selectedMode = mode
-                            }
+                            vm.setCaptureMode(mode)
                         }
                 }
             }
@@ -819,12 +821,8 @@ struct ContentView: View {
                 // 中：快门按钮
                 shutterButton
                     .onTapGesture {
-                        if selectedMode == .guide {
-                            vm.handleShutterTap()
-                        } else {
-                            // 非导拍模式：直接拍照，跳过 AI 匹配/Vlog/序列/多机位逻辑
-                            vm.takeBurst(count: 1)
-                        }
+                        // 依据当前模式执行：导拍=AI 逻辑；照片/人像=单张直拍；全景=连拍宽幅素材
+                        vm.captureWithCurrentMode()
                     }
                     .accessibilityLabel(vm.isReady ? "拍照，姿势已对齐" : "拍照")
                     .accessibilityAddTraits(.isButton)
@@ -1125,6 +1123,31 @@ struct ContentView: View {
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.75), value: vm.showSpaceTip)
+    }
+
+    // MARK: - 全景模式横向移动提示
+    private var panoramaHintOverlay: some View {
+        VStack {
+            Spacer()
+            HStack(spacing: 14) {
+                Image(systemName: "arrow.left.and.right")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Design.accent)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("全景模式")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                    Text("按下快门后匀速横向移动手机，自动连拍 3 张宽幅素材")
+                        .font(.system(size: 11))
+                        .foregroundColor(Design.textSecondary)
+                }
+            }
+            .padding(.horizontal, 18).padding(.vertical, 12)
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay(Capsule().stroke(Design.accent.opacity(0.5), lineWidth: 1))
+            .padding(.bottom, 190)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
     }
 
     // MARK: - AI 构图推荐浮层

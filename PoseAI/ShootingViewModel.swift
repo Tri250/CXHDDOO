@@ -18,6 +18,9 @@ final class ShootingViewModel: ObservableObject {
     @Published var currentPlanIndex: Int = 0
     @Published var isSceneReady: Bool = false
 
+    // MARK: - 拍摄模式（底部栏：智能导拍/照片/人像/全景）
+    @Published var captureMode: CaptureMode = .guide
+
     // MARK: - 姿势匹配状态 (Step 8: 支持多人体)
     @Published var detectedPoses: [VisionService.PoseData] = []
     @Published var score: Double = 0
@@ -206,7 +209,8 @@ final class ShootingViewModel: ObservableObject {
             
             let activeThreshold = isDualPlan ? self.dualSuccessThreshold : self.successThreshold
 
-            if smoothed > activeThreshold {
+            // 仅智能导拍模式允许自动连拍/自动抓拍，照片/人像/全景模式由用户手动控制
+            if self.captureMode == .guide && smoothed > activeThreshold {
                 if self.stableStartTime == nil {
                     self.stableStartTime = Date()
                     if !self.hapticCooldown {
@@ -242,6 +246,7 @@ final class ShootingViewModel: ObservableObject {
             }
 
             // MARK: P1-4 姿势亲近度自动推荐
+            guard self.captureMode == .guide else { return } // 非导拍模式不做自动推荐
             let now = Date()
             guard now.timeIntervalSince(self.autoRecommendLastCheck) > 0.5 else { return }
             self.autoRecommendLastCheck = now
@@ -274,6 +279,7 @@ final class ShootingViewModel: ObservableObject {
         manager.visionService.onSmileDetected = { [weak self] in
             guard let self = self else { return }
             // 仅在单张拍摄并且不在录视频/多机位推进时，响应自然微笑抓拍
+            guard self.captureMode == .guide else { return } // 非导拍模式不响应微笑抓拍
             if !self.isCapturing && !self.isVlogRecording && self.activeSequenceIndex == 0 && self.activeAngleIndex == 0 {
                 if self.stableStartTime == nil { // 防止正在由于匹配身形打分而即将抓拍撞车
                     self.speak("笑得真好看，咔嚓！")
@@ -284,9 +290,10 @@ final class ShootingViewModel: ObservableObject {
             }
         }
         
-        // Step 14: OOTD 画幅异步回抛处理与 AI 大脑联动
+        // Step 14: OOTD 画幅异步回抛处理与 AI 大脑联动（仅导拍模式）
         manager.onOOTDSnapshot = { [weak self] image in
             guard let self = self else { return }
+            guard self.captureMode == .guide else { return } // 非导拍模式不打扰用户
             
             Task {
                 // 将截图和刚切出来的新场景一起塞进多模态分析库
@@ -703,6 +710,46 @@ final class ShootingViewModel: ObservableObject {
                 startCountdown()
             }
         }
+    }
+
+    // MARK: - 按当前拍摄模式执行快门（由 ContentView 底栏快门统一调用）
+    func captureWithCurrentMode() {
+        switch captureMode {
+        case .guide:
+            handleShutterTap()
+        case .photo, .portrait:
+            takeBurst(count: 1)
+        case .panorama:
+            // 全景：连拍 3 张宽幅素材，配合横向移动提示
+            speak("请匀速横向移动手机")
+            takeBurst(count: 3)
+        }
+    }
+
+    // MARK: - 切换拍摄模式（处理状态重置与相机配置）
+    func setCaptureMode(_ mode: CaptureMode) {
+        guard mode != captureMode else { return }
+        // 1. 停止一切进行中的拍摄/倒计时/录制
+        cancelTimer()
+        if isVlogRecording {
+            manager.videoRecorder.stopRecordingChunk { [weak self] _ in
+                self?.manager.videoRecorder.reset()
+            }
+        }
+        activeVlogClipIndex = 0
+        isVlogRecording = false
+        displayVlogText = ""
+        activeSequenceIndex = 0
+        activeAngleIndex = 0
+        score = 0
+        stableStartTime = nil
+        aiSuggestion = nil
+
+        // 2. 人像模式自动开启 2x 变焦，其余模式复位
+        withAnimation(.easeInOut(duration: 0.3)) {
+            captureMode = mode
+        }
+        manager.zoomFactor = (mode == .portrait) ? 2.0 : 1.0
     }
 
     func startCountdown() {
