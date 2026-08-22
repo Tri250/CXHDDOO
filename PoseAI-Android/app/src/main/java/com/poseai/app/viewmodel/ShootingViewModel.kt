@@ -232,20 +232,26 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
         if (poses.isNotEmpty()) detectedPoses.value = poses
         val plan = currentPlan ?: return
 
-        val baselineScore: Float
+        // ML Kit 仅支持单人检测；双人方案降级为单人方案
         val isDualPlan = plan.secondaryPosePoints != null
         val activePrimary = activePrimaryPosePoints(plan)
         val secondary = plan.secondaryPosePoints
 
-        if (secondary != null) {
-            baselineScore = if (poses.size >= 2) {
-                val aPri = PoseMatcher.calculateSimilarity(poses[0].points, activePrimary, poses[0].isHalfBody)
-                val aSec = PoseMatcher.calculateSimilarity(poses[0].points, secondary, poses[0].isHalfBody)
-                val bPri = PoseMatcher.calculateSimilarity(poses[1].points, activePrimary, poses[1].isHalfBody)
-                val bSec = PoseMatcher.calculateSimilarity(poses[1].points, secondary, poses[1].isHalfBody)
-                val c1 = (aPri + bSec) / 2
-                val c2 = (bPri + aSec) / 2
-                if (c1 >= c2) { isDualMatchedPrimary.value = true; c1 } else { isDualMatchedPrimary.value = false; c2 }
+        val baselineScore: Float
+        if (secondary != null && poses.size >= 2) {
+            // 双人方案，且检测到两人（理论上不可达，但保留逻辑完整性）
+            val aPri = PoseMatcher.calculateSimilarity(poses[0].points, activePrimary, poses[0].isHalfBody)
+            val aSec = PoseMatcher.calculateSimilarity(poses[0].points, secondary, poses[0].isHalfBody)
+            val bPri = PoseMatcher.calculateSimilarity(poses[1].points, activePrimary, poses[1].isHalfBody)
+            val bSec = PoseMatcher.calculateSimilarity(poses[1].points, secondary, poses[1].isHalfBody)
+            val c1 = (aPri + bSec) / 2
+            val c2 = (bPri + aSec) / 2
+            baselineScore = if (c1 >= c2) { isDualMatchedPrimary.value = true; c1 } else { isDualMatchedPrimary.value = false; c2 }
+        } else if (secondary != null) {
+            // 降级：双人方案但仅检测到单人，只比较主要姿态并打 0.75x 折扣
+            isDualMatchedPrimary.value = true
+            baselineScore = if (poses.isNotEmpty()) {
+                PoseMatcher.calculateSimilarity(poses[0].points, activePrimary, poses[0].isHalfBody) * 0.75f
             } else 0f
         } else {
             baselineScore = if (poses.isNotEmpty()) {
@@ -332,15 +338,33 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun activePrimaryPosePoints(plan: ShootingPlan): Map<String, NormPoint> {
-        plan.sequence?.let { seq ->
-            if (activeSequenceIndex.value < seq.size) return seq[activeSequenceIndex.value].posePoints
-        }
-        plan.multiAngles?.let { multi ->
+        val rawPoints: Map<String, NormPoint> = plan.sequence?.let { seq ->
+            if (activeSequenceIndex.value < seq.size) seq[activeSequenceIndex.value].posePoints
+            else plan.posePoints
+        } ?: plan.multiAngles?.let { multi ->
             if (activeAngleIndex.value < multi.size) {
-                multi[activeAngleIndex.value].posePoints?.let { return it }
-            }
+                multi[activeAngleIndex.value].posePoints ?: plan.posePoints
+            } else plan.posePoints
+        } ?: plan.posePoints
+
+        // 确保关键点映射包含必要的关节名称
+        return normalizePosePoints(rawPoints)
+    }
+
+    /** 规范化预设姿态点：补齐可能缺失的 neck 等派生关节 */
+    private fun normalizePosePoints(points: Map<String, NormPoint>): Map<String, NormPoint> {
+        if (points.containsKey("neck")) return points
+        val ls = points["leftShoulder"]
+        val rs = points["rightShoulder"]
+        val nose = points["nose"]
+        if (ls != null && rs != null) {
+            val mid = NormPoint((ls.x + rs.x) / 2f, (ls.y + rs.y) / 2f)
+            val neckPoint = if (nose != null) {
+                NormPoint((mid.x + nose.x) / 2f, (mid.y + nose.y) / 2f)
+            } else mid
+            return points.toMutableMap().apply { put("neck", neckPoint) }
         }
-        return plan.posePoints
+        return points
     }
 
     private fun onPhotoCaptured(image: Bitmap) {
@@ -408,16 +432,21 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
         manager.takePhoto()
         triggerFlash()
         viewModelScope.launch {
-            delay(300)
+            delay(500) // 延长到 500ms，给 CameraX 更多拍照时间
             isCapturing.value = false
             score.value = 0f
             if (activeAngleIndex.value + 1 < angleCount) {
                 activeAngleIndex.value += 1
-                currentPlan?.multiAngles?.get(activeAngleIndex.value)?.voiceHint?.let { speak(it) }
+                currentPlan?.multiAngles?.getOrNull(activeAngleIndex.value)?.voiceHint?.let { speak(it) }
             } else {
                 speak("真棒！这组机位全都囊括了。")
                 activeAngleIndex.value = 0
             }
+        }
+        // 超时保护：拍照若 3 秒内未触发回调，强制复位
+        viewModelScope.launch {
+            delay(3000)
+            if (isCapturing.value) isCapturing.value = false
         }
     }
 
@@ -432,16 +461,21 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
         manager.takePhoto()
         triggerFlash()
         viewModelScope.launch {
-            delay(300)
+            delay(500)
             isCapturing.value = false
             score.value = 0f
             if (activeSequenceIndex.value + 1 < seqCount) {
                 activeSequenceIndex.value += 1
-                currentPlan?.sequence?.get(activeSequenceIndex.value)?.voiceHint?.let { speak(it) }
+                currentPlan?.sequence?.getOrNull(activeSequenceIndex.value)?.voiceHint?.let { speak(it) }
             } else {
                 speak("真棒！收工结算。")
                 activeSequenceIndex.value = 0
             }
+        }
+        // 超时保护
+        viewModelScope.launch {
+            delay(3000)
+            if (isCapturing.value) isCapturing.value = false
         }
     }
 
@@ -505,15 +539,20 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
         var taken = 0
         fun snap() {
             if (taken >= count) {
-                viewModelScope.launch { delay(150); isCapturing.value = false }
+                viewModelScope.launch { delay(200); isCapturing.value = false }
                 return
             }
             manager.takePhoto()
             triggerFlash()
             taken += 1
-            viewModelScope.launch { delay(200); snap() }
+            viewModelScope.launch { delay(250); snap() }
         }
         snap()
+        // 超时保护
+        viewModelScope.launch {
+            delay((count * 1500L).coerceAtLeast(3000))
+            if (isCapturing.value) isCapturing.value = false
+        }
     }
 
     // MARK: - 倒计时

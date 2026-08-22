@@ -216,11 +216,8 @@ class CameraManager(
                 if (event is VideoRecordEvent.Finalize) {
                     isRecording = false
                     activeRecording = null
-                    if (event.hasError()) {
-                        onRecordingSave(file.absolutePath)
-                    } else {
-                        onRecordingSave(file.absolutePath)
-                    }
+                    // 无论成败都通知 ViewModel，文件会在保存/清理时处理
+                    onRecordingSave(file.absolutePath)
                 }
             }
         isRecording = true

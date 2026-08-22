@@ -17,6 +17,12 @@ import com.poseai.app.model.NormPoint
 /**
  * ML Kit 姿态检测提供者——对应 iOS 的 Vision(VNDetectHumanBodyPoseRequest)。
  * 负责：姿态关键点提取(→Map<关节名,NormPoint>) + EMA 平滑 + 半身判定 + 暗光监测。
+ *
+ * 关键修复：
+ *  - 旋转坐标归一化：90°/270° 旋转时正确交换宽高
+ *  - 单人检测适配：ML Kit 仅支持单人，移除双人逻辑
+ *  - 关节缺失鲁棒：低置信度关节跳过不崩溃
+ *  - 异常帧保护：null/空地图统一降级
  */
 class MlKitPoseProvider(private val context: Context) {
 
@@ -26,8 +32,11 @@ class MlKitPoseProvider(private val context: Context) {
             .build()
     )
 
-    /** EMA 平滑状态（支持双人） */
-    private val previousPointsArray = arrayOf<MutableMap<String, NormPoint>>(mutableMapOf(), mutableMapOf())
+    /** EMA 平滑状态（单人检测） */
+    private var previousPoints = mutableMapOf<String, NormPoint>()
+
+    /** 最近一次稳定检测的点（用于平滑失败时回退） */
+    private var lastStablePoints = mapOf<String, NormPoint>()
 
     /** 当前帧输入图像尺寸（ML Kit Pose 不暴露宽高，需自行记录用于归一化） */
     private var imageWidth = 1f
@@ -49,8 +58,7 @@ class MlKitPoseProvider(private val context: Context) {
             imageProxy.close()
             return
         }
-        imageWidth = imageProxy.width.toFloat()
-        imageHeight = imageProxy.height.toFloat()
+        updateImageDimensions(imageProxy.width, imageProxy.height, imageProxy.imageInfo.rotationDegrees)
         val rotation = imageProxy.imageInfo.rotationDegrees
         val image = InputImage.fromMediaImage(mediaImage, rotation)
 
@@ -60,8 +68,8 @@ class MlKitPoseProvider(private val context: Context) {
             .addOnFailureListener { e ->
                 @Suppress("UNUSED_EXPRESSION")
                 when (e) {
-                    is MlKitException -> { /* 处理失败，忽略该帧 */ }
-                    else -> { /* ignore */ }
+                    is MlKitException -> { /* ML Kit 内部异常，忽略该帧 */ }
+                    else -> { /* 其他异常忽略 */ }
                 }
             }
     }
@@ -76,19 +84,35 @@ class MlKitPoseProvider(private val context: Context) {
             .addOnFailureListener { /* ignore */ }
     }
 
+    /** 根据旋转角度校正归一化坐标的宽高 */
+    private fun updateImageDimensions(rawW: Int, rawH: Int, rotation: Int) {
+        val isRotated = rotation == 90 || rotation == 270
+        imageWidth = if (isRotated) rawH.toFloat() else rawW.toFloat()
+        imageHeight = if (isRotated) rawW.toFloat() else rawH.toFloat()
+    }
+
     private fun handlePose(pose: Pose) {
         val detectedPoints = parsePoints(pose)
-        val isValid = detectedPoints.isNotEmpty()
+        val isValid = detectedPoints.size >= 3
 
         if (isValid) {
-            // EMA 平滑
-            val smoothed = smooth(0, detectedPoints)
+            // EMA 平滑（防止抖动）
+            val smoothed = smooth(detectedPoints)
+            lastStablePoints = smoothed
+
             val bbox = computeBBox(smoothed)
             val isHalfBody = detectHalfBody(pose)
 
-            previousPointsArray[0] = smoothed.toMutableMap()
+            previousPoints = smoothed.toMutableMap()
             onUpdate(listOf(PoseData(smoothed, isHalfBody, bbox)))
-            maybeDetectLowLight(isValidFramePoinCount = smoothed.size < 4)
+
+            // 暗光监测（关节点数过少 → 可能光线不足）
+            val isLowLight = smoothed.size < 5
+            maybeDetectLowLight(isLowLight)
+        } else if (lastStablePoints.isNotEmpty()) {
+            // 检测失败但有稳定历史，发送上一帧避免 UI 闪烁
+            val bbox = computeBBox(lastStablePoints)
+            onUpdate(listOf(PoseData(lastStablePoints, false, bbox)))
         } else {
             onUpdate(emptyList())
             maybeDetectLowLight(false)
@@ -131,7 +155,7 @@ class MlKitPoseProvider(private val context: Context) {
             add("rightAnkle", getOrNullOrSelf(this, PoseLandmark.RIGHT_ANKLE))
         }
 
-        // ML Kit 无 neck，用「鼻-肩中点」近似（与 iOS Vision neck 位置近似）
+        // ML Kit 无 neck，用「鼻-肩中点」近似
         val nose = pose.getPoseLandmark(PoseLandmark.NOSE)
         val ls = points["leftShoulder"] ?: (pose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER)?.let { me(it) })
         val rs = points["rightShoulder"] ?: (pose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER)?.let { me(it) })
@@ -149,15 +173,22 @@ class MlKitPoseProvider(private val context: Context) {
     private fun getOrNullOrSelf(list: List<PoseLandmark>, index: Int): PoseLandmark? =
         if (index in list.indices) list[index] else null
 
-    /** EMA 平滑：smoothed = old * 0.6 + new * 0.4 */
-    private fun smooth(index: Int, current: Map<String, NormPoint>): Map<String, NormPoint> {
-        val old = previousPointsArray[index]
-        return current.mapValues { (key, p) ->
-            val oldPoint = old[key]
-            if (oldPoint != null) {
-                NormPoint(oldPoint.x * 0.6f + p.x * 0.4f, oldPoint.y * 0.6f + p.y * 0.4f)
-            } else p
+    /** EMA 平滑：new = old * 0.65 + current * 0.35（略偏重历史以稳定） */
+    private fun smooth(current: Map<String, NormPoint>): Map<String, NormPoint> {
+        if (previousPoints.isEmpty()) return current
+        val result = LinkedHashMap<String, NormPoint>()
+        for ((key, point) in current) {
+            val oldPoint = previousPoints[key]
+            result[key] = if (oldPoint != null) {
+                NormPoint(
+                    x = oldPoint.x * 0.65f + point.x * 0.35f,
+                    y = oldPoint.y * 0.65f + point.y * 0.35f
+                )
+            } else {
+                point
+            }
         }
+        return result
     }
 
     /** 计算归一化包围盒 */
@@ -190,15 +221,13 @@ class MlKitPoseProvider(private val context: Context) {
     }
 
     /** 暗光监测（节流 5s） */
-    private fun maybeDetectLowLight(isValidFramePoinCount: Boolean) {
-        val lowLight = isValidFramePoinCount
+    private fun maybeDetectLowLight(isLowLightNow: Boolean) {
+        if (isLowLightNow == isCurrentlyLowLight) return
         val now = System.currentTimeMillis()
-        if (lowLight != isCurrentlyLowLight) {
-            if ((now - lastLowLightTime > lowLightIntervalMs) || !lowLight) {
-                isCurrentlyLowLight = lowLight
-                lastLowLightTime = now
-                onLowLight(lowLight)
-            }
+        if ((now - lastLowLightTime > lowLightIntervalMs) || !isLowLightNow) {
+            isCurrentlyLowLight = isLowLightNow
+            lastLowLightTime = now
+            onLowLight(isLowLightNow)
         }
     }
 
