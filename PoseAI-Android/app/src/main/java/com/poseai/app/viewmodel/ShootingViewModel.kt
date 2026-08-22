@@ -105,8 +105,18 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
     // 稳定触发时间：null = 未稳定
     private var stableStartTime: Long? = null
 
-    private val recordDao: ShootingRecordDao = (app as com.poseai.app.PoseAIApplication).database.shootingRecordDao()
-    private val customDao: CustomPlanDao = (app as com.poseai.app.PoseAIApplication).database.customPlanDao()
+    private val appContext: android.content.Context get() = getApplication<Application>().applicationContext
+
+    // 数据库引用（懒加载，避免初始化时机问题）
+    private val database by lazy {
+        (getApplication<Application>() as com.poseai.app.PoseAIApplication).database
+    }
+    private val recordDao: ShootingRecordDao get() = database.shootingRecordDao()
+    private val customDao: CustomPlanDao get() = database.customPlanDao()
+
+    private var customPlansJob: kotlinx.coroutines.Job? = null
+    private var pitchJob: kotlinx.coroutines.Job? = null
+    private var scanTimeoutJob: kotlinx.coroutines.Job? = null
 
     // 常量
     val successThreshold: Float = 85f
@@ -139,14 +149,15 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
     init {
         feedback.initTts()
         feedback.startPitchTracking()
-        observePitch()
-        collectCustomPlans()
+        startPitchCollection()
+        startCollectingCustomPlans()
         bind()
         startScanTimeout()
     }
 
-    private fun observePitch() {
-        viewModelScope.launch {
+    private fun startPitchCollection() {
+        pitchJob?.cancel()
+        pitchJob = viewModelScope.launch {
             while (true) {
                 devicePitch.value = feedback.devicePitch
                 delay(200)
@@ -154,8 +165,9 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun collectCustomPlans() {
-        viewModelScope.launch {
+    private fun startCollectingCustomPlans() {
+        customPlansJob?.cancel()
+        customPlansJob = viewModelScope.launch {
             customDao.observeAll().collect { entities ->
                 customShootingPlans.value = entities.map { it.toShootingPlan() }
             }
@@ -770,8 +782,12 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         super.onCleared()
-        feedback.stopSpeaking()
-        feedback.stopPitchTracking()
+        // 取消所有协程任务
+        pitchJob?.cancel()
+        customPlansJob?.cancel()
+        scanTimeoutJob?.cancel()
+        // 释放资源
+        feedback.release()
         manager.cleanUp()
     }
 }

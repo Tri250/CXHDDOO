@@ -37,6 +37,9 @@ class MlKitPoseProvider(private val context: Context) {
             .build()
     )
 
+    // 线程安全保护：detector.process 可能从多个回调调用
+    private val stateLock = Any()
+
     /** EMA 平滑状态（单人检测） */
     private var previousPoints = mutableMapOf<String, NormPoint>()
     private var previousPreviousPoints = mutableMapOf<String, NormPoint>()
@@ -46,24 +49,35 @@ class MlKitPoseProvider(private val context: Context) {
     private var stableFrameCount = 0
 
     /** 当前帧输入图像尺寸（ML Kit Pose 不暴露宽高，需自行记录用于归一化） */
+    @Volatile
     private var imageWidth = 1f
+    @Volatile
     private var imageHeight = 1f
+    @Volatile
     private var lastRotation = 0
 
+    @Volatile
     var isFrontCamera: Boolean = false
 
     /** 回调：当前帧所有人体姿态 */
+    @Volatile
     var onUpdate: (List<PoseData>) -> Unit = {}
     /** 暗光监测 */
+    @Volatile
     var onLowLight: (Boolean) -> Unit = {}
     /** 手势识别回调 */
+    @Volatile
     var onGestureDetected: (String) -> Unit = {}
     /** 身体朝向回调 */
+    @Volatile
     var onFacingDirection: (String) -> Unit = {}
     /** 姿态质量评估回调 */
+    @Volatile
     var onQualityAssessment: (PoseQuality) -> Unit = {}
 
+    @Volatile
     private var lastLowLightTime = 0L
+    @Volatile
     private var isCurrentlyLowLight = false
     private val lowLightIntervalMs = 3000L
 
@@ -118,14 +132,19 @@ class MlKitPoseProvider(private val context: Context) {
             }
     }
 
-    /** 处理一帧 Bitmap（用于场景分类读帧等场景） */
+    /** 处理一帧 Bitmap（用于场景分类读帧等场景）—— 线程安全版本 */
     fun process(bitmap: Bitmap) {
         imageWidth = bitmap.width.toFloat()
         imageHeight = bitmap.height.toFloat()
         val image = InputImage.fromBitmap(bitmap, 0)
         detector.process(image)
             .addOnSuccessListener { pose -> handlePose(pose) }
-            .addOnFailureListener { /* ignore */ }
+            .addOnFailureListener { e ->
+                // 失败时清理状态，避免残留数据
+                synchronized(stateLock) {
+                    stableFrameCount = 0
+                }
+            }
     }
 
     /** 根据旋转角度校正归一化坐标的宽高 */
@@ -140,52 +159,51 @@ class MlKitPoseProvider(private val context: Context) {
         val detectedPoints = parsePoints(pose)
         val isValid = detectedPoints.size >= 3
 
-        if (isValid) {
-            // 计算姿态质量
-            val quality = assessQuality(detectedPoints)
+        // 先在锁内计算结果与修改状态，再在锁外触发回调，避免回调重入死锁
+        var gestureToDispatch: String? = null
+        var facingToDispatch: String? = null
+        var qualityToDispatch: PoseQuality? = null
+        var updateToDispatch: List<PoseData>? = null
+        var lowLightToDispatch: Boolean? = null
 
-            // EMA 平滑（使用二级延迟线，更稳定）
-            val smoothed = smooth(detectedPoints)
-            lastStablePoints = smoothed
-            stableFrameCount++
+        synchronized(stateLock) {
+            if (isValid) {
+                val quality = assessQuality(detectedPoints)
+                val smoothed = smooth(detectedPoints)
+                lastStablePoints = smoothed
+                stableFrameCount++
 
-            // 检测手势
-            detectGesture(smoothed)?.let { gesture ->
-                if (gesture != Gestures.NONE) {
-                    onGestureDetected(gesture)
-                }
+                gestureToDispatch = detectGesture(smoothed)?.takeIf { it != Gestures.NONE }
+                facingToDispatch = detectFacingDirection(smoothed)
+                qualityToDispatch = quality
+
+                val bbox = computeBBox(smoothed)
+                val isHalfBody = detectHalfBody(pose)
+
+                previousPreviousPoints = previousPoints.toMutableMap()
+                previousPoints = smoothed.toMutableMap()
+
+                updateToDispatch = listOf(PoseData(smoothed, isHalfBody, bbox))
+                lowLightToDispatch = smoothed.size < 5 || quality.score < 0.4f
+            } else if (lastStablePoints.isNotEmpty()) {
+                val bbox = computeBBox(lastStablePoints)
+                val isHalfBody = detectHalfBodyFromPoints(lastStablePoints)
+                stableFrameCount = 0
+                updateToDispatch = listOf(PoseData(lastStablePoints, isHalfBody, bbox))
+                lowLightToDispatch = true
+            } else {
+                stableFrameCount = 0
+                updateToDispatch = emptyList()
+                lowLightToDispatch = false
             }
-
-            // 检测身体朝向
-            detectFacingDirection(smoothed)?.let { facing ->
-                onFacingDirection(facing)
-            }
-
-            // 回调姿态质量
-            onQualityAssessment(quality)
-
-            val bbox = computeBBox(smoothed)
-            val isHalfBody = detectHalfBody(pose)
-
-            previousPreviousPoints = previousPoints.toMutableMap()
-            previousPoints = smoothed.toMutableMap()
-            onUpdate(listOf(PoseData(smoothed, isHalfBody, bbox)))
-
-            // 暗光监测（关节点数过少 → 可能光线不足）
-            val isLowLight = smoothed.size < 5 || quality.score < 0.4f
-            maybeDetectLowLight(isLowLight)
-        } else if (lastStablePoints.isNotEmpty()) {
-            // 检测失败但有稳定历史，发送上一帧避免 UI 闪烁
-            val bbox = computeBBox(lastStablePoints)
-            val isHalfBody = detectHalfBodyFromPoints(lastStablePoints)
-            onUpdate(listOf(PoseData(lastStablePoints, isHalfBody, bbox)))
-            stableFrameCount = 0
-            maybeDetectLowLight(true)
-        } else {
-            onUpdate(emptyList())
-            stableFrameCount = 0
-            maybeDetectLowLight(false)
         }
+
+        // 锁外回调：避免回调中再次调用 PoseProvider 造成死锁
+        gestureToDispatch?.let { onGestureDetected(it) }
+        facingToDispatch?.let { onFacingDirection(it) }
+        qualityToDispatch?.let { onQualityAssessment(it) }
+        updateToDispatch?.let { onUpdate(it) }
+        lowLightToDispatch?.let { maybeDetectLowLight(it) }
     }
 
     /** 评估姿态质量 */
@@ -470,21 +488,35 @@ class MlKitPoseProvider(private val context: Context) {
         return lowerCount < 3
     }
 
-    /** 暗光监测（节流 3s） */
+    /** 暗光监测（节流 3s，线程安全） */
     private fun maybeDetectLowLight(isLowLightNow: Boolean) {
-        if (isLowLightNow == isCurrentlyLowLight) return
-        val now = System.currentTimeMillis()
-        if ((now - lastLowLightTime > lowLightIntervalMs) || !isLowLightNow) {
-            isCurrentlyLowLight = isLowLightNow
-            lastLowLightTime = now
+        var shouldDispatch = false
+        synchronized(stateLock) {
+            if (isLowLightNow == isCurrentlyLowLight) return
+            val now = System.currentTimeMillis()
+            if ((now - lastLowLightTime > lowLightIntervalMs) || !isLowLightNow) {
+                isCurrentlyLowLight = isLowLightNow
+                lastLowLightTime = now
+                shouldDispatch = true
+            }
+        }
+        // 回调在锁外触发，仅在状态实际改变且未被节流时触发
+        if (shouldDispatch) {
             onLowLight(isLowLightNow)
         }
     }
 
     fun close() {
-        detector.close()
-        previousPoints.clear()
-        previousPreviousPoints.clear()
-        lastStablePoints.clear()
+        runCatching {
+            detector.close()
+        }
+        synchronized(stateLock) {
+            previousPoints.clear()
+            previousPreviousPoints.clear()
+            lastStablePoints = mapOf()
+            stableFrameCount = 0
+            isCurrentlyLowLight = false
+            lastLowLightTime = 0L
+        }
     }
 }

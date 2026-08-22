@@ -33,23 +33,30 @@ class SceneClassifier(context: Context) {
             .build()
     )
 
+    // 线程安全锁
+    private val stateLock = Any()
+
     // 滑动窗口投票历史：保存最近 N 帧的累计分数
     private val windowSize = 5
     private val history = ArrayDeque<FloatArray>(windowSize)
 
     // 双帧确认机制（快速切换时的防抖）
+    @Volatile
     private var lastCandidate: SceneType = SceneType.UNKNOWN
     private var sameCandidateFrames = 0
     private val confirmThreshold = 2
 
     // 当前场景锁定：场景稳定后 4 秒内不再重新确认
+    @Volatile
     private var lockUntilMs = 0L
     private val lockDurationMs = 4000L
 
     // 上一次确定的场景（用于快速切换检测）
+    @Volatile
     private var lastConfirmedScene: SceneType = SceneType.UNKNOWN
 
     /** 快速切换模式：当检测到高置信度场景时允许单次确认 */
+    @Volatile
     private var fastSwitchEnabled = true
 
     /**
@@ -66,85 +73,79 @@ class SceneClassifier(context: Context) {
         val image = InputImage.fromBitmap(bitmap, 0)
         labeler.process(image)
             .addOnSuccessListener { labels ->
-                // 1) 从标签映射到每类场景的置信度加权分数
                 val labelVotes = computeVotes(labels.map { label -> label.text to label.confidence })
-
-                // 2) 色彩/亮度/纹理子特征辅助判断
                 val pixelVotes = computePixelHeuristicVotes(bitmap)
-
-                // 3) 色彩直方图特征分析
                 val colorHistVotes = computeColorHistogramVotes(bitmap)
 
-                // 4) 融合三路信号（标签 50% + 像素启发 25% + 色彩直方图 25%）
                 val fused = FloatArray(SCENE_COUNT)
                 for (i in 0 until SCENE_COUNT) {
                     fused[i] = labelVotes[i] * 0.50f + pixelVotes[i] * 0.25f + colorHistVotes[i] * 0.25f
                 }
 
-                // 5) 推入滑动窗口，累计最近多帧
-                history.addLast(fused)
-                if (history.size > windowSize) history.removeFirst()
-                val accumulated = FloatArray(SCENE_COUNT)
-                for (h in history) for (i in 0 until SCENE_COUNT) accumulated[i] += h[i]
+                // 所有状态修改在锁内
+                val resultToDispatch = synchronized(stateLock) {
+                    history.addLast(fused)
+                    if (history.size > windowSize) history.removeFirst()
+                    val accumulated = FloatArray(SCENE_COUNT)
+                    for (h in history) for (i in 0 until SCENE_COUNT) accumulated[i] += h[i]
 
-                // 6) 置信度最高且超过门限的才作为候选
-                val maxIdx = accumulated.indices.maxByOrNull { accumulated[it] } ?: SCENE_COFFEE
-                val maxVal = accumulated[maxIdx]
-                val secondVal = accumulated.indices
-                    .filter { it != maxIdx }
-                    .maxOfOrNull { accumulated[it] } ?: 0f
-                val candidate = if (maxVal >= MIN_CONFIRM_SCORE) indexToScene(maxIdx) else SceneType.UNKNOWN
+                    val maxIdx = accumulated.indices.maxByOrNull { accumulated[it] } ?: SCENE_COFFEE
+                    val maxVal = accumulated[maxIdx]
+                    val secondVal = accumulated.indices
+                        .filter { it != maxIdx }
+                        .maxOfOrNull { accumulated[it] } ?: 0f
+                    val candidate = if (maxVal >= MIN_CONFIRM_SCORE) indexToScene(maxIdx) else SceneType.UNKNOWN
 
-                onCandidate?.invoke(candidate)
-
-                // 7) 双帧确认防抖
-                val now = System.currentTimeMillis()
-                if (candidate == lastCandidate) {
-                    sameCandidateFrames++
-                } else {
-                    lastCandidate = candidate
-                    sameCandidateFrames = 1
-                }
-
-                val isLocked = now < lockUntilMs
-
-                // 快速切换：当检测到高置信度新场景，且明显优于第二候选时，允许一次确认
-                val isFastSwitch = fastSwitchEnabled
-                    && candidate != SceneType.UNKNOWN
-                    && candidate != lastConfirmedScene
-                    && maxVal >= FAST_SWITCH_THRESHOLD
-                    && (maxVal - secondVal) >= FAST_SWITCH_GAP
-
-                val framePassed = if (isFastSwitch) {
-                    true // 快速切换，一次即确认
-                } else {
-                    sameCandidateFrames >= confirmThreshold
-                }
-
-                if (!isLocked && framePassed && candidate != SceneType.UNKNOWN) {
-                    onResult(candidate)
-                    lastConfirmedScene = candidate
-                    lockUntilMs = now + lockDurationMs
-                    if (isFastSwitch) {
-                        // 快速切换后锁定时间延长
-                        lockUntilMs = now + lockDurationMs + 2000L
+                    if (candidate == lastCandidate) sameCandidateFrames++
+                    else {
+                        lastCandidate = candidate
+                        sameCandidateFrames = 1
                     }
-                }
 
-                // 8) 强制兜底：历史窗口已满且最高分超过兜底门限
-                if (history.size >= windowSize && maxVal >= MIN_FALLBACK_SCORE) {
-                    val best = indexToScene(maxIdx)
-                    if (best != SceneType.UNKNOWN && best != lastConfirmedScene) {
-                        lastCandidate = best
-                        sameCandidateFrames = confirmThreshold
-                        onResult(best)
-                        lastConfirmedScene = best
+                    val now = System.currentTimeMillis()
+                    val isLocked = now < lockUntilMs
+
+                    val isFastSwitch = fastSwitchEnabled
+                        && candidate != SceneType.UNKNOWN
+                        && candidate != lastConfirmedScene
+                        && maxVal >= FAST_SWITCH_THRESHOLD
+                        && (maxVal - secondVal) >= FAST_SWITCH_GAP
+
+                    val framePassed = if (isFastSwitch) {
+                        true
+                    } else {
+                        sameCandidateFrames >= confirmThreshold
+                    }
+
+                    var dispatchedResult: SceneType? = null
+                    if (!isLocked && framePassed && candidate != SceneType.UNKNOWN) {
+                        dispatchedResult = candidate
+                        lastConfirmedScene = candidate
                         lockUntilMs = now + lockDurationMs
+                        if (isFastSwitch) {
+                            lockUntilMs = now + lockDurationMs + 2000L
+                        }
                     }
+
+                    // 强制兜底
+                    if (history.size >= windowSize && maxVal >= MIN_FALLBACK_SCORE) {
+                        val best = indexToScene(maxIdx)
+                        if (best != SceneType.UNKNOWN && best != lastConfirmedScene) {
+                            lastCandidate = best
+                            sameCandidateFrames = confirmThreshold
+                            dispatchedResult = best
+                            lastConfirmedScene = best
+                            lockUntilMs = now + lockDurationMs
+                        }
+                    }
+
+                    onCandidate?.invoke(candidate)
+                    dispatchedResult
                 }
+
+                resultToDispatch?.let { scene -> onResult(scene) }
             }
             .addOnFailureListener {
-                // ML Kit 失败时回退到像素启发式
                 val pixelVotes = computePixelHeuristicVotes(bitmap)
                 val colorHistVotes = computeColorHistogramVotes(bitmap)
                 val combined = FloatArray(SCENE_COUNT)
@@ -156,17 +157,21 @@ class SceneClassifier(context: Context) {
             }
     }
 
-    /** 重置状态（外部切换相机/重启时调用） */
+    /** 重置状态（外部切换相机/重启时调用）——线程安全 */
     fun reset() {
-        history.clear()
-        lastCandidate = SceneType.UNKNOWN
-        lastConfirmedScene = SceneType.UNKNOWN
-        sameCandidateFrames = 0
-        lockUntilMs = 0L
+        synchronized(stateLock) {
+            history.clear()
+            lastCandidate = SceneType.UNKNOWN
+            lastConfirmedScene = SceneType.UNKNOWN
+            sameCandidateFrames = 0
+            lockUntilMs = 0L
+        }
     }
 
     /** 关闭 ML Kit 资源 */
-    fun close() = labeler.close()
+    fun close() {
+        runCatching { labeler.close() }
+    }
 
     // =========================================================================
     // 核心算法

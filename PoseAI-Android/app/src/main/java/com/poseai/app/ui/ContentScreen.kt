@@ -75,6 +75,7 @@ fun ContentScreen(
     val detectedPoses by vm.detectedPoses.collectAsStateWithLifecycle()
     val isLowLight by vm.isLowLight.collectAsStateWithLifecycle()
     val isImmersive by vm.isImmersiveMode.collectAsStateWithLifecycle()
+    val isCapturing by vm.isCapturing.collectAsStateWithLifecycle()
     val showCompositionTip by vm.showCompositionTip.collectAsStateWithLifecycle()
     val showSpaceTip by vm.showSpaceTip.collectAsStateWithLifecycle()
     val aiSuggestion by vm.aiSuggestion.collectAsStateWithLifecycle()
@@ -379,7 +380,7 @@ private fun BottomPanel(
             }
 
             // 快门
-            ShutterButton(isReady = vm.isReady, isCapturing = vm.isCapturing.value, onClick = { vm.handleShutterTap() })
+            ShutterButton(isReady = vm.isReady, isCapturing = isCapturing, onClick = { vm.handleShutterTap() })
 
             Row(Modifier.weight(1f), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
                 // 切换摄像头

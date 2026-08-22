@@ -15,10 +15,16 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  *  - 新增光线环境字段（lightLevel/colorTemperature/exposureTimeMs/isLowLight）
  *  - 新增设备字段（deviceModel/lensFacing）
  *  - 新增 4 个索引：createdAt / sceneRawValue / planId / matchScore
+ *
+ * v2 → v3 迁移：
+ *  - 无 schema 变更，仅逻辑升级
+ *
+ * 注意：生产环境不使用 fallbackToDestructiveMigration，
+ * 所有 schema 变更必须提供对应 Migration。
  */
 @Database(
     entities = [ShootingRecordEntity::class, CustomPlanEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -50,6 +56,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // v2 → v3：无 schema 变更（ScoreStat 为投影类，不影响表结构）
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // 空迁移：版本号升级占位，确保旧版本用户可平滑升级
+            }
+        }
+
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -57,9 +70,9 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "poseai.db"
                 )
-                    .addMigrations(MIGRATION_1_2)
-                    // 开发期间允许降级（数据损失可接受），正式发行时可关闭
-                    .fallbackToDestructiveMigration()
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    // 生产环境不允许破坏性迁移，开发调试可临时打开
+                    // .fallbackToDestructiveMigration()
                     .build()
                     .also { INSTANCE = it }
             }

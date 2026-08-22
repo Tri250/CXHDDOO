@@ -446,23 +446,29 @@ private fun buildLocationLine(record: ShootingRecordEntity): String? {
     }
 }
 
-/** ---------- 日期格式工具 ---------- */
+/** ---------- 日期格式工具（线程安全） ---------- */
 
 private data class DaySection(val key: String, val display: String, val records: List<ShootingRecordEntity>)
 
-private fun monthKey(ts: Long): String =
-    SimpleDateFormat("yyyy-MM", Locale.CHINA).format(Date(ts))
+private fun monthKey(ts: Long): String {
+    return java.text.SimpleDateFormat("yyyy-MM", Locale.CHINA).format(Date(ts))
+}
 
 private fun monthDisplay(month: String): String {
-    val d = SimpleDateFormat("yyyy-MM", Locale.CHINA).parse(month) ?: return month
-    return SimpleDateFormat("yyyy年M月", Locale.CHINA).format(d)
+    return try {
+        val fmt = java.text.SimpleDateFormat("yyyy-MM", Locale.CHINA)
+        val d = fmt.parse(month)
+        if (d != null) java.text.SimpleDateFormat("yyyy年M月", Locale.CHINA).format(d) else month
+    } catch (_: Exception) {
+        month
+    }
 }
 
 private fun dayKey(ts: Long): String =
-    SimpleDateFormat("yyyyMMdd", Locale.CHINA).format(Date(ts))
+    java.text.SimpleDateFormat("yyyyMMdd", Locale.CHINA).format(Date(ts))
 
 private fun dayDisplay(ts: Long): String =
-    SimpleDateFormat("yyyy年M月d日", Locale.CHINA).format(Date(ts))
+    java.text.SimpleDateFormat("yyyy年M月d日", Locale.CHINA).format(Date(ts))
 
 private fun sceneDisplayName(raw: String): String =
     try {

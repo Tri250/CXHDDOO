@@ -28,15 +28,31 @@ object AIAdvisor {
 
     private var labeler: com.google.mlkit.vision.label.ImageLabeler? = null
     private var contextRef: Context? = null
+    private var isInitialized = false
 
     fun init(context: Context) {
+        if (isInitialized) return
         contextRef = context.applicationContext
+        isInitialized = true
+    }
+
+    /** 关闭并释放 ML Kit 资源 */
+    fun close() {
+        runCatching { labeler?.close() }
+        labeler = null
+        contextRef = null
+        isInitialized = false
     }
 
     private fun ensureLabeler(): com.google.mlkit.vision.label.ImageLabeler {
-        return labeler ?: ImageLabeling.getClient(
+        labeler?.let { return it }
+        // 重新创建，确保上下文有效
+        val ctx = contextRef ?: throw IllegalStateException("AIAdvisor not initialized, call init() first")
+        val newLabeler = ImageLabeling.getClient(
             ImageLabelerOptions.Builder().setConfidenceThreshold(0.20f).build()
-        ).also { labeler = it }
+        )
+        labeler = newLabeler
+        return newLabeler
     }
 
     /** 穿搭风格枚举（10 类） */

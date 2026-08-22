@@ -24,16 +24,19 @@ import kotlin.math.min
  */
 object PhotoFilterEngine {
 
-    /** 缓存：同一张原图 + 同一滤镜只处理一次 */
-    private val cache = HashMap<Pair<Bitmap, PhotoFilter>, Bitmap>()
+    /** LRU 缓存：同一张原图 + 同一滤镜只处理一次（线程安全） */
+    private val cacheLock = Any()
+    private val cache = LinkedHashMap<Pair<Bitmap, PhotoFilter>, Bitmap>(
+        16, 0.75f, true  // accessOrder = true 启用 LRU
+    )
     private val MAX_CACHE_SIZE = 20
 
-    /** 颜色矩阵缓存，避免重复构造 */
+    private val matrixLock = Any()
     private val matrixCache = HashMap<PhotoFilter, ColorMatrix>()
 
     fun clear() {
-        cache.clear()
-        matrixCache.clear()
+        synchronized(cacheLock) { cache.clear() }
+        synchronized(matrixLock) { matrixCache.clear() }
     }
 
     /** 应用滤镜到整张图 */
@@ -41,8 +44,10 @@ object PhotoFilterEngine {
         if (filter == PhotoFilter.ORIGINAL) return bitmap
 
         // 缓存命中
-        val cached = cache[bitmap to filter]
-        if (cached != null) return cached
+        synchronized(cacheLock) {
+            val cached = cache[bitmap to filter]
+            if (cached != null) return cached
+        }
 
         val matrix = getMatrix(filter)
         val paint = Paint().apply {
@@ -53,15 +58,17 @@ object PhotoFilterEngine {
         val canvas = Canvas(result)
         canvas.drawBitmap(bitmap, 0f, 0f, paint)
 
-        // 写入缓存
-        if (cache.size >= MAX_CACHE_SIZE) {
-            // 清除最旧的缓存
-            val oldestKey = cache.keys.firstOrNull()
-            if (oldestKey != null) {
-                cache.remove(oldestKey)
+        // 写入缓存 + LRU 驱逐
+        synchronized(cacheLock) {
+            if (cache.size >= MAX_CACHE_SIZE) {
+                // 移除最久未使用的条目，腾出空间
+                val oldestKey = cache.entries.firstOrNull()?.key
+                if (oldestKey != null) {
+                    cache.remove(oldestKey)
+                }
             }
+            cache[bitmap to filter] = result
         }
-        cache[bitmap to filter] = result
 
         return result
     }
@@ -75,10 +82,13 @@ object PhotoFilterEngine {
         return apply(small, filter)
     }
 
-    /** 获取或创建滤镜矩阵 */
+    /** 获取或创建滤镜矩阵（线程安全） */
     private fun getMatrix(filter: PhotoFilter): ColorMatrix {
-        return matrixCache.getOrPut(filter) {
-            matrixFor(filter)
+        synchronized(matrixLock) {
+            matrixCache[filter]?.let { return it }
+            val matrix = matrixFor(filter)
+            matrixCache[filter] = matrix
+            return matrix
         }
     }
 

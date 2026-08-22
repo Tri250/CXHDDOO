@@ -43,6 +43,7 @@ class DeviceFeedback(private val context: Context) {
     private var tts: TextToSpeech? = null
     private var ttsReady = false
     private var ttsInitialized = false
+    @Volatile
     var isSpeaking: Boolean = false
         private set
 
@@ -128,10 +129,27 @@ class DeviceFeedback(private val context: Context) {
     fun shutdown() {
         pendingQueue.clear()
         tts?.stop()
-        tts?.shutdown()
+        runCatching { tts?.shutdown() }
         tts = null
         ttsReady = false
         ttsInitialized = false
+        isSpeaking = false
+    }
+
+    /** 完整释放所有资源 */
+    fun release() {
+        shutdown()
+        // 释放 SoundPool
+        runCatching {
+            soundPool?.release()
+        }
+        soundPool = null
+        soundPoolReady = false
+        shutterSoundId = -1
+        // 释放传感器
+        runCatching {
+            sensorManager.unregisterListener(listener)
+        }
     }
 
     // MARK: - 触觉反馈
@@ -307,6 +325,7 @@ class DeviceFeedback(private val context: Context) {
 
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    @Volatile
     var devicePitch: Float = 0f
         private set
 

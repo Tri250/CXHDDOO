@@ -38,7 +38,6 @@ object VideoMerger {
             // 预创建输出文件
             outputStream = java.io.FileOutputStream(output)
             val mux = MediaMuxer(output.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
-            muxer = mux
 
             var videoTrackIndex = -1
             var audioTrackIndex = -1
@@ -60,81 +59,87 @@ object VideoMerger {
                     continue
                 }
 
-                val videoTrack = findTrack(extractor, "video/")
-                val audioTrack = findTrack(extractor, "audio/")
+                try {
+                    val videoTrack = findTrack(extractor, "video/")
+                    val audioTrack = findTrack(extractor, "audio/")
 
-                // 第一个有效切片决定轨道格式
-                if (i == 0 || (!videoStarted && videoTrack >= 0)) {
-                    if (videoTrack >= 0) {
-                        videoFormat = extractor.getTrackFormat(videoTrack)
-                        videoTrackIndex = mux.addTrack(videoFormat)
-                        videoStarted = true
+                    // 第一个有效切片决定轨道格式
+                    if (i == 0 || (!videoStarted && videoTrack >= 0)) {
+                        if (videoTrack >= 0) {
+                            videoFormat = extractor.getTrackFormat(videoTrack)
+                            videoTrackIndex = mux.addTrack(videoFormat)
+                            videoStarted = true
+                        }
+                        if (audioTrack >= 0) {
+                            audioFormat = extractor.getTrackFormat(audioTrack)
+                            audioTrackIndex = mux.addTrack(audioFormat)
+                        }
+                        if (videoTrackIndex >= 0 || audioTrackIndex >= 0) {
+                            mux.start()
+                            videoStarted = true
+                        }
                     }
-                    if (audioTrack >= 0) {
-                        audioFormat = extractor.getTrackFormat(audioTrack)
-                        audioTrackIndex = mux.addTrack(audioFormat)
+
+                    val buffer = java.nio.ByteBuffer.allocate(4 * 1024 * 1024) // 4MB buffer
+                    val info = MediaCodec.BufferInfo()
+
+                    // === 视频轨 ===
+                    if (videoTrack >= 0 && videoTrackIndex >= 0) {
+                        extractor.selectTrack(videoTrack)
+                        var firstSampleTime = -1L
+                        var lastPts = 0L
+                        while (true) {
+                            val size = extractor.readSampleData(buffer, 0)
+                            if (size < 0) break
+                            val pts = extractor.sampleTime
+                            if (firstSampleTime < 0) firstSampleTime = pts
+                            lastPts = pts
+
+                            info.offset = 0
+                            info.size = size
+                            info.presentationTimeUs = pts - firstSampleTime + videoOffsetUs
+                            info.flags = if (extractor.sampleFlags and MediaExtractor.SAMPLE_FLAG_SYNC != 0)
+                                MediaCodec.BUFFER_FLAG_KEY_FRAME else 0
+                            mux.writeSampleData(videoTrackIndex, buffer, info)
+                            extractor.advance()
+                        }
+                        val duration = videoFormat?.getLong(MediaFormat.KEY_DURATION)
+                        videoOffsetUs += (duration ?: (lastPts - firstSampleTime + 1))
+                        extractor.unselectTrack(videoTrack)
                     }
-                    if (videoTrackIndex >= 0 || audioTrackIndex >= 0) {
-                        mux.start()
-                        videoStarted = true
+
+                    // === 音频轨（独立时间线） ===
+                    if (audioTrack >= 0 && audioTrackIndex >= 0) {
+                        extractor.selectTrack(audioTrack)
+                        var firstSampleTime = -1L
+                        var lastPts = 0L
+                        while (true) {
+                            val size = extractor.readSampleData(buffer, 0)
+                            if (size < 0) break
+                            val pts = extractor.sampleTime
+                            if (firstSampleTime < 0) firstSampleTime = pts
+                            lastPts = pts
+
+                            info.offset = 0
+                            info.size = size
+                            info.presentationTimeUs = pts - firstSampleTime + audioOffsetUs
+                            info.flags = if (extractor.sampleFlags and MediaExtractor.SAMPLE_FLAG_SYNC != 0)
+                                MediaCodec.BUFFER_FLAG_KEY_FRAME else 0
+                            mux.writeSampleData(audioTrackIndex, buffer, info)
+                            extractor.advance()
+                        }
+                        val duration = audioFormat?.getLong(MediaFormat.KEY_DURATION)
+                        audioOffsetUs += (duration ?: (lastPts - firstSampleTime + 1))
+                        extractor.unselectTrack(audioTrack)
                     }
+                } finally {
+                    extractor.release()
                 }
-
-                val buffer = java.nio.ByteBuffer.allocate(4 * 1024 * 1024) // 4MB buffer
-                val info = MediaCodec.BufferInfo()
-
-                // === 视频轨 ===
-                if (videoTrack >= 0 && videoTrackIndex >= 0) {
-                    extractor.selectTrack(videoTrack)
-                    var firstSampleTime = -1L
-                    var lastPts = 0L
-                    while (true) {
-                        val size = extractor.readSampleData(buffer, 0)
-                        if (size < 0) break
-                        val pts = extractor.sampleTime
-                        if (firstSampleTime < 0) firstSampleTime = pts
-                        lastPts = pts
-
-                        info.offset = 0
-                        info.size = size
-                        info.presentationTimeUs = pts - firstSampleTime + videoOffsetUs
-                        info.flags = if (extractor.sampleFlags and MediaExtractor.SAMPLE_FLAG_SYNC != 0)
-                            MediaCodec.BUFFER_FLAG_KEY_FRAME else 0
-                        mux.writeSampleData(videoTrackIndex, buffer, info)
-                        extractor.advance()
-                    }
-                    val duration = videoFormat?.getLong(MediaFormat.KEY_DURATION)
-                    videoOffsetUs += (duration ?: (lastPts - firstSampleTime + 1))
-                    extractor.unselectTrack(videoTrack)
-                }
-
-                // === 音频轨（独立时间线） ===
-                if (audioTrack >= 0 && audioTrackIndex >= 0) {
-                    extractor.selectTrack(audioTrack)
-                    var firstSampleTime = -1L
-                    var lastPts = 0L
-                    while (true) {
-                        val size = extractor.readSampleData(buffer, 0)
-                        if (size < 0) break
-                        val pts = extractor.sampleTime
-                        if (firstSampleTime < 0) firstSampleTime = pts
-                        lastPts = pts
-
-                        info.offset = 0
-                        info.size = size
-                        info.presentationTimeUs = pts - firstSampleTime + audioOffsetUs
-                        info.flags = if (extractor.sampleFlags and MediaExtractor.SAMPLE_FLAG_SYNC != 0)
-                            MediaCodec.BUFFER_FLAG_KEY_FRAME else 0
-                        mux.writeSampleData(audioTrackIndex, buffer, info)
-                        extractor.advance()
-                    }
-                    val duration = audioFormat?.getLong(MediaFormat.KEY_DURATION)
-                    audioOffsetUs += (duration ?: (lastPts - firstSampleTime + 1))
-                    extractor.unselectTrack(audioTrack)
-                }
-
-                extractor.release()
             }
+            // FileOutputStream 仅用于预创建空文件；MediaMuxer 直接写文件，不再使用该流
+            runCatching { outputStream?.close() }
+            outputStream = null
+            muxer = mux
 
             if (videoTrackIndex < 0 && audioTrackIndex < 0) {
                 // 没有有效轨道
@@ -157,6 +162,10 @@ object VideoMerger {
             try { muxer?.release() } catch (_: Exception) {}
             output.delete()
             return false
+        } finally {
+            // 确保 FileOutputStream 一定被关闭（仅用于预创建文件，无实际写入）
+            runCatching { outputStream?.close() }
+            outputStream = null
         }
     }
 

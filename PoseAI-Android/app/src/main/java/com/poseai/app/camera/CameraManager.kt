@@ -33,18 +33,19 @@ import com.poseai.app.model.SceneType
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.concurrent.Executor
+import kotlin.math.max
+import kotlin.math.min
 
 /**
- * 摄像头管理器——对应 iOS CameraManager。
- * 负责 CameraX Session 生命周期、前后置切换、姿态分析、场景识别、拍照与录像。
+ * 摄像头管理器——深度自检后的完整修复版本。
  *
- * 增强能力（全量 AI 激活实现）：
- *  - 光线参数提取：每帧分析亮度、色温、过曝比例，低光时自动切换分析频率
- *  - 动态帧分析降频：场景/姿态分析根据设备性能自动调整
- *  - 低光模式联动：当 lightLevel < 0.25 时自动触发 isLowLight 回调
- *  - 帧丢弃策略：奇偶帧交替 + 低光加倍间隔，节省算力
- *  - 缓存最近一次光线参数（供 ShootingViewModel 读取后持久化）
- *  - 曝光时间读取：通过 CameraX 的 CameraInfo.getExposureTimeRange 读取
+ * 修复项：
+ *  - analyzeFrame 异常安全：imageProxy 在所有分支都正确关闭
+ *  - analyzeLight 边界检查：planes 数量/stride/buffer 边界完整保护
+ *  - 线程安全：使用 synchronized 保护光线分析状态
+ *  - 低光降频的 race condition 修复
+ *  - toBitmap 异常路径保证 imageProxy 被关闭
+ *  - MediaCodec 配置健壮性：宽度/高度非 4 倍数时对齐
  */
 class CameraManager(
     private val context: Context
@@ -61,6 +62,7 @@ class CameraManager(
     var onLightAnalysis: (LightAnalysisResult) -> Unit = {}
 
     // 状态
+    @Volatile
     var isLowLightMode: Boolean = false
         set(value) {
             if (field != value) {
@@ -68,9 +70,13 @@ class CameraManager(
                 onLowLight(value)
             }
         }
+    @Volatile
     var isFrontCamera: Boolean = false
+    @Volatile
     var isRecording: Boolean = false
         private set
+    @Volatile
+    private var pendingOOTDRequest = false
 
     // 姿态提供者 & 场景分类（ML Kit）
     val poseProvider = MlKitPoseProvider(context)
@@ -82,39 +88,42 @@ class CameraManager(
     private var videoCapture: VideoCapture<Recorder>? = null
     private var camera: Camera? = null
 
+    @Volatile
     private var activeRecording: Recording? = null
 
-    // 场景防抖：连续 2 次相同才触发
+    // 场景防抖
     private val sceneDebounceThreshold = 2
     private val sceneVoteBuffer = ArrayList<SceneType>()
+    @Volatile
     private var lastSceneUpdate = 0L
     private val sceneUpdateIntervalMs = 2000L
 
-    // 帧计数（性能降级用）
+    // 帧计数（@Volatile 保证跨线程可见性）
+    @Volatile
     private var frameCounter = 0
 
     private var pendingOOTDRequest = false
 
-    // MARK: - 最近一次光线分析结果（供 ViewModel 读取持久化）
-    var lastLightLevel: Float? = null
+    // MARK: - 最近光线分析结果（synchronized 保护）
+    @Volatile var lastLightLevel: Float? = null
         private set
-    var lastColorTemperature: Float? = null
+    @Volatile var lastColorTemperature: Float? = null
         private set
-    var lastExposureTimeMs: Long? = null
+    @Volatile var lastExposureTimeMs: Long? = null
         private set
-    var lastIsLowLight: Boolean = false
+    @Volatile var lastIsLowLight: Boolean = false
         private set
-    var lastExposureCompensation: Float = 0f
+    @Volatile var lastExposureCompensation: Float = 0f
         private set
 
-    // MARK: - 相机参数（曝光/ISO 范围，首次绑定后读取）
+    // 相机曝光参数范围
     private var exposureTimeRange: android.util.Range<Long>? = null
     private var sensitivityRange: android.util.Range<Int>? = null
-    private var minExposureTimeNs: Long = 0L
 
-    // 光线分析滑动窗口（最近 N 帧）
+    // 光线分析滑动窗口（10 帧平均，线程安全）
     private val recentLightLevels = ArrayDeque<Float>(10)
     private val recentColorTemps = ArrayDeque<Float>(10)
+    private val lightLock = Any()
 
     // MARK: - 绑定
 
@@ -133,22 +142,18 @@ class CameraManager(
 
         val selector = if (isFrontCamera) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
 
-        // 预览
         val preview = Preview.Builder().build()
         preview.setSurfaceProvider(previewView.surfaceProvider)
 
-        // 拍照
         imageCapture = ImageCapture.Builder()
             .setCaptureMode(ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG)
             .build()
 
-        // 录像
         val recorder = Recorder.Builder()
             .setQualitySelector(QualitySelector.from(Quality.HD))
             .build()
         videoCapture = VideoCapture.withOutput(recorder)
 
-        // 帧分析（姿态 + 场景 + 光线）
         val analysis = ImageAnalysis.Builder()
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .build()
@@ -163,7 +168,7 @@ class CameraManager(
             videoCapture
         )
 
-        // 绑定后读取相机的曝光/ISO 能力
+        // 读取相机曝光/ISO 能力
         camera?.cameraInfo?.let { info ->
             runCatching {
                 exposureTimeRange = info.exposureTimeRange
@@ -179,98 +184,106 @@ class CameraManager(
         poseProvider.isFrontCamera = isFrontCamera
     }
 
-    // MARK: - 帧分析（含光线分析 + 动态降频）
+    // MARK: - 帧分析（异常安全 + 完整管线）
 
     @androidx.annotation.OptIn(ExperimentalGetImage::class, ExperimentalPersistentRecording::class)
     private fun analyzeFrame(imageProxy: ImageProxy) {
         frameCounter++
+        var handledByPose = false
 
-        // 光线分析：每帧都做（用于低光检测），但只采样有限像素
-        val lightResult = analyzeLight(imageProxy)
-        if (lightResult != null) {
-            // 更新滑动窗口
-            if (recentLightLevels.size >= 10) recentLightLevels.removeFirst()
-            recentLightLevels.addLast(lightResult.lightLevel)
-            if (recentColorTemps.size >= 10) recentColorTemps.removeFirst()
-            recentColorTemps.addLast(lightResult.colorTemperature)
+        try {
+            // 1) 光线分析（每帧）
+            val lightResult = runCatching { analyzeLight(imageProxy) }.getOrNull()
+            if (lightResult != null) {
+                synchronized(lightLock) {
+                    if (recentLightLevels.size >= 10) recentLightLevels.removeFirst()
+                    recentLightLevels.addLast(lightResult.lightLevel)
+                    if (recentColorTemps.size >= 10) recentColorTemps.removeFirst()
+                    recentColorTemps.addLast(lightResult.colorTemperature)
 
-            // 平滑后存储
-            lastLightLevel = recentLightLevels.average().toFloat()
-            lastColorTemperature = recentColorTemps.average().toFloat()
-            lastExposureTimeMs = lightResult.exposureTimeMs
-            lastExposureCompensation = lightResult.exposureCompensation
+                    lastLightLevel = recentLightLevels.average().toFloat()
+                    lastColorTemperature = recentColorTemps.average().toFloat()
+                    lastExposureTimeMs = lightResult.exposureTimeMs
+                    lastExposureCompensation = lightResult.exposureCompensation
 
-            // 低光检测：窗口均值 < 0.25
-            val smoothedLight = lastLightLevel ?: 0.5f
-            val wasLow = lastIsLowLight
-            lastIsLowLight = smoothedLight < 0.25f
-            if (lastIsLowLight != wasLow) {
-                isLowLightMode = lastIsLowLight
+                    val smoothedLight = lastLightLevel ?: 0.5f
+                    val wasLow = lastIsLowLight
+                    lastIsLowLight = smoothedLight < 0.25f
+                    if (lastIsLowLight != wasLow) {
+                        isLowLightMode = lastIsLowLight
+                    }
+                }
+                onLightAnalysis(lightResult)
             }
 
-            onLightAnalysis(lightResult)
-        }
+            // 2) 姿态检测：隔帧丢弃，低光时加倍降频
+            val modulo = if (isLowLightMode) 4 else 2
+            val skipPoseFrame = frameCounter % modulo == 0
+            if (!skipPoseFrame) {
+                handledByPose = true
+                poseProvider.process(imageProxy)
+                // poseProvider.process 的 addOnCompleteListener 会自动 close imageProxy
+                return
+            }
 
-        // 姿态检测：隔帧丢弃（奇偶帧交替），低光时加倍降频
-        val modulo = if (isLowLightMode) 4 else 2
-        val skipPoseFrame = frameCounter % modulo == 0
-        if (!skipPoseFrame) {
-            poseProvider.process(imageProxy)
-        }
-
-        // 低频场景分类（2s / 4s，低光时间隔加倍）
-        val now = System.currentTimeMillis()
-        val interval = if (isLowLightMode) sceneUpdateIntervalMs * 2 else sceneUpdateIntervalMs
-        if (now - lastSceneUpdate > interval) {
-            lastSceneUpdate = now
-            val bitmap = imageProxy.toBitmap()
-            if (bitmap != null) {
-                sceneClassifier.classify(bitmap, onResult = { scene -> handleSceneResult(scene) })
-                // OOTD 快照
-                if (pendingOOTDRequest) {
-                    pendingOOTDRequest = false
-                    val bmp = downscale(bitmap, 512)
-                    mainExecutor.execute { onOOTDSnapshot(bmp) }
+            // 3) 低频场景分类
+            val now = System.currentTimeMillis()
+            val interval = if (isLowLightMode) sceneUpdateIntervalMs * 2 else sceneUpdateIntervalMs
+            if (now - lastSceneUpdate > interval) {
+                lastSceneUpdate = now
+                runCatching {
+                    val bitmap = imageProxy.toBitmap()
+                    if (bitmap != null) {
+                        sceneClassifier.classify(bitmap, onResult = { scene -> handleSceneResult(scene) })
+                        if (pendingOOTDRequest) {
+                            pendingOOTDRequest = false
+                            val bmp = downscale(bitmap, 512)
+                            mainExecutor.execute { onOOTDSnapshot(bmp) }
+                        }
+                    }
                 }
             }
+        } catch (_: Exception) {
+            // 帧分析异常，忽略该帧
+        } finally {
+            if (!handledByPose) {
+                runCatching { imageProxy.close() }
+            }
         }
-
-        // 如果跳过了姿态分析，则在低频分析后关闭 imageProxy
-        if (skipPoseFrame) {
-            imageProxy.close()
-        }
-        // 否则 poseProvider.process 内部会负责关闭
     }
 
     /**
-     * 帧光线分析：
-     *  - 采样缩略图的像素网格（避免全图采样开销）
-     *  - 计算平均亮度 (0~1)
-     *  - 计算色温 (0=冷蓝, 1=暖红)
-     *  - 检测过曝比例
-     *  - 读取 CameraX 曝光补偿
-     *
-     * 使用下采样缩略图 (80x60)，计算开销极低。
+     * 帧光线分析（完整边界保护）：
+     *  - 从 YUV 平面直接采样亮度/色温，零颜色转换开销
+     *  - 完整的 planes/stride/buffer 边界检查
+     *  - 采样 16x12 网格，约 192 点
      */
     @androidx.annotation.OptIn(ExperimentalGetImage::class)
     private fun analyzeLight(imageProxy: ImageProxy): LightAnalysisResult? {
         val mediaImage = imageProxy.image ?: return null
         val w = imageProxy.width
         val h = imageProxy.height
-        if (w == 0 || h == 0) return null
+        if (w <= 0 || h <= 0) return null
 
-        // 为保证性能：采样限制在 ~200 个点（网格 16x12）
+        val planes = mediaImage.planes
+        if (planes.size < 3) return null
+
         val sampleCols = 16
         val sampleRows = 12
         val strideX = w / sampleCols
         val strideY = h / sampleRows
         if (strideX <= 0 || strideY <= 0) return null
 
-        // 从 YUV 的 Y 平面直接读取亮度（零颜色转换开销）
-        val yPlane = mediaImage.planes[0]
+        val yPlane = planes[0]
         val yBuffer = yPlane.buffer
         val rowStride = yPlane.rowStride
         val pixelStride = yPlane.pixelStride
+        val yBufferLimit = yBuffer.limit()
+        val yBufferCapacity = yBuffer.capacity()
+
+        // 边界检查：确保 rowStride 和 pixelStride 合理
+        if (rowStride <= 0 || pixelStride <= 0) return null
+        if (yBufferLimit <= 0 || yBufferCapacity <= 0) return null
 
         var totalLuma = 0L
         var samples = 0
@@ -279,14 +292,16 @@ class CameraManager(
         var overExposed = 0
         var underExposed = 0
 
-        // 从 Y 平面采样亮度
+        // 采样 Y 平面亮度（完整边界保护）
         for (gy in 0 until sampleRows) {
-            val y = (gy * strideY).coerceAtMost(h - 1)
-            val rowStart = y * rowStride
+            val y = (gy * strideY).coerceIn(0, h - 1)
+            val rowStart = y.toLong() * rowStride
             for (gx in 0 until sampleCols) {
-                val x = (gx * strideX).coerceAtMost(w - 1)
-                val yIdx = rowStart + x * pixelStride
-                if (yIdx < yBuffer.limit()) {
+                val x = (gx * strideX).coerceIn(0, w - 1)
+                val idx = rowStart + x.toLong() * pixelStride
+                // 完整边界检查：确保索引在 [0, yBufferLimit) 且 >= 0
+                val yIdx = idx.coerceIn(0L, (yBufferLimit - 1).toLong()).toInt()
+                if (yIdx >= 0 && yIdx < yBufferLimit) {
                     val luma = yBuffer.get(yIdx).toInt() and 0xFF
                     totalLuma += luma
                     samples++
@@ -297,52 +312,75 @@ class CameraManager(
         }
 
         if (samples == 0) return null
+        val avgLuma = totalLuma.toFloat() / samples / 255f
 
-        val avgLuma = totalLuma.toFloat() / samples / 255f  // 归一化 0~1
-
-        // 色温估计：从 U/V 平面采样
-        val uPlane = mediaImage.planes[1]
-        val vPlane = mediaImage.planes[2]
+        // 色温估计（U/V 平面）
+        val uPlane = planes[1]
+        val vPlane = planes[2]
         val uBuffer = uPlane.buffer
         val vBuffer = vPlane.buffer
         val uRowStride = uPlane.rowStride
         val vRowStride = vPlane.rowStride
         val uPixelStride = uPlane.pixelStride
         val vPixelStride = vPlane.pixelStride
+        val uLimit = uBuffer.limit()
+        val vLimit = vBuffer.limit()
+
+        // 边界检查 UV 平面
+        if (uRowStride <= 0 || vRowStride <= 0 || uPixelStride <= 0 || vPixelStride <= 0) {
+            return LightAnalysisResult(
+                lightLevel = avgLuma.coerceIn(0f, 1f),
+                colorTemperature = 0.5f,
+                exposureTimeMs = null,
+                overExposureRatio = overExposed.toFloat() / samples,
+                underExposureRatio = underExposed.toFloat() / samples,
+                exposureCompensation = 0f
+            )
+        }
+        if (uLimit <= 0 || vLimit <= 0) {
+            return LightAnalysisResult(
+                lightLevel = avgLuma.coerceIn(0f, 1f),
+                colorTemperature = 0.5f,
+                exposureTimeMs = null,
+                overExposureRatio = overExposed.toFloat() / samples,
+                underExposureRatio = underExposed.toFloat() / samples,
+                exposureCompensation = 0f
+            )
+        }
+
         val chromaW = w / 2
         val chromaH = h / 2
+        if (chromaW <= 0 || chromaH <= 0) return null
 
-        val chromaStrideX = (chromaW / sampleCols).coerceAtLeast(1)
-        val chromaStrideY = (chromaH / sampleRows).coerceAtLeast(1)
+        val chromaStrideX = (chromaW / sampleCols.coerceAtLeast(1)).coerceAtLeast(1)
+        val chromaStrideY = (chromaH / sampleRows.coerceAtLeast(1)).coerceAtLeast(1)
         var chromaSamples = 0
         for (gy in 0 until sampleRows step 2) {
-            val cy = (gy * chromaStrideY).coerceAtMost(chromaH - 1)
-            val uRowStart = cy * uRowStride
-            val vRowStart = cy * vRowStride
+            val cy = (gy * chromaStrideY).coerceIn(0, chromaH - 1)
+            val uRowStart = cy.toLong() * uRowStride
+            val vRowStart = cy.toLong() * vRowStride
             for (gx in 0 until sampleCols step 2) {
-                val cx = (gx * chromaStrideX).coerceAtMost(chromaW - 1)
-                val uIdx = uRowStart + cx * uPixelStride
-                val vIdx = vRowStart + cx * vPixelStride
-                if (uIdx < uBuffer.limit() && vIdx < vBuffer.limit()) {
-                    val u = uBuffer.get(uIdx).toInt() and 0xFF  // 128 为中性
+                val cx = (gx * chromaStrideX).coerceIn(0, chromaW - 1)
+                val uIdx = (uRowStart + cx.toLong() * uPixelStride).coerceIn(0L, (uLimit - 1).toLong()).toInt()
+                val vIdx = (vRowStart + cx.toLong() * vPixelStride).coerceIn(0L, (vLimit - 1).toLong()).toInt()
+                if (uIdx in 0 until uLimit && vIdx in 0 until vLimit) {
+                    val u = uBuffer.get(uIdx).toInt() and 0xFF
                     val v = vBuffer.get(vIdx).toInt() and 0xFF
-                    // V 分量偏高 → 暖（红/橙）；U 分量偏高 → 冷（蓝）
-                    warmSum += (v - 128).coerceAtLeast(0)
-                    coldSum += (u - 128).coerceAtLeast(0)
+                    if (v > 128) warmSum += (v - 128)
+                    if (u > 128) coldSum += (u - 128)
                     chromaSamples++
                 }
             }
         }
+
         val colorTemperature = if (chromaSamples > 0) {
-            val warmRatio = warmSum.toFloat() / (warmSum + coldSum + 1)
-            // warmRatio 越高色温越暖 → 映射到 0~1
-            warmRatio.coerceIn(0f, 1f)
+            val total = warmSum + coldSum + 1
+            (warmSum.toFloat() / total).coerceIn(0f, 1f)
         } else 0.5f
 
-        // 曝光时间（ns → ms）
         val exposureTimeMs = exposureTimeRange?.let { range ->
             val center = (range.lower + range.upper) / 2
-            center / 1_000_000L  // ns → ms
+            center / 1_000_000L
         }
 
         return LightAnalysisResult(
@@ -357,13 +395,17 @@ class CameraManager(
 
     private fun handleSceneResult(scene: SceneType) {
         if (scene == SceneType.UNKNOWN) return
-        sceneVoteBuffer.add(scene)
-        if (sceneVoteBuffer.size > sceneDebounceThreshold) sceneVoteBuffer.removeAt(0)
+        synchronized(sceneVoteBuffer) {
+            sceneVoteBuffer.add(scene)
+            if (sceneVoteBuffer.size > sceneDebounceThreshold) sceneVoteBuffer.removeAt(0)
 
-        if (sceneVoteBuffer.size == sceneDebounceThreshold && sceneVoteBuffer.all { it == scene }) {
-            sceneVoteBuffer.clear()
-            onSceneChange(scene)
+            if (sceneVoteBuffer.size == sceneDebounceThreshold && sceneVoteBuffer.all { it == scene }) {
+                sceneVoteBuffer.clear()
+            } else {
+                return
+            }
         }
+        onSceneChange(scene)
     }
 
     private fun downscale(src: Bitmap, maxSize: Int): Bitmap {
@@ -404,11 +446,7 @@ class CameraManager(
                     val hasError = event.hasError()
                     isRecording = false
                     activeRecording = null
-                    if (hasError) {
-                        onRecordingSave(file.absolutePath)
-                    } else {
-                        onRecordingSave(file.absolutePath)
-                    }
+                    onRecordingSave(file.absolutePath)
                 }
             }
         isRecording = true
@@ -432,47 +470,68 @@ class CameraManager(
 
     fun cleanUp() {
         cameraProvider?.unbindAll()
-        poseProvider.close()
-        sceneClassifier.close()
+        runCatching { poseProvider.close() }
+        runCatching { sceneClassifier.close() }
+        runCatching {
+            synchronized(lightLock) {
+                recentLightLevels.clear()
+                recentColorTemps.clear()
+                lastLightLevel = null
+                lastColorTemperature = null
+                lastExposureTimeMs = null
+                lastIsLowLight = false
+                lastExposureCompensation = 0f
+            }
+        }
+        // 重置场景状态
+        synchronized(sceneVoteBuffer) {
+            sceneVoteBuffer.clear()
+        }
+        lastSceneUpdate = 0L
+        // 重置 OOTD 请求
+        pendingOOTDRequest = false
     }
 }
 
 /** 帧光线分析结果 */
 data class LightAnalysisResult(
-    val lightLevel: Float,           // 0~1 归一化亮度
-    val colorTemperature: Float,     // 0=冷 1=暖
-    val exposureTimeMs: Long?,       // 曝光时间（毫秒）
-    val overExposureRatio: Float,    // 过曝像素比例 0~1
-    val underExposureRatio: Float,  // 欠曝像素比例 0~1
-    val exposureCompensation: Float  // 曝光补偿 -1 ~ +1
+    val lightLevel: Float,
+    val colorTemperature: Float,
+    val exposureTimeMs: Long?,
+    val overExposureRatio: Float,
+    val underExposureRatio: Float,
+    val exposureCompensation: Float
 )
 
 // ============================================================================
-// ImageProxy → Bitmap 完整转换管线
+// ImageProxy → Bitmap 完整转换管线（带资源安全）
 // ============================================================================
 
 /**
- * 将 ImageProxy 完整转换为 RGB Bitmap。
- *
- * CameraX ImageProxy 使用 YUV_420_888 / YUV_422_888 / YUV_444_888 等格式。
- * 通过 YuvImage 压缩为 JPEG 后再解码为 ARGB_8888，确保颜色正确。
- * 同时根据 rotationDegrees 旋转为正向。
- *
- * 此实现是 Android CameraX 标准流程，与 iOS Vision 的完整颜色空间转换等价。
+ * ImageProxy → Bitmap，完整带资源安全：
+ *  - try/finally 保护 YUV 解析过程
+ *  - stride 异常自动降级
+ *  - 空 planes / 0 尺寸直接返回 null
  */
 @androidx.annotation.OptIn(ExperimentalGetImage::class)
 internal fun ImageProxy.toBitmap(): Bitmap? {
     val mediaImage = image ?: return null
-
     val planes = mediaImage.planes
     if (planes.size < 3) return null
+
+    val imageWidth = width
+    val imageHeight = height
+    if (imageWidth <= 0 || imageHeight <= 0) return null
+
     val yPlane = planes[0]
     val uPlane = planes[1]
     val vPlane = planes[2]
 
-    val imageWidth = width
-    val imageHeight = height
+    val yBuffer = yPlane.buffer
+    val uBuffer = uPlane.buffer
+    val vBuffer = vPlane.buffer
 
+    // 边界保护：buffer 大小足够
     val yRowStride = yPlane.rowStride
     val yPixelStride = yPlane.pixelStride
     val uRowStride = uPlane.rowStride
@@ -487,47 +546,66 @@ internal fun ImageProxy.toBitmap(): Bitmap? {
         else -> android.graphics.ImageFormat.YUV_420_888
     }
 
-    val outputStream = ByteArrayOutputStream()
-    val yBytes = ByteArray(yRowStride * imageHeight)
-    yPlane.buffer.rewind()
-    yPlane.buffer.get(yBytes)
+    return try {
+        val outputStream = ByteArrayOutputStream()
 
-    val chromaWidth = imageWidth / 2
-    val chromaHeight = imageHeight / 2
-    val vBytes = ByteArray(vRowStride * chromaHeight)
-    val uBytes = ByteArray(uRowStride * chromaHeight)
-    vPlane.buffer.rewind()
-    vPlane.buffer.get(vBytes)
-    uPlane.buffer.rewind()
-    uPlane.buffer.get(uBytes)
+        // 安全读取 Y 平面
+        val yBytesSize = (yRowStride * imageHeight).coerceAtMost(yBuffer.remaining())
+        val yBytes = ByteArray(yBytesSize)
+        yBuffer.rewind()
+        yBuffer.get(yBytes)
 
-    val nv21Size = yRowStride * imageHeight + (vRowStride + uRowStride) * chromaHeight
-    val nv21Data = ByteArray(nv21Size)
-    System.arraycopy(yBytes, 0, nv21Data, 0, yRowStride * imageHeight)
-    var dstOffset = yRowStride * imageHeight
-    for (row in 0 until chromaHeight) {
-        val vOffset = row * vRowStride
-        val uOffset = row * uRowStride
-        for (col in 0 until chromaWidth) {
-            val vIdx = if (vPixelStride > 1) { vOffset + col * vPixelStride } else { vOffset + col }
-            val uIdx = if (uPixelStride > 1) { uOffset + col * uPixelStride } else { uOffset + col }
-            nv21Data[dstOffset++] = vBytes[vIdx]
-            nv21Data[dstOffset++] = uBytes[uIdx]
+        val chromaWidth = imageWidth / 2
+        val chromaHeight = imageHeight / 2
+
+        val vBytesSize = (vRowStride * chromaHeight).coerceAtMost(vBuffer.remaining())
+        val uBytesSize = (uRowStride * chromaHeight).coerceAtMost(uBuffer.remaining())
+        val vBytes = ByteArray(vBytesSize)
+        val uBytes = ByteArray(uBytesSize)
+        vBuffer.rewind()
+        vBuffer.get(vBytes)
+        uBuffer.rewind()
+        uBuffer.get(uBytes)
+
+        val nv21Size = yBytes.size + (vBytes.size + uBytes.size)
+        val nv21Data = ByteArray(nv21Size)
+        System.arraycopy(yBytes, 0, nv21Data, 0, yBytes.size)
+        var dstOffset = yBytes.size
+
+        // 交错组装 NV21（按实际 chromaHeight 行）
+        val actualChromaHeight = minOf(chromaHeight, vBytes.size / vRowStride.coerceAtLeast(1))
+        for (row in 0 until actualChromaHeight) {
+            val vOffset = (row * vRowStride).coerceIn(0, vBytes.size - 1)
+            val uOffset = (row * uRowStride).coerceIn(0, uBytes.size - 1)
+            for (col in 0 until chromaWidth) {
+                val vIdx = if (vPixelStride > 1) {
+                    (vOffset + col * vPixelStride).coerceIn(0, vBytes.size - 1)
+                } else {
+                    (vOffset + col).coerceIn(0, vBytes.size - 1)
+                }
+                val uIdx = if (uPixelStride > 1) {
+                    (uOffset + col * uPixelStride).coerceIn(0, uBytes.size - 1)
+                } else {
+                    (uOffset + col).coerceIn(0, uBytes.size - 1)
+                }
+                if (dstOffset < nv21Data.size) {
+                    nv21Data[dstOffset++] = vBytes[vIdx]
+                    nv21Data[dstOffset++] = uBytes[uIdx]
+                }
+            }
         }
-    }
 
-    val yuvImage = YuvImage(nv21Data, colorFormat, imageWidth, imageHeight, null)
-    val rect = Rect(0, 0, imageWidth, imageHeight)
-    yuvImage.compressToJpeg(rect, 95, outputStream)
-    val jpegBytes = outputStream.toByteArray()
+        val yuvImage = YuvImage(nv21Data, colorFormat, imageWidth, imageHeight, null)
+        val rect = Rect(0, 0, imageWidth, imageHeight)
+        yuvImage.compressToJpeg(rect, 95, outputStream)
+        val jpegBytes = outputStream.toByteArray()
 
-    val bitmap = BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.size) ?: return null
-
-    val rotation = imageInfo.rotationDegrees
-    return if (rotation == 0) {
-        bitmap
-    } else {
-        rotateBitmap(bitmap, rotation)
+        BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.size)?.let { bitmap ->
+            val rotation = imageInfo?.rotationDegrees ?: 0
+            if (rotation == 0) bitmap else rotateBitmap(bitmap, rotation)
+        }
+    } catch (_: Exception) {
+        null
     }
 }
 

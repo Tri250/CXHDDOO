@@ -69,7 +69,7 @@ data class SceneStat(
 )
 
 data class ScoreStat(
-    val avgScore: Float,
+    val avgScore: Double,
     val maxScore: Int,
     val count: Int
 )

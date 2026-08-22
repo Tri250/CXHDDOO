@@ -82,25 +82,19 @@ fun PhotoPreviewScreen(
     }
     val currentImage = images.getOrElse(selectedIndex) { images.first() }
 
-    // 展示图 = 滤镜 + 裁切，非阻塞计算
-    val displayImage by produceState<android.graphics.Bitmap?>(null, currentImage, selectedFilter, selectedCropRatio) {
+    // 展示图 = 滤镜 + 裁切（只计算一次，供展示和保存共享）
+    val processedImage by produceState<android.graphics.Bitmap?>(
+        null, currentImage, selectedFilter, selectedCropRatio
+    ) {
         value = withContext(Dispatchers.Default) {
             PhotoFilterEngine.apply(currentImage, selectedFilter).applyCrop(selectedCropRatio)
         }
     }
 
     // 切换图片时重置滤镜并重建滤镜缩略图
-    val currentFilterKey = currentImage
-    LaunchedEffect(currentFilterKey) {
+    LaunchedEffect(currentImage) {
         selectedFilter = PhotoFilter.ORIGINAL
         filterThumbnails.clear()
-    }
-
-    // 共享/保存用的最终图（滤镜 + 裁切）
-    val finalImage by produceState<android.graphics.Bitmap?>(null, currentImage, selectedFilter, selectedCropRatio) {
-        value = withContext(Dispatchers.Default) {
-            PhotoFilterEngine.apply(currentImage, selectedFilter).applyCrop(selectedCropRatio)
-        }
     }
 
     Box(
@@ -109,7 +103,7 @@ fun PhotoPreviewScreen(
             .background(Color.Black)
     ) {
         // 当前图全屏显示
-        displayImage?.let {
+        processedImage?.let {
             Image(
                 bitmap = it.asImageBitmap(),
                 contentDescription = null,
@@ -278,7 +272,7 @@ fun PhotoPreviewScreen(
                         .background(Brand.Success)
                         .border(3.dp, Color.White.copy(alpha = 0.25f), CircleShape)
                         .clickable {
-                            finalImage?.let { onSave(it) }
+                            processedImage?.let { onSave(it) }
                         },
                     contentAlignment = Alignment.Center
                 ) {
@@ -293,7 +287,7 @@ fun PhotoPreviewScreen(
                         .background(Brand.SurfaceHigh)
                         .border(1.dp, Brand.Hairline, RoundedCornerShape(14.dp))
                         .clickable {
-                            finalImage?.let { shareBitmap(context, it, "分享到") }
+                            processedImage?.let { shareBitmap(context, it, "分享到") }
                         },
                     contentAlignment = Alignment.Center
                 ) {
