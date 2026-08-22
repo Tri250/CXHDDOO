@@ -325,7 +325,7 @@ class MlKitPoseProvider(private val context: Context) {
                     if (leftElbowAngle < 90f) Facing.LEFT_SIDE else Facing.RIGHT_SIDE
                 } else Facing.LEFT_SIDE // 假设左侧
             }
-            else Facing.FRONT
+            else -> Facing.FRONT
         }
     }
 
