@@ -69,19 +69,20 @@ jobs:
       - name: Verify build outputs
         run: |
           echo "=== Build Outputs ==="
-          find PoseAI-Android/app/build/outputs -name "*.apk" -o -name "*.aab" 2>/dev/null || echo "No outputs found"
+          find . -name "*.apk" -type f 2>/dev/null || echo "No APK files found"
+          find . -path "*/build/outputs/*" -type f 2>/dev/null | head -20
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: debug-apk
-          path: PoseAI-Android/app/build/outputs/apk/debug/*.apk
+          path: '**/outputs/apk/debug/*.apk'
 
       - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
-          path: PoseAI-Android/app/build/outputs/apk/release/*.apk
+          path: '**/outputs/apk/release/*.apk'
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -107,5 +108,5 @@ jobs:
             - 📐 Composition guides (rule of thirds, golden ratio)
             - 🔄 Dual-person pose support
           files: |
-            PoseAI-Android/app/build/outputs/apk/release/*.apk
-            PoseAI-Android/app/build/outputs/apk/debug/*.apk
+            **/outputs/apk/release/*.apk
+            **/outputs/apk/debug/*.apk
