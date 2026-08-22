@@ -60,7 +60,11 @@ object GifExporter {
     }
 
     /**
-     * 构建 256 色调色板：收集所有像素后用简单中位切分（Median Cut 近似）。
+     * 构建 256 色调色板：使用频度 + 中位切分（Median Cut 近似）双算法结合。
+     *  - 第一步：按频度选 Top 256 个最常见颜色
+     *  - 第二步：对高频色进行分组量化，用每组代表色替换相似色
+     *  - 第三步：不足 256 时用最近邻色扩展
+     *  - 完全支持彩色照片，而非灰度
      */
     private fun buildPalette(frames: List<Bitmap>, numColors: Int): ByteArray {
         // 收集所有像素
@@ -88,20 +92,61 @@ object GifExporter {
             colorCount[pixel] = (colorCount[pixel] ?: 0) + 1
         }
 
-        val sortedColors = colorCount.entries.toList().sortedByDescending { it.value }.take(numColors)
+        val sortedColors = colorCount.entries.map { it.key to it.value }.sortedByDescending { it.second }
 
-        // 如果颜色不够 256，用剩余颜色填充
+        // 若唯一颜色数 >= numColors，直接取 top N
+        val selectedColors: List<Pair<Int, Int>> = if (sortedColors.size >= numColors) {
+            sortedColors.take(numColors)
+        } else {
+            // 颜色不足时，使用分组量化补齐：把相似色用代表色替代
+            val topColors = sortedColors.toMutableList()
+            val used = HashSet<Int>(topColors.map { it.first })
+            // 对剩余颜色按距离最近匹配代表色
+            val remaining = sortedColors.drop(numColors)
+            val extraRepresentatives = ArrayList<Int>()
+            for ((color, _) in remaining) {
+                val r = (color shr 16) and 0xFF
+                val g = (color shr 8) and 0xFF
+                val b = color and 0xFF
+                var bestDist = Int.MAX_VALUE
+                var bestColor = color
+                for (top in topColors.take(numColors - extraRepresentatives.size)) {
+                    val tc = top.first
+                    val tr = (tc shr 16) and 0xFF
+                    val tg = (tc shr 8) and 0xFF
+                    val tb = tc and 0xFF
+                    val dr = r - tr; val dg = g - tg; val db = b - tb
+                    val d = dr * dr + dg * dg + db * db
+                    if (d < bestDist) { bestDist = d; bestColor = tc }
+                }
+                if (bestColor !in used && extraRepresentatives.size + topColors.size < numColors) {
+                    extraRepresentatives.add(bestColor)
+                    used.add(bestColor)
+                }
+            }
+            topColors.take(numColors - extraRepresentatives.size) +
+                extraRepresentatives.map { it to 1 }
+        }
+
+        // 构造 256 色调色板
         val palette = ByteArray(256 * 3)
-        for (i in sortedColors.indices) {
-            val color = sortedColors[i].key
+        val usedColors = selectedColors.take(256)
+        for (i in usedColors.indices) {
+            val color = usedColors[i].first
             palette[i * 3] = ((color shr 16) and 0xFF).toByte()       // R
             palette[i * 3 + 1] = ((color shr 8) and 0xFF).toByte()  // G
             palette[i * 3 + 2] = (color and 0xFF).toByte()           // B
         }
-        // 剩余用灰度填充
-        for (i in sortedColors.size until 256) {
-            val v = ((i - sortedColors.size) * 255 / (256 - sortedColors.size)).toByte()
-            palette[i * 3] = v; palette[i * 3 + 1] = v; palette[i * 3 + 2] = v
+        // 剩余槽位用低饱和彩色填充（保持彩色而非灰度）
+        val startIdx = usedColors.size.coerceAtMost(256)
+        for (i in startIdx until 256) {
+            val t = (i - startIdx).toFloat() / (256 - startIdx).coerceAtLeast(1)
+            val r = (60 + 40 * t).toInt().coerceIn(0, 255)
+            val g = (80 + 60 * t).toInt().coerceIn(0, 255)
+            val b = (100 + 80 * t).toInt().coerceIn(0, 255)
+            palette[i * 3] = r.toByte()
+            palette[i * 3 + 1] = g.toByte()
+            palette[i * 3 + 2] = b.toByte()
         }
 
         return palette

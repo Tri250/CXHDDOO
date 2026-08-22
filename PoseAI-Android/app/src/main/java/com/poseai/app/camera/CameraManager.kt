@@ -162,7 +162,7 @@ class CameraManager(
             lastSceneUpdate = now
             val bitmap = imageProxy.toBitmap()
             if (bitmap != null) {
-                sceneClassifier.classify(bitmap) { scene -> handleSceneResult(scene) }
+                sceneClassifier.classify(bitmap, onResult = { scene -> handleSceneResult(scene) })
                 // OOTD 快照
                 if (pendingOOTDRequest) {
                     pendingOOTDRequest = false

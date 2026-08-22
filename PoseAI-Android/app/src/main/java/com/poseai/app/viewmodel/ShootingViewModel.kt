@@ -239,24 +239,24 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
 
         val baselineScore: Float
         if (secondary != null && poses.size >= 2) {
-            // 双人方案，且检测到两人（理论上不可达，但保留逻辑完整性）
-            val aPri = PoseMatcher.calculateSimilarity(poses[0].points, activePrimary, poses[0].isHalfBody)
-            val aSec = PoseMatcher.calculateSimilarity(poses[0].points, secondary, poses[0].isHalfBody)
-            val bPri = PoseMatcher.calculateSimilarity(poses[1].points, activePrimary, poses[1].isHalfBody)
-            val bSec = PoseMatcher.calculateSimilarity(poses[1].points, secondary, poses[1].isHalfBody)
-            val c1 = (aPri + bSec) / 2
-            val c2 = (bPri + aSec) / 2
-            baselineScore = if (c1 >= c2) { isDualMatchedPrimary.value = true; c1 } else { isDualMatchedPrimary.value = false; c2 }
+            // 双人方案，且检测到两人：使用完整全排列双人匹配
+            val (score, primaryAsFirst) = PoseMatcher.calculateDualSimilarity(
+                poses[0].points, poses[1].points,
+                activePrimary, secondary,
+                poses[0].isHalfBody, poses[1].isHalfBody
+            )
+            isDualMatchedPrimary.value = primaryAsFirst
+            baselineScore = score
         } else if (secondary != null) {
             // 降级：双人方案但仅检测到单人，只比较主要姿态并打 0.75x 折扣
             isDualMatchedPrimary.value = true
             baselineScore = if (poses.isNotEmpty()) {
-                PoseMatcher.calculateSimilarity(poses[0].points, activePrimary, poses[0].isHalfBody) * 0.75f
+                PoseMatcher.calculateSimilarity(poses[0].points, activePrimary, poses[0].isHalfBody, score.value) * 0.75f
             } else 0f
         } else {
             baselineScore = if (poses.isNotEmpty()) {
                 val fp = poses[0]
-                PoseMatcher.calculateSimilarity(fp.points, activePrimary, fp.isHalfBody)
+                PoseMatcher.calculateSimilarity(fp.points, activePrimary, fp.isHalfBody, score.value)
             } else 0f
         }
 
