@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- 强制深色主题，摄像头场景下更美观（与 iOS 一致） -->
+    <style name="Theme.PoseAI" parent="android:Theme.Material.NoActionBar.Fullscreen">
+        <item name="android:windowBackground">@color/pose_black</item>
+        <item name="android:statusBarColor">@color/pose_black</item>
+        <item name="android:navigationBarColor">@color/pose_black</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:forceDarkAllowed" tools:targetApi="29">false</item>
+    </style>
+</resources>

@@ -1,0 +1,24 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+*.keystore
+*.jks
+!app/src/main/res/xml/file_paths.xml
+# Gradle wrapper
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+# IDE
+*.swp
+*.swo
+*~
+# OS
+Thumbs.db
+# Build outputs
+app/build/
+build/
