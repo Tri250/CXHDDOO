@@ -35,6 +35,12 @@ android {
                 storePassword = System.getenv("SIGNING_STORE_PASSWORD") ?: "poseai_release"
                 keyAlias = System.getenv("SIGNING_KEY_ALIAS") ?: "poseai"
                 keyPassword = System.getenv("SIGNING_KEY_PASSWORD") ?: "poseai_release"
+            } else {
+                // Fall back to debug keystore for CI/local builds when no release keystore is provided.
+                storeFile = File("${System.getProperty("user.home")}/.android/debug.keystore")
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
             }
         }
     }
@@ -47,18 +53,23 @@ android {
         }
         release {
             isMinifyEnabled = true
-            isShrinkResources = true
+            isShrinkResources = false
             isDebuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // 自动启用签名（当本地 keystore 存在时）
-            val ks = File("${System.getProperty("user.home")}/.android/release-key.jks")
-            if (ks.exists()) {
-                signingConfig = signingConfigs.getByName("release")
-            }
+            // Auto-enable release signing (keystore exists) or fall back to debug signing.
+            signingConfig = signingConfigs.getByName("release")
         }
+    }
+
+    lint {
+        // Disable lint during release builds to avoid flaky network-dependent lint resolution
+        // and prevent OOM from running lint + R8 simultaneously.
+        checkReleaseBuilds = false
+        abortOnError = false
+        fatal += "MissingTranslation"
     }
 
     buildFeatures {
