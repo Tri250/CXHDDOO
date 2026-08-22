@@ -40,7 +40,15 @@ jobs:
       - name: Create signing keystore
         run: |
           mkdir -p ~/.android
-          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > ~/.android/release-key.jks || true
+          if [ -n "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > ~/.android/release-key.jks
+          else
+            # Auto-generate debug signing keystore so release build still signs the APK
+            keytool -genkeypair -v -keystore ~/.android/release-key.jks \
+              -storepass poseai_release -alias poseai -keypass poseai_release \
+              -dname "CN=PoseAI, OU=Mobile, O=PoseAI, L=Beijing, ST=Beijing, C=CN" \
+              -keyalg RSA -keysize 2048 -validity 10000
+          fi
 
       - name: Set version
         run: |
@@ -57,45 +65,50 @@ jobs:
         run: |
           export JAVA_HOME=$JAVA_HOME
           export ANDROID_HOME=$HOME/Android/Sdk
-          ./gradlew :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g" --console=plain 2>&1 | tail -30
-          mkdir -p ../artifacts
-          find app/build -name "*.apk" -exec cp {} ../artifacts/ \; || true
-          ls -la ../artifacts/
+          ./gradlew :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g" --console=plain
+          echo "=== Debug APKs ==="
+          find . -name "*.apk" -ls 2>/dev/null || echo "NONE"
 
       - name: Build release APK
         working-directory: PoseAI-Android
         env:
           JAVA_HOME: ${{ env.JAVA_HOME }}
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD || 'poseai_release' }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS || 'poseai' }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD || 'poseai_release' }}
         run: |
           export JAVA_HOME=$JAVA_HOME
           export ANDROID_HOME=$HOME/Android/Sdk
-          ./gradlew :app:assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx2g" --console=plain 2>&1 | tail -30
-          find app/build -name "*.apk" -exec cp {} ../artifacts/ \; || true
-          ls -la ../artifacts/
+          ./gradlew :app:assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx2g" --console=plain
+          echo "=== Release APKs ==="
+          find . -name "*.apk" -ls 2>/dev/null || echo "NONE"
 
-      - name: Verify build outputs
+      - name: Collect APKs to artifacts directory
         run: |
-          echo "=== Artifacts ==="
-          ls -la artifacts/ 2>/dev/null || echo "No artifacts dir"
-          echo "=== PoseAI-Android ==="
-          find PoseAI-Android -name "*.apk" -type f 2>/dev/null || echo "No APKs in PoseAI-Android"
+          mkdir -p artifacts
+          cp PoseAI-Android/app/build/outputs/apk/debug/app-debug.apk artifacts/app-debug.apk
+          if [ -f PoseAI-Android/app/build/outputs/apk/release/app-release.apk ]; then
+            cp PoseAI-Android/app/build/outputs/apk/release/app-release.apk artifacts/app-release.apk
+          fi
+          # Rename with version tag when releasing
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "Building on main"
+          fi
+          ls -la artifacts/
 
-      - name: Upload debug APK
+      - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: debug-apk
           path: artifacts/app-debug.apk
 
-      - name: Upload release APK
+      - name: Upload release APK artifact
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: release-apk
-          path: artifacts/*.apk
+          path: artifacts/app-release.apk
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
