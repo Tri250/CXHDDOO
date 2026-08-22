@@ -53,7 +53,9 @@ jobs:
       - name: Build debug APK
         working-directory: PoseAI-Android
         run: |
-          ./gradlew :app:clean :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g" --console=plain
+          ./gradlew --stop || true
+          sleep 2
+          ./gradlew :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g" --console=plain 2>&1 | tail -60
 
       - name: Build release APK
         working-directory: PoseAI-Android
@@ -62,7 +64,7 @@ jobs:
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
-          ./gradlew :app:assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx2g" --console=plain
+          ./gradlew :app:assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx2g" --console=plain 2>&1 | tail -60
 
       - name: Verify build outputs
         run: |
