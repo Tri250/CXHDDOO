@@ -1,3 +1,5 @@
+import java.io.File
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -25,14 +27,43 @@ android {
         // 关闭收费，全部免费：移除所有内购相关代码
     }
 
+    signingConfigs {
+        create("release") {
+            val ks = File("${System.getProperty("user.home")}/.android/release-key.jks")
+            if (ks.exists()) {
+                storeFile = ks
+                storePassword = System.getenv("SIGNING_STORE_PASSWORD") ?: "poseai_release"
+                keyAlias = System.getenv("SIGNING_KEY_ALIAS") ?: "poseai"
+                keyPassword = System.getenv("SIGNING_KEY_PASSWORD") ?: "poseai_release"
+            }
+        }
+    }
+
     buildTypes {
-        release {
+        debug {
+            isDebuggable = true
             isMinifyEnabled = false
+            applicationIdSuffix = ".debug"
+        }
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            isDebuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // 自动启用签名（当本地 keystore 存在时）
+            val ks = File("${System.getProperty("user.home")}/.android/release-key.jks")
+            if (ks.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
+    }
+
+    buildFeatures {
+        compose = true
+        buildConfig = true
     }
 
     compileOptions {
@@ -42,10 +73,7 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
-    }
-
-    buildFeatures {
-        compose = true
+        freeCompilerArgs = listOf("-opt-in=kotlin.RequiresOptIn", "-Xjvm-default=all")
     }
 
     packaging {

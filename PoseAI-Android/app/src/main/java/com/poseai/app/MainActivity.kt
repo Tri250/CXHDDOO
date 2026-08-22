@@ -76,23 +76,47 @@ fun PoseAIApp() {
     var historyOpen by rememberSaveable { mutableStateOf(false) }
     var statsOpen by rememberSaveable { mutableStateOf(false) }
 
-    // 相机 / 录音权限
+    // 相机 / 录音 / 存储权限
     var hasCamera by rememberSaveable {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
         )
     }
+    var hasAudio by rememberSaveable {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    var hasMediaRead by rememberSaveable {
+        mutableStateOf(checkMediaReadPermission(context))
+    }
+
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted -> hasCamera = granted }
     val audioLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { }
+    ) { granted -> hasAudio = granted }
+    val mediaLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        hasMediaRead = grants.values.any { it }
+    }
 
     LaunchedEffect(screen) {
         if (screen == Screen.MAIN) {
             if (!hasCamera) cameraLauncher.launch(Manifest.permission.CAMERA)
-            audioLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            if (!hasAudio) audioLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            if (!hasMediaRead) {
+                val permissions = mutableListOf<String>()
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
+                    permissions.add(Manifest.permission.READ_MEDIA_VIDEO)
+                } else {
+                    permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+                }
+                mediaLauncher.launch(permissions.toTypedArray())
+            }
         }
     }
 
@@ -129,6 +153,16 @@ fun PoseAIApp() {
                 )
             }
         }
+    }
+}
+
+private fun checkMediaReadPermission(context: android.content.Context): Boolean {
+    return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+        val imgs = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_IMAGES)
+        val vids = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_VIDEO)
+        imgs == PackageManager.PERMISSION_GRANTED || vids == PackageManager.PERMISSION_GRANTED
+    } else {
+        ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
     }
 }
 
