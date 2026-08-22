@@ -65,7 +65,7 @@ jobs:
         run: |
           export JAVA_HOME=$JAVA_HOME
           export ANDROID_HOME=$HOME/Android/Sdk
-          ./gradlew :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g" --console=plain
+          ./gradlew :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=512m" --console=plain
           echo "=== Debug APKs ==="
           find . -name "*.apk" -ls 2>/dev/null || echo "NONE"
 
@@ -79,7 +79,7 @@ jobs:
         run: |
           export JAVA_HOME=$JAVA_HOME
           export ANDROID_HOME=$HOME/Android/Sdk
-          ./gradlew :app:assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx2g" --console=plain
+          ./gradlew :app:assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=512m" --console=plain
           echo "=== Release APKs ==="
           find . -name "*.apk" -ls 2>/dev/null || echo "NONE"
 
