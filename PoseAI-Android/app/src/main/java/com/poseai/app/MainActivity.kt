@@ -90,6 +90,12 @@ fun PoseAIApp() {
     var hasMediaRead by rememberSaveable {
         mutableStateOf(checkMediaReadPermission(context))
     }
+    var hasLocation by rememberSaveable {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                || ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        )
+    }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -101,6 +107,11 @@ fun PoseAIApp() {
         ActivityResultContracts.RequestMultiplePermissions()
     ) { grants ->
         hasMediaRead = grants.values.any { it }
+    }
+    val locationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        hasLocation = grants.values.any { it }
     }
 
     LaunchedEffect(screen) {
@@ -116,6 +127,15 @@ fun PoseAIApp() {
                     permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
                 }
                 mediaLauncher.launch(permissions.toTypedArray())
+            }
+            // 位置权限（非强制，用户拒绝时降级为无位置记录）
+            if (!hasLocation) {
+                locationLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    )
+                )
             }
         }
     }

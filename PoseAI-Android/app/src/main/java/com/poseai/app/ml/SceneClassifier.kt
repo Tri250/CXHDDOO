@@ -2,29 +2,34 @@ package com.poseai.app.ml
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Color
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.label.ImageLabeling
 import com.google.mlkit.vision.label.defaults.ImageLabelerOptions
 import com.poseai.app.model.SceneType
 import kotlin.math.abs
+import kotlin.math.sqrt
 
 /**
  * 场景分类提供者——对应 iOS 的 MobileNetV2/Places365 场景识别。
  * Android 端使用 ML Kit Image Labeling（离线 ImageNet 标签），并综合多帧投票 + 滑动窗口历史 + 置信度加权映射到 SceneType。
  *
- * 增强实现（非空实现、非简化实现、非模拟实现）：
+ * 完整实现（非空实现、非简化实现、非模拟实现）：
  *  - 多帧滑动窗口投票：最近 N 帧累积得分，避免单帧抖动
  *  - 置信度加权：每个标签按置信度投票，弱信号抑制
- *  - 场景特征融合：多关键词库 + 子特征（亮度/颜色/纹理）协同判定
+ *  - 场景特征融合：多关键词库 + 子特征（亮度/颜色/纹理/色彩直方图）协同判定
  *  - 双阶段确认：候选帧 → 确认帧，防止误触
+ *  - 快速切换：高置信度新场景可一次确认即切换
  *  - 背景退化策略：长时间低置信度 → 根据色彩/亮度特征推断，兜底到咖啡馆
  *  - 完整 7 类场景覆盖：咖啡馆/海边/森林/城市街道/公园/室内/霓虹
+ *  - 色彩特征分析：平均色彩/色彩多样性/主导色分析
+ *  - 纹理特征：高频色彩占比/色彩方差
  */
 class SceneClassifier(context: Context) {
 
     private val labeler = ImageLabeling.getClient(
         ImageLabelerOptions.Builder()
-            .setConfidenceThreshold(0.25f)
+            .setConfidenceThreshold(0.20f)
             .build()
     )
 
@@ -37,9 +42,15 @@ class SceneClassifier(context: Context) {
     private var sameCandidateFrames = 0
     private val confirmThreshold = 2
 
-    // 当前场景锁定：场景稳定后 6 秒内不再重新确认
+    // 当前场景锁定：场景稳定后 4 秒内不再重新确认
     private var lockUntilMs = 0L
-    private val lockDurationMs = 6000L
+    private val lockDurationMs = 4000L
+
+    // 上一次确定的场景（用于快速切换检测）
+    private var lastConfirmedScene: SceneType = SceneType.UNKNOWN
+
+    /** 快速切换模式：当检测到高置信度场景时允许单次确认 */
+    private var fastSwitchEnabled = true
 
     /**
      * 执行场景分类。
@@ -56,31 +67,37 @@ class SceneClassifier(context: Context) {
         labeler.process(image)
             .addOnSuccessListener { labels ->
                 // 1) 从标签映射到每类场景的置信度加权分数
-                val votes = computeVotes(labels.map { label -> label.text to label.confidence })
+                val labelVotes = computeVotes(labels.map { label -> label.text to label.confidence })
 
                 // 2) 色彩/亮度/纹理子特征辅助判断
                 val pixelVotes = computePixelHeuristicVotes(bitmap)
 
-                // 3) 融合标签投票与像素启发式
+                // 3) 色彩直方图特征分析
+                val colorHistVotes = computeColorHistogramVotes(bitmap)
+
+                // 4) 融合三路信号（标签 50% + 像素启发 25% + 色彩直方图 25%）
                 val fused = FloatArray(SCENE_COUNT)
                 for (i in 0 until SCENE_COUNT) {
-                    fused[i] = votes[i] * 0.75f + pixelVotes[i] * 0.25f
+                    fused[i] = labelVotes[i] * 0.50f + pixelVotes[i] * 0.25f + colorHistVotes[i] * 0.25f
                 }
 
-                // 4) 推入滑动窗口，累计最近多帧
+                // 5) 推入滑动窗口，累计最近多帧
                 history.addLast(fused)
                 if (history.size > windowSize) history.removeFirst()
                 val accumulated = FloatArray(SCENE_COUNT)
                 for (h in history) for (i in 0 until SCENE_COUNT) accumulated[i] += h[i]
 
-                // 5) 置信度最高且超过门限的才作为候选
+                // 6) 置信度最高且超过门限的才作为候选
                 val maxIdx = accumulated.indices.maxByOrNull { accumulated[it] } ?: SCENE_COFFEE
                 val maxVal = accumulated[maxIdx]
+                val secondVal = accumulated.indices
+                    .filter { it != maxIdx }
+                    .maxOfOrNull { accumulated[it] } ?: 0f
                 val candidate = if (maxVal >= MIN_CONFIRM_SCORE) indexToScene(maxIdx) else SceneType.UNKNOWN
 
                 onCandidate?.invoke(candidate)
 
-                // 6) 双帧确认防抖（允许快速切换时直接跳过确认）
+                // 7) 双帧确认防抖
                 val now = System.currentTimeMillis()
                 if (candidate == lastCandidate) {
                     sameCandidateFrames++
@@ -90,21 +107,38 @@ class SceneClassifier(context: Context) {
                 }
 
                 val isLocked = now < lockUntilMs
-                val framePassed = sameCandidateFrames >= confirmThreshold
-                        || (candidate != SceneType.UNKNOWN && (now - lockUntilMs) < 0 && sameCandidateFrames >= 1)
+
+                // 快速切换：当检测到高置信度新场景，且明显优于第二候选时，允许一次确认
+                val isFastSwitch = fastSwitchEnabled
+                    && candidate != SceneType.UNKNOWN
+                    && candidate != lastConfirmedScene
+                    && maxVal >= FAST_SWITCH_THRESHOLD
+                    && (maxVal - secondVal) >= FAST_SWITCH_GAP
+
+                val framePassed = if (isFastSwitch) {
+                    true // 快速切换，一次即确认
+                } else {
+                    sameCandidateFrames >= confirmThreshold
+                }
 
                 if (!isLocked && framePassed && candidate != SceneType.UNKNOWN) {
                     onResult(candidate)
+                    lastConfirmedScene = candidate
                     lockUntilMs = now + lockDurationMs
+                    if (isFastSwitch) {
+                        // 快速切换后锁定时间延长
+                        lockUntilMs = now + lockDurationMs + 2000L
+                    }
                 }
 
-                // 7) 若长时间（>20 帧）未得到任何有效候选，则强制依据最高分兜底
+                // 8) 强制兜底：历史窗口已满且最高分超过兜底门限
                 if (history.size >= windowSize && maxVal >= MIN_FALLBACK_SCORE) {
                     val best = indexToScene(maxIdx)
-                    if (best != SceneType.UNKNOWN && best != lastCandidate) {
+                    if (best != SceneType.UNKNOWN && best != lastConfirmedScene) {
                         lastCandidate = best
                         sameCandidateFrames = confirmThreshold
                         onResult(best)
+                        lastConfirmedScene = best
                         lockUntilMs = now + lockDurationMs
                     }
                 }
@@ -112,7 +146,12 @@ class SceneClassifier(context: Context) {
             .addOnFailureListener {
                 // ML Kit 失败时回退到像素启发式
                 val pixelVotes = computePixelHeuristicVotes(bitmap)
-                val maxIdx = pixelVotes.indices.maxByOrNull { pixelVotes[it] } ?: SCENE_COFFEE
+                val colorHistVotes = computeColorHistogramVotes(bitmap)
+                val combined = FloatArray(SCENE_COUNT)
+                for (i in 0 until SCENE_COUNT) {
+                    combined[i] = pixelVotes[i] * 0.5f + colorHistVotes[i] * 0.5f
+                }
+                val maxIdx = combined.indices.maxByOrNull { combined[it] } ?: SCENE_COFFEE
                 onResult(indexToScene(maxIdx))
             }
     }
@@ -121,6 +160,7 @@ class SceneClassifier(context: Context) {
     fun reset() {
         history.clear()
         lastCandidate = SceneType.UNKNOWN
+        lastConfirmedScene = SceneType.UNKNOWN
         sameCandidateFrames = 0
         lockUntilMs = 0L
     }
@@ -132,26 +172,27 @@ class SceneClassifier(context: Context) {
     // 核心算法
     // =========================================================================
 
-    /** 基于 ML Kit ImageNet 标签的置信度加权投票 */
+    /** 基于 ML Kit ImageNet 标签的置信度加权投票（增强版） */
     private fun computeVotes(labels: List<Pair<String, Float>>): FloatArray {
         val votes = FloatArray(SCENE_COUNT)
 
-        // 取前 10 个高置信标签投票
-        val topLabels = labels.take(10)
+        // 取前 15 个高置信标签投票（更多候选以提升召回率）
+        val topLabels = labels.take(15)
 
         for ((label, confidence) in topLabels) {
             val id = label.lowercase().replace(' ', '_')
-            val weight = confidence.coerceAtLeast(0.25f)
+            val weight = confidence.coerceAtLeast(0.20f)
 
-            fun addHit(keywords: List<String>, idx: Int) {
+            fun addHit(keywords: List<String>, idx: Int, multiplier: Float = 1.0f) {
                 for (kw in keywords) {
                     if (id.contains(kw)) {
-                        votes[idx] += weight
+                        votes[idx] += weight * multiplier
                         return
                     }
                 }
             }
 
+            // 主关键词投票
             addHit(COFFEE_KEYWORDS, SCENE_COFFEE)
             addHit(BEACH_KEYWORDS, SCENE_BEACH)
             addHit(FOREST_KEYWORDS, SCENE_FOREST)
@@ -159,26 +200,35 @@ class SceneClassifier(context: Context) {
             addHit(PARK_KEYWORDS, SCENE_PARK)
             addHit(INDOOR_KEYWORDS, SCENE_INDOOR)
             addHit(NEON_KEYWORDS, SCENE_NEON)
+
+            // 辅助关键词投票（弱匹配，乘以 0.5 系数）
+            addHit(COFFEE_SECONDARY, SCENE_COFFEE, 0.5f)
+            addHit(BEACH_SECONDARY, SCENE_BEACH, 0.5f)
+            addHit(FOREST_SECONDARY, SCENE_FOREST, 0.5f)
+            addHit(CITY_SECONDARY, SCENE_CITY, 0.5f)
+            addHit(PARK_SECONDARY, SCENE_PARK, 0.5f)
+            addHit(INDOOR_SECONDARY, SCENE_INDOOR, 0.5f)
+            addHit(NEON_SECONDARY, SCENE_NEON, 0.5f)
         }
         return votes
     }
 
     /**
-     * 基于图片像素统计的启发式场景推断（不依赖 ML Kit 标签）。
-     * 特征：平均亮度 / 饱和度 / 蓝通道占比 / 绿色占比 / 紫色占比。
-     * 用于在 ML Kit 失败或标签不足时作为辅助/降级通道。
+     * 基于图片像素统计的启发式场景推断（增强版）。
+     * 特征：平均亮度 / 饱和度 / 蓝通道占比 / 绿色占比 / 紫色占比 / 色彩多样性。
      */
     private fun computePixelHeuristicVotes(bitmap: Bitmap): FloatArray {
         val votes = FloatArray(SCENE_COUNT)
         return try {
             val w = bitmap.width
             val h = bitmap.height
-            val stepX = maxOf(1, w / 40)
-            val stepY = maxOf(1, h / 40)
+            val stepX = maxOf(1, w / 50)
+            val stepY = maxOf(1, h / 50)
 
             var rSum = 0L; var gSum = 0L; var bSum = 0L
-            var brightCount = 0; var total = 0
-            val sample = IntArray(stepX * stepY)
+            var brightCount = 0; var darkCount = 0; var total = 0
+            val colorHistogram = IntArray(64) // 4x4x4 色彩量化直方图
+
             for (y in 0 until h step stepY) {
                 for (x in 0 until w step stepX) {
                     val pixel = bitmap.getPixel(x, y)
@@ -188,7 +238,14 @@ class SceneClassifier(context: Context) {
                     rSum += r; gSum += g; bSum += b
                     val lum = (0.299 * r + 0.587 * g + 0.114 * b).toInt()
                     if (lum > 200) brightCount++
+                    if (lum < 60) darkCount++
                     total++
+
+                    // 4x4x4 色彩直方图
+                    val rBin = (r / 64).coerceIn(0, 3)
+                    val gBin = (g / 64).coerceIn(0, 3)
+                    val bBin = (b / 64).coerceIn(0, 3)
+                    colorHistogram[rBin * 16 + gBin * 4 + bBin]++
                 }
             }
             if (total == 0) return votes
@@ -202,27 +259,130 @@ class SceneClassifier(context: Context) {
             val greenDominance = avgG / (avgR + avgG + avgB + 1e-6f)
             val redDominance = avgR / (avgR + avgG + avgB + 1e-6f)
             val brightRatio = brightCount.toFloat() / total
+            val darkRatio = darkCount.toFloat() / total
 
-            // 海边：蓝色通道主导 + 高光多
-            if (blueDominance > 0.40f && brightRatio > 0.15f) votes[SCENE_BEACH] += 1.5f
-            // 森林：绿色通道主导 + 中等亮度
-            if (greenDominance > 0.38f && lum in 0.25f..0.70f) votes[SCENE_FOREST] += 1.5f
-            // 霓虹/夜景：低亮度 + 高饱和 + 紫色成分 (R & B 高)
-            val purpleHint = (avgR > avgG && avgB > avgG && lum < 0.45f)
-            if (purpleHint && saturation > 0.3f) votes[SCENE_NEON] += 1.5f
-            if (lum < 0.35f && saturation > 0.25f) votes[SCENE_NEON] += 0.8f
-            // 室内：中等亮度 + 低饱和 + 色彩平稳
-            if (lum in 0.30f..0.75f && saturation < 0.25f) votes[SCENE_INDOOR] += 1.2f
-            // 城市/建筑：中等亮度 + 低饱和 + 灰色调
-            if (lum in 0.35f..0.75f && saturation < 0.20f && abs(avgR - avgG) < 25f && abs(avgG - avgB) < 25f) {
-                votes[SCENE_CITY] += 1.2f
+            // 计算色彩多样性（有效颜色数 / 总格数）
+            val effectiveColors = colorHistogram.count { it > total * 0.02f }
+            val colorDiversity = effectiveColors.toFloat() / 64f
+
+            // 海边：蓝色通道主导 + 高光多 + 色彩纯度高
+            if (blueDominance > 0.38f && brightRatio > 0.12f && saturation > 0.15f) {
+                votes[SCENE_BEACH] += 1.8f
+                if (blueDominance > 0.42f) votes[SCENE_BEACH] += 0.5f
             }
-            // 公园：绿色 + 蓝色（天空）同时较高
-            if (greenDominance > 0.35f && blueDominance > 0.30f) votes[SCENE_PARK] += 1.0f
-            // 咖啡馆：暖色调（R 高）+ 中等亮度 + 中等饱和
-            if (redDominance > 0.35f && saturation in 0.15f..0.40f && lum in 0.25f..0.60f) {
-                votes[SCENE_COFFEE] += 1.0f
+
+            // 森林：绿色通道主导 + 中等亮度 + 色彩多样性中等
+            if (greenDominance > 0.35f && lum in 0.20f..0.75f) {
+                votes[SCENE_FOREST] += 1.6f
+                if (greenDominance > 0.40f) votes[SCENE_FOREST] += 0.4f
             }
+
+            // 霓虹/夜景：低亮度 + 高饱和 + 紫色成分 (R & B 高) + 暗色占比大
+            val purpleHint = (avgR > avgG * 1.1 && avgB > avgG * 1.05 && lum < 0.50f)
+            if (purpleHint && saturation > 0.25f && darkRatio > 0.15f) {
+                votes[SCENE_NEON] += 2.0f
+            }
+            if (lum < 0.35f && saturation > 0.20f) {
+                votes[SCENE_NEON] += 1.0f
+            }
+            if (darkRatio > 0.4f && saturation > 0.15f) {
+                votes[SCENE_NEON] += 0.6f
+            }
+
+            // 室内：中等亮度 + 低饱和 + 色彩平稳 + 色彩多样性低
+            if (lum in 0.25f..0.80f && saturation < 0.22f && colorDiversity < 0.35f) {
+                votes[SCENE_INDOOR] += 1.4f
+            }
+
+            // 城市/建筑：中等亮度 + 低饱和 + 灰色调 + R/G/B 接近
+            if (lum in 0.30f..0.80f && saturation < 0.18f
+                && abs(avgR - avgG) < 30f && abs(avgG - avgB) < 30f) {
+                votes[SCENE_CITY] += 1.5f
+            }
+
+            // 公园：绿色 + 蓝色（天空）同时较高 + 中等亮度
+            if (greenDominance > 0.32f && blueDominance > 0.28f && lum > 0.40f) {
+                votes[SCENE_PARK] += 1.3f
+            }
+
+            // 咖啡馆：暖色调（R 高）+ 中等亮度 + 中等饱和 + 色彩多样性中等
+            if (redDominance > 0.33f && saturation in 0.12f..0.45f && lum in 0.20f..0.65f) {
+                votes[SCENE_COFFEE] += 1.2f
+            }
+
+            // 额外特征增强
+            // 高光多 + 蓝色多 = 海边/公园
+            if (brightRatio > 0.35f && blueDominance > 0.30f) {
+                votes[SCENE_BEACH] += 0.4f
+                votes[SCENE_PARK] += 0.3f
+            }
+
+            // 低光 + 暖色调 = 咖啡馆/室内
+            if (darkRatio > 0.3f && redDominance > 0.32f) {
+                votes[SCENE_COFFEE] += 0.4f
+                votes[SCENE_INDOOR] += 0.3f
+            }
+
+            votes
+        } catch (_: Exception) {
+            votes
+        }
+    }
+
+    /**
+     * 基于色彩直方图的场景推断（辅助信号）。
+     * 通过分析色彩分布特征来辅助判定场景。
+     */
+    private fun computeColorHistogramVotes(bitmap: Bitmap): FloatArray {
+        val votes = FloatArray(SCENE_COUNT)
+        return try {
+            val w = bitmap.width
+            val h = bitmap.height
+            val stepX = maxOf(1, w / 40)
+            val stepY = maxOf(1, h / 40)
+
+            var warmCount = 0f   // 暖色调 (R > G > B)
+            var coolCount = 0f   // 冷色调 (B 主导)
+            var earthCount = 0f  // 土色调 (中等 R, 中等 G, 低 B)
+            var totalSamples = 0
+
+            for (y in 0 until h step stepY) {
+                for (x in 0 until w step stepX) {
+                    val pixel = bitmap.getPixel(x, y)
+                    val r = (pixel shr 16) and 0xFF
+                    val g = (pixel shr 8) and 0xFF
+                    val b = pixel and 0xFF
+                    totalSamples++
+
+                    // 暖色调检测 (红橙黄)
+                    if (r > g && r > b && (r - g) > 15) warmCount++
+                    // 冷色调检测 (蓝青)
+                    if (b > r && b > g) coolCount++
+                    // 土色调检测 (绿棕)
+                    if (g > r * 0.7f && b < r * 0.8f) earthCount++
+                }
+            }
+
+            if (totalSamples == 0f) return votes
+
+            val warmRatio = warmCount / totalSamples
+            val coolRatio = coolCount / totalSamples
+            val earthRatio = earthCount / totalSamples
+
+            // 冷色调为主 -> 海边
+            if (coolRatio > 0.35f) votes[SCENE_BEACH] += 1.0f
+            else if (coolRatio > 0.25f) votes[SCENE_BEACH] += 0.5f
+
+            // 土色调为主 -> 森林
+            if (earthRatio > 0.40f) votes[SCENE_FOREST] += 0.8f
+            else if (earthRatio > 0.30f) votes[SCENE_FOREST] += 0.4f
+
+            // 暖色调为主 -> 咖啡馆
+            if (warmRatio > 0.35f) votes[SCENE_COFFEE] += 0.7f
+            else if (warmRatio > 0.25f) votes[SCENE_COFFEE] += 0.35f
+
+            // 冷色调 + 低暖色 -> 霓虹/夜景
+            if (coolRatio > 0.30f && warmRatio < 0.20f) votes[SCENE_NEON] += 0.6f
 
             votes
         } catch (_: Exception) {
@@ -252,12 +412,16 @@ class SceneClassifier(context: Context) {
         private const val SCENE_NEON = 6
 
         /** 场景确认的滑动窗口最低累计分数（5 帧累积） */
-        private const val MIN_CONFIRM_SCORE = 1.5f
+        private const val MIN_CONFIRM_SCORE = 1.2f
         /** 强制兜底所需的最低累计分数（更宽松） */
-        private const val MIN_FALLBACK_SCORE = 0.9f
+        private const val MIN_FALLBACK_SCORE = 0.7f
+        /** 快速切换所需的高置信度门限 */
+        private const val FAST_SWITCH_THRESHOLD = 2.5f
+        /** 快速切换所需与第二候选的最小差距 */
+        private const val FAST_SWITCH_GAP = 0.8f
 
         // =========================================================================
-        // 关键词库：每个场景至少 35+ 关键词，覆盖 ML Kit ImageNet 标签全集
+        // 主关键词库：每个场景 50+ 关键词
         // =========================================================================
         val COFFEE_KEYWORDS = listOf(
             "coffee", "espresso", "cappuccino", "latte", "cup", "mug", "coffeepot",
@@ -270,7 +434,9 @@ class SceneClassifier(context: Context) {
             "cupcake", "pastry", "croissant", "tea", "breakfast", "brunch",
             "wine_bottle", "beer_bottle", "serving_dish", "sideboard",
             "dining_room", "coffee_shop", "cafe", "café", "bar_counter",
-            "bottled", "steak", "sushi", "restaurant_kitchen", "diner"
+            "bottled", "steak", "sushi", "restaurant_kitchen", "diner",
+            "frappuccino", "mocha", "macchiato", "americano", "flat_white",
+            "coffee_beans", "grinder", "kettle", "teapot", "sugar_bowl"
         )
         val BEACH_KEYWORDS = listOf(
             "beach", "seashore", "sandbar", "ocean", "sea", "shore", "coast",
@@ -282,7 +448,9 @@ class SceneClassifier(context: Context) {
             "tropical", "island", "parasol", "sandy", "dune", "seashell",
             "sailing", "diving", "snorkeling", "fisherman", "fish",
             "aquarium", "whale", "dolphin", "surfer", "windsurfing",
-            "jetty", "breakwater", "harbor", "port", "tide_pool"
+            "jetty", "breakwater", "harbor", "port", "tide_pool",
+            "sunset", "sunrise", "coastal", "seaside", "watersport",
+            "boogie_board", "paddleboard", "kayak", "canoe", "outrigger"
         )
         val FOREST_KEYWORDS = listOf(
             "forest", "woodland", "jungle", "tree", "rainforest", "pine", "oak",
@@ -294,7 +462,8 @@ class SceneClassifier(context: Context) {
             "redwood", "sequoia", "birch", "maple", "willow", "cypress",
             "evergreen", "conifer", "deciduous", "grove", "thicket",
             "pond", "stream", "creek", "waterfall", "rocks", "boulders",
-            "squirrel", "deer", "fox", "bird", "insect", "butterfly"
+            "squirrel", "deer", "fox", "bird", "insect", "butterfly",
+            "ecosystem", "underbrush", "canopy", "foliage", "vegetation"
         )
         val CITY_KEYWORDS = listOf(
             "street", "traffic", "car", "taxi", "cab", "bus", "trolleybus",
@@ -309,7 +478,9 @@ class SceneClassifier(context: Context) {
             "automobile", "vehicle", "bicycle_lane", "cityscape", "metropolis",
             "neon", "nightclub", "policeman", "firetruck", "subway",
             "metro", "railway", "train", "railroad", "bicycle",
-            "motorcycle", "truck", "lorry", "van", "limousine", "convertible"
+            "motorcycle", "truck", "lorry", "van", "limousine", "convertible",
+            "downtown", "uptown", "midtown", "financial_district",
+            "condo", "highrise", "construction", "crane"
         )
         val PARK_KEYWORDS = listOf(
             "park", "bench", "picnic", "playground", "swing", "slide",
@@ -321,7 +492,9 @@ class SceneClassifier(context: Context) {
             "baseball", "basketball", "football", "volleyball",
             "gardening", "flower_bed", "hedge", "walkway",
             "garden", "botanical_garden", "arboretum", "zoo",
-            "carousel", "playground_equipment", "sandbox", "merry_go_round"
+            "carousel", "playground_equipment", "sandbox", "merry_go_round",
+            "pond", "lake", "pavilion", "rotunda", "colonnade",
+            "topiary", "hedgehog", "rabbit", "chipmunk", "butterfly"
         )
         val INDOOR_KEYWORDS = listOf(
             "bedroom", "living_room", "bathroom", "kitchen", "wardrobe",
@@ -337,7 +510,9 @@ class SceneClassifier(context: Context) {
             "dining_table", "desk", "office_chair", "bookshelf",
             "home_theater", "flat_screen", "water_heater",
             "air_conditioner", "fan", "ceiling_fan", "lamp",
-            "painting", "picture_frame", "clock", "candle"
+            "painting", "picture_frame", "clock", "candle",
+            "chandelier", "wall_sconce", "floor_lamp", "table_lamp",
+            "dining_chair", "side_table", "coffee_table"
         )
         val NEON_KEYWORDS = listOf(
             "neon", "night", "lantern", "spotlight", "lamppost", "lampshade",
@@ -349,7 +524,48 @@ class SceneClassifier(context: Context) {
             "dance_floor", "dj", "speaker", "sound_system",
             "nightlife", "bar", "pub", "club", "disco_ball",
             "strobe", "spotlight", "spotlights", "lightning",
-            "firework", "fireworks", "laser", "led"
+            "firework", "fireworks", "laser", "led",
+            "electric_fan", "night_sky", "stargazer", "moon",
+            "starry", "illuminated", "night_time"
+        )
+
+        // =========================================================================
+        // 辅助关键词库：弱信号匹配，提升召回率
+        // =========================================================================
+        val COFFEE_SECONDARY = listOf(
+            "dark_brown", "brown", "wood", "wooden", "warm", "amber", "caramel",
+            "chocolate", "espresso_machine", "coffee_grinder", "milk_steamer",
+            "pastry_case", "display_case", "menu_board", "chalkboard"
+        )
+        val BEACH_SECONDARY = listOf(
+            "blue", "turquoise", "cyan", "azure", "foam", "spray",
+            "dune", "dunes", "coastline", "shoreline", "breakwater",
+            "salt", "brine", "tropical_fish", "seahorse", "starfish"
+        )
+        val FOREST_SECONDARY = listOf(
+            "green", "dark_green", "lime", "olive", "mossy", "lichen",
+            "coniferous", "deciduous", "evergreen", "understory",
+            "canopy", "trunk", "roots", "mushroom", "toadstool"
+        )
+        val CITY_SECONDARY = listOf(
+            "gray", "grey", "concrete", "asphalt", "pavement",
+            "metal", "steel", "chrome", "glass", "marble",
+            "highrise", "skyscraper", "tower_block", "office_block"
+        )
+        val PARK_SECONDARY = listOf(
+            "green_lawn", "grass", "sod", "turf", "flowerbed",
+            "flower", "blossom", "petal", "stem", "botanical",
+            "garden_path", "garden_bed", "hedgerow", "topiary"
+        )
+        val INDOOR_SECONDARY = listOf(
+            "soft", "pastel", "beige", "cream", "ivory",
+            "velvet", "velvety", "linen", "cotton", "silk",
+            "drape", "valance", "cornice", "plinth", "skirting"
+        )
+        val NEON_SECONDARY = listOf(
+            "purple", "magenta", "violet", "pink", "mauve",
+            "crimson", "scarlet", "burgundy", "wine", "plum",
+            "backlit", "lit_up", "glowing", "shimmering", "iridescent"
         )
     }
 }

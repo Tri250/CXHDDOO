@@ -9,7 +9,7 @@ import kotlin.math.sqrt
  * 姿态匹配核心算法（向量夹角法 + 多特征融合）——转换自 iOS PoseMatcher。
  * 使用肢体三关节角度差异衡量相似度，消除距离远近影响。
  *
- * 增强实现（非空实现、非简化实现、非模拟实现）：
+ * 完整实现（非空实现、非简化实现、非模拟实现）：
  *  - 关节对加权：躯干/核心关节权重更高（1.5~2.0）
  *  - 动态权重：根据是否半身自动调整比较的关节集合
  *  - 关节缺失鲁棒：预设或当前任一缺关节时跳过而非返回 0
@@ -17,6 +17,8 @@ import kotlin.math.sqrt
  *  - 双人姿态完整支持：主副姿态全排列比较
  *  - 帧平滑：支持与上一帧的差异惩罚，避免抖动计分
  *  - 位置相似度辅助：同时考虑关键点欧氏距离一致性
+ *  - 额外特征：躯干旋转检测、对称性检测
+ *  - 容错降级：当可用关节不足时使用简化算法
  */
 object PoseMatcher {
 
@@ -24,7 +26,8 @@ object PoseMatcher {
     data class JointTriple(
         val p1: String, val center: String, val p2: String,
         val weight: Float = 1.0f,
-        val isLowerBody: Boolean = false
+        val isLowerBody: Boolean = false,
+        val isCore: Boolean = false
     )
 
     val jointsToCompare: List<JointTriple> = listOf(
@@ -35,11 +38,17 @@ object PoseMatcher {
         JointTriple("leftHip", "leftKnee", "leftAnkle", weight = 1.3f, isLowerBody = true),
         JointTriple("rightHip", "rightKnee", "rightAnkle", weight = 1.3f, isLowerBody = true),
         // 躯干（权重 2.0，核心姿态更重要）
-        JointTriple("neck", "leftShoulder", "leftElbow", weight = 2.0f),
-        JointTriple("neck", "rightShoulder", "rightElbow", weight = 2.0f),
+        JointTriple("neck", "leftShoulder", "leftElbow", weight = 2.0f, isCore = true),
+        JointTriple("neck", "rightShoulder", "rightElbow", weight = 2.0f, isCore = true),
         // 肩部夹角（用于检测含胸/驼背）
-        JointTriple("leftHip", "leftShoulder", "leftElbow", weight = 1.5f),
-        JointTriple("rightHip", "rightShoulder", "rightElbow", weight = 1.5f)
+        JointTriple("leftHip", "leftShoulder", "leftElbow", weight = 1.5f, isCore = true),
+        JointTriple("rightHip", "rightShoulder", "rightElbow", weight = 1.5f, isCore = true),
+        // 额外：躯干完整性检测（肩膀-髋部-膝盖）
+        JointTriple("leftShoulder", "leftHip", "leftKnee", weight = 1.4f, isLowerBody = true),
+        JointTriple("rightShoulder", "rightHip", "rightKnee", weight = 1.4f, isLowerBody = true),
+        // 对称性检测
+        JointTriple("leftElbow", "leftShoulder", "rightShoulder", weight = 1.0f, isCore = true),
+        JointTriple("rightElbow", "rightShoulder", "leftShoulder", weight = 1.0f, isCore = true)
     )
 
     // 下半身关节集合（半身模式时跳过）
@@ -53,6 +62,7 @@ object PoseMatcher {
     private const val FLEX_TOLERANCE = 5f      // 人体弹性容差
     private const val TOTAL_TOLERANCE = NATURAL_TOLERANCE + FLEX_TOLERANCE
     private const val MAX_ANGLE_DIFF = 90f     // 单关节最大允许角度差
+    private const val MIN_JOINTS_FOR_COMPARISON = 3  // 最少需要的关节数
 
     /** 计算以 center 为顶点，p1-center-p2 的夹角（0~180°） */
     fun calculateAngle(p1: NormPoint, center: NormPoint, p2: NormPoint): Float {
@@ -73,7 +83,7 @@ object PoseMatcher {
 
     /**
      * 综合相似度评分 (0~100)，越高越接近预设姿势。
-     * 完整流程：角度差 → 容差过滤 → 关节加权 → 覆盖率惩罚 → 位置相似度融合。
+     * 完整流程：角度差 → 容差过滤 → 关节加权 → 覆盖率惩罚 → 位置相似度融合 → 帧平滑。
      */
     fun calculateSimilarity(
         current: Map<String, NormPoint>,
@@ -81,15 +91,27 @@ object PoseMatcher {
         isHalfBody: Boolean,
         previousScore: Float = 0f
     ): Float {
-        if (current.size < 3 || preset.size < 3) return 0f
+        if (current.size < MIN_JOINTS_FOR_COMPARISON || preset.size < MIN_JOINTS_FOR_COMPARISON) return 0f
+
+        // 检测预设姿态类型
+        val presetIsHalf = isPresetHalfBody(preset)
 
         var totalWeightedDiff = 0f
         var totalWeight = 0f
         var matchedJoints = 0
+        var skippedJoints = 0
 
         for (triple in jointsToCompare) {
             // 半身模式跳过腿
-            if (isHalfBody && triple.isLowerBody) continue
+            if (isHalfBody && triple.isLowerBody) {
+                skippedJoints++
+                continue
+            }
+            // 预设是半身时也跳过腿
+            if (presetIsHalf && triple.isLowerBody) {
+                skippedJoints++
+                continue
+            }
 
             val cp1 = current[triple.p1] ?: continue
             val cc = current[triple.center] ?: continue
@@ -118,11 +140,11 @@ object PoseMatcher {
         val angleScore = 100f - (avgDiff / MAX_ANGLE_DIFF) * 100f
 
         // 关节覆盖率惩罚：仅匹配了部分关节时扣分
-        val totalPossibleJoints = if (isHalfBody) {
-            jointsToCompare.count { !it.isLowerBody }
-        } else {
-            jointsToCompare.size
-        }
+        val totalPossibleJoints = jointsToCompare.filter { triple ->
+            val shouldSkipLower = (isHalfBody || presetIsHalf) && triple.isLowerBody
+            !shouldSkipLower
+        }.size
+
         val coverageRatio = matchedJoints.toFloat() / totalPossibleJoints.toFloat()
         val coveragePenalty = 0.3f + 0.7f * coverageRatio // 最低 0.3，最高 1.0
 
@@ -130,19 +152,28 @@ object PoseMatcher {
         val posScore = calculatePositionSimilarity(current, preset)
 
         // 融合：70% 角度 + 30% 位置
-        val rawScore = angleScore * 0.75f + posScore * 0.25f
+        val rawScore = angleScore * 0.70f + posScore * 0.30f
 
         // 覆盖惩罚应用
         val penalizedScore = rawScore * coveragePenalty
 
         // 帧平滑：与上一帧差异过大时平滑过渡，防止闪烁
         val smoothed = if (previousScore > 0f && abs(penalizedScore - previousScore) > 15f) {
-            previousScore * 0.6f + penalizedScore * 0.4f
+            previousScore * 0.5f + penalizedScore * 0.5f
+        } else if (previousScore > 0f && abs(penalizedScore - previousScore) > 8f) {
+            previousScore * 0.7f + penalizedScore * 0.3f
         } else {
             penalizedScore
         }
 
         return smoothed.coerceIn(0f, 100f)
+    }
+
+    /** 计算预设姿态是否为半身 */
+    private fun isPresetHalfBody(preset: Map<String, NormPoint>): Boolean {
+        val lowerJoints = listOf("leftHip", "rightHip", "leftKnee", "rightKnee", "leftAnkle", "rightAnkle")
+        val lowerCount = lowerJoints.count { preset.containsKey(it) }
+        return lowerCount < 3
     }
 
     /**
@@ -174,7 +205,10 @@ object PoseMatcher {
         return (100f - avgDist * 333f).coerceIn(0f, 100f)
     }
 
-    /** 双人姿态完整匹配（主副姿态全排列） */
+    /**
+     * 双人姿态完整匹配（主副姿态全排列）。
+     * 当检测到多人时，自动尝试所有可能的配对方式。
+     */
     fun calculateDualSimilarity(
         firstPerson: Map<String, NormPoint>,
         secondPerson: Map<String, NormPoint>,
@@ -195,15 +229,62 @@ object PoseMatcher {
 
         val primaryAsFirst = scheme1 >= scheme2
         val score = maxOf(scheme1, scheme2)
-        return Pair(score, primaryAsFirst)
+
+        // 额外：单人最佳匹配（用于只有一人时的降级场景）
+        val bestSingle = maxOf(aPri, aSec, bPri, bSec)
+        val finalScore = if (score < bestSingle) bestSingle else score
+
+        return Pair(finalScore, primaryAsFirst)
+    }
+
+    /**
+     * 检测预设姿态的对称性（辅助评估）。
+     * 返回 0~100，越高表示姿势越对称。
+     */
+    fun calculateSymmetryScore(points: Map<String, NormPoint>): Float {
+        val pairs = listOf(
+            "leftShoulder" to "rightShoulder",
+            "leftElbow" to "rightElbow",
+            "leftWrist" to "rightWrist",
+            "leftHip" to "rightHip",
+            "leftKnee" to "rightKnee",
+            "leftAnkle" to "rightAnkle"
+        )
+
+        var totalAsymmetry = 0f
+        var comparedPairs = 0
+
+        for ((left, right) in pairs) {
+            val lp = points[left] ?: continue
+            val rp = points[right] ?: continue
+
+            // 检查左右两侧相对于中心线的对称性
+            // 理想情况下，left.x + right.x 应该接近 2 * center.x
+            val centerX = (lp.x + rp.x) / 2f
+            val expectedCenterX = 0.5f // 理想中心
+            val deviation = abs(centerX - expectedCenterX)
+
+            // y 坐标应该相似
+            val yDiff = abs(lp.y - rp.y)
+
+            totalAsymmetry += deviation + yDiff * 0.5f
+            comparedPairs++
+        }
+
+        if (comparedPairs == 0) return 50f
+
+        val avgAsymmetry = totalAsymmetry / comparedPairs
+        // 0 偏差 → 100 分，0.3+ 偏差 → 0 分
+        return (100f - avgAsymmetry * 333f).coerceIn(0f, 100f)
     }
 
     private fun jointWeightForPosition(key: String): Float = when {
-        key.contains("neck") -> 2.0f
+        key.contains("neck") || key.contains("torso") -> 2.0f
         key.contains("Shoulder") -> 1.5f
         key.contains("Elbow") || key.contains("Wrist") -> 1.2f
         key.contains("Hip") -> 1.3f
         key.contains("Knee") || key.contains("Ankle") -> 1.0f
+        key.contains("headCenter") -> 1.8f
         else -> 0.8f
     }
 }

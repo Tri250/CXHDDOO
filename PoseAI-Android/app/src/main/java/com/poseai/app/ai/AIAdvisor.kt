@@ -17,10 +17,12 @@ import kotlin.coroutines.suspendCoroutine
  *
  * 完整实现（非空实现、非简化实现、非模拟实现）：
  *  - 使用 ML Kit ImageLabeling 真实分析图片（离线模型，无需网络）
- *  - 5 类穿搭风格：飘逸长裙 / 休闲针织 / 干练风衣 / 日常慵懒 / 时尚套装
+ *  - 10 类穿搭风格：飘逸长裙/休闲针织/干练风衣/日常慵懒/时尚套装/正式西装/运动活力/复古优雅/街头潮流/未知
  *  - 结合 7 类场景（咖啡馆/海边/森林/城市/公园/室内/霓虹）生成个性化情感文案
  *  - 多轮回退：图片→标签分析→关键词投票→场景融合建议
+ *  - 置信度加权：低置信度标签降权，高置信度标签加权
  *  - 所有 OOTD 文案为动态生成（根据场景 × 穿搭组合），非硬编码模板
+ *  - 附加特征检测：镜面/阳光/水景/植物/夜景/运动等辅助关键词
  */
 object AIAdvisor {
 
@@ -33,18 +35,22 @@ object AIAdvisor {
 
     private fun ensureLabeler(): com.google.mlkit.vision.label.ImageLabeler {
         return labeler ?: ImageLabeling.getClient(
-            ImageLabelerOptions.Builder().setConfidenceThreshold(0.3f).build()
+            ImageLabelerOptions.Builder().setConfidenceThreshold(0.20f).build()
         ).also { labeler = it }
     }
 
-    /** 穿搭风格枚举（对应 iOS 的 OOTD 分类） */
-    private enum class OOTDCategory {
+    /** 穿搭风格枚举（10 类） */
+    private enum class OOTDCategory(val displayNameZH: String) {
         ELEGANT,   // 飘逸长裙
-        CASUAL,    // 休闲针织衫
+        CASUAL,    // 休闲针织
         BUSINESS,  // 干练风衣
         LOUNGE,    // 日常慵懒风
         STREET,    // 时尚休闲套装
-        UNKNOWN
+        FORMAL,    // 正式西装
+        SPORTY,    // 运动活力
+        VINTAGE,   // 复古优雅
+        TRENDY,    // 街头潮流
+        UNKNOWN    // 未知/独特穿搭
     }
 
     /**
@@ -75,11 +81,45 @@ object AIAdvisor {
             // 3. 投票分类穿搭
             val category = detectCategory(labels.map { it.text to it.confidence })
             val sceneName = currentScene.displayName
-            val ootdName = category.displayName()
+            val ootdName = category.displayNameZH
 
-            // 4. 基于穿搭 + 场景组合生成专属文案
-            buildAdvice(category, currentScene, sceneName, ootdName, labels.map { it.text })
+            // 4. 提取附加特征
+            val labelTexts = labels.map { it.text.lowercase() }
+            val features = extractFeatures(labelTexts)
+
+            // 5. 基于穿搭 + 场景 + 特征组合生成专属文案
+            buildAdvice(category, currentScene, sceneName, ootdName, labelTexts, features)
         }
+    }
+
+    /** 特征数据类 */
+    private data class DetectedFeatures(
+        val hasMirror: Boolean,
+        val hasSunlight: Boolean,
+        val hasWater: Boolean,
+        val hasPlant: Boolean,
+        val hasNight: Boolean,
+        val hasMovement: Boolean,
+        val hasUrban: Boolean,
+        val hasNature: Boolean,
+        val hasSport: Boolean,
+        val hasTech: Boolean
+    )
+
+    /** 提取附加特征 */
+    private fun extractFeatures(labels: List<String>): DetectedFeatures {
+        return DetectedFeatures(
+            hasMirror = labels.any { it.contains("mirror") || it.contains("reflect") },
+            hasSunlight = labels.any { it.contains("sun") || it.contains("light") || it.contains("sunlight") || it.contains("sunset") },
+            hasWater = labels.any { it.contains("water") || it.contains("sea") || it.contains("beach") || it.contains("pool") || it.contains("ocean") || it.contains("wave") },
+            hasPlant = labels.any { it.contains("plant") || it.contains("tree") || it.contains("flower") || it.contains("grass") || it.contains("leaf") },
+            hasNight = labels.any { it.contains("night") || it.contains("neon") || it.contains("dark") || it.contains("evening") },
+            hasMovement = labels.any { it.contains("running") || it.contains("walking") || it.contains("action") || it.contains("运动") || it.contains("运动服") },
+            hasUrban = labels.any { it.contains("city") || it.contains("street") || it.contains("building") || it.contains("urban") || it.contains("downtown") },
+            hasNature = labels.any { it.contains("nature") || it.contains("forest") || it.contains("mountain") || it.contains("outdoor") },
+            hasSport = labels.any { it.contains("sport") || it.contains("athletic") || it.contains("sneaker") || it.contains("gym") || it.contains("fitness") },
+            hasTech = labels.any { it.contains("tech") || it.contains("cyber") || it.contains("digital") || it.contains("neon") || it.contains("electronic") }
+        )
     }
 
     /** 从标签列表推断穿搭类别（带置信度加权） */
@@ -97,16 +137,33 @@ object AIAdvisor {
         var business = 0f
         var lounge = 0f
         var street = 0f
+        var formal = 0f
+        var sporty = 0f
+        var vintage = 0f
+        var trendy = 0f
 
         for ((idx, label) in labels.withIndex()) {
             val weight = confidences?.getOrNull(idx) ?: 1f
+
+            // 主关键词匹配（权重 1.0）
             when {
                 ELEGANT_KEYWORDS.any { label.contains(it) } -> elegant += weight
                 CASUAL_KEYWORDS.any { label.contains(it) } -> casual += weight
                 BUSINESS_KEYWORDS.any { label.contains(it) } -> business += weight
                 LOUNGE_KEYWORDS.any { label.contains(it) } -> lounge += weight
                 STREET_KEYWORDS.any { label.contains(it) } -> street += weight
+                FORMAL_KEYWORDS.any { label.contains(it) } -> formal += weight
+                SPORTY_KEYWORDS.any { label.contains(it) } -> sporty += weight
+                VINTAGE_KEYWORDS.any { label.contains(it) } -> vintage += weight
+                TRENDY_KEYWORDS.any { label.contains(it) } -> trendy += weight
             }
+
+            // 辅助关键词匹配（权重 0.5）
+            if (ELEGANT_SECONDARY.any { label.contains(it) }) elegant += weight * 0.5f
+            if (CASUAL_SECONDARY.any { label.contains(it) }) casual += weight * 0.5f
+            if (BUSINESS_SECONDARY.any { label.contains(it) }) business += weight * 0.5f
+            if (SPORTY_SECONDARY.any { label.contains(it) }) sporty += weight * 0.5f
+            if (TRENDY_SECONDARY.any { label.contains(it) }) trendy += weight * 0.5f
         }
 
         val scores = mapOf(
@@ -114,9 +171,15 @@ object AIAdvisor {
             OOTDCategory.CASUAL to casual,
             OOTDCategory.BUSINESS to business,
             OOTDCategory.LOUNGE to lounge,
-            OOTDCategory.STREET to street
+            OOTDCategory.STREET to street,
+            OOTDCategory.FORMAL to formal,
+            OOTDCategory.SPORTY to sporty,
+            OOTDCategory.VINTAGE to vintage,
+            OOTDCategory.TRENDY to trendy
         )
-        return scores.maxByOrNull { it.value }?.key ?: OOTDCategory.UNKNOWN
+
+        val best = scores.maxByOrNull { it.value } ?: OOTDCategory.UNKNOWN
+        return if (best.value > 0.3f) best.key else OOTDCategory.UNKNOWN
     }
 
     /**
@@ -128,65 +191,66 @@ object AIAdvisor {
         scene: SceneType,
         sceneName: String,
         ootdName: String,
-        labels: List<String>
+        labels: List<String>,
+        features: DetectedFeatures
     ): String {
-        // 提取附加特征：是否有"镜"/"户外"/"光线"/"动作"等关键词
-        val hasMirror = labels.any { it.contains("mirror") }
-        val hasSunlight = labels.any { it.contains("sun") || it.contains("light") || it.contains("sunlight") }
-        val hasWater = labels.any { it.contains("water") || it.contains("sea") || it.contains("beach") || it.contains("pool") }
-        val hasPlant = labels.any { it.contains("plant") || it.contains("tree") || it.contains("flower") }
-        val hasNight = labels.any { it.contains("night") || it.contains("neon") || it.contains("dark") }
-        val hasMovement = labels.any { it.contains("running") || it.contains("walking") || it.contains("action") }
-
         return when (category) {
-            OOTDCategory.ELEGANT -> elegantAdvice(scene, sceneName, ootdName, hasMirror, hasSunlight, hasMovement)
-            OOTDCategory.BUSINESS -> businessAdvice(scene, sceneName, ootdName)
-            OOTDCategory.CASUAL, OOTDCategory.LOUNGE -> casualAdvice(scene, sceneName, ootdName, hasPlant)
-            OOTDCategory.STREET -> streetAdvice(scene, sceneName, ootdName, hasNight)
-            OOTDCategory.UNKNOWN -> unknownAdvice(scene, sceneName, hasWater, hasSunlight, hasPlant)
+            OOTDCategory.ELEGANT -> elegantAdvice(scene, sceneName, ootdName, features)
+            OOTDCategory.BUSINESS -> businessAdvice(scene, sceneName, ootdName, features)
+            OOTDCategory.CASUAL, OOTDCategory.LOUNGE -> casualAdvice(scene, sceneName, ootdName, features)
+            OOTDCategory.STREET -> streetAdvice(scene, sceneName, ootdName, features)
+            OOTDCategory.FORMAL -> formalAdvice(scene, sceneName, ootdName, features)
+            OOTDCategory.SPORTY -> sportyAdvice(scene, sceneName, ootdName, features)
+            OOTDCategory.VINTAGE -> vintageAdvice(scene, sceneName, ootdName, features)
+            OOTDCategory.TRENDY -> trendyAdvice(scene, sceneName, ootdName, features)
+            OOTDCategory.UNKNOWN -> unknownAdvice(scene, sceneName, features)
         }
     }
 
     // =========================================================================
-    // 分场景文案生成（完整覆盖 7 场景 × 5 穿搭 = 35+ 种组合）
+    // 分场景文案生成（完整覆盖 7 场景 × 9 穿搭 = 63+ 种组合）
     // =========================================================================
 
     private fun elegantAdvice(
         scene: SceneType,
         sceneName: String,
         ootdName: String,
-        hasMirror: Boolean,
-        hasSunlight: Boolean,
-        hasMovement: Boolean
+        f: DetectedFeatures
     ): String {
-        val moveHint = if (hasMovement) "保持优雅的步伐" else "微微拎起裙摆"
+        val moveHint = if (f.hasMovement) "保持优雅的步伐" else "微微拎起裙摆"
         val lightHint = when {
-            hasSunlight -> "顺着光线的方向"
-            hasMirror -> "利用镜面反射"
+            f.hasSunlight -> "顺着光线的方向"
+            f.hasMirror -> "利用镜面反射"
+            f.hasWater -> "借助水景倒影"
             else -> "在这个${sceneName}"
         }
         val poseHint = when (scene) {
             SceneType.COFFEE_SHOP -> "侧身坐在吧台高脚凳上，"
-            SceneType.BEACH -> "在沙滩与海浪的交界处，"
-            SceneType.FOREST -> "在林间柔光下，"
-            SceneType.CITY_STREET -> "立于街头斑马线旁，"
-            SceneType.PARK -> "在喷泉或长椅旁，"
-            SceneType.INDOOR_HOME -> "靠在窗边，"
-            SceneType.NEON_NIGHT -> "站在霓虹招牌下，"
+            SceneType.BEACH -> "在沙滩与海浪的交界处，海风轻拂裙摆，"
+            SceneType.FOREST -> "在林间柔光下，宛如森林精灵，"
+            SceneType.CITY_STREET -> "立于街头斑马线旁，都市优雅剪影，"
+            SceneType.PARK -> "在喷泉或长椅旁，宛如油画中的女子，"
+            SceneType.INDOOR_HOME -> "靠在窗边，柔和光线勾勒轮廓，"
+            SceneType.NEON_NIGHT -> "站在霓虹招牌下，赛博朋克式的优雅，"
             else -> "摆一个最优雅的姿势，"
         }
         return "捕捉到您今天穿着${ootdName}，非常绝美！${poseHint}${moveHint}，${lightHint}中心旋转一下，我们会抓拍那飞扬的一刻！"
     }
 
-    private fun businessAdvice(scene: SceneType, sceneName: String, ootdName: String): String {
+    private fun businessAdvice(
+        scene: SceneType,
+        sceneName: String,
+        ootdName: String,
+        f: DetectedFeatures
+    ): String {
         val poseHint = when (scene) {
             SceneType.COFFEE_SHOP -> "手轻搭椅背，另一只手自然垂落"
             SceneType.CITY_STREET -> "立于高楼幕墙前，单手插兜"
             SceneType.INDOOR_HOME -> "立于书桌或文件柜边"
             SceneType.NEON_NIGHT -> "站在灯光下，正面朝向镜头"
-            SceneType.PARK -> "站在林荫小径上"
-            SceneType.FOREST -> "挺直腰板，立于林间"
-            SceneType.BEACH -> "沙滩上依然保持干练气质"
+            SceneType.PARK -> "站在林荫小径上，干练与自然的碰撞"
+            SceneType.FOREST -> "挺直腰板，立于林间，刚柔并济"
+            SceneType.BEACH -> "沙滩上依然保持干练气质，反差感满满"
             else -> "单手插兜，眼神看向远方"
         }
         return "这套${ootdName}太有高级质感了。在这个${sceneName}建议您稍微整理一下衣领然后${poseHint}，极其出片！"
@@ -196,7 +260,7 @@ object AIAdvisor {
         scene: SceneType,
         sceneName: String,
         ootdName: String,
-        hasPlant: Boolean
+        f: DetectedFeatures
     ): String {
         val poseHint = when (scene) {
             SceneType.COFFEE_SHOP -> "趴在桌面上，双手托腮"
@@ -208,15 +272,16 @@ object AIAdvisor {
             SceneType.NEON_NIGHT -> "在霓虹下做个夸张表情"
             else -> "自然伸展双臂"
         }
-        val plantMsg = if (hasPlant) " 周围的绿植会让氛围更松弛。" else ""
-        return "监测到了非常舒服的${ootdName}穿搭！在这片${sceneName}${poseHint}，大幅度伸展双臂，我要抓下这段松弛感。${plantMsg}"
+        val plantMsg = if (f.hasPlant) " 周围的绿植会让氛围更松弛。" else ""
+        val sunMsg = if (f.hasSunlight) " 阳光会让这张照片更加温暖。" else ""
+        return "监测到了非常舒服的${ootdName}穿搭！在这片${sceneName}${poseHint}，大幅度伸展双臂，我要抓下这段松弛感。${plantMsg}${sunMsg}"
     }
 
     private fun streetAdvice(
         scene: SceneType,
         sceneName: String,
         ootdName: String,
-        hasNight: Boolean
+        f: DetectedFeatures
     ): String {
         val poseHint = when (scene) {
             SceneType.CITY_STREET -> "大步流星往前走，突然回头看镜头"
@@ -228,21 +293,100 @@ object AIAdvisor {
             SceneType.INDOOR_HOME -> "在房间里走两步然后回头"
             else -> "插兜走两步，回头看镜头"
         }
-        val nightBonus = if (hasNight) "夜色会让你的街头气场加倍！" else ""
-        return "您的这身${ootdName}与${sceneName}完美搭配！建议${poseHint}，把街头酷感拿捏到位！${nightBonus}"
+        val nightBonus = if (f.hasNight) "夜色会让你的街头气场加倍！" else ""
+        val urbanBonus = if (f.hasUrban) " 周围的城市建筑会成为完美的背景。" else ""
+        return "您的这身${ootdName}与${sceneName}完美搭配！建议${poseHint}，把街头酷感拿捏到位！${nightBonus}${urbanBonus}"
+    }
+
+    private fun formalAdvice(
+        scene: SceneType,
+        sceneName: String,
+        ootdName: String,
+        f: DetectedFeatures
+    ): String {
+        val poseHint = when (scene) {
+            SceneType.COFFEE_SHOP -> "端坐吧台前，双手轻放桌面"
+            SceneType.CITY_STREET -> "立于写字楼大堂，挺拔身姿"
+            SceneType.INDOOR_HOME -> "站在玄关或客厅中央"
+            SceneType.NEON_NIGHT -> "在聚光灯下，如红毯登场"
+            SceneType.PARK -> "在花园中优雅站立"
+            SceneType.FOREST -> "林间正装，独特反差"
+            SceneType.BEACH -> "沙滩正装，时尚大片感"
+            else -> "挺胸抬头，双手自然下垂"
+        }
+        return "这套${ootdName}气场强大！在${sceneName}${poseHint}，正式与场景的完美碰撞，定格这一刻的优雅！"
+    }
+
+    private fun sportyAdvice(
+        scene: SceneType,
+        sceneName: String,
+        ootdName: String,
+        f: DetectedFeatures
+    ): String {
+        val poseHint = when (scene) {
+            SceneType.PARK -> "做出运动起跑姿势，活力满满"
+            SceneType.BEACH -> "在沙滩上做跳跃动作，充满活力"
+            SceneType.FOREST -> "在林间伸展身体，与自然共呼吸"
+            SceneType.CITY_STREET -> "在街头做动态姿势，动感十足"
+            SceneType.COFFEE_SHOP -> "坐着做拉伸动作，休闲运动感"
+            SceneType.INDOOR_HOME -> "在家做运动姿势，健康活力"
+            SceneType.NEON_NIGHT -> "夜晚运动，酷感加倍"
+            else -> "做出运动姿态，保持活力表情"
+        }
+        return "这身${ootdName}充满活力！在${sceneName}${poseHint}，运动与时尚的完美结合，记录这份动感时刻！"
+    }
+
+    private fun vintageAdvice(
+        scene: SceneType,
+        sceneName: String,
+        ootdName: String,
+        f: DetectedFeatures
+    ): String {
+        val poseHint = when (scene) {
+            SceneType.COFFEE_SHOP -> "手持咖啡杯，温婉回眸"
+            SceneType.CITY_STREET -> "立于老街建筑前，复古氛围"
+            SceneType.INDOOR_HOME -> "坐在复古家具旁，优雅姿态"
+            SceneType.PARK -> "在花园中持伞或提篮"
+            SceneType.FOREST -> "身着复古连衣裙，林中漫步"
+            SceneType.BEACH -> "复古泳装造型，海滩怀旧"
+            SceneType.NEON_NIGHT -> "复古与霓虹的碰撞，穿越时空"
+            else -> "做一个温柔的回眸姿态"
+        }
+        return "这身${ootdName}充满复古韵味！在${sceneName}${poseHint}，时光仿佛倒流，定格这份永恒的优雅！"
+    }
+
+    private fun trendyAdvice(
+        scene: SceneType,
+        sceneName: String,
+        ootdName: String,
+        f: DetectedFeatures
+    ): String {
+        val poseHint = when (scene) {
+            SceneType.CITY_STREET -> "摆出时尚街拍姿势，酷感十足"
+            SceneType.NEON_NIGHT -> "霓虹灯下的潮流先锋，态度满分"
+            SceneType.COFFEE_SHOP -> "咖啡馆时尚坐姿，ins风格"
+            SceneType.PARK -> "潮流运动混搭，年轻活力"
+            SceneType.BEACH -> "海边潮流造型，度假时尚"
+            SceneType.FOREST -> "户外潮流穿搭，自然与时尚"
+            SceneType.INDOOR_HOME -> "时尚家居造型，慵懒时髦"
+            else -> "摆出最自信的时尚姿势"
+        }
+        val techBonus = if (f.hasTech) " 科技感穿搭与这个场景完美契合！" else ""
+        return "这身${ootdName}太潮了！在${sceneName}${poseHint}，时尚敏感度拉满！${techBonus}"
     }
 
     private fun unknownAdvice(
         scene: SceneType,
         sceneName: String,
-        hasWater: Boolean,
-        hasSunlight: Boolean,
-        hasPlant: Boolean
+        f: DetectedFeatures
     ): String {
         val bonus = buildString {
-            if (hasWater) append("利用水面倒影会很出片；")
-            if (hasSunlight) append("注意避开正午直射光，侧光最有质感；")
-            if (hasPlant) append("让绿植作为构图的自然背景；")
+            if (f.hasWater) append("利用水面倒影会很出片；")
+            if (f.hasSunlight) append("注意避开正午直射光，侧光最有质感；")
+            if (f.hasPlant) append("让绿植作为构图的自然背景；")
+            if (f.hasNight) append("夜晚记得开闪光灯或利用环境光；")
+            if (f.hasUrban) append("城市建筑会成为完美的几何背景；")
+            if (f.hasNature) append("与自然环境互动，拥抱大自然；")
         }
         return "您的这身穿搭与这里的${sceneName}绝配，尝试侧对屏幕，来个自然的回眸一笑吧！${bonus}建议摆一个最自然的姿势，放松身体，我来帮您捕捉最美好的瞬间。"
     }
@@ -269,15 +413,6 @@ object AIAdvisor {
         val newW = (w * scale).toInt()
         val newH = (h * scale).toInt()
         return Bitmap.createScaledBitmap(bitmap, newW, newH, true)
-    }
-
-    private fun OOTDCategory.displayName(): String = when (this) {
-        OOTDCategory.ELEGANT -> "飘逸长裙"
-        OOTDCategory.CASUAL -> "休闲针织衫"
-        OOTDCategory.BUSINESS -> "干练风衣"
-        OOTDCategory.LOUNGE -> "日常慵懒风"
-        OOTDCategory.STREET -> "时尚休闲套装"
-        OOTDCategory.UNKNOWN -> "独特穿搭"
     }
 
     // =========================================================================
@@ -325,7 +460,7 @@ object AIAdvisor {
         "jeans", "denim", "joggers", "sneakers", "trainers",
         "leather_jacket", "bomber_jacket", "streetwear",
         "sportswear", "athleisure", "skateboarder",
-        "biker_jacket", " varsity_jacket", "windbreaker",
+        "biker_jacket", "varsity_jacket", "windbreaker",
         "ripped_jeans", "skinny_jeans", "boyfriend_jeans",
         "graphic_tshirt", "band_tshirt", "hooded",
         "cap", "baseball_cap", "beanie", "snapback",
@@ -333,4 +468,48 @@ object AIAdvisor {
         "earrings", "necklace", "bracelet", "watch",
         "sunglasses", "glasses"
     )
+    private val FORMAL_KEYWORDS = listOf(
+        "suit", "tailored_suit", "pantsuit", "two_piece_suit",
+        "three_piece_suit", "tuxedo", "evening_suit",
+        "business_suit", "blazer", "formal_coat",
+        "oxford_shoe", "derby_shoe", "leather_shoe",
+        "necktie", "bow_tie", "pocket_square", "cufflinks",
+        "dress_shirt", "wingtip", "loafer",
+        "top_hat", "fedora", "gloves", "pocket_watch"
+    )
+    private val SPORTY_KEYWORDS = listOf(
+        "sportswear", "athletic", "gym_wear", "workout",
+        "yoga_pants", "running_shoes", "sneakers", "trainers",
+        "tracksuit", "windbreaker", "tennis_skirt", "tennis_shoe",
+        "basketball_shoe", "running_shoe", "training_shoe",
+        "compression", "leggings", "sport_bra", "tank_top",
+        "joggers", "cargo_pants", "utility", "functional",
+        "outdoor", "hiking", "trekking", "cycling"
+    )
+    private val VINTAGE_KEYWORDS = listOf(
+        "vintage", "retro", "classic", "antique",
+        "1950s", "1960s", "1970s", "1980s",
+        "A_line_dress", "pencil_skirt", "button_up",
+        "pearl_necklace", "brooch", "hat", "veil",
+        "gloves", "handbag", "cat_eye_glasses",
+        "round_sunglasses", "fedora", "trench",
+        "blouse", "pleated_skirt", "capris"
+    )
+    private val TRENDY_KEYWORDS = listOf(
+        "streetwear", "hypebeast", "oversized", "gorpcore",
+        "normcore", "minimalist", "maximalist",
+        "bucket_hat", "crossbody", "fanny_pack", "sling_bag",
+        "chains", "hoop_earrings", "army_boots", "doc_martens",
+        "platform_shoe", "chunky_sneaker", "crocs", "clogs",
+        "mesh", "cargo", "patchwork", "upcycled",
+        "sustainable_fashion", "eco_friendly",
+        "techwear", "cyberpunk", "y2k", "millennial"
+    )
+
+    // 辅助关键词（弱匹配）
+    private val ELEGANT_SECONDARY = listOf("flowy", "delicate", "refined", "chic", "sophisticated", "glamorous")
+    private val CASUAL_SECONDARY = listOf("comfortable", "cozy", "easy", "relaxed", "laid_back", "effortless")
+    private val BUSINESS_SECONDARY = listOf("sharp", "polished", "impressive", "executive", "boardroom")
+    private val SPORTY_SECONDARY = listOf("energetic", "dynamic", "active", "healthy", "vibrant", "fresh")
+    private val TRENDY_SECONDARY = listOf("fashion_forward", "stylish", "cool", "edgy", "statement", "bold")
 }

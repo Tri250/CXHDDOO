@@ -306,6 +306,32 @@ private fun GalleryCell(
                     .padding(horizontal = 6.dp, vertical = 2.dp)
             )
         }
+        // 位置徽标（左下角）
+        val locationLine = shortLocation(record)
+        if (locationLine != null) {
+            Box(Modifier.fillMaxWidth().padding(start = 6.dp, bottom = 6.dp), contentAlignment = Alignment.BottomStart) {
+                Text(
+                    text = locationLine,
+                    color = Color.White,
+                    fontSize = 9.sp,
+                    maxLines = 1,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color.Black.copy(alpha = 0.55f))
+                        .padding(horizontal = 5.dp, vertical = 2.dp)
+                )
+            }
+        }
+    }
+}
+
+private fun shortLocation(record: ShootingRecordEntity): String? {
+    val city = record.cityName
+    val place = record.placeName
+    return when {
+        city != null -> city
+        place != null -> place
+        else -> null
     }
 }
 
@@ -360,7 +386,7 @@ private fun DetailInfoCard(record: ShootingRecordEntity) {
     val high = record.matchScore >= 80
     Column(
         modifier = Modifier
-            .width(150.dp)
+            .width(170.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(Brand.Surface.copy(alpha = 0.9f))
             .padding(horizontal = 14.dp, vertical = 12.dp)
@@ -383,6 +409,40 @@ private fun DetailInfoCard(record: ShootingRecordEntity) {
                 modifier = Modifier.padding(top = 4.dp)
             )
         }
+        // 位置信息（城市优先，地点次之）
+        val locationLine = buildLocationLine(record)
+        if (locationLine != null) {
+            Text(
+                locationLine,
+                color = Brand.TextSecondary,
+                fontSize = 11.sp,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+        // 光线标签
+        if (record.isLowLight) {
+            Text(
+                "🌙 暗光",
+                color = Brand.TextMuted,
+                fontSize = 11.sp,
+                modifier = Modifier.padding(top = 3.dp)
+            )
+        }
+    }
+}
+
+/** 构造位置描述行：优先 cityName，其次 placeName，再次经纬度 */
+private fun buildLocationLine(record: ShootingRecordEntity): String? {
+    val city = record.cityName
+    val place = record.placeName
+    val lat = record.latitude
+    val lng = record.longitude
+    return when {
+        city != null && place != null -> "📍 $place, $city"
+        city != null -> "📍 $city"
+        place != null -> "📍 $place"
+        lat != null && lng != null -> "📍 ${String.format("%.3f, %.3f", lat, lng)}"
+        else -> null
     }
 }
 

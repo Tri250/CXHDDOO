@@ -18,6 +18,8 @@ import com.poseai.app.model.NormPoint
 import com.poseai.app.model.SceneType
 import com.poseai.app.model.ShootingPlan
 import com.poseai.app.model.VlogTemplate
+import com.poseai.app.util.LocationSnapshot
+import com.poseai.app.util.LocationUtil
 import com.poseai.app.video.DeviceFeedback
 import com.poseai.app.video.VideoMerger
 import kotlinx.coroutines.Dispatchers
@@ -686,8 +688,36 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // MARK: - 拍摄记录
-    fun saveShootingRecord(uri: String, scoreVal: Int, filterName: String?, plan: ShootingPlan?, sceneType: SceneType) {
+
+    /**
+     * 保存拍摄记录——在原实现基础上增加位置/光线/设备信息的采集。
+     * 位置通过 LocationUtil 在 IO 线程异步获取；光线参数从 CameraManager 读取；
+     * 设备信息通过 Build.MODEL + 前后置标志组成。
+     */
+    fun saveShootingRecord(
+        uri: String,
+        scoreVal: Int,
+        filterName: String?,
+        plan: ShootingPlan?,
+        sceneType: SceneType
+    ) {
+        val appCtx = appContext
         viewModelScope.launch(Dispatchers.IO) {
+            // 1) 位置（非阻塞，无权限时为 null）
+            val locationSnapshot: LocationSnapshot = runCatching {
+                LocationUtil.captureLocation(appCtx)
+            }.getOrDefault(LocationSnapshot(null, null, null, null))
+
+            // 2) 光线参数（从 CameraManager 读取最近一次分析结果）
+            val lightLevel = manager.lastLightLevel
+            val colorTemperature = manager.lastColorTemperature
+            val exposureTimeMs = manager.lastExposureTimeMs
+            val isLow = manager.isLowLightMode
+
+            // 3) 设备信息
+            val deviceModel = android.os.Build.MODEL
+            val lensFacing = if (manager.isFrontCamera) "front" else "back"
+
             recordDao.insert(
                 ShootingRecordEntity(
                     id = UUID.randomUUID().toString(),
@@ -697,7 +727,17 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
                     planName = plan?.poseName ?: "",
                     matchScore = scoreVal,
                     localUri = uri,
-                    appliedFilterRawValue = filterName
+                    appliedFilterRawValue = filterName,
+                    latitude = locationSnapshot.latitude,
+                    longitude = locationSnapshot.longitude,
+                    placeName = locationSnapshot.placeName,
+                    cityName = locationSnapshot.cityName,
+                    lightLevel = lightLevel,
+                    colorTemperature = colorTemperature,
+                    exposureTimeMs = exposureTimeMs,
+                    isLowLight = isLow,
+                    deviceModel = deviceModel,
+                    lensFacing = lensFacing
                 )
             )
         }

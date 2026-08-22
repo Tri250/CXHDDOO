@@ -25,6 +25,9 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- 通知（Android 13+） -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 定位（地理逆编码用于照片地点回溯） -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
         android:name=".PoseAIApplication"
