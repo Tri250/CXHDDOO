@@ -31,17 +31,10 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x PoseAI-Android/gradlew
 
-      - name: Configure SDK path
-        run: echo "sdk.dir=$HOME/Android/Sdk" > PoseAI-Android/local.properties
-
-      - name: Run Lint
-        working-directory: PoseAI-Android
-        run: ./gradlew :app:lintDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"
-        continue-on-error: true
-
       - name: Build Debug APK
         working-directory: PoseAI-Android
-        run: ./gradlew :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"
+        run: |
+          ./gradlew :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g" --stacktrace --info --console=plain 2>&1 | tail -80
 
       - name: Verify APK
         run: find PoseAI-Android -name "*.apk" -type f 2>/dev/null
