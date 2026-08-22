@@ -27,11 +27,14 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Run Lint
+        working-directory: PoseAI-Android
         run: |
+          chmod +x gradlew
           ./gradlew :app:lintDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"
         continue-on-error: true
 
       - name: Build Debug
+        working-directory: PoseAI-Android
         run: |
           ./gradlew :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"
 
@@ -40,5 +43,5 @@ jobs:
         if: always()
         with:
           name: debug-apk-${{ github.sha }}
-          path: app/build/outputs/apk/debug/*.apk
+          path: PoseAI-Android/app/build/outputs/apk/debug/*.apk
           retention-days: 7

@@ -46,10 +46,13 @@ jobs:
           echo "VERSION_NAME=${{ inputs.versionName || '1.0.0' }}" >> $GITHUB_ENV
 
       - name: Build debug APK
+        working-directory: PoseAI-Android
         run: |
+          chmod +x gradlew
           ./gradlew :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"
 
       - name: Build release APK
+        working-directory: PoseAI-Android
         env:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
@@ -57,25 +60,40 @@ jobs:
         run: |
           ./gradlew :app:assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"
 
+      - name: Verify build outputs
+        run: |
+          echo "=== Debug APK ==="
+          ls -la PoseAI-Android/app/build/outputs/apk/debug/*.apk 2>/dev/null || echo "No debug APK"
+          echo "=== Release APK ==="
+          ls -la PoseAI-Android/app/build/outputs/apk/release/*.apk 2>/dev/null || echo "No release APK"
+          echo "=== Release AAB ==="
+          ls -la PoseAI-Android/app/build/outputs/bundle/release/*.aab 2>/dev/null || echo "No release AAB"
+
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: PoseAI-Android/app/build/outputs/apk/debug/*.apk
 
       - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
-          path: app/build/outputs/apk/release/*.apk
+          path: PoseAI-Android/app/build/outputs/apk/release/*.apk
+
+      - name: Upload release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-aab
+          path: PoseAI-Android/app/build/outputs/bundle/release/*.aab
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          name: PoseAI v${{ env.VERSION_NAME }}
+          name: PoseAI Android v${{ env.VERSION_NAME }}
           body: |
-            ## PoseAI Release v${{ env.VERSION_NAME }}
+            ## PoseAI Android Release v${{ env.VERSION_NAME }}
 
             ### What's New
             - Full AI module activation (scene recognition, pose matching, OOTD analysis)
@@ -93,5 +111,7 @@ jobs:
             - 📐 Composition guides (rule of thirds, golden ratio)
             - 🔄 Dual-person pose support
           files: |
-            app/build/outputs/apk/release/*.apk
-            app/build/outputs/apk/debug/*.apk
+            PoseAI-Android/app/build/outputs/apk/release/*.apk
+            PoseAI-Android/app/build/outputs/apk/release/*.aab
+            PoseAI-Android/app/build/outputs/bundle/release/*.aab
+            PoseAI-Android/app/build/outputs/apk/debug/*.apk
