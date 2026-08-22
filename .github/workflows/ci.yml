@@ -23,33 +23,30 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
-          api-level: 34
-          build-tools: 34.0.0
-
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('PoseAI-Android/**/*.gradle*', 'PoseAI-Android/**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+          gradle-version: '8.9'
 
       - name: Make gradlew executable
         run: chmod +x PoseAI-Android/gradlew
 
       - name: Run Lint
         working-directory: PoseAI-Android
-        run: ./gradlew :app:lintDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"
+        run: |
+          export JAVA_HOME=$JAVA_HOME
+          export ANDROID_HOME=$HOME/Android/Sdk
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          ./gradlew :app:lintDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g" --info 2>&1 | tail -50
         continue-on-error: true
 
       - name: Build Debug APK
         working-directory: PoseAI-Android
-        run: ./gradlew :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"
+        run: |
+          export JAVA_HOME=$JAVA_HOME
+          export ANDROID_HOME=$HOME/Android/Sdk
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          ./gradlew :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g" --stacktrace 2>&1 | tail -80
 
       - name: Verify APK
         run: ls -la PoseAI-Android/app/build/outputs/apk/debug/*.apk
