@@ -34,7 +34,7 @@ jobs:
       - name: Build Debug APK
         working-directory: PoseAI-Android
         run: |
-          ./gradlew :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g" --stacktrace --info --console=plain 2>&1 | tail -80
+          ./gradlew :app:clean :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g" --stacktrace --info --console=plain 2>&1 | tail -80
 
       - name: Verify APK
         run: find PoseAI-Android -name "*.apk" -type f 2>/dev/null
