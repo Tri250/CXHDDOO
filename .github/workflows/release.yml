@@ -32,8 +32,21 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: 34.0.0
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-release-${{ hashFiles('PoseAI-Android/**/*.gradle*', 'PoseAI-Android/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-release-
 
       - name: Create signing keystore
         run: |
@@ -45,11 +58,12 @@ jobs:
           echo "VERSION_CODE=${{ inputs.versionCode || github.run_number }}" >> $GITHUB_ENV
           echo "VERSION_NAME=${{ inputs.versionName || '1.0.0' }}" >> $GITHUB_ENV
 
+      - name: Make gradlew executable
+        run: chmod +x PoseAI-Android/gradlew
+
       - name: Build debug APK
         working-directory: PoseAI-Android
-        run: |
-          chmod +x gradlew
-          ./gradlew :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"
+        run: ./gradlew :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"
 
       - name: Build release APK
         working-directory: PoseAI-Android
@@ -57,8 +71,7 @@ jobs:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-        run: |
-          ./gradlew :app:assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"
+        run: ./gradlew :app:assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"
 
       - name: Verify build outputs
         run: |
@@ -112,6 +125,4 @@ jobs:
             - 🔄 Dual-person pose support
           files: |
             PoseAI-Android/app/build/outputs/apk/release/*.apk
-            PoseAI-Android/app/build/outputs/apk/release/*.aab
-            PoseAI-Android/app/build/outputs/bundle/release/*.aab
             PoseAI-Android/app/build/outputs/apk/debug/*.apk

@@ -23,20 +23,36 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: 34.0.0
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('PoseAI-Android/**/*.gradle*', 'PoseAI-Android/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Make gradlew executable
+        run: chmod +x PoseAI-Android/gradlew
 
       - name: Run Lint
         working-directory: PoseAI-Android
-        run: |
-          chmod +x gradlew
-          ./gradlew :app:lintDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"
+        run: ./gradlew :app:lintDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"
         continue-on-error: true
 
-      - name: Build Debug
+      - name: Build Debug APK
         working-directory: PoseAI-Android
-        run: |
-          ./gradlew :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"
+        run: ./gradlew :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g"
+
+      - name: Verify APK
+        run: ls -la PoseAI-Android/app/build/outputs/apk/debug/*.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
