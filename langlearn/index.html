@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LanLearn · 多语种沉浸式学习平台</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- 顶部导航 -->
+  <header id="app-header" class="app-header hidden">
+    <div class="container nav">
+      <div class="brand" data-route="home">
+        <span class="brand-logo">🌏</span>
+        <span class="brand-name">LanLearn</span>
+      </div>
+      <nav class="nav-links">
+        <a data-route="home" class="nav-link">首页</a>
+        <a data-route="courses" class="nav-link">课程</a>
+        <a data-route="practice" class="nav-link">练习</a>
+        <a data-route="progress" class="nav-link">进度</a>
+        <a data-route="community" class="nav-link">社区</a>
+        <a data-route="achievements" class="nav-link">成就</a>
+      </nav>
+      <div class="nav-user">
+        <span id="user-chip" class="user-chip" data-route="profile"></span>
+        <button id="logout-btn" class="btn btn-ghost">退出</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="app-main" class="app-main">
+    <!-- 登录/注册 -->
+    <section id="view-auth" class="view active">
+      <div class="auth-wrap">
+        <div class="auth-card">
+          <div class="brand-big">🌏 LanLearn</div>
+          <p class="auth-slogan">沉浸式多语种学习 · 英语 · 日语 · 韩语</p>
+          <div class="tab-switch">
+            <button class="tab active" data-auth-tab="login">登录</button>
+            <button class="tab" data-auth-tab="register">注册</button>
+          </div>
+          <form id="login-form" class="auth-form active">
+            <label>用户名</label>
+            <input type="text" id="login-username" placeholder="请输入用户名" required />
+            <label>密码</label>
+            <input type="password" id="login-password" placeholder="请输入密码" required />
+            <button class="btn btn-primary btn-block" type="submit">登录</button>
+          </form>
+          <form id="register-form" class="auth-form">
+            <label>用户名</label>
+            <input type="text" id="reg-username" placeholder="3-20位字符" required minlength="3" maxlength="20" />
+            <label>邮箱</label>
+            <input type="email" id="reg-email" placeholder="example@email.com" required />
+            <label>密码</label>
+            <input type="password" id="reg-password" placeholder="至少6位" required minlength="6" />
+            <label>选择母语</label>
+            <select id="reg-native">
+              <option value="zh">中文</option>
+              <option value="en">English</option>
+            </select>
+            <button class="btn btn-primary btn-block" type="submit">创建账号</button>
+          </form>
+          <div id="auth-msg" class="auth-msg"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 首页 -->
+    <section id="view-home" class="view">
+      <div class="container">
+        <div class="hero">
+          <div class="hero-text">
+            <h1>开启你的<span class="grad-text">多语种之旅</span></h1>
+            <p>基于 CEFR 分级体系 + 科学记忆算法，助你高效掌握英语、日语、韩语。</p>
+            <div class="hero-actions">
+              <button class="btn btn-primary" data-route="courses">开始学习</button>
+              <button class="btn btn-outline" data-route="progress">查看进度</button>
+            </div>
+            <div class="hero-stats" id="hero-stats"></div>
+          </div>
+          <div class="hero-visual">
+            <div class="lang-float en">🇬🇧 English</div>
+            <div class="lang-float jp">🇯🇵 日本語</div>
+            <div class="lang-float kr">🇰🇷 한국어</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">🎯 继续学习</h2>
+          <div id="continue-list" class="card-grid"></div>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">✨ 为你推荐</h2>
+          <div id="recommend-list" class="card-grid"></div>
+        </div>
+
+        <div class="section features">
+          <div class="feat"><div class="feat-icon">📚</div><h3>分级课程</h3><p>A1 → C2 循序渐进</p></div>
+          <div class="feat"><div class="feat-icon">🧠</div><h3>智能记忆</h3><p>艾宾浩斯算法</p></div>
+          <div class="feat"><div class="feat-icon">🎙️</div><h3>口语跟读</h3><p>实时语音评测</p></div>
+          <div class="feat"><div class="feat-icon">🏆</div><h3>成就激励</h3><p>徽章、排行榜</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 课程选择 -->
+    <section id="view-courses" class="view">
+      <div class="container">
+        <h2 class="section-title">选择你要学习的语言</h2>
+        <div class="lang-tabs" id="lang-tabs"></div>
+        <div id="levels-list" class="levels"></div>
+        <div id="lessons-list" class="lessons"></div>
+      </div>
+    </section>
+
+    <!-- 练习中心 -->
+    <section id="view-practice" class="view">
+      <div class="container">
+        <h2 class="section-title">互动练习</h2>
+        <div class="practice-layout">
+          <aside class="side-nav" id="practice-sidenav"></aside>
+          <div class="practice-area" id="practice-area">
+            <div class="empty-state">
+              <div class="empty-icon">🎓</div>
+              <p>请选择左侧的练习模块开始学习</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 进度追踪 -->
+    <section id="view-progress" class="view">
+      <div class="container">
+        <h2 class="section-title">学习进度</h2>
+        <div class="progress-overview" id="progress-overview"></div>
+        <div class="progress-detail" id="progress-detail"></div>
+        <div class="section">
+          <h3 class="section-title">💡 个性化推荐</h3>
+          <div id="personal-list" class="card-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 社区 -->
+    <section id="view-community" class="view">
+      <div class="container">
+        <h2 class="section-title">学习社区</h2>
+        <div class="community-layout">
+          <div class="post-form-card">
+            <h3>分享你的学习心得</h3>
+            <textarea id="post-content" placeholder="说点什么… (支持 @ 同学)"></textarea>
+            <div class="post-actions">
+              <select id="post-lang">
+                <option value="en">英语</option>
+                <option value="ja">日语</option>
+                <option value="ko">韩语</option>
+                <option value="general">通用</option>
+              </select>
+              <button id="post-submit" class="btn btn-primary">发布</button>
+            </div>
+          </div>
+          <div id="post-list" class="post-list"></div>
+        </div>
+        <div class="section">
+          <h3 class="section-title">🏅 本周排行榜</h3>
+          <div id="leaderboard" class="leaderboard"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 成就 -->
+    <section id="view-achievements" class="view">
+      <div class="container">
+        <h2 class="section-title">我的成就</h2>
+        <div id="user-stats-big" class="user-stats-big"></div>
+        <h3 class="section-title">徽章收藏</h3>
+        <div id="badge-grid" class="badge-grid"></div>
+      </div>
+    </section>
+
+    <!-- 个人资料 -->
+    <section id="view-profile" class="view">
+      <div class="container">
+        <h2 class="section-title">个人资料</h2>
+        <div id="profile-card" class="profile-card"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 弹层 -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-content">
+      <button class="modal-close" id="modal-close">×</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    <div class="container">
+      <span>© LanLearn 2026 · 沉浸式多语种学习平台</span>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/recommend.js"></script>
+  <script src="js/community.js"></script>
+  <script src="js/practice.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
