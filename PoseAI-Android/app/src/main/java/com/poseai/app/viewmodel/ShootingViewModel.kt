@@ -116,7 +116,6 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
 
     private var customPlansJob: kotlinx.coroutines.Job? = null
     private var pitchJob: kotlinx.coroutines.Job? = null
-    private var scanTimeoutJob: kotlinx.coroutines.Job? = null
 
     // 常量
     val successThreshold: Float = 85f
@@ -777,8 +776,6 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
             showCompositionTip.value = false
         }
     }
-
-    private val appContext: android.content.Context get() = getApplication<Application>().applicationContext
 
     override fun onCleared() {
         super.onCleared()
