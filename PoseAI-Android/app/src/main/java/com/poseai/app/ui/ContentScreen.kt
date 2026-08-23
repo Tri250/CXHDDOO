@@ -212,6 +212,7 @@ fun ContentScreen(
             currentPlanIndex = currentPlanIndex,
             timerSeconds = timerSeconds,
             isRecordingMode = isRecordingMode,
+            isCapturing = isCapturing,
             onHistory = onShowHistory
         )
 
@@ -319,6 +320,7 @@ private fun BottomPanel(
     currentPlanIndex: Int,
     timerSeconds: Int,
     isRecordingMode: Boolean,
+    isCapturing: Boolean,
     onHistory: () -> Unit
 ) {
     Column(

@@ -57,16 +57,16 @@ object AIAdvisor {
 
     /** 穿搭风格枚举（10 类） */
     private enum class OOTDCategory(val displayNameZH: String) {
-        ELEGANT,   // 飘逸长裙
-        CASUAL,    // 休闲针织
-        BUSINESS,  // 干练风衣
-        LOUNGE,    // 日常慵懒风
-        STREET,    // 时尚休闲套装
-        FORMAL,    // 正式西装
-        SPORTY,    // 运动活力
-        VINTAGE,   // 复古优雅
-        TRENDY,    // 街头潮流
-        UNKNOWN    // 未知/独特穿搭
+        ELEGANT("飘逸长裙"),
+        CASUAL("休闲针织"),
+        BUSINESS("干练风衣"),
+        LOUNGE("日常慵懒风"),
+        STREET("时尚休闲套装"),
+        FORMAL("正式西装"),
+        SPORTY("运动活力"),
+        VINTAGE("复古优雅"),
+        TRENDY("街头潮流"),
+        UNKNOWN("未知/独特穿搭")
     }
 
     /**

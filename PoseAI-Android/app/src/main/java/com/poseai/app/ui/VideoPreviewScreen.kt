@@ -136,7 +136,7 @@ fun VideoPreviewScreen(
                     // 透明 ColorMatrix 预览层：实际保存时再应用，仅用于视觉反馈
                     android.view.View(ctx).apply {
                         // 轻量预览：用 tint 提示滤镜已开启
-                        setBackgroundColor(Color.TRANSPARENT)
+                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
                         // 记录当前滤镜（仅用于视图状态标记，渲染由外层颜色叠加完成）
                         tag = selectedFilter.rawValue
                     }
@@ -553,7 +553,7 @@ private fun applyFilterToVideo(source: File, filter: PhotoFilter): File {
         val inputSurface = encoder.createInputSurface()
         encoder.start()
 
-        muxer = android.media.MediaMuxer(output.absolutePath, android.media.MediaMuxer.MUXER_OUTPUT_MPEG_4)
+        muxer = android.media.MediaMuxer(output.absolutePath, android.media.MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
         val trackIndex = muxer.addTrack(format)
         muxer.start()
         muxerStarted = true

@@ -13,6 +13,7 @@ import com.google.mlkit.vision.pose.PoseLandmark
 import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions
 import com.poseai.app.model.NormPoint
 import kotlin.math.atan2
+import kotlin.math.pow
 import kotlin.math.sqrt
 
 /**
@@ -262,9 +263,9 @@ class MlKitPoseProvider(private val context: Context) {
         if (leftRaised || rightRaised) return Gestures.RAISED_HAND
 
         // 检测叉腰：手腕接近髋部且肘部弯曲
-        if (lw != null && lh != null && re != null && rh != null) {
-            val leftHipDist = sqrt((lw.x - lh.x).pow(2) + (lw.y - lh.y).pow(2))
-            val rightHipDist = sqrt((rw.x - rh.x).pow(2) + (rw.y - rh.y).pow(2))
+        if (lw != null && lh != null && rw != null && re != null && rh != null) {
+            val leftHipDist = sqrt((lw.x - lh.x).pow(2f) + (lw.y - lh.y).pow(2f))
+            val rightHipDist = sqrt((rw.x - rh.x).pow(2f) + (rw.y - rh.y).pow(2f))
             val leftElbowBent = le != null && angleAtJoint(ls, le, lw) < 130f
             val rightElbowBent = re != null && angleAtJoint(rs, re, rw) < 130f
 
@@ -275,8 +276,8 @@ class MlKitPoseProvider(private val context: Context) {
 
         // 检测手臂伸展：手腕远离肩膀
         if (lw != null && rw != null) {
-            val leftArmLength = sqrt((lw.x - ls.x).pow(2) + (lw.y - ls.y).pow(2))
-            val rightArmLength = sqrt((rw.x - rs.x).pow(2) + (rw.y - rs.y).pow(2))
+            val leftArmLength = sqrt((lw.x - ls.x).pow(2f) + (lw.y - ls.y).pow(2f))
+            val rightArmLength = sqrt((rw.x - rs.x).pow(2f) + (rw.y - rs.y).pow(2f))
             if (leftArmLength > 0.35f && rightArmLength > 0.35f) {
                 return Gestures.ARMS_OUTSTRETCHED
             }
@@ -285,8 +286,8 @@ class MlKitPoseProvider(private val context: Context) {
         // 检测抱头：手腕接近头部区域（头顶上方）
         val headY = shoulderCenter.y + 0.12f
         if (lw != null && rw != null) {
-            val leftToHead = sqrt((lw.x - shoulderCenter.x).pow(2) + (lw.y - headY).pow(2))
-            val rightToHead = sqrt((rw.x - shoulderCenter.x).pow(2) + (rw.y - headY).pow(2))
+            val leftToHead = sqrt((lw.x - shoulderCenter.x).pow(2f) + (lw.y - headY).pow(2f))
+            val rightToHead = sqrt((rw.x - shoulderCenter.x).pow(2f) + (rw.y - headY).pow(2f))
             if (leftToHead < 0.2f || rightToHead < 0.2f) {
                 return Gestures.HAND_ON_HEAD
             }
@@ -305,7 +306,7 @@ class MlKitPoseProvider(private val context: Context) {
         if (ls == null || rs == null) return null
 
         // 肩膀宽度
-        val shoulderWidth = sqrt((rs.x - ls.x).pow(2) + (rs.y - ls.y).pow(2))
+        val shoulderWidth = sqrt((rs.x - ls.x).pow(2f) + (rs.y - ls.y).pow(2f))
 
         // 如果肘部可见，判断更多信息
         val hasElbows = le != null && re != null
