@@ -9,6 +9,11 @@ on:
 permissions:
   contents: read
 
+# 同一分支只保留最新一次 CI，节省资源
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-check:
     name: Build Check
@@ -38,8 +43,11 @@ jobs:
 
       - name: Build Debug APK
         working-directory: PoseAI-Android
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          VERSION_NAME: "1.0.0-ci"
         run: |
-          ./gradlew :app:clean :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g" --stacktrace --info --console=plain 2>&1 | tail -80
+          ./gradlew :app:clean :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g" --stacktrace --console=plain 2>&1 | tail -80
 
       - name: Verify APK
         run: find PoseAI-Android -name "*.apk" -type f 2>/dev/null
