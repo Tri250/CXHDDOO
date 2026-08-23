@@ -368,7 +368,7 @@ class SceneClassifier(context: Context) {
                 }
             }
 
-            if (totalSamples == 0f) return votes
+            if (totalSamples == 0) return votes
 
             val warmRatio = warmCount / totalSamples
             val coolRatio = coolCount / totalSamples
