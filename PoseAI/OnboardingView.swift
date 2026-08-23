@@ -7,6 +7,9 @@ struct OnboardingView: View {
     @State private var currentPage: Int = 0
     @State private var hasAgreedToPrivacy: Bool = false
 
+    /// 隐私政策地址：集中维护，避免散落硬编码与强制解包崩溃
+    private static let privacyPolicyURL = URL(string: "https://poseai.app/privacy")
+
     private let steps: [OnboardingStep] = [
         OnboardingStep(
             icon: "viewfinder",
@@ -53,7 +56,7 @@ struct OnboardingView: View {
                     .font(.system(size: 15, weight: .medium))
                     .foregroundColor(.white.opacity(0.45))
                     .padding(.horizontal, 24)
-                    .padding(.top, 16)
+                          .padding(.top, 16)
                     // 使用透明度控制可见性，天然保持布局高度稳定
                     .opacity(currentPage < steps.count - 1 ? 1 : 0)
                 }
@@ -80,8 +83,8 @@ struct OnboardingView: View {
                         ForEach(0..<steps.count, id: \.self) { idx in
                             Capsule()
                                 .fill(idx == currentPage
-                                    ? Color(red: 1.0, green: 0.82, blue: 0.45)
-                                    : Color.white.opacity(0.2))
+                                      ? Color(red: 1.0, green: 0.82, blue: 0.45)
+                                      : Color.white.opacity(0.2))
                                 .frame(width: idx == currentPage ? 24 : 8, height: 8)
                                 .animation(.spring(response: 0.35, dampingFraction: 0.7), value: currentPage)
                         }
@@ -100,9 +103,15 @@ struct OnboardingView: View {
                             Text("我已阅读并同意")
                                 .font(.system(size: 12))
                                 .foregroundColor(.white.opacity(0.6))
-                            Link("《隐私政策》", destination: URL(string: "https://poseai.app/privacy")!)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.white)
+                            if let url = Self.privacyPolicyURL {
+                                Link("《隐私政策》", destination: url)
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.white)
+                            } else {
+                                Text("《隐私政策》")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.5))
+                            }
                         }
                         .padding(.bottom, -8)
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
