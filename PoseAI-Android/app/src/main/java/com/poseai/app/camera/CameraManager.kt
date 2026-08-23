@@ -102,8 +102,6 @@ class CameraManager(
     @Volatile
     private var frameCounter = 0
 
-    private var pendingOOTDRequest = false
-
     // MARK: - 最近光线分析结果（synchronized 保护）
     @Volatile var lastLightLevel: Float? = null
         private set
@@ -171,8 +169,8 @@ class CameraManager(
         // 读取相机曝光/ISO 能力
         camera?.cameraInfo?.let { info ->
             runCatching {
-                exposureTimeRange = info.exposureTimeRange
-                sensitivityRange = info.sensitivityRange
+                exposureTimeRange = info.exposureState?.exposureTimeRange
+                sensitivityRange = info.exposureState?.sensitivityRange
             }
         }
     }
