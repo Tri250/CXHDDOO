@@ -194,8 +194,8 @@ object AIAdvisor {
             OOTDCategory.TRENDY to trendy
         )
 
-        val best = scores.maxByOrNull { it.value } ?: OOTDCategory.UNKNOWN
-        return if (best.value > 0.3f) best.key else OOTDCategory.UNKNOWN
+        val bestEntry = scores.maxByOrNull { it.value }
+        return if (bestEntry != null && bestEntry.value > 0.3f) bestEntry.key else OOTDCategory.UNKNOWN
     }
 
     /**
