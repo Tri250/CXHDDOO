@@ -169,8 +169,10 @@ class CameraManager(
         // 读取相机曝光/ISO 能力
         camera?.cameraInfo?.let { info ->
             runCatching {
-                exposureTimeRange = info.exposureState?.exposureTimeRange
-                sensitivityRange = info.exposureState?.sensitivityRange
+                val cam2 = androidx.camera.camera2.interop.Camera2CameraInfo.from(info)
+                val chars = cam2.cameraCharacteristics
+                exposureTimeRange = chars.get(android.hardware.camera2.CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_EXPOSURE_TIME_RANGE)
+                sensitivityRange = chars.get(android.hardware.camera2.CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE)
             }
         }
     }
