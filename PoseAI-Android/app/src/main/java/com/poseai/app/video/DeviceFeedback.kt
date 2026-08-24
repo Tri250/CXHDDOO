@@ -18,6 +18,8 @@ import java.io.ByteArrayOutputStream
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.atan2
@@ -37,6 +39,9 @@ import kotlin.math.PI
  *  - 自然环境声：快门音模拟相机机械结构声
  */
 class DeviceFeedback(private val context: Context) {
+
+    // 生命周期安全的协程作用域
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     // MARK: - TTS
 
@@ -139,6 +144,8 @@ class DeviceFeedback(private val context: Context) {
     /** 完整释放所有资源 */
     fun release() {
         shutdown()
+        // 取消所有协程
+        runCatching { scope.cancel() }
         // 释放 SoundPool
         runCatching {
             soundPool?.release()
@@ -146,6 +153,9 @@ class DeviceFeedback(private val context: Context) {
         soundPool = null
         soundPoolReady = false
         shutterSoundId = -1
+        // 释放 ToneGenerator 降级实例
+        runCatching { fallbackTone?.release() }
+        fallbackTone = null
         // 释放传感器
         runCatching {
             sensorManager.unregisterListener(listener)
@@ -302,16 +312,21 @@ class DeviceFeedback(private val context: Context) {
         )
     }
 
+    /** 当前 ToneGenerator 降级实例（需要在 release 中关闭） */
+    private var fallbackTone: ToneGenerator? = null
+
     /** 播放快门音，失败时降级为 ToneGenerator */
     fun playShutterSound() {
         ensureSoundPool()
         val sp = soundPool ?: return
         if (!soundPoolReady || shutterSoundId < 0) {
-            // 降级：ToneGenerator 双音模拟
+            // 降级：ToneGenerator 双音模拟。注意复用旧实例，避免重复创建
             runCatching {
-                val tg = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+                val tg = fallbackTone ?: run {
+                    ToneGenerator(AudioManager.STREAM_MUSIC, 100).also { fallbackTone = it }
+                }
                 tg.startTone(ToneGenerator.TONE_PROP_BEEP2, 40)
-                CoroutineScope(Dispatchers.Main).launch {
+                scope.launch {
                     delay(60)
                     tg.startTone(ToneGenerator.TONE_PROP_BEEP, 30)
                 }

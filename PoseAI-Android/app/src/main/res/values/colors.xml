@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="pose_black">#FF000000</color>
-    <color name="pose_white">#FFFFFFFF</color>
-    <color name="pose_accent">#FF7F53FF</color>
-    <color name="pose_gold">#FFFFC857</color>
     <color name="ic_launcher_background">#FF1A1A2E</color>
 </resources>

@@ -137,7 +137,7 @@ fun SaveCustomPlanScreen(
     }
 }
 
-/** 骨骼预览画布：归一化坐标直接映射到画布尺寸（x*width, y*height） */
+/** 骨骼预览画布：NormPoint 为 y 向上（0 底 1 顶），需翻转以适配 Compose Canvas（y 向下） */
 @Composable
 private fun PosePreview(points: Map<String, NormPoint>) {
     Canvas(modifier = Modifier.fillMaxWidth().height(250.dp)) {
@@ -146,7 +146,7 @@ private fun PosePreview(points: Map<String, NormPoint>) {
 
         fun p(name: String): Offset? {
             val pt = points[name] ?: return null
-            return Offset(pt.x * w, pt.y * h)
+            return Offset(pt.x * w, (1f - pt.y) * h)
         }
 
         // 连线
@@ -160,7 +160,7 @@ private fun PosePreview(points: Map<String, NormPoint>) {
         // 关节点
         val dotRadius = 4.dp.toPx()
         for (pt in points.values) {
-            drawCircle(Color.White, radius = dotRadius, center = Offset(pt.x * w, pt.y * h))
+            drawCircle(Color.White, radius = dotRadius, center = Offset(pt.x * w, (1f - pt.y) * h))
         }
     }
 }

@@ -1,18 +1,19 @@
 # ProGuard / R8 规则 - PoseAI Release 构建
+# 经过深度优化的版本：保留必要反射、移除过宽的 keep 规则
 
-# Keep line numbers for debugging
+# ============ 通用 ============
 -keepattributes SourceFile,LineNumberTable
--renamesourcefileattribute SourceFile
+-keepattributes Signature
+-keepattributes InnerClasses
+-keepattributes EnclosingMethod
 
 # ============ ML Kit ============
-# ML Kit Pose Detection
 -keep class com.google.mlkit.vision.pose.** { *; }
 -keep class com.google.mlkit.vision.pose.defaults.** { *; }
-# ML Kit Image Labeling
 -keep class com.google.mlkit.vision.label.** { *; }
 -keep class com.google.mlkit.vision.label.defaults.** { *; }
-# ML Kit Common
 -keep class com.google.mlkit.common.** { *; }
+-dontwarn com.google.mlkit.**
 
 # ============ CameraX ============
 -keep class androidx.camera.** { *; }
@@ -20,75 +21,45 @@
 
 # ============ Compose ============
 -keep class androidx.compose.runtime.** { *; }
--keep class androidx.compose.animation.** { *; }
 -dontwarn androidx.compose.**
 
 # ============ Room ============
 -keep class androidx.room.** { *; }
+-keep @androidx.room.Entity class *
+-keep @androidx.room.Dao interface *
+-keep @androidx.room.Database class *
 -dontwarn androidx.room.**
 
-# Keep Room database entities and DAOs
+# ============ 应用数据模型 ============
 -keep class com.poseai.app.data.** { *; }
--keep class com.poseai.app.model.** { *; }
-
-# ============ AndroidX ============
--dontwarn androidx.**
--keep class androidx.lifecycle.** { *; }
--keep class androidx.navigation.** { *; }
-
-# ============ Kotlin ============
--keep class kotlin.coroutines.** { *; }
--keepclassmembers class kotlinx.coroutines.** { *; }
--dontwarn kotlinx.coroutines.**
-
-# ============ App Models ============
 -keep class com.poseai.app.model.** { *; }
 -keep class com.poseai.app.ml.** { *; }
 -keep class com.poseai.app.ai.** { *; }
+-keep class com.poseai.app.design.** { *; }
+-keep class com.poseai.app.util.** { *; }
 
-# Keep enums with values (for when expressions in serialized data)
+# ============ 枚举与数据类 ============
 -keepclassmembers enum * {
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }
-
-# Keep data classes used for serialization
 -keepclassmembers class * extends java.lang.Enum {
     <fields>;
 }
 
-# Reflection / Serialization
--keepattributes Signature
--keepattributes InnerClasses
--keepattributes EnclosingMethod
+# ============ Kotlin 协程 ============
+-keep class kotlin.coroutines.** { *; }
+-keepclassmembers class kotlinx.coroutines.** { *; }
+-dontwarn kotlinx.coroutines.**
 
-# Allow optimization but keep important methods
--keepclassmembers class * {
-    public *;
-}
--dontoptimize
+# ============ AndroidX ============
+-dontwarn androidx.**
+-keep class androidx.lifecycle.** { *; }
 
-# ============ Desugaring ============
--dontwarn java.time.**
--dontwarn java.util.stream.**
--dontwarn java.util.function.**
-
-# ============ Suppress common warnings ============
--dontwarn org.json.**
--dontwarn android.net.**
--dontwarn android.media.**
-
-# Keep native methods
--keepclasseswithmembernames class * {
-    native <methods>;
-}
-
-# Keep Parcelable
+# ============ Parcelable / Serializable ============
 -keep class * extends android.os.Parcelable {
     public static final ** CREATOR;
 }
-
-# Keep Serializable
 -keepclassmembers class * implements java.io.Serializable {
     static final long serialVersionUID;
     private static final java.io.ObjectStreamField[] serialPersistentFields;
@@ -100,3 +71,31 @@
     java.lang.Object writeReplace();
     java.lang.Object readResolve();
 }
+
+# ============ 反射保留 ============
+# 保留 Room DAO 方法（被 Room 编译器生成的代码通过反射调用）
+-keepclassmembers interface * {
+    @androidx.room.* <methods>;
+}
+-keepclassmembers class * {
+    @androidx.room.* <methods>;
+}
+
+# 保留 Data Class 的 componentN / copy 方法（可能被反射使用）
+-keepclassmembers class kotlin.** {
+    ** component*();
+    ** copy(...);
+}
+
+# ============ 本地方法 ============
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
+
+# ============ 抑制常见告警 ============
+-dontwarn org.json.**
+-dontwarn android.net.**
+-dontwarn android.media.**
+-dontwarn java.time.**
+-dontwarn java.util.stream.**
+-dontwarn java.util.function.**

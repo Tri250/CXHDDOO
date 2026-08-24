@@ -53,7 +53,7 @@ android {
         }
         release {
             isMinifyEnabled = true
-            isShrinkResources = false
+            isShrinkResources = true
             isDebuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -123,7 +123,7 @@ dependencies {
     // ML Kit 姿态检测（Android 端与 Vision 姿态检测对应）
     implementation("com.google.mlkit:pose-detection:17.0.0")
     // ML Kit 图像标签（Android 端与 MobileNetV2/Places365 场景分类对应，离线 ImageNet 标签）
-    implementation("com.google.mlkit:image-labeling:17.0.0")
+    implementation("com.google.mlkit:image-labeling:17.0.7")
 
     // Room
     implementation("androidx.room:room-runtime:2.6.1")

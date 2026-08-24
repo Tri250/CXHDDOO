@@ -2,6 +2,4 @@
 <full-backup-content>
     <include domain="sharedpref" path="." />
     <include domain="database" path="poseai.db" />
-    <exclude domain="cache" path="." />
-    <exclude domain="no_backup" path="." />
 </full-backup-content>

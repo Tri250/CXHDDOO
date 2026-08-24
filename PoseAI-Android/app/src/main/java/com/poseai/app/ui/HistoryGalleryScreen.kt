@@ -22,6 +22,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -265,6 +267,7 @@ private fun DayHeader(text: String) {
 
 /** 单个缩略图网格单元 */
 @Composable
+@Suppress("ProduceStateDoesNotAssignValue")
 private fun GalleryCell(
     modifier: Modifier = Modifier,
     record: ShootingRecordEntity,
@@ -273,6 +276,21 @@ private fun GalleryCell(
 ) {
     val thumb by produceState<Bitmap?>(initialValue = null, record.localUri) {
         value = loadThumbnailFromUri(context, record.localUri, 320)
+    }
+    // 跟踪旧的 thumb 以便在 URI 变化或离开组合时回收
+    var lastThumb by remember { mutableStateOf<Bitmap?>(null) }
+    LaunchedEffect(thumb) {
+        val old = lastThumb
+        if (old != null && old !== thumb && !old.isRecycled) {
+            runCatching { old.recycle() }
+        }
+        lastThumb = thumb
+    }
+    DisposableEffect(record.localUri) {
+        onDispose {
+            lastThumb?.let { if (!it.isRecycled) runCatching { it.recycle() } }
+            lastThumb = null
+        }
     }
     Box(
         modifier = modifier
@@ -337,6 +355,7 @@ private fun shortLocation(record: ShootingRecordEntity): String? {
 
 /** 全屏明细覆盖层 */
 @Composable
+@Suppress("ProduceStateDoesNotAssignValue")
 private fun DetailOverlay(
     record: ShootingRecordEntity,
     context: Context,
@@ -345,6 +364,21 @@ private fun DetailOverlay(
     val big by produceState<Bitmap?>(initialValue = null, record.localUri) {
         value = loadBitmapFromUri(context, record.localUri)
     }
+    // 跟踪旧位图以便在 URI 切换时回收
+    var lastBig by remember { mutableStateOf<Bitmap?>(null) }
+    LaunchedEffect(big) {
+        val old = lastBig
+        if (old != null && old !== big && !old.isRecycled) runCatching { old.recycle() }
+        lastBig = big
+    }
+    // 离开时回收大图
+    DisposableEffect(record.localUri) {
+        onDispose {
+            lastBig?.let { if (!it.isRecycled) runCatching { it.recycle() } }
+            lastBig = null
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         if (big != null) {
             Image(
@@ -441,7 +475,7 @@ private fun buildLocationLine(record: ShootingRecordEntity): String? {
         city != null && place != null -> "📍 $place, $city"
         city != null -> "📍 $city"
         place != null -> "📍 $place"
-        lat != null && lng != null -> "📍 ${String.format("%.3f, %.3f", lat, lng)}"
+        lat != null && lng != null -> "📍 ${String.format(java.util.Locale.US, "%.3f, %.3f", lat, lng)}"
         else -> null
     }
 }
@@ -451,7 +485,7 @@ private fun buildLocationLine(record: ShootingRecordEntity): String? {
 private data class DaySection(val key: String, val display: String, val records: List<ShootingRecordEntity>)
 
 private fun monthKey(ts: Long): String {
-    return java.text.SimpleDateFormat("yyyy-MM", Locale.CHINA).format(Date(ts))
+    return java.text.SimpleDateFormat("yyyy-MM", Locale.CHINA).apply { isLenient = true }.format(Date(ts))
 }
 
 private fun monthDisplay(month: String): String {

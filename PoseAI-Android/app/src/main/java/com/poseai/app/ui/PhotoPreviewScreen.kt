@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -60,6 +61,7 @@ import kotlinx.coroutines.withContext
  * 支持滤镜、画幅裁切、多图切换、保存与分享。
  */
 @Composable
+@Suppress("ProduceStateDoesNotAssignValue")
 fun PhotoPreviewScreen(
     images: List<android.graphics.Bitmap>,
     onSave: (android.graphics.Bitmap) -> Unit,
@@ -75,6 +77,16 @@ fun PhotoPreviewScreen(
     var showFilters by remember { mutableStateOf(false) }
     var showCropRatios by remember { mutableStateOf(false) }
     val filterThumbnails = remember { mutableStateMapOf<PhotoFilter, android.graphics.Bitmap>() }
+
+    // 组件离开时回收所有滤镜缩略图
+    DisposableEffect(Unit) {
+        onDispose {
+            filterThumbnails.values.forEach { bmp ->
+                if (!bmp.isRecycled) runCatching { bmp.recycle() }
+            }
+            filterThumbnails.clear()
+        }
+    }
 
     if (images.isEmpty()) {
         onRetake()
@@ -94,6 +106,9 @@ fun PhotoPreviewScreen(
     // 切换图片时重置滤镜并重建滤镜缩略图
     LaunchedEffect(currentImage) {
         selectedFilter = PhotoFilter.ORIGINAL
+        filterThumbnails.values.forEach { bmp ->
+            if (!bmp.isRecycled) runCatching { bmp.recycle() }
+        }
         filterThumbnails.clear()
     }
 
@@ -303,6 +318,7 @@ fun PhotoPreviewScreen(
 
 /** 滤镜选择行：每个 60dp 缩略图 + 名称。 */
 @Composable
+@Suppress("ProduceStateDoesNotAssignValue")
 private fun FilterSelector(
     currentImage: android.graphics.Bitmap,
     selectedFilter: PhotoFilter,

@@ -67,6 +67,7 @@ class CameraManager(
         set(value) {
             if (field != value) {
                 field = value
+                // 避免在回调中再次设置导致无限递归
                 onLowLight(value)
             }
         }
@@ -77,6 +78,7 @@ class CameraManager(
         private set
     @Volatile
     private var pendingOOTDRequest = false
+    private val ootdLock = Any()
 
     // 姿态提供者 & 场景分类（ML Kit）
     val poseProvider = MlKitPoseProvider(context)
@@ -98,9 +100,8 @@ class CameraManager(
     private var lastSceneUpdate = 0L
     private val sceneUpdateIntervalMs = 2000L
 
-    // 帧计数（@Volatile 保证跨线程可见性）
-    @Volatile
-    private var frameCounter = 0
+    // 帧计数（使用 AtomicInteger 保证原子递增）
+    private val frameCounter = java.util.concurrent.atomic.AtomicInteger(0)
 
     // MARK: - 最近光线分析结果（synchronized 保护）
     @Volatile var lastLightLevel: Float? = null
@@ -125,6 +126,7 @@ class CameraManager(
 
     // MARK: - 绑定
 
+    @Suppress("UnsafeOptInUsageError")
     fun bindToCamera(lifecycleOwner: androidx.lifecycle.LifecycleOwner, previewView: PreviewView) {
         val providerFuture = ProcessCameraProvider.getInstance(context)
         providerFuture.addListener({
@@ -134,6 +136,10 @@ class CameraManager(
         }, mainExecutor)
     }
 
+    @androidx.camera.core.ExperimentalGetImage
+    @androidx.camera.video.ExperimentalPersistentRecording
+    @androidx.camera.core.ExperimentalZeroShutterLag
+    @androidx.camera.camera2.interop.ExperimentalCamera2Interop
     fun bindUseCases(lifecycleOwner: androidx.lifecycle.LifecycleOwner, previewView: PreviewView) {
         val provider = cameraProvider ?: return
         provider.unbindAll()
@@ -170,9 +176,12 @@ class CameraManager(
         camera?.cameraInfo?.let { info ->
             runCatching {
                 val cam2 = androidx.camera.camera2.interop.Camera2CameraInfo.from(info)
-                val chars = cam2.cameraCharacteristics
-                exposureTimeRange = chars.get(android.hardware.camera2.CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_EXPOSURE_TIME_RANGE)
-                sensitivityRange = chars.get(android.hardware.camera2.CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE)
+                exposureTimeRange = cam2.getCameraCharacteristic(
+                    android.hardware.camera2.CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE
+                )
+                sensitivityRange = cam2.getCameraCharacteristic(
+                    android.hardware.camera2.CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE
+                )
             }
         }
     }
@@ -188,7 +197,7 @@ class CameraManager(
 
     @androidx.annotation.OptIn(ExperimentalGetImage::class, ExperimentalPersistentRecording::class)
     private fun analyzeFrame(imageProxy: ImageProxy) {
-        frameCounter++
+        val frameCount = frameCounter.incrementAndGet()
         var handledByPose = false
 
         try {
@@ -218,12 +227,19 @@ class CameraManager(
 
             // 2) 姿态检测：隔帧丢弃，低光时加倍降频
             val modulo = if (isLowLightMode) 4 else 2
-            val skipPoseFrame = frameCounter % modulo == 0
+            val skipPoseFrame = frameCount % modulo == 0
             if (!skipPoseFrame) {
                 handledByPose = true
-                poseProvider.process(imageProxy)
-                // poseProvider.process 的 addOnCompleteListener 会自动 close imageProxy
-                return
+                // poseProvider.process 会在内部通过 addOnCompleteListener 关闭 imageProxy
+                // 如果 process 抛出同步异常，则需要在 finally 中关闭
+                runCatching {
+                    poseProvider.process(imageProxy)
+                }.onFailure {
+                    // 同步异常，确保 imageProxy 被关闭
+                    runCatching { imageProxy.close() }
+                    handledByPose = false
+                }
+                if (handledByPose) return
             }
 
             // 3) 低频场景分类
@@ -233,12 +249,24 @@ class CameraManager(
                 lastSceneUpdate = now
                 runCatching {
                     val bitmap = imageProxy.toBitmap()
-                    if (bitmap != null) {
+                    if (bitmap != null && !bitmap.isRecycled) {
+                        // 若要发送 OOTD，先同步 downscale 保存引用，再交给 classify 异步处理
+                        val bmpToSend: Bitmap? = synchronized(ootdLock) {
+                            if (pendingOOTDRequest) {
+                                pendingOOTDRequest = false
+                                downscale(bitmap, 512)
+                            } else null
+                        }
                         sceneClassifier.classify(bitmap, onResult = { scene -> handleSceneResult(scene) })
-                        if (pendingOOTDRequest) {
-                            pendingOOTDRequest = false
-                            val bmp = downscale(bitmap, 512)
-                            mainExecutor.execute { onOOTDSnapshot(bmp) }
+                        if (bmpToSend != null) {
+                            mainExecutor.execute {
+                                try {
+                                    onOOTDSnapshot(bmpToSend)
+                                } finally {
+                                    // OOTD 回调完成后回收下采样 bitmap
+                                    if (!bmpToSend.isRecycled) runCatching { bmpToSend.recycle() }
+                                }
+                            }
                         }
                     }
                 }
@@ -428,12 +456,15 @@ class CameraManager(
     }
 
     fun takeOOTDSnapshot() {
-        pendingOOTDRequest = true
+        synchronized(ootdLock) {
+            pendingOOTDRequest = true
+        }
     }
 
     // MARK: - 录像
 
     @androidx.annotation.OptIn(ExperimentalPersistentRecording::class)
+    @Suppress("MissingPermission")
     fun startVideoRecording(file: File) {
         val vc = videoCapture ?: return
         if (isRecording) return
@@ -459,9 +490,15 @@ class CameraManager(
 
     private abstract class OnImageCaptured : ImageCapture.OnImageCapturedCallback() {
         final override fun onCaptureSuccess(imageProxy: ImageProxy) {
-            val bitmap = imageProxy.toBitmap()
-            imageProxy.close()
-            if (bitmap != null) onCaptureSuccess(bitmap)
+            var bitmap: Bitmap? = null
+            try {
+                bitmap = imageProxy.toBitmap()
+            } finally {
+                runCatching { imageProxy.close() }
+            }
+            if (bitmap != null && !bitmap.isRecycled) {
+                onCaptureSuccess(bitmap)
+            }
         }
         abstract fun onCaptureSuccess(bitmap: Bitmap)
 
@@ -469,6 +506,13 @@ class CameraManager(
     }
 
     fun cleanUp() {
+        // 先停止正在进行的录像
+        runCatching {
+            activeRecording?.stop()
+        }
+        activeRecording = null
+        isRecording = false
+
         cameraProvider?.unbindAll()
         runCatching { poseProvider.close() }
         runCatching { sceneClassifier.close() }
@@ -489,7 +533,9 @@ class CameraManager(
         }
         lastSceneUpdate = 0L
         // 重置 OOTD 请求
-        pendingOOTDRequest = false
+        synchronized(ootdLock) {
+            pendingOOTDRequest = false
+        }
     }
 }
 
@@ -548,61 +594,64 @@ internal fun ImageProxy.toBitmap(): Bitmap? {
 
     return try {
         val outputStream = ByteArrayOutputStream()
+        try {
+            // 安全读取 Y 平面
+            val yBytesSize = (yRowStride * imageHeight).coerceAtMost(yBuffer.remaining())
+            val yBytes = ByteArray(yBytesSize)
+            yBuffer.rewind()
+            yBuffer.get(yBytes)
 
-        // 安全读取 Y 平面
-        val yBytesSize = (yRowStride * imageHeight).coerceAtMost(yBuffer.remaining())
-        val yBytes = ByteArray(yBytesSize)
-        yBuffer.rewind()
-        yBuffer.get(yBytes)
+            val chromaWidth = imageWidth / 2
+            val chromaHeight = imageHeight / 2
 
-        val chromaWidth = imageWidth / 2
-        val chromaHeight = imageHeight / 2
+            val vBytesSize = (vRowStride * chromaHeight).coerceAtMost(vBuffer.remaining())
+            val uBytesSize = (uRowStride * chromaHeight).coerceAtMost(uBuffer.remaining())
+            val vBytes = ByteArray(vBytesSize)
+            val uBytes = ByteArray(uBytesSize)
+            vBuffer.rewind()
+            vBuffer.get(vBytes)
+            uBuffer.rewind()
+            uBuffer.get(uBytes)
 
-        val vBytesSize = (vRowStride * chromaHeight).coerceAtMost(vBuffer.remaining())
-        val uBytesSize = (uRowStride * chromaHeight).coerceAtMost(uBuffer.remaining())
-        val vBytes = ByteArray(vBytesSize)
-        val uBytes = ByteArray(uBytesSize)
-        vBuffer.rewind()
-        vBuffer.get(vBytes)
-        uBuffer.rewind()
-        uBuffer.get(uBytes)
+            val nv21Size = yBytes.size + (vBytes.size + uBytes.size)
+            val nv21Data = ByteArray(nv21Size)
+            System.arraycopy(yBytes, 0, nv21Data, 0, yBytes.size)
+            var dstOffset = yBytes.size
 
-        val nv21Size = yBytes.size + (vBytes.size + uBytes.size)
-        val nv21Data = ByteArray(nv21Size)
-        System.arraycopy(yBytes, 0, nv21Data, 0, yBytes.size)
-        var dstOffset = yBytes.size
-
-        // 交错组装 NV21（按实际 chromaHeight 行）
-        val actualChromaHeight = minOf(chromaHeight, vBytes.size / vRowStride.coerceAtLeast(1))
-        for (row in 0 until actualChromaHeight) {
-            val vOffset = (row * vRowStride).coerceIn(0, vBytes.size - 1)
-            val uOffset = (row * uRowStride).coerceIn(0, uBytes.size - 1)
-            for (col in 0 until chromaWidth) {
-                val vIdx = if (vPixelStride > 1) {
-                    (vOffset + col * vPixelStride).coerceIn(0, vBytes.size - 1)
-                } else {
-                    (vOffset + col).coerceIn(0, vBytes.size - 1)
-                }
-                val uIdx = if (uPixelStride > 1) {
-                    (uOffset + col * uPixelStride).coerceIn(0, uBytes.size - 1)
-                } else {
-                    (uOffset + col).coerceIn(0, uBytes.size - 1)
-                }
-                if (dstOffset < nv21Data.size) {
-                    nv21Data[dstOffset++] = vBytes[vIdx]
-                    nv21Data[dstOffset++] = uBytes[uIdx]
+            // 交错组装 NV21（按实际 chromaHeight 行）
+            val actualChromaHeight = minOf(chromaHeight, vBytes.size / vRowStride.coerceAtLeast(1))
+            for (row in 0 until actualChromaHeight) {
+                val vOffset = (row * vRowStride).coerceIn(0, vBytes.size - 1)
+                val uOffset = (row * uRowStride).coerceIn(0, uBytes.size - 1)
+                for (col in 0 until chromaWidth) {
+                    val vIdx = if (vPixelStride > 1) {
+                        (vOffset + col * vPixelStride).coerceIn(0, vBytes.size - 1)
+                    } else {
+                        (vOffset + col).coerceIn(0, vBytes.size - 1)
+                    }
+                    val uIdx = if (uPixelStride > 1) {
+                        (uOffset + col * uPixelStride).coerceIn(0, uBytes.size - 1)
+                    } else {
+                        (uOffset + col).coerceIn(0, uBytes.size - 1)
+                    }
+                    if (dstOffset < nv21Data.size) {
+                        nv21Data[dstOffset++] = vBytes[vIdx]
+                        nv21Data[dstOffset++] = uBytes[uIdx]
+                    }
                 }
             }
-        }
 
-        val yuvImage = YuvImage(nv21Data, colorFormat, imageWidth, imageHeight, null)
-        val rect = Rect(0, 0, imageWidth, imageHeight)
-        yuvImage.compressToJpeg(rect, 95, outputStream)
-        val jpegBytes = outputStream.toByteArray()
+            val yuvImage = YuvImage(nv21Data, colorFormat, imageWidth, imageHeight, null)
+            val rect = Rect(0, 0, imageWidth, imageHeight)
+            yuvImage.compressToJpeg(rect, 95, outputStream)
+            val jpegBytes = outputStream.toByteArray()
 
-        BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.size)?.let { bitmap ->
-            val rotation = imageInfo?.rotationDegrees ?: 0
-            if (rotation == 0) bitmap else rotateBitmap(bitmap, rotation)
+            BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.size)?.let { bitmap ->
+                val rotation = imageInfo?.rotationDegrees ?: 0
+                if (rotation == 0) bitmap else rotateBitmap(bitmap, rotation)
+            }
+        } finally {
+            runCatching { outputStream.close() }
         }
     } catch (_: Exception) {
         null
