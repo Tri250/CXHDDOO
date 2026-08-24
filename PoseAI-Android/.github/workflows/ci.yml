@@ -50,6 +50,12 @@ jobs:
           curl -sI --connect-timeout 10 https://repo1.maven.org/maven2/ 2>&1 | head -3 || echo "FAILED"
           echo "--- plugins.gradle.org ---"
           curl -sI --connect-timeout 10 https://plugins.gradle.org/m2/ 2>&1 | head -3 || echo "FAILED"
+          echo "--- maven.aliyun.com (google) ---"
+          curl -sI --connect-timeout 10 https://maven.aliyun.com/repository/google/ 2>&1 | head -3 || echo "FAILED"
+          echo "--- maven.aliyun.com (central) ---"
+          curl -sI --connect-timeout 10 https://maven.aliyun.com/repository/central/ 2>&1 | head -3 || echo "FAILED"
+          echo "--- Check KSP plugin in Aliyun central ---"
+          curl -sI --connect-timeout 10 https://maven.aliyun.com/repository/central/com/google/devtools/ksp/com.google.devtools.ksp.gradle.plugin/2.0.21-1.0.27/com.google.devtools.ksp.gradle.plugin-2.0.21-1.0.27.pom 2>&1 | head -3 || echo "FAILED"
 
       - name: Create gradle.properties for network resilience
         run: |
@@ -57,9 +63,13 @@ jobs:
           cat > PoseAI-Android/gradle.properties << 'EOF'
           org.gradle.daemon=false
           org.gradle.parallel=true
+          org.gradle.caching=true
           org.gradle.internal.http.connectionTimeout=120000
           org.gradle.internal.http.socketTimeout=120000
           org.gradle.internal.http.maxRedirects=5
+          org.gradle.jvmargs=-Xmx2048m -Xms512m -XX:MaxMetaspaceSize=512m
+          android.useAndroidX=true
+          android.nonTransitiveRClass=true
           EOF
           cat PoseAI-Android/gradle.properties
 
