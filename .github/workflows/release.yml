@@ -52,43 +52,6 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Pre-download Gradle wrapper distribution
-        run: |
-          GRADLE_VERSION="8.9"
-          # Download the Gradle distribution that the wrapper expects
-          # and place it where the wrapper caches it
-          GRADLE_DIST="${GRADLE_USER_HOME}/wrapper/dists/gradle-${GRADLE_VERSION}-bin"
-          mkdir -p "${GRADLE_DIST}"
-          # Try up to 3 times to handle transient network issues
-          for i in 1 2 3; do
-            if curl -fsSL --connect-timeout 30 --max-time 300 \
-              "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" \
-              -o "/tmp/gradle-${GRADLE_VERSION}-bin.zip"; then
-              echo "Gradle ${GRADLE_VERSION} downloaded successfully"
-              break
-            fi
-            echo "Download attempt $i failed, retrying..."
-            sleep $((i * 5))
-          done
-          if [ -f "/tmp/gradle-${GRADLE_VERSION}-bin.zip" ]; then
-            # Find the wrapper's expected hash directory
-            cd PoseAI-Android
-            WRAPPER_PROPS="gradle/wrapper/gradle-wrapper.properties"
-            # Extract distribution URL and checksum
-            DISTRIBUTION_URL=$(grep "distributionUrl" "$WRAPPER_PROPS" | sed 's/.*=//')
-            DISTRIBUTION_SHA=$(grep "distributionSha256Sum" "$WRAPPER_PROPS" | sed 's/.*=//')
-            # Create the expected directory structure
-            WRAPPER_HASH=$(echo -n "$DISTRIBUTION_URL" | sha256sum | cut -c1-8)
-            CACHE_DIR="${GRADLE_USER_HOME}/wrapper/dists/gradle-${GRADLE_VERSION}-bin/${WRAPPER_HASH}"
-            mkdir -p "$CACHE_DIR"
-            cp "/tmp/gradle-${GRADLE_VERSION}-bin.zip" "$CACHE_DIR/"
-            # Create the .ok marker file
-            touch "$CACHE_DIR/gradle-${GRADLE_VERSION}-bin.zip.ok"
-            echo "Gradle placed in wrapper cache: $CACHE_DIR"
-          else
-            echo "WARNING: Failed to pre-download Gradle, will try wrapper download"
-          fi
-
       - name: Resolve version & tag
         id: version
         run: |
@@ -117,16 +80,13 @@ jobs:
               -keyalg RSA -keysize 2048 -validity 10000
           fi
 
-      - name: Make gradlew executable
-        run: chmod +x PoseAI-Android/gradlew
-
       - name: Build Debug APK
         working-directory: PoseAI-Android
         env:
           VERSION_CODE: ${{ steps.version.outputs.VERSION_CODE }}
           VERSION_NAME: ${{ steps.version.outputs.VERSION_NAME }}
         run: |
-          ./gradlew :app:clean :app:assembleDebug --no-daemon --console=plain
+          gradle :app:clean :app:assembleDebug --no-daemon --console=plain
           echo "=== Debug APKs ==="
           find . -name "*.apk" -ls 2>/dev/null || echo "NONE"
 
@@ -139,7 +99,7 @@ jobs:
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS || 'poseai' }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD || 'poseai_release' }}
         run: |
-          ./gradlew :app:assembleRelease :app:bundleRelease --no-daemon --console=plain
+          gradle :app:assembleRelease :app:bundleRelease --no-daemon --console=plain
           echo "=== Release outputs ==="
           find app/build/outputs -name "*.apk" -o -name "*.aab" -ls 2>/dev/null || echo "NONE"
 
