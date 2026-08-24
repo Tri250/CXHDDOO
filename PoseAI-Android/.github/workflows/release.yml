@@ -85,6 +85,7 @@ jobs:
           org.gradle.jvmargs=-Xmx2048m -Xms512m -XX:MaxMetaspaceSize=512m
           android.useAndroidX=true
           android.nonTransitiveRClass=true
+          systemProp.org.gradle.internal.repository.disable-on-failure=false
           EOF
           cat PoseAI-Android/gradle.properties
 
