@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -649,6 +650,184 @@ fun PlanCard(plan: ShootingPlan, isSelected: Boolean, onClick: () -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 TagBadge(icon = plan.composition.icon, text = plan.composition.displayName, active = true)
                 TagBadge(icon = plan.frameRatio.icon, text = plan.frameRatio.displayName, active = true)
+            }
+        }
+    }
+}
+
+// ─── ─── ─── ─── 对焦指示框 ─── ─── ─── ───
+
+/**
+ * 点击对焦指示动画——国内手机相机标准体验。
+ * 十字对焦框 + 脉冲动画，1.5秒后自动消失。
+ */
+@Composable
+fun FocusIndicator(point: Offset) {
+    val infiniteTransition = rememberInfiniteTransition(label = "focusPulse")
+    val scaleAnim by infiniteTransition.animateFloat(
+        initialValue = 1.2f, targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+        ),
+        label = "focusScale"
+    )
+    val alphaAnim by infiniteTransition.animateFloat(
+        initialValue = 1f, targetValue = 0.4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+        ),
+        label = "focusAlpha"
+    )
+
+    Box(
+        modifier = Modifier
+            .offset { IntOffset(point.x.toInt() - 35, point.y.toInt() - 35) }
+            .size(70.dp)
+            .graphicsLayer {
+                scaleX = scaleAnim
+                scaleY = scaleAnim
+                alpha = alphaAnim
+            }
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            val lineLen = 14.dp.toPx()
+            val strokeW = 2.dp.toPx()
+            val cornerGap = 4.dp.toPx()
+
+            // 四角标记
+            drawLine(Brand.Accent, Offset(cornerGap, cornerGap), Offset(cornerGap + lineLen, cornerGap), strokeW)
+            drawLine(Brand.Accent, Offset(cornerGap, cornerGap), Offset(cornerGap, cornerGap + lineLen), strokeW)
+            drawLine(Brand.Accent, Offset(w - cornerGap, cornerGap), Offset(w - cornerGap - lineLen, cornerGap), strokeW)
+            drawLine(Brand.Accent, Offset(w - cornerGap, cornerGap), Offset(w - cornerGap, cornerGap + lineLen), strokeW)
+            drawLine(Brand.Accent, Offset(cornerGap, h - cornerGap), Offset(cornerGap + lineLen, h - cornerGap), strokeW)
+            drawLine(Brand.Accent, Offset(cornerGap, h - cornerGap), Offset(cornerGap, h - cornerGap - lineLen), strokeW)
+            drawLine(Brand.Accent, Offset(w - cornerGap, h - cornerGap), Offset(w - cornerGap - lineLen, h - cornerGap), strokeW)
+            drawLine(Brand.Accent, Offset(w - cornerGap, h - cornerGap), Offset(w - cornerGap, h - cornerGap - lineLen), strokeW)
+
+            // 中心十字
+            drawLine(Brand.Accent.copy(alpha = 0.7f), Offset(w / 2 - 12.dp.toPx(), h / 2), Offset(w / 2 + 12.dp.toPx(), h / 2), 1.dp.toPx())
+            drawLine(Brand.Accent.copy(alpha = 0.7f), Offset(w / 2, h / 2 - 12.dp.toPx()), Offset(w / 2, h / 2 + 12.dp.toPx()), 1.dp.toPx())
+        }
+    }
+}
+
+// ─── ─── ─── ─── 变焦指示条 ─── ─── ─── ───
+
+/**
+ * 变焦水平指示条——模拟国内主流手机相机的变焦体验。
+ * 支持手动拖动调整变焦倍率，预设 0.5x / 1x / 2x / 3x 快捷按钮。
+ */
+@Composable
+fun ZoomLevelIndicator(
+    currentZoom: Float,
+    onZoomChange: (Float) -> Unit
+) {
+    val presets = listOf(0.5f, 1f, 2f, 3f)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 32.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // 变焦档位
+        presets.forEach { preset ->
+            val isActive = abs(currentZoom - preset) < 0.05f
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(
+                        if (isActive) Brand.Accent.copy(alpha = 0.2f)
+                        else Color.White.copy(alpha = 0.08f),
+                        CircleShape
+                    )
+                    .border(
+                        1.dp,
+                        if (isActive) Brand.Accent.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.15f),
+                        CircleShape
+                    )
+                    .clickable { onZoomChange(preset) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (preset < 1) "${preset}x" else "${preset.toInt()}x",
+                    color = if (isActive) Brand.Accent else Color.White.copy(alpha = 0.7f),
+                    fontSize = 11.sp,
+                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium
+                )
+            }
+        }
+    }
+}
+
+// ─── ─── ─── ─── 录制进度条 ─── ─── ─── ───
+
+/**
+ * Vlog/多机位录制进度条——国内视频录制体验。
+ * 显示当前片段进度和总体进度。
+ */
+@Composable
+fun RecordingProgressBar(current: Int, total: Int, label: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(top = 130.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .background(Brand.Surface.copy(alpha = 0.9f), RoundedCornerShape(16.dp))
+                .border(1.dp, Brand.Coral.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+                .padding(horizontal = 16.dp, vertical = 10.dp)
+                .fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .background(Brand.Coral, CircleShape)
+                    )
+                    Text(
+                        text = " ● $label",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Text(
+                    text = "$current/$total",
+                    color = Brand.TextSecondary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            // 总体进度点
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                repeat(total) { idx ->
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(3.dp)
+                            .background(
+                                if (idx < current) Brand.Coral
+                                else Color.White.copy(alpha = 0.2f),
+                                RoundedCornerShape(2.dp)
+                            )
+                    )
+                }
             }
         }
     }

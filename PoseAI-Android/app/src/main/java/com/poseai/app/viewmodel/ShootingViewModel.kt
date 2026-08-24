@@ -615,6 +615,35 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
         countdown.value = 0
     }
 
+    /** 长按快门——快速触发录制模式 */
+    fun handleShutterLongPress() {
+        if (!isSceneReady.value) {
+            speak("请先等待场景识别完成")
+            return
+        }
+        val plan = currentPlan
+        if (plan?.vlogScript != null) {
+            executeVlogCapture(plan.vlogScript)
+        } else {
+            takeBurst(3)
+        }
+    }
+
+    /** 切换闪光灯模式 */
+    fun toggleFlash() {
+        if (isLowLight.value) {
+            // 切换到补光模式
+            isLowLight.value = false
+            manager.isLowLightMode = false
+            speak("补光已关闭")
+        } else {
+            // 开启补光
+            isLowLight.value = true
+            manager.isLowLightMode = true
+            speak("补光已开启")
+        }
+    }
+
     fun triggerFlash() {
         feedback.playShutterSound()
         showShutterFlash.value = true
