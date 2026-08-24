@@ -396,13 +396,18 @@ private fun FilterPickerRow(
 private fun produceVideoFrame(videoFile: File): androidx.compose.runtime.State<Bitmap?> {
     return androidx.compose.runtime.produceState<Bitmap?>(initialValue = null, videoFile) {
         value = withContext(Dispatchers.IO) {
-            runCatching {
-                val retriever = MediaMetadataRetriever()
+            var retriever: MediaMetadataRetriever? = null
+            try {
+                retriever = MediaMetadataRetriever()
                 retriever.setDataSource(videoFile.absolutePath)
                 retriever.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
                     ?: retriever.getFrameAtTime()
                     ?: retriever.getFrameAtTime(0)
-            }.getOrNull()
+            } catch (_: Exception) {
+                null
+            } finally {
+                runCatching { retriever?.release() }
+            }
         }
     }
 }
@@ -567,6 +572,7 @@ private fun applyFilterToVideo(source: File, filter: PhotoFilter): File {
         }
 
         var lastFrame: Bitmap? = null  // 缓存上一帧，用于插值
+        var lastFrameOwned: Boolean = false  // lastFrame 是否由 scaled 持有（非 rawFrame 借用）
 
         for (i in 0 until frameCount) {
             val timeUs = i * frameIntervalUs
@@ -575,15 +581,25 @@ private fun applyFilterToVideo(source: File, filter: PhotoFilter): File {
             }.getOrNull()
 
             if (rawFrame != null) {
-                // 缩放并应用滤镜
-                val scaled = if (rawFrame.width != width || rawFrame.height != height) {
+                // 回收上一次 lastFrame（若是我们自己创建的 scaled）
+                if (lastFrameOwned && lastFrame != null && lastFrame !== frameBitmap && !lastFrame.isRecycled) {
+                    runCatching { lastFrame.recycle() }
+                }
+                lastFrameOwned = false
+
+                val isScaled = rawFrame.width != width || rawFrame.height != height
+                val scaled = if (isScaled) {
                     Bitmap.createScaledBitmap(rawFrame, width, height, true)
                 } else rawFrame
 
                 frameCanvas.drawBitmap(scaled, 0f, 0f, paint)
 
-                if (scaled != rawFrame) scaled.recycle()
+                // 原始帧不再需要时回收
+                if (isScaled && !rawFrame.isRecycled) {
+                    runCatching { rawFrame.recycle() }
+                }
                 lastFrame = scaled
+                lastFrameOwned = isScaled
             } else if (lastFrame != null) {
                 // 无新帧时复用最近一帧（Canvas 内容已保留滤镜效果）
                 frameCanvas.drawBitmap(lastFrame, 0f, 0f, paint)
@@ -644,7 +660,11 @@ private fun applyFilterToVideo(source: File, filter: PhotoFilter): File {
         }
 
         frameBitmap.recycle()
-        lastFrame?.let { if (it != frameBitmap) it.recycle() }
+        // 回收 lastFrame（仅当它是我们自己创建的 scaled，不是 frameBitmap）
+        if (lastFrameOwned && lastFrame != null && lastFrame !== frameBitmap && !lastFrame.isRecycled) {
+            runCatching { lastFrame.recycle() }
+        }
+        lastFrame = null
 
         return if (output.exists() && output.length() > 0) output else source
 
@@ -652,6 +672,9 @@ private fun applyFilterToVideo(source: File, filter: PhotoFilter): File {
         // 清理失败的输出 + Bitmap 资源
         runCatching { output.delete() }
         runCatching { frameBitmap?.recycle() }
+        if (lastFrameOwned && lastFrame != null && lastFrame !== frameBitmap && !lastFrame.isRecycled) {
+            runCatching { lastFrame.recycle() }
+        }
         return source
     } finally {
         // 7) 完整资源释放

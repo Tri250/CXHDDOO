@@ -76,6 +76,16 @@ fun PhotoPreviewScreen(
     var showCropRatios by remember { mutableStateOf(false) }
     val filterThumbnails = remember { mutableStateMapOf<PhotoFilter, android.graphics.Bitmap>() }
 
+    // 组件离开时回收所有滤镜缩略图
+    DisposableEffect(Unit) {
+        onDispose {
+            filterThumbnails.values.forEach { bmp ->
+                if (!bmp.isRecycled) runCatching { bmp.recycle() }
+            }
+            filterThumbnails.clear()
+        }
+    }
+
     if (images.isEmpty()) {
         onRetake()
         return
@@ -94,6 +104,9 @@ fun PhotoPreviewScreen(
     // 切换图片时重置滤镜并重建滤镜缩略图
     LaunchedEffect(currentImage) {
         selectedFilter = PhotoFilter.ORIGINAL
+        filterThumbnails.values.forEach { bmp ->
+            if (!bmp.isRecycled) runCatching { bmp.recycle() }
+        }
         filterThumbnails.clear()
     }
 

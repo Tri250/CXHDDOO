@@ -242,17 +242,24 @@ class CameraManager(
                 lastSceneUpdate = now
                 runCatching {
                     val bitmap = imageProxy.toBitmap()
-                    if (bitmap != null) {
-                        sceneClassifier.classify(bitmap, onResult = { scene -> handleSceneResult(scene) })
-                        val shouldSendOOTD = synchronized(ootdLock) {
+                    if (bitmap != null && !bitmap.isRecycled) {
+                        // 若要发送 OOTD，先同步 downscale 保存引用，再交给 classify 异步处理
+                        val bmpToSend: Bitmap? = synchronized(ootdLock) {
                             if (pendingOOTDRequest) {
                                 pendingOOTDRequest = false
-                                true
-                            } else false
+                                downscale(bitmap, 512)
+                            } else null
                         }
-                        if (shouldSendOOTD) {
-                            val bmp = downscale(bitmap, 512)
-                            mainExecutor.execute { onOOTDSnapshot(bmp) }
+                        sceneClassifier.classify(bitmap, onResult = { scene -> handleSceneResult(scene) })
+                        if (bmpToSend != null) {
+                            mainExecutor.execute {
+                                try {
+                                    onOOTDSnapshot(bmpToSend)
+                                } finally {
+                                    // OOTD 回调完成后回收下采样 bitmap
+                                    if (!bmpToSend.isRecycled) runCatching { bmpToSend.recycle() }
+                                }
+                            }
                         }
                     }
                 }

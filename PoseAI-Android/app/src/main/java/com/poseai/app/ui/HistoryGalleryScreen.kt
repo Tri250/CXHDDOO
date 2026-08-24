@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -345,6 +346,15 @@ private fun DetailOverlay(
     val big by produceState<Bitmap?>(initialValue = null, record.localUri) {
         value = loadBitmapFromUri(context, record.localUri)
     }
+
+    // 离开时回收大图
+    DisposableEffect(record.localUri) {
+        onDispose {
+            val bmp = big
+            if (bmp != null && !bmp.isRecycled) runCatching { bmp.recycle() }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         if (big != null) {
             Image(
@@ -451,7 +461,7 @@ private fun buildLocationLine(record: ShootingRecordEntity): String? {
 private data class DaySection(val key: String, val display: String, val records: List<ShootingRecordEntity>)
 
 private fun monthKey(ts: Long): String {
-    return java.text.SimpleDateFormat("yyyy-MM", Locale.CHINA).format(Date(ts))
+    return java.text.SimpleDateFormat("yyyy-MM", Locale.CHINA).apply { isLenient = true }.format(Date(ts))
 }
 
 private fun monthDisplay(month: String): String {
