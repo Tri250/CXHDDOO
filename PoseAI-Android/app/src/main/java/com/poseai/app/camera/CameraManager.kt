@@ -191,6 +191,32 @@ class CameraManager(
     fun switchCamera() {
         isFrontCamera = !isFrontCamera
         poseProvider.isFrontCamera = isFrontCamera
+        // 通知 UI 重新绑定（UI 的 DisposableEffect 会在检测到变化时触发重绑）
+        runCatching { cameraProvider?.unbindAll() }
+    }
+
+    /**
+     * 手动对焦——使用 CameraX FocusMeteringAction。
+     * @param normX 归一化 X 坐标 (0-1)
+     * @param normY 归一化 Y 坐标 (0-1)
+     */
+    fun focusAt(normX: Float, normY: Float) {
+        val cam = camera ?: return
+        val focusPoint = androidx.camera.core.FocusPoint(normX, normY)
+        val action = androidx.camera.core.FocusMeteringAction.Builder(focusPoint).build()
+        cam.cameraControl.startFocusAndMetering(action)
+    }
+
+    /**
+     * 设置变焦倍率——使用 CameraX setZoomRatio。
+     * @param zoomRatio 变焦倍率 (0.5 - 10.0)
+     */
+    fun setZoomRatio(zoomRatio: Float) {
+        val cam = camera ?: return
+        val ratio = zoomRatio.coerceIn(0.5f, 10f)
+        runCatching {
+            cam.cameraControl.setZoomRatio(ratio)
+        }
     }
 
     // MARK: - 帧分析（异常安全 + 完整管线）

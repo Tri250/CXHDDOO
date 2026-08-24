@@ -36,7 +36,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +45,10 @@ import androidx.compose.ui.unit.sp
 import com.poseai.app.design.Brand
 import com.poseai.app.model.CompositionRule
 import com.poseai.app.model.ShootingPlan
+import kotlin.math.max
+import kotlin.math.maxOf
+import kotlin.math.min
+import kotlin.math.minOf
 import kotlin.math.roundToInt
 
 @Immutable
@@ -219,19 +222,24 @@ fun ScoreRing(score: Float, isReady: Boolean) {
     )
 
     Box(
-        modifier = Modifier.size(54.dp).graphicsLayer {
+        modifier = Modifier.size(64.dp).graphicsLayer {
             scaleX = scaleAnim
             scaleY = scaleAnim
         },
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.size(46.dp)) {
+        Canvas(modifier = Modifier.size(64.dp)) {
+            val cx = size.width / 2
+            val cy = size.height / 2
+            val r = size.minDimension / 2 - 6f
+
             // 外发光（对齐时）
             if (isReady) {
                 drawCircle(
                     color = Brand.Success.copy(alpha = glowAlpha),
-                    radius = size.minDimension / 2 + 5f,
-                    style = Stroke(width = 10f)
+                    radius = r + 4f,
+                    center = Offset(cx, cy),
+                    style = Stroke(width = 4f)
                 )
             }
 
@@ -248,17 +256,17 @@ fun ScoreRing(score: Float, isReady: Boolean) {
             val progressColor = if (isReady) {
                 Brush.sweepGradient(
                     listOf(Brand.Success, Brand.Success.copy(alpha = 0.6f)),
-                    center = Offset(size.width / 2, size.height / 2)
+                    center = Offset(cx, cy)
                 )
             } else if (score > 60f) {
                 Brush.sweepGradient(
                     listOf(Brand.Accent, Brand.Accent.copy(alpha = 0.5f)),
-                    center = Offset(size.width / 2, size.height / 2)
+                    center = Offset(cx, cy)
                 )
             } else {
                 Brush.sweepGradient(
                     listOf(Color.White.copy(alpha = 0.8f), Color.White.copy(alpha = 0.3f)),
-                    center = Offset(size.width / 2, size.height / 2)
+                    center = Offset(cx, cy)
                 )
             }
 
@@ -473,24 +481,30 @@ fun ARFootprintsOverlay() {
 }
 
 /**
- * 暗光屏幕柔边补光带——复刻 iOS 暗光补光。
+ * 暗光屏幕柔边补光带——国内手机暗光摄影体验。
+ * 柔和的暖色边缘补光，不遮挡主体内容。
  */
 @Composable
 fun LowLightGlowOverlay() {
+    // 柔光叠加：低透明度暖色径向渐变，中央透明边缘微亮
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(20.dp)
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .border(
-                    width = 50.dp,
-                    color = Color(0x55FFF3E0),
-                    shape = RoundedCornerShape(12.dp)
-                )
-        )
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            // 边缘微光
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color.Transparent, Color(0x10FFE8C0)),
+                    center = Offset(w / 2, h / 2),
+                    radius = maxOf(w, h) / 2
+                ),
+                radius = maxOf(w, h) / 2,
+                center = Offset(w / 2, h / 2)
+            )
+        }
     }
 }
 
@@ -681,10 +695,16 @@ fun FocusIndicator(point: Offset) {
         label = "focusAlpha"
     )
 
+    // 边界保护：确保对焦框不会超出屏幕
+    val indicatorSize = 70
+    val halfSize = indicatorSize / 2
+    val clampedX = point.x.toInt().coerceIn(halfSize, 10000 - halfSize)
+    val clampedY = point.y.toInt().coerceIn(halfSize, 10000 - halfSize)
+
     Box(
         modifier = Modifier
-            .offset { IntOffset(point.x.toInt() - 35, point.y.toInt() - 35) }
-            .size(70.dp)
+            .offset { IntOffset(clampedX - halfSize, clampedY - halfSize) }
+            .size(indicatorSize.dp)
             .graphicsLayer {
                 scaleX = scaleAnim
                 scaleY = scaleAnim

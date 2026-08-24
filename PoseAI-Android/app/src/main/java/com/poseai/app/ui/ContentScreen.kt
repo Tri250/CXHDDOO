@@ -44,6 +44,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -128,7 +129,6 @@ fun ContentScreen(
 
     // 手势状态
     var zoomLevel by remember { mutableStateOf(1f) }
-    var lastTapTime by remember { mutableStateOf(0L) }
     var focusPoint by remember { mutableStateOf<Offset?>(null) }
     var showFocusIndicator by remember { mutableStateOf(false) }
 
@@ -140,6 +140,17 @@ fun ContentScreen(
             vm.manager.bindToCamera(lifecycleOwner, pv)
         }
         onDispose { if (!hasCameraPermission) vm.manager.cleanUp() }
+    }
+
+    // 切换摄像头后重新绑定
+    var lastCameraFacing by remember { mutableStateOf(false) }
+    LaunchedEffect(vm.manager.isFrontCamera) {
+        if (vm.manager.isFrontCamera != lastCameraFacing) {
+            lastCameraFacing = vm.manager.isFrontCamera
+            previewView?.let { pv ->
+                vm.manager.bindToCamera(lifecycleOwner, pv)
+            }
+        }
     }
 
     // 自动隐藏对焦指示
@@ -188,9 +199,7 @@ fun ContentScreen(
                             // 双击切换变焦：1x → 2x → 1x
                             val newZoom = if (zoomLevel < 1.5f) 2f else 1f
                             zoomLevel = newZoom
-                            previewView?.setScaleX(newZoom)
-                            previewView?.setScaleY(newZoom)
-                            // 触发轻微震动反馈
+                            vm.setZoom(newZoom)
                             vm.feedback.impact(com.poseai.app.video.DeviceFeedback.LIGHT)
                         },
                         onLongPress = { offset ->
@@ -203,27 +212,12 @@ fun ContentScreen(
                             // 单击对焦
                             focusPoint = offset
                             showFocusIndicator = true
-                            previewView?.setFocusX(offset.x / size.width)
-                            previewView?.setFocusY(offset.y / size.height)
+                            val normX = (offset.x / size.width).coerceIn(0f, 1f)
+                            val normY = (offset.y / size.height).coerceIn(0f, 1f)
+                            vm.focusAt(normX, normY)
                             vm.feedback.impact(com.poseai.app.video.DeviceFeedback.LIGHT)
-
-                            // 同时切换沉浸模式（单击屏幕非快门区域）
-                            val now = System.currentTimeMillis()
-                            if (now - lastTapTime > 400) {
-                                lastTapTime = now
-                            }
                         }
                     )
-                }
-        )
-
-        // 变焦变换层（应用缩放）
-        Box(
-            Modifier
-                .matchParentSize()
-                .graphicsLayer {
-                    scaleX = zoomLevel
-                    scaleY = zoomLevel
                 }
         )
 
@@ -349,8 +343,7 @@ fun ContentScreen(
             zoomLevel = zoomLevel,
             onZoomChange = { newZoom ->
                 zoomLevel = newZoom
-                previewView?.setScaleX(newZoom)
-                previewView?.setScaleY(newZoom)
+                vm.setZoom(newZoom)
             },
             onHistory = onShowHistory,
             onStats = onShowStats
@@ -859,9 +852,17 @@ private fun PlanSelectionIndicator(
 
 @Composable
 private fun ShutterFlashOverlay() {
+    val flashProgress by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = tween(durationMillis = 200),
+        label = "flashProgress"
+    )
     Box(
         Modifier
             .matchParentSize()
+            .graphicsLayer {
+                alpha = 1f - flashProgress
+            }
             .background(
                 Brush.radialGradient(
                     colors = listOf(Brand.ShutterWarm.copy(alpha = 0.95f), Brand.ShutterWarm.copy(alpha = 0.3f)),
@@ -869,18 +870,13 @@ private fun ShutterFlashOverlay() {
                 )
             )
     ) {
-        // 闪光扩散环
-        val infiniteTransition = rememberInfiniteTransition(label = "flashRing")
-        val ringScale by infiniteTransition.animateFloat(
-            initialValue = 0.5f, targetValue = 2.5f,
-            animationSpec = tween(durationMillis = 200),
-            label = "ringScale"
-        )
         Canvas(modifier = Modifier.fillMaxSize()) {
+            // 扩散环——随flashProgress从中心扩散到全屏
+            val ringRadius = min(size.width, size.height) * 0.15f + flashProgress * min(size.width, size.height) * 0.4f
             drawCircle(
-                color = Color.White.copy(alpha = 0.3f),
-                radius = min(size.width, size.height) * 0.3f * ringScale,
-                style = Stroke(width = 2.dp)
+                color = Color.White.copy(alpha = (1f - flashProgress) * 0.5f),
+                radius = ringRadius,
+                style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
             )
         }
     }
@@ -965,7 +961,8 @@ private fun CompositionTipOverlay(plan: ShootingPlan) {
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 70.dp)
+            .padding(horizontal = 24.dp)
+            .padding(top = 52.dp)
     ) {
         Row(
             modifier = Modifier

@@ -644,6 +644,16 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** 手动对焦到指定归一化坐标 (0-1) */
+    fun focusAt(normX: Float, normY: Float) {
+        manager.focusAt(normX, normY)
+    }
+
+    /** 设置变焦倍率 (0.5f - 10f) */
+    fun setZoom(zoomRatio: Float) {
+        manager.setZoomRatio(zoomRatio)
+    }
+
     fun triggerFlash() {
         feedback.playShutterSound()
         showShutterFlash.value = true
