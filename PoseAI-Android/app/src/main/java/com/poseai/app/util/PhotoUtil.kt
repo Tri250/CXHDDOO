@@ -36,38 +36,47 @@ fun Bitmap.applyCrop(ratio: CropRatio): Bitmap {
     val y = ((h - cropH) / 2f).toInt().coerceIn(0, height - 1)
     val cw = cropW.toInt().coerceIn(1, width - x)
     val ch = cropH.toInt().coerceIn(1, height - y)
-    return Bitmap.createBitmap(this, x, y, cw, ch)
+    return try {
+        Bitmap.createBitmap(this, x, y, cw, ch)
+    } catch (e: Exception) {
+        // 创建失败时返回原图
+        this
+    }
 }
 
 /** 添加 PoseAI 水印（对应 iOS withPoseAIWatermark） */
 fun Bitmap.withPoseAIWatermark(): Bitmap {
     if (isRecycled) return this
-    val out = Bitmap.createBitmap(width, height, config ?: Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(out)
-    canvas.drawBitmap(this, 0f, 0f, null)
+    return try {
+        val out = Bitmap.createBitmap(width, height, config ?: Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(out)
+        canvas.drawBitmap(this, 0f, 0f, null)
 
-    val text = " 📸 Shot on PoseAI "
-    val fontSize = maxOf(width, height) * 0.015f
-    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
-        textSize = fontSize
-        isFakeBoldText = true
+        val text = " 📸 Shot on PoseAI "
+        val fontSize = maxOf(width, height) * 0.015f
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = fontSize
+            isFakeBoldText = true
+        }
+        val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(120, 0, 0, 0)
+        }
+        val textWidth = paint.measureText(text)
+        val padding = width * 0.02f
+        val rect = RectF(
+            width - textWidth - padding,
+            height - fontSize - padding,
+            width - padding,
+            height - padding
+        )
+        val bg = RectF(rect.left - 8, rect.top - 4, rect.right + 8, rect.bottom + 4)
+        canvas.drawRoundRect(bg, 8f, 8f, bgPaint)
+        canvas.drawText(text, rect.left, rect.bottom, paint)
+        out
+    } catch (e: Exception) {
+        this
     }
-    val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.argb(120, 0, 0, 0)
-    }
-    val textWidth = paint.measureText(text)
-    val padding = width * 0.02f
-    val rect = RectF(
-        width - textWidth - padding,
-        height - fontSize - padding,
-        width - padding,
-        height - padding
-    )
-    val bg = RectF(rect.left - 8, rect.top - 4, rect.right + 8, rect.bottom + 4)
-    canvas.drawRoundRect(bg, 8f, 8f, bgPaint)
-    canvas.drawText(text, rect.left, rect.bottom, paint)
-    return out
 }
 
 /** 保存到系统相册（Q+ 用 MediaStore，旧版本写公共目录） */

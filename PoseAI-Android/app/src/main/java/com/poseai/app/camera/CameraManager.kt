@@ -506,6 +506,13 @@ class CameraManager(
     }
 
     fun cleanUp() {
+        // 先停止正在进行的录像
+        runCatching {
+            activeRecording?.stop()
+        }
+        activeRecording = null
+        isRecording = false
+
         cameraProvider?.unbindAll()
         runCatching { poseProvider.close() }
         runCatching { sceneClassifier.close() }

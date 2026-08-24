@@ -39,10 +39,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.PoseAI"
-        android:usesCleartextTraffic="true"
         android:networkSecurityConfig="@xml/network_security_config"
         android:hardwareAccelerated="true"
-        android:largeHeap="false"
+        android:largeHeap="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         tools:targetApi="35">
