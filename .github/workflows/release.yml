@@ -80,15 +80,16 @@ jobs:
               -keyalg RSA -keysize 2048 -validity 10000
           fi
 
+      - name: Make gradlew executable
+        run: chmod +x PoseAI-Android/gradlew
+
       - name: Build Debug APK
         working-directory: PoseAI-Android
         env:
           VERSION_CODE: ${{ steps.version.outputs.VERSION_CODE }}
           VERSION_NAME: ${{ steps.version.outputs.VERSION_NAME }}
         run: |
-          gradle :app:clean :app:assembleDebug --no-daemon --console=plain
-          echo "=== Debug APKs ==="
-          find . -name "*.apk" -ls 2>/dev/null || echo "NONE"
+          ./gradlew :app:clean :app:assembleDebug --no-daemon --console=plain --stacktrace 2>&1 | tail -40
 
       - name: Build Release APK & AAB
         working-directory: PoseAI-Android
@@ -99,9 +100,7 @@ jobs:
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS || 'poseai' }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD || 'poseai_release' }}
         run: |
-          gradle :app:assembleRelease :app:bundleRelease --no-daemon --console=plain
-          echo "=== Release outputs ==="
-          find app/build/outputs -name "*.apk" -o -name "*.aab" -ls 2>/dev/null || echo "NONE"
+          ./gradlew :app:assembleRelease :app:bundleRelease --no-daemon --console=plain --stacktrace 2>&1 | tail -40
 
       - name: Collect artifacts
         run: |
