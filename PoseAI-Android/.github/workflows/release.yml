@@ -1,0 +1,157 @@
+name: Release Build & Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      versionCode:
+        description: 'Version code (integer)'
+        required: false
+        default: '1'
+      versionName:
+        description: 'Version name (e.g. 1.0.0)'
+        required: false
+        default: '1.0.0'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+
+env:
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.internal.http.connectionTimeout=60000 -Dorg.gradle.internal.http.socketTimeout=60000"
+
+jobs:
+  build-release:
+    name: Build Release APK & AAB
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Resolve version & tag
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            RELEASE_TAG="${GITHUB_REF_NAME}"
+            VERSION_NAME="${GITHUB_REF_NAME#v}"
+            VERSION_CODE="${{ github.run_number }}"
+          else
+            RELEASE_TAG="v${{ inputs.versionName || '1.0.0' }}"
+            VERSION_NAME="${{ inputs.versionName || '1.0.0' }}"
+            VERSION_CODE="${{ inputs.versionCode || github.run_number }}"
+          fi
+          echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+
+      - name: Create signing keystore
+        run: |
+          mkdir -p ~/.android
+          if [ -n "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > ~/.android/release-key.jks
+          else
+            keytool -genkeypair -v -keystore ~/.android/release-key.jks \
+              -storepass poseai_release -alias poseai -keypass poseai_release \
+              -dname "CN=PoseAI, OU=Mobile, O=PoseAI, L=Beijing, ST=Beijing, C=CN" \
+              -keyalg RSA -keysize 2048 -validity 10000
+          fi
+
+      - name: Build Debug APK
+        working-directory: PoseAI-Android
+        env:
+          VERSION_CODE: ${{ steps.version.outputs.VERSION_CODE }}
+          VERSION_NAME: ${{ steps.version.outputs.VERSION_NAME }}
+        run: |
+          gradle :app:clean :app:assembleDebug --no-daemon --console=plain --stacktrace -Dorg.gradle.jvmargs="-Xmx2g -Xms512m"
+
+      - name: Build Release APK & AAB
+        working-directory: PoseAI-Android
+        env:
+          VERSION_CODE: ${{ steps.version.outputs.VERSION_CODE }}
+          VERSION_NAME: ${{ steps.version.outputs.VERSION_NAME }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD || 'poseai_release' }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS || 'poseai' }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD || 'poseai_release' }}
+        run: |
+          gradle :app:assembleRelease :app:bundleRelease --no-daemon --console=plain --stacktrace -Dorg.gradle.jvmargs="-Xmx2g -Xms512m"
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p artifacts
+          find PoseAI-Android/app/build/outputs -name "*.apk" -o -name "*.aab" | while read f; do
+            cp "$f" artifacts/
+          done
+          echo "=== Artifacts ==="
+          ls -la artifacts/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-build-${{ github.run_number }}
+          path: artifacts/*
+          retention-days: 30
+
+      - name: Create & push tag (workflow_dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          TAG="${{ steps.version.outputs.RELEASE_TAG }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists, skip."
+          else
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.RELEASE_TAG }}
+          name: PoseAI Android ${{ steps.version.outputs.RELEASE_TAG }}
+          prerelease: ${{ github.event_name == 'workflow_dispatch' }}
+          files: |
+            artifacts/*.apk
+            artifacts/*.aab
+          body: |
+            ## PoseAI Android Release ${{ steps.version.outputs.RELEASE_TAG }}
+
+            ### What's New
+            - 全量 AI 模块激活（场景识别 / 姿态匹配 / OOTD 分析）
+            - ML Kit 真实姿态检测
+            - 真实 TTS 中文语音引导
+            - Vlog 录制与合并
+            - 自定义姿势采集与分享
+            - 全部功能免费
+
+            ### Features
+            - 拍照 AI 场景检测（7 场景）
+            - 实时姿态匹配（双人居中支持）
+            - OOTD 穿搭分析（远程多模态 / 本地确定性降级）
+            - Vlog 多角度录制合并
+            - 构图辅助线（三分法 / 黄金分割）
