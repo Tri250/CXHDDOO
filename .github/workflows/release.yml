@@ -52,32 +52,58 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Fix plugin repositories
+      - name: Fix Gradle wrapper cache
         run: |
-          # The gradle command may not resolve plugins correctly.
-          # Let's ensure pluginManagement repositories are properly configured.
-          cat > PoseAI-Android/settings.gradle.kts << 'SETTINGSEOF'
-pluginManagement {
-    repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
-}
+          # The setup-gradle action installs Gradle at a different location
+          # than what the wrapper expects. We need to symlink the installed
+          # Gradle distribution to the wrapper's expected cache location.
+          WRAPPER_HASH="ac11646c"
+          WRAPPER_CACHE_DIR="$HOME/.gradle/wrapper/dists/gradle-8.9-bin/${WRAPPER_HASH}"
+          
+          # Find where setup-gradle installed Gradle 8.9
+          GRADLE_INSTALL_DIR=$(find /home/runner/work/_temp -name "gradle-8.9" -type d 2>/dev/null | head -1)
+          
+          if [ -z "$GRADLE_INSTALL_DIR" ]; then
+            echo "ERROR: Could not find Gradle 8.9 installation"
+            exit 1
+          fi
+          
+          echo "Found Gradle 8.9 at: $GRADLE_INSTALL_DIR"
+          
+          # Create the wrapper cache directory
+          mkdir -p "$WRAPPER_CACHE_DIR"
+          
+          # Create a symlink or copy the installed Gradle to the wrapper cache
+          # The wrapper expects: gradle-8.9-bin.zip (with .ok marker) AND extracted directory
+          # Let's create the zip and .ok marker from the installed distribution
+          
+          INSTALLED_ZIP=$(find /home/runner/work/_temp -name "gradle-8.9-bin.zip" 2>/dev/null | head -1)
+          if [ -n "$INSTALLED_ZIP" ]; then
+            echo "Found Gradle zip at: $INSTALLED_ZIP"
+            cp "$INSTALLED_ZIP" "$WRAPPER_CACHE_DIR/gradle-8.9-bin.zip"
+            touch "$WRAPPER_CACHE_DIR/gradle-8.9-bin.zip.ok"
+          else
+            echo "No zip found, creating from installed directory..."
+            # Create zip from installed distribution
+            cd "$GRADLE_INSTALL_DIR/.."
+            zip -r "$WRAPPER_CACHE_DIR/gradle-8.9-bin.zip" "gradle-8.9"
+            touch "$WRAPPER_CACHE_DIR/gradle-8.9-bin.zip.ok"
+            cd "$WRAPPER_CACHE_DIR"
+            unzip -q -o "gradle-8.9-bin.zip"
+          fi
+          
+          # Also symlink the extracted directory
+          if [ ! -d "$WRAPPER_CACHE_DIR/gradle-8.9" ]; then
+            ln -sf "$GRADLE_INSTALL_DIR" "$WRAPPER_CACHE_DIR/gradle-8.9" 2>/dev/null || true
+            # Or copy
+            cp -r "$GRADLE_INSTALL_DIR" "$WRAPPER_CACHE_DIR/gradle-8.9" 2>/dev/null || true
+          fi
+          
+          echo "Wrapper cache ready at $WRAPPER_CACHE_DIR:"
+          ls -la "$WRAPPER_CACHE_DIR/"
 
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-
-rootProject.name = "PoseAI-Android"
-include(":app")
-SETTINGSEOF
-          echo "Updated settings.gradle.kts"
-          cat PoseAI-Android/settings.gradle.kts
+      - name: Make gradlew executable
+        run: chmod +x PoseAI-Android/gradlew
 
       - name: Resolve version & tag
         id: version
@@ -113,7 +139,7 @@ SETTINGSEOF
           VERSION_CODE: ${{ steps.version.outputs.VERSION_CODE }}
           VERSION_NAME: ${{ steps.version.outputs.VERSION_NAME }}
         run: |
-          gradle :app:clean :app:assembleDebug --no-daemon --console=plain --stacktrace -Dorg.gradle.jvmargs="-Xmx2g -Xms512m"
+          ./gradlew :app:clean :app:assembleDebug --no-daemon --console=plain --stacktrace -Dorg.gradle.jvmargs="-Xmx2g -Xms512m"
 
       - name: Build Release APK & AAB
         working-directory: PoseAI-Android
@@ -124,7 +150,7 @@ SETTINGSEOF
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS || 'poseai' }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD || 'poseai_release' }}
         run: |
-          gradle :app:assembleRelease :app:bundleRelease --no-daemon --console=plain --stacktrace -Dorg.gradle.jvmargs="-Xmx2g -Xms512m"
+          ./gradlew :app:assembleRelease :app:bundleRelease --no-daemon --console=plain --stacktrace -Dorg.gradle.jvmargs="-Xmx2g -Xms512m"
 
       - name: Collect artifacts
         run: |
