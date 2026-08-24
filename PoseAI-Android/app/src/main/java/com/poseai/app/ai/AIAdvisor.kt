@@ -421,13 +421,14 @@ object AIAdvisor {
     }
 
     private fun scaleDown(bitmap: Bitmap, maxDim: Int): Bitmap {
+        if (bitmap.isRecycled) return bitmap
         val w = bitmap.width
         val h = bitmap.height
         val larger = maxOf(w, h)
         if (larger <= maxDim) return bitmap
         val scale = maxDim.toFloat() / larger
-        val newW = (w * scale).toInt()
-        val newH = (h * scale).toInt()
+        val newW = (w * scale).toInt().coerceAtLeast(1)
+        val newH = (h * scale).toInt().coerceAtLeast(1)
         return Bitmap.createScaledBitmap(bitmap, newW, newH, true)
     }
 

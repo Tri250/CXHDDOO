@@ -26,6 +26,8 @@ object GifExporter {
         maxSize: Int = DEFAULT_MAX_SIZE
     ): Boolean {
         if (frames.isEmpty()) return false
+        // 对已回收/无效的 bitmap 做前置过滤
+        if (frames.any { it.isRecycled }) return false
         return try {
             // 统一尺寸
             val base = frames.first()
@@ -33,24 +35,26 @@ object GifExporter {
             val w = (base.width * scale).toInt().coerceAtLeast(1)
             val h = (base.height * scale).toInt().coerceAtLeast(1)
 
+            // 按比例缩放生成新帧副本（严格区分输入所有权，绝不回收调用方传入的帧）
             val scaledFrames = frames.map { frame ->
                 if (scale < 1f) {
                     Bitmap.createScaledBitmap(frame, w, h, true)
                 } else {
-                    frame
+                    frame // scale >= 1 时直接引用，所有者仍是调用方
                 }
             }
 
-            // 收集所有像素构建调色板
             val palette = buildPalette(scaledFrames, numColors = 256)
 
             FileOutputStream(output).use { os ->
                 writeGif(os, w, h, scaledFrames, delayMs, palette)
             }
 
-            // 清理缩放副本
-            for (f in scaledFrames) {
-                if (f != frames.first() || scale < 1f) f.recycle()
+            // 仅回收内部创建的缩放副本；scale >= 1 时 scaledFrames == frames，不做任何回收
+            if (scale < 1f) {
+                for (f in scaledFrames) {
+                    if (!f.isRecycled) runCatching { f.recycle() }
+                }
             }
             true
         } catch (e: Exception) {

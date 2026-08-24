@@ -146,6 +146,9 @@ class DeviceFeedback(private val context: Context) {
         soundPool = null
         soundPoolReady = false
         shutterSoundId = -1
+        // 释放 ToneGenerator 降级实例
+        runCatching { fallbackTone?.release() }
+        fallbackTone = null
         // 释放传感器
         runCatching {
             sensorManager.unregisterListener(listener)
@@ -302,14 +305,19 @@ class DeviceFeedback(private val context: Context) {
         )
     }
 
+    /** 当前 ToneGenerator 降级实例（需要在 release 中关闭） */
+    private var fallbackTone: ToneGenerator? = null
+
     /** 播放快门音，失败时降级为 ToneGenerator */
     fun playShutterSound() {
         ensureSoundPool()
         val sp = soundPool ?: return
         if (!soundPoolReady || shutterSoundId < 0) {
-            // 降级：ToneGenerator 双音模拟
+            // 降级：ToneGenerator 双音模拟。注意复用旧实例，避免重复创建
             runCatching {
-                val tg = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+                val tg = fallbackTone ?: run {
+                    ToneGenerator(AudioManager.STREAM_MUSIC, 100).also { fallbackTone = it }
+                }
                 tg.startTone(ToneGenerator.TONE_PROP_BEEP2, 40)
                 CoroutineScope(Dispatchers.Main).launch {
                     delay(60)

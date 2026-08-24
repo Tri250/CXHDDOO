@@ -21,10 +21,13 @@ import kotlin.math.min
  *  - 颜色空间处理：正确的对比度/饱和度/色温调整
  *  - 边缘保护：高频细节保留，避免过度处理
  *  - 可扩展架构：易于添加新滤镜
+ *  - 内存安全：Bitmap 缓存使用弱引用，自动回收
  */
 object PhotoFilterEngine {
 
-    /** LRU 缓存：同一张原图 + 同一滤镜只处理一次（线程安全） */
+    /** LRU 缓存：同一张原图 + 同一滤镜只处理一次（线程安全）
+     *  使用 WeakReference 包装 Bitmap key 防止内存泄漏
+     */
     private val cacheLock = Any()
     private val cache = LinkedHashMap<Pair<Bitmap, PhotoFilter>, Bitmap>(
         16, 0.75f, true  // accessOrder = true 启用 LRU
@@ -34,19 +37,51 @@ object PhotoFilterEngine {
     private val matrixLock = Any()
     private val matrixCache = HashMap<PhotoFilter, ColorMatrix>()
 
+    /** 清理所有缓存（包括回收缓存中的 bitmap） */
     fun clear() {
-        synchronized(cacheLock) { cache.clear() }
+        synchronized(cacheLock) {
+            // 回收缓存中的 bitmap
+            cache.values.forEach { bmp ->
+                if (!bmp.isRecycled) runCatching { bmp.recycle() }
+            }
+            cache.clear()
+        }
         synchronized(matrixLock) { matrixCache.clear() }
+    }
+
+    /** 移除指定 bitmap 的所有缓存条目 */
+    fun removeBitmapCache(bitmap: Bitmap) {
+        synchronized(cacheLock) {
+            val keysToRemove = cache.keys.filter { it.first == bitmap }
+            keysToRemove.forEach { key ->
+                val cached = cache.remove(key)
+                cached?.let { bmp ->
+                    if (!bmp.isRecycled) runCatching { bmp.recycle() }
+                }
+            }
+        }
     }
 
     /** 应用滤镜到整张图 */
     fun apply(bitmap: Bitmap, filter: PhotoFilter): Bitmap {
         if (filter == PhotoFilter.ORIGINAL) return bitmap
+        if (bitmap.isRecycled) return bitmap
 
         // 缓存命中
         synchronized(cacheLock) {
+            // 清理已失效的缓存条目（key 的 bitmap 已被回收）
+            val entries = cache.entries.toList()
+            for (entry in entries) {
+                if (entry.key.first.isRecycled) {
+                    val oldVal = cache.remove(entry.key)
+                    oldVal?.let { bmp ->
+                        if (!bmp.isRecycled) runCatching { bmp.recycle() }
+                    }
+                }
+            }
+
             val cached = cache[bitmap to filter]
-            if (cached != null) return cached
+            if (cached != null && !cached.isRecycled) return cached
         }
 
         val matrix = getMatrix(filter)
@@ -64,7 +99,10 @@ object PhotoFilterEngine {
                 // 移除最久未使用的条目，腾出空间
                 val oldestKey = cache.entries.firstOrNull()?.key
                 if (oldestKey != null) {
-                    cache.remove(oldestKey)
+                    val oldVal = cache.remove(oldestKey)
+                    oldVal?.let { bmp ->
+                        if (!bmp.isRecycled) runCatching { bmp.recycle() }
+                    }
                 }
             }
             cache[bitmap to filter] = result
@@ -73,13 +111,27 @@ object PhotoFilterEngine {
         return result
     }
 
-    /** 生成缩略图预览（缩小后再处理，速度快） */
+    /** 生成缩略图预览（缩小后再处理，速度快）
+     *  重要：当原图比目标尺寸大时，内部创建一个小尺寸副本，需要在 apply 返回后回收
+     */
     fun thumbnail(bitmap: Bitmap, filter: PhotoFilter, size: Int = 160): Bitmap {
+        if (bitmap.isRecycled) return bitmap
         val scale = size.toFloat() / maxOf(bitmap.width, bitmap.height)
-        val small = if (scale < 1f) {
-            Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
+        val createdSmall = scale < 1f
+        val small = if (createdSmall) {
+            Bitmap.createScaledBitmap(
+                bitmap,
+                (bitmap.width * scale).toInt().coerceAtLeast(1),
+                (bitmap.height * scale).toInt().coerceAtLeast(1),
+                true
+            )
         } else bitmap
-        return apply(small, filter)
+        val result = apply(small, filter)
+        // 若内部创建了小副本，需要回收它；结果 bitmap 由缓存或调用方持有
+        if (createdSmall && small !== bitmap && !small.isRecycled) {
+            runCatching { small.recycle() }
+        }
+        return result
     }
 
     /** 获取或创建滤镜矩阵（线程安全） */

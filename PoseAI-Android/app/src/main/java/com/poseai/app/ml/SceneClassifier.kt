@@ -70,6 +70,11 @@ class SceneClassifier(context: Context) {
         onResult: (SceneType) -> Unit,
         onCandidate: ((SceneType) -> Unit)? = null
     ) {
+        // 前置有效性检查：bitmap 已回收或尺寸异常直接降级
+        if (bitmap.isRecycled || bitmap.width <= 0 || bitmap.height <= 0) {
+            onCandidate?.invoke(SceneType.UNKNOWN)
+            return
+        }
         val image = InputImage.fromBitmap(bitmap, 0)
         labeler.process(image)
             .addOnSuccessListener { labels ->

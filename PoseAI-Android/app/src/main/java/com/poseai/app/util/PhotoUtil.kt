@@ -18,6 +18,7 @@ import com.poseai.app.model.CropRatio
 /** 画幅裁切：居中裁切，复刻 iOS CropRatio.apply */
 fun Bitmap.applyCrop(ratio: CropRatio): Bitmap {
     if (ratio == CropRatio.ORIGINAL) return this
+    if (isRecycled) return this
     val w = width.toFloat()
     val h = height.toFloat()
     val target = ratio.targetRatio
@@ -31,8 +32,8 @@ fun Bitmap.applyCrop(ratio: CropRatio): Bitmap {
         else -> return this
     }
 
-    val x = ((w - cropW) / 2f).toInt().coerceIn(0, width)
-    val y = ((h - cropH) / 2f).toInt().coerceIn(0, height)
+    val x = ((w - cropW) / 2f).toInt().coerceIn(0, width - 1)
+    val y = ((h - cropH) / 2f).toInt().coerceIn(0, height - 1)
     val cw = cropW.toInt().coerceIn(1, width - x)
     val ch = cropH.toInt().coerceIn(1, height - y)
     return Bitmap.createBitmap(this, x, y, cw, ch)
@@ -40,6 +41,7 @@ fun Bitmap.applyCrop(ratio: CropRatio): Bitmap {
 
 /** 添加 PoseAI 水印（对应 iOS withPoseAIWatermark） */
 fun Bitmap.withPoseAIWatermark(): Bitmap {
+    if (isRecycled) return this
     val out = Bitmap.createBitmap(width, height, config ?: Bitmap.Config.ARGB_8888)
     val canvas = Canvas(out)
     canvas.drawBitmap(this, 0f, 0f, null)

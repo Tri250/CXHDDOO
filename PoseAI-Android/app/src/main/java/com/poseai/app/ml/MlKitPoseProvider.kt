@@ -135,8 +135,9 @@ class MlKitPoseProvider(private val context: Context) {
 
     /** 处理一帧 Bitmap（用于场景分类读帧等场景）—— 线程安全版本 */
     fun process(bitmap: Bitmap) {
-        imageWidth = bitmap.width.toFloat()
-        imageHeight = bitmap.height.toFloat()
+        if (bitmap.isRecycled) return
+        imageWidth = bitmap.width.toFloat().coerceAtLeast(1f)
+        imageHeight = bitmap.height.toFloat().coerceAtLeast(1f)
         val image = InputImage.fromBitmap(bitmap, 0)
         detector.process(image)
             .addOnSuccessListener { pose -> handlePose(pose) }
@@ -346,8 +347,9 @@ class MlKitPoseProvider(private val context: Context) {
 
     /** 解析 ML Kit 姿态为归一化关键点（增强版） */
     private fun parsePoints(pose: Pose): Map<String, NormPoint> {
-        val imgW = imageWidth
-        val imgH = imageHeight
+        // 确保宽高至少为1，避免除零错误
+        val imgW = imageWidth.coerceAtLeast(1f)
+        val imgH = imageHeight.coerceAtLeast(1f)
         val points = LinkedHashMap<String, NormPoint>()
 
         // 辅助函数：从 PoseLandmark 获取归一化坐标点

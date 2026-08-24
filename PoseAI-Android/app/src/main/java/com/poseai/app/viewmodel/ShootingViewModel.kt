@@ -223,7 +223,7 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
 
         manager.onLowLight = { isLow ->
             isLowLight.value = isLow
-            manager.isLowLightMode = isLow
+            // 注意：不要在这里再次设置 manager.isLowLightMode，否则会导致无限递归循环
         }
 
         manager.onPhotoCapture = { image -> onPhotoCaptured(image) }
@@ -396,8 +396,10 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
             val cropX = maxOf(0f, cx - cropW / 2f)
             if (cropW > iw * 0.3f) {
                 try {
-                    val cropped = Bitmap.createBitmap(image, cropX.toInt(), cropTop.toInt(), cropW.toInt(), cropH.toInt())
-                    current.add(cropped)
+                    if (!image.isRecycled) {
+                        val cropped = Bitmap.createBitmap(image, cropX.toInt().coerceIn(0, image.width - 1), cropTop.toInt().coerceIn(0, image.height - 1), cropW.toInt().coerceAtLeast(1), cropH.toInt().coerceAtLeast(1))
+                        current.add(cropped)
+                    }
                 } catch (_: Exception) { }
             }
         }
@@ -438,6 +440,11 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
         if (isCapturing.value) return
         isCapturing.value = true
         if (activeAngleIndex.value == 0) {
+            // 回收旧的burst images
+            val oldImages = burstImages.value
+            oldImages.forEach { bmp ->
+                if (!bmp.isRecycled) runCatching { bmp.recycle() }
+            }
             burstImages.value = emptyList()
             capturedShotsCount.value = 0
             expectedBurstCount.value = angleCount
@@ -467,6 +474,11 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
         if (isCapturing.value) return
         isCapturing.value = true
         if (activeSequenceIndex.value == 0) {
+            // 回收旧的burst images
+            val oldImages = burstImages.value
+            oldImages.forEach { bmp ->
+                if (!bmp.isRecycled) runCatching { bmp.recycle() }
+            }
             burstImages.value = emptyList()
             capturedShotsCount.value = 0
             expectedBurstCount.value = seqCount
@@ -547,6 +559,11 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
         if (isCapturing.value) return
         isCapturing.value = true
         expectedBurstCount.value = count
+        // 回收旧的burst images
+        val oldImages = burstImages.value
+        oldImages.forEach { bmp ->
+            if (!bmp.isRecycled) runCatching { bmp.recycle() }
+        }
         burstImages.value = emptyList()
         capturedShotsCount.value = 0
         var taken = 0
@@ -674,6 +691,11 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
 
     /** 退出照片预览（重拍） */
     fun retakePhotos() {
+        // 回收旧的bitmap防止内存泄漏
+        val oldImages = burstImages.value
+        oldImages.forEach { bmp ->
+            if (!bmp.isRecycled) runCatching { bmp.recycle() }
+        }
         isReviewingPhotos.value = false
         burstImages.value = emptyList()
         capturedShotsCount.value = 0
@@ -783,6 +805,18 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
         pitchJob?.cancel()
         customPlansJob?.cancel()
         scanTimeoutJob?.cancel()
+        compositionTipJob?.cancel()
+        // 释放所有bitmap资源
+        burstImages.value.forEach { bmp ->
+            if (!bmp.isRecycled) runCatching { bmp.recycle() }
+        }
+        burstImages.value = emptyList()
+        currentImage?.let { bmp ->
+            if (!bmp.isRecycled) runCatching { bmp.recycle() }
+        }
+        currentImage = null
+        // 释放滤镜引擎缓存
+        com.poseai.app.filter.PhotoFilterEngine.clear()
         // 释放资源
         feedback.release()
         manager.cleanUp()
