@@ -80,7 +80,14 @@ jobs:
               -keyalg RSA -keysize 2048 -validity 10000
           fi
 
-      - name: Build with gradle directly
+      - name: Build Debug APK
+        env:
+          VERSION_CODE: ${{ steps.version.outputs.VERSION_CODE }}
+          VERSION_NAME: ${{ steps.version.outputs.VERSION_NAME }}
+        run: |
+          gradle -p PoseAI-Android :app:clean :app:assembleDebug --no-daemon --console=plain --stacktrace
+
+      - name: Build Release APK & AAB
         env:
           VERSION_CODE: ${{ steps.version.outputs.VERSION_CODE }}
           VERSION_NAME: ${{ steps.version.outputs.VERSION_NAME }}
@@ -88,19 +95,15 @@ jobs:
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS || 'poseai' }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD || 'poseai_release' }}
         run: |
-          cd PoseAI-Android
-          chmod +x gradlew
-          gradle :app:clean :app:assembleDebug --no-daemon --console=plain --stacktrace 2>&1 | tail -40
-          gradle :app:assembleRelease :app:bundleRelease --no-daemon --console=plain --stacktrace 2>&1 | tail -40
-          echo "=== Build outputs ==="
-          find app/build/outputs -name "*.apk" -o -name "*.aab" -ls 2>/dev/null || echo "NONE"
+          gradle -p PoseAI-Android :app:assembleRelease :app:bundleRelease --no-daemon --console=plain --stacktrace
 
       - name: Collect artifacts
         run: |
           mkdir -p artifacts
-          cp PoseAI-Android/app/build/outputs/apk/debug/*.apk artifacts/ 2>/dev/null || echo "No debug APK"
-          cp PoseAI-Android/app/build/outputs/apk/release/*.apk artifacts/ 2>/dev/null || echo "No release APK"
-          cp PoseAI-Android/app/build/outputs/bundle/release/*.aab artifacts/ 2>/dev/null || echo "No release AAB"
+          find PoseAI-Android/app/build/outputs -name "*.apk" -o -name "*.aab" | while read f; do
+            cp "$f" artifacts/
+          done
+          echo "=== Artifacts ==="
           ls -la artifacts/
 
       - name: Upload build artifacts
