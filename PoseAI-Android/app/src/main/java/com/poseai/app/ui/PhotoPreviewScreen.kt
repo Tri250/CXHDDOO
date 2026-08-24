@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -60,6 +61,7 @@ import kotlinx.coroutines.withContext
  * 支持滤镜、画幅裁切、多图切换、保存与分享。
  */
 @Composable
+@Suppress("ProduceStateDoesNotAssignValue")
 fun PhotoPreviewScreen(
     images: List<android.graphics.Bitmap>,
     onSave: (android.graphics.Bitmap) -> Unit,
@@ -316,6 +318,7 @@ fun PhotoPreviewScreen(
 
 /** 滤镜选择行：每个 60dp 缩略图 + 名称。 */
 @Composable
+@Suppress("ProduceStateDoesNotAssignValue")
 private fun FilterSelector(
     currentImage: android.graphics.Bitmap,
     selectedFilter: PhotoFilter,

@@ -27,6 +27,7 @@ import kotlin.coroutines.suspendCoroutine
 object AIAdvisor {
 
     private var labeler: com.google.mlkit.vision.label.ImageLabeler? = null
+    // 使用 applicationContext，不会泄漏 Activity；close() 时释放
     private var contextRef: Context? = null
     private var isInitialized = false
 
@@ -81,6 +82,8 @@ object AIAdvisor {
         return withContext(Dispatchers.IO) {
             // 1. 缩放图片加速 ML Kit 处理
             val scaled = scaleDown(image, maxDim = 256)
+            // 标记 scaled 是否为新建 Bitmap（若与原图相同则不回收）
+            val scaledIsSeparate = scaled !== image
 
             // 2. 从 ML Kit 提取 ImageNet 标签
             val labels = try {
@@ -92,6 +95,11 @@ object AIAdvisor {
                 }
             } catch (_: Exception) {
                 emptyList()
+            } finally {
+                // 仅回收 scaleDown 新创建的 Bitmap，避免误调用原图
+                if (scaledIsSeparate && !scaled.isRecycled) {
+                    scaled.recycle()
+                }
             }
 
             // 3. 投票分类穿搭

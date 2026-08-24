@@ -76,99 +76,117 @@ class SceneClassifier(context: Context) {
             return
         }
         val image = InputImage.fromBitmap(bitmap, 0)
-        labeler.process(image)
-            .addOnSuccessListener { labels ->
-                runCatching {
-                    val labelVotes = computeVotes(labels.map { label -> label.text to label.confidence })
-                    val pixelVotes = computePixelHeuristicVotes(bitmap)
-                    val colorHistVotes = computeColorHistogramVotes(bitmap)
+        val safeRecycle = {
+            if (!bitmap.isRecycled) runCatching { bitmap.recycle() }
+        }
+        runCatching {
+            labeler.process(image)
+                .addOnSuccessListener { labels ->
+                    runCatching {
+                        val labelVotes = computeVotes(labels.map { label -> label.text to label.confidence })
+                        val pixelVotes = computePixelHeuristicVotes(bitmap)
+                        val colorHistVotes = computeColorHistogramVotes(bitmap)
 
-                    val fused = FloatArray(SCENE_COUNT)
-                    for (i in 0 until SCENE_COUNT) {
-                        fused[i] = labelVotes[i] * 0.50f + pixelVotes[i] * 0.25f + colorHistVotes[i] * 0.25f
-                    }
-
-                    // 所有状态修改在锁内
-                    val resultToDispatch = synchronized(stateLock) {
-                        history.addLast(fused)
-                        if (history.size > windowSize) history.removeFirst()
-                        val accumulated = FloatArray(SCENE_COUNT)
-                        for (h in history) for (i in 0 until SCENE_COUNT) accumulated[i] += h[i]
-
-                        val maxIdx = accumulated.indices.maxByOrNull { accumulated[it] } ?: SCENE_COFFEE
-                        val maxVal = accumulated[maxIdx]
-                        val secondVal = accumulated.indices
-                            .filter { it != maxIdx }
-                            .maxOfOrNull { accumulated[it] } ?: 0f
-                        val candidate = if (maxVal >= MIN_CONFIRM_SCORE) indexToScene(maxIdx) else SceneType.UNKNOWN
-
-                        if (candidate == lastCandidate) sameCandidateFrames++
-                        else {
-                            lastCandidate = candidate
-                            sameCandidateFrames = 1
+                        val fused = FloatArray(SCENE_COUNT)
+                        for (i in 0 until SCENE_COUNT) {
+                            fused[i] = labelVotes[i] * 0.50f + pixelVotes[i] * 0.25f + colorHistVotes[i] * 0.25f
                         }
 
-                        val now = System.currentTimeMillis()
-                        val isLocked = now < lockUntilMs
+                        // 所有状态修改在锁内
+                        val resultToDispatch = synchronized(stateLock) {
+                            history.addLast(fused)
+                            if (history.size > windowSize) history.removeFirst()
+                            val accumulated = FloatArray(SCENE_COUNT)
+                            for (h in history) for (i in 0 until SCENE_COUNT) accumulated[i] += h[i]
 
-                        val isFastSwitch = fastSwitchEnabled
-                            && candidate != SceneType.UNKNOWN
-                            && candidate != lastConfirmedScene
-                            && maxVal >= FAST_SWITCH_THRESHOLD
-                            && (maxVal - secondVal) >= FAST_SWITCH_GAP
+                            val maxIdx = accumulated.indices.maxByOrNull { accumulated[it] } ?: SCENE_COFFEE
+                            val maxVal = accumulated[maxIdx]
+                            val secondVal = accumulated.indices
+                                .filter { it != maxIdx }
+                                .maxOfOrNull { accumulated[it] } ?: 0f
+                            val candidate = if (maxVal >= MIN_CONFIRM_SCORE) indexToScene(maxIdx) else SceneType.UNKNOWN
 
-                        val framePassed = if (isFastSwitch) {
-                            true
-                        } else {
-                            sameCandidateFrames >= confirmThreshold
-                        }
-
-                        var dispatchedResult: SceneType? = null
-                        if (!isLocked && framePassed && candidate != SceneType.UNKNOWN) {
-                            dispatchedResult = candidate
-                            lastConfirmedScene = candidate
-                            lockUntilMs = now + lockDurationMs
-                            if (isFastSwitch) {
-                                lockUntilMs = now + lockDurationMs + 2000L
+                            if (candidate == lastCandidate) sameCandidateFrames++
+                            else {
+                                lastCandidate = candidate
+                                sameCandidateFrames = 1
                             }
-                        }
 
-                        // 强制兜底
-                        if (history.size >= windowSize && maxVal >= MIN_FALLBACK_SCORE) {
-                            val best = indexToScene(maxIdx)
-                            if (best != SceneType.UNKNOWN && best != lastConfirmedScene) {
-                                lastCandidate = best
-                                sameCandidateFrames = confirmThreshold
-                                dispatchedResult = best
-                                lastConfirmedScene = best
+                            val now = System.currentTimeMillis()
+                            val isLocked = now < lockUntilMs
+
+                            val isFastSwitch = fastSwitchEnabled
+                                && candidate != SceneType.UNKNOWN
+                                && candidate != lastConfirmedScene
+                                && maxVal >= FAST_SWITCH_THRESHOLD
+                                && (maxVal - secondVal) >= FAST_SWITCH_GAP
+
+                            val framePassed = if (isFastSwitch) {
+                                true
+                            } else {
+                                sameCandidateFrames >= confirmThreshold
+                            }
+
+                            var dispatchedResult: SceneType? = null
+                            if (!isLocked && framePassed && candidate != SceneType.UNKNOWN) {
+                                dispatchedResult = candidate
+                                lastConfirmedScene = candidate
                                 lockUntilMs = now + lockDurationMs
+                                if (isFastSwitch) {
+                                    lockUntilMs = now + lockDurationMs + 2000L
+                                }
                             }
+
+                            // 强制兜底
+                            if (history.size >= windowSize && maxVal >= MIN_FALLBACK_SCORE) {
+                                val best = indexToScene(maxIdx)
+                                if (best != SceneType.UNKNOWN && best != lastConfirmedScene) {
+                                    lastCandidate = best
+                                    sameCandidateFrames = confirmThreshold
+                                    dispatchedResult = best
+                                    lastConfirmedScene = best
+                                    lockUntilMs = now + lockDurationMs
+                                }
+                            }
+
+                            onCandidate?.invoke(candidate)
+                            dispatchedResult
                         }
 
-                        onCandidate?.invoke(candidate)
-                        dispatchedResult
+                        resultToDispatch?.let { scene -> onResult(scene) }
                     }
-
-                    resultToDispatch?.let { scene -> onResult(scene) }
+                    // 无论成功失败都在回调完成后回收 bitmap
+                    safeRecycle()
                 }
-                // 无论成功失败都在回调完成后回收 bitmap
-                if (!bitmap.isRecycled) runCatching { bitmap.recycle() }
-            }
-            .addOnFailureListener {
-                // 失败降级处理
-                runCatching {
-                    val pixelVotes = computePixelHeuristicVotes(bitmap)
-                    val colorHistVotes = computeColorHistogramVotes(bitmap)
-                    val combined = FloatArray(SCENE_COUNT)
-                    for (i in 0 until SCENE_COUNT) {
-                        combined[i] = pixelVotes[i] * 0.5f + colorHistVotes[i] * 0.5f
+                .addOnFailureListener {
+                    // 失败降级处理
+                    runCatching {
+                        val pixelVotes = computePixelHeuristicVotes(bitmap)
+                        val colorHistVotes = computeColorHistogramVotes(bitmap)
+                        val combined = FloatArray(SCENE_COUNT)
+                        for (i in 0 until SCENE_COUNT) {
+                            combined[i] = pixelVotes[i] * 0.5f + colorHistVotes[i] * 0.5f
+                        }
+                        val maxIdx = combined.indices.maxByOrNull { combined[it] } ?: SCENE_COFFEE
+                        onResult(indexToScene(maxIdx))
                     }
-                    val maxIdx = combined.indices.maxByOrNull { combined[it] } ?: SCENE_COFFEE
-                    onResult(indexToScene(maxIdx))
+                    // 回收 bitmap
+                    safeRecycle()
                 }
-                // 回收 bitmap
-                if (!bitmap.isRecycled) runCatching { bitmap.recycle() }
+        }.onFailure {
+            // ML Kit process 同步异常：直接降级到像素启发式 + 回收
+            runCatching {
+                val pixelVotes = computePixelHeuristicVotes(bitmap)
+                val colorHistVotes = computeColorHistogramVotes(bitmap)
+                val combined = FloatArray(SCENE_COUNT)
+                for (i in 0 until SCENE_COUNT) {
+                    combined[i] = pixelVotes[i] * 0.5f + colorHistVotes[i] * 0.5f
+                }
+                val maxIdx = combined.indices.maxByOrNull { combined[it] } ?: SCENE_COFFEE
+                onResult(indexToScene(maxIdx))
             }
+            safeRecycle()
+        }
     }
 
     /** 重置状态（外部切换相机/重启时调用）——线程安全 */

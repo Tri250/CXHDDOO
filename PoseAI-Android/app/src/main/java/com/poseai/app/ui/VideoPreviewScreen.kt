@@ -319,29 +319,66 @@ private fun FilterPickerRow(
     val thumbnails = remember {
         androidx.compose.runtime.mutableStateMapOf<PhotoFilter, Bitmap>()
     }
+    // 记录当前 sourceFrame，以便在源图变更/离开组合时回收
+    var lastSourceFrame by remember { mutableStateOf<Bitmap?>(null) }
 
     // 当源图变化时，预生成全部滤镜缩略图
     LaunchedEffect(sourceFrame) {
         val src = sourceFrame
-        if (src == null) return@LaunchedEffect
+        if (src == null) {
+            // 源图被清空时，回收已生成的缩略图
+            thumbnails.values.forEach { bmp ->
+                if (!bmp.isRecycled) runCatching { bmp.recycle() }
+            }
+            thumbnails.clear()
+            return@LaunchedEffect
+        }
+        // 源图变化时先回收旧缩略图，避免内存泄漏
+        val snapshot = thumbnails.toMap()
+        thumbnails.clear()
+        snapshot.values.forEach { bmp ->
+            if (!bmp.isRecycled) runCatching { bmp.recycle() }
+        }
         PhotoFilter.entries.forEach { f ->
-            if (!thumbnails.containsKey(f)) {
-                withContext(Dispatchers.Default) {
-                    runCatching {
-                        val thumb = Bitmap.createScaledBitmap(
-                            src,
-                            (src.width * 0.25f).toInt().coerceAtLeast(60),
-                            (src.height * 0.25f).toInt().coerceAtLeast(60),
-                            true
-                        )
-                        val filtered = applyColorMatrix(thumb, buildColorMatrix(f))
-                        withContext(Dispatchers.Main) {
-                            thumbnails[f] = filtered
-                        }
+            withContext(Dispatchers.Default) {
+                runCatching {
+                    val thumb = Bitmap.createScaledBitmap(
+                        src,
+                        (src.width * 0.25f).toInt().coerceAtLeast(60),
+                        (src.height * 0.25f).toInt().coerceAtLeast(60),
+                        true
+                    )
+                    val filtered = applyColorMatrix(thumb, buildColorMatrix(f))
+                    withContext(Dispatchers.Main) {
+                        thumbnails[f] = filtered
                     }
                 }
             }
         }
+    }
+
+    // 离开组合时释放所有缩略图 Bitmap
+    DisposableEffect(Unit) {
+        onDispose {
+            thumbnails.values.forEach { bmp ->
+                if (!bmp.isRecycled) runCatching { bmp.recycle() }
+            }
+            thumbnails.clear()
+            // 回收源图（仅在本组件内未直接显示时）
+            lastSourceFrame?.let { bmp ->
+                if (!bmp.isRecycled) runCatching { bmp.recycle() }
+            }
+            lastSourceFrame = null
+        }
+    }
+
+    // 跟踪 sourceFrame 的变化以回收旧帧
+    LaunchedEffect(sourceFrame) {
+        val old = lastSourceFrame
+        if (old != null && old !== sourceFrame && !old.isRecycled) {
+            runCatching { old.recycle() }
+        }
+        lastSourceFrame = sourceFrame
     }
 
     LazyRow(
@@ -393,6 +430,7 @@ private fun FilterPickerRow(
 
 /** 从视频抽一帧作为滤镜源 */
 @Composable
+@Suppress("ProduceStateDoesNotAssignValue")
 private fun produceVideoFrame(videoFile: File): androidx.compose.runtime.State<Bitmap?> {
     return androidx.compose.runtime.produceState<Bitmap?>(initialValue = null, videoFile) {
         value = withContext(Dispatchers.IO) {
@@ -508,6 +546,8 @@ private fun applyFilterToVideo(source: File, filter: PhotoFilter): File {
     var muxerStarted = false
     var surfaceCanvas: android.graphics.Canvas? = null
     var frameBitmap: Bitmap? = null
+    var lastFrame: Bitmap? = null  // 缓存上一帧，用于插值
+    var lastFrameOwned: Boolean = false  // lastFrame 是否由 scaled 持有（非 rawFrame 借用）
 
     try {
         // 1) 提取视频元数据
@@ -570,9 +610,6 @@ private fun applyFilterToVideo(source: File, filter: PhotoFilter): File {
             colorFilter = ColorMatrixColorFilter(matrix)
             isFilterBitmap = true
         }
-
-        var lastFrame: Bitmap? = null  // 缓存上一帧，用于插值
-        var lastFrameOwned: Boolean = false  // lastFrame 是否由 scaled 持有（非 rawFrame 借用）
 
         for (i in 0 until frameCount) {
             val timeUs = i * frameIntervalUs

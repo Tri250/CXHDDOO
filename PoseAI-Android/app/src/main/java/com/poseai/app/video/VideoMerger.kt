@@ -33,8 +33,11 @@ object VideoMerger {
     fun merge(videoFiles: List<File>, output: File, bgmFile: File? = null): Boolean {
         if (videoFiles.isEmpty()) return false
 
-        var muxer: MediaMuxer? = null
+        var mux: MediaMuxer? = null
+        var muxStarted = false
         var outputStream: FileOutputStream? = null
+        var videoTrackIndex = -1
+        var audioTrackIndex = -1
 
         try {
             // 预创建输出文件
@@ -45,20 +48,24 @@ object VideoMerger {
             outputStream.close()
             outputStream = null
 
-            val mux = MediaMuxer(output.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+            mux = MediaMuxer(output.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
 
-            var videoTrackIndex = -1
-            var audioTrackIndex = -1
             var videoFormat: MediaFormat? = null
             var audioFormat: MediaFormat? = null
 
             var videoOffsetUs = 0L
             var audioOffsetUs = 0L
-            var videoStarted = false
 
             // 合理大小的复用 buffer：避免每次循环都重新分配 4MB
             val reusableBuffer = java.nio.ByteBuffer.allocate(4 * 1024 * 1024)
             val info = MediaCodec.BufferInfo()
+
+            fun startMuxIfReady() {
+                if (!muxStarted && (videoTrackIndex >= 0 || audioTrackIndex >= 0)) {
+                    mux!!.start()
+                    muxStarted = true
+                }
+            }
 
             for ((i, file) in videoFiles.withIndex()) {
                 if (!file.exists() || file.length() < 1024) continue
@@ -76,23 +83,16 @@ object VideoMerger {
                     val audioTrack = findTrack(extractor, "audio/")
 
                     // 第一个有效切片决定轨道格式
-                    if (!videoStarted && videoTrack >= 0) {
+                    if (videoTrackIndex < 0 && videoTrack >= 0) {
                         videoFormat = extractor.getTrackFormat(videoTrack)
-                        videoTrackIndex = mux.addTrack(videoFormat)
-                        videoStarted = true
+                        videoTrackIndex = mux!!.addTrack(videoFormat)
                     }
                     if (audioTrackIndex < 0 && audioTrack >= 0) {
                         audioFormat = extractor.getTrackFormat(audioTrack)
-                        audioTrackIndex = mux.addTrack(audioFormat)
+                        audioTrackIndex = mux!!.addTrack(audioFormat)
                     }
 
-                    if ((videoTrackIndex >= 0 || audioTrackIndex >= 0) && !videoStarted) {
-                        mux.start()
-                        videoStarted = true
-                    } else if (!videoStarted && videoTrackIndex >= 0) {
-                        mux.start()
-                        videoStarted = true
-                    }
+                    startMuxIfReady()
 
                     // === 视频轨 ===
                     if (videoTrack >= 0 && videoTrackIndex >= 0) {
@@ -156,23 +156,21 @@ object VideoMerger {
 
             if (videoTrackIndex < 0 && audioTrackIndex < 0) {
                 // 没有有效轨道
-                runCatching { mux.stop() }
-                runCatching { mux.release() }
-                muxer = null
+                runCatching { mux?.stop() }
+                runCatching { mux?.release() }
                 output.delete()
                 return false
             }
 
-            mux.stop()
-            mux.release()
-            muxer = null
+            mux?.stop()
+            runCatching { mux?.release() }
             return true
 
         } catch (e: Exception) {
             e.printStackTrace()
             // 清理失败的输出
-            try { muxer?.stop() } catch (_: Exception) {}
-            try { muxer?.release() } catch (_: Exception) {}
+            runCatching { mux?.stop() }
+            runCatching { mux?.release() }
             output.delete()
             return false
         } finally {

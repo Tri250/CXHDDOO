@@ -100,9 +100,8 @@ class CameraManager(
     private var lastSceneUpdate = 0L
     private val sceneUpdateIntervalMs = 2000L
 
-    // 帧计数（@Volatile 保证跨线程可见性）
-    @Volatile
-    private var frameCounter = 0
+    // 帧计数（使用 AtomicInteger 保证原子递增）
+    private val frameCounter = java.util.concurrent.atomic.AtomicInteger(0)
 
     // MARK: - 最近光线分析结果（synchronized 保护）
     @Volatile var lastLightLevel: Float? = null
@@ -127,6 +126,7 @@ class CameraManager(
 
     // MARK: - 绑定
 
+    @Suppress("UnsafeOptInUsageError")
     fun bindToCamera(lifecycleOwner: androidx.lifecycle.LifecycleOwner, previewView: PreviewView) {
         val providerFuture = ProcessCameraProvider.getInstance(context)
         providerFuture.addListener({
@@ -136,6 +136,10 @@ class CameraManager(
         }, mainExecutor)
     }
 
+    @androidx.camera.core.ExperimentalGetImage
+    @androidx.camera.video.ExperimentalPersistentRecording
+    @androidx.camera.core.ExperimentalZeroShutterLag
+    @androidx.camera.camera2.interop.ExperimentalCamera2Interop
     fun bindUseCases(lifecycleOwner: androidx.lifecycle.LifecycleOwner, previewView: PreviewView) {
         val provider = cameraProvider ?: return
         provider.unbindAll()
@@ -172,9 +176,12 @@ class CameraManager(
         camera?.cameraInfo?.let { info ->
             runCatching {
                 val cam2 = androidx.camera.camera2.interop.Camera2CameraInfo.from(info)
-                val chars = cam2.cameraCharacteristics
-                exposureTimeRange = chars.get(android.hardware.camera2.CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_EXPOSURE_TIME_RANGE)
-                sensitivityRange = chars.get(android.hardware.camera2.CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE)
+                exposureTimeRange = cam2.getCameraCharacteristic(
+                    android.hardware.camera2.CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE
+                )
+                sensitivityRange = cam2.getCameraCharacteristic(
+                    android.hardware.camera2.CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE
+                )
             }
         }
     }
@@ -190,7 +197,7 @@ class CameraManager(
 
     @androidx.annotation.OptIn(ExperimentalGetImage::class, ExperimentalPersistentRecording::class)
     private fun analyzeFrame(imageProxy: ImageProxy) {
-        frameCounter++
+        val frameCount = frameCounter.incrementAndGet()
         var handledByPose = false
 
         try {
@@ -220,7 +227,7 @@ class CameraManager(
 
             // 2) 姿态检测：隔帧丢弃，低光时加倍降频
             val modulo = if (isLowLightMode) 4 else 2
-            val skipPoseFrame = frameCounter % modulo == 0
+            val skipPoseFrame = frameCount % modulo == 0
             if (!skipPoseFrame) {
                 handledByPose = true
                 // poseProvider.process 会在内部通过 addOnCompleteListener 关闭 imageProxy
@@ -457,6 +464,7 @@ class CameraManager(
     // MARK: - 录像
 
     @androidx.annotation.OptIn(ExperimentalPersistentRecording::class)
+    @Suppress("MissingPermission")
     fun startVideoRecording(file: File) {
         val vc = videoCapture ?: return
         if (isRecording) return
