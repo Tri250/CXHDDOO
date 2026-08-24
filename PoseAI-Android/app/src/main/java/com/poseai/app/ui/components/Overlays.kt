@@ -1,6 +1,8 @@
 package com.poseai.app.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -12,9 +14,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -32,6 +37,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -46,7 +52,6 @@ private data class SilLayout(val silW: Float, val silH: Float, val centerX: Floa
 
 /**
  * 剪影引导叠加层——复刻 iOS SilhouetteGuideOverlay + PoseSilhouetteShape。
- * 传入画面像素尺寸与人体归一化包围盒，自动计算剪影尺寸与位置。
  */
 @Composable
 fun SilhouetteGuideOverlay(
@@ -63,10 +68,6 @@ fun SilhouetteGuideOverlay(
     val centerY = layout.centerY
     val left = (centerX - layout.silW / 2f).roundToInt()
     val top = (centerY - layout.silH / 2f).roundToInt()
-
-    val dash by animateFloatAsState(
-        targetValue = if (isAligned) 0f else 1f, animationSpec = tween(300), label = "dash"
-    )
 
     Column(
         modifier = Modifier
@@ -194,25 +195,76 @@ fun CompositionGuideLines(composition: CompositionRule?) {
     }
 }
 
-/** 评分环——复刻 iOS scoreRing */
+/**
+ * 增强版评分环——复刻 iOS scoreRing。
+ * 带外发光、渐变进度弧、对齐时缩放脉冲效果。
+ */
 @Composable
 fun ScoreRing(score: Float, isReady: Boolean) {
-    val progress by animateFloatAsState(score / 100f, tween(120), label = "score")
-    Box(modifier = Modifier.size(54.dp), contentAlignment = Alignment.Center) {
+    val progress by animateFloatAsState(
+        targetValue = (score / 100f).coerceIn(0f, 1f),
+        animationSpec = tween(120),
+        label = "scoreProgress"
+    )
+    val scaleAnim by animateFloatAsState(
+        targetValue = if (isReady) 1.08f else 1.0f,
+        animationSpec = spring(response = 0.3f, dampingRatio = 0.55f),
+        label = "scoreScale"
+    )
+    val glowAlpha by animateFloatAsState(
+        targetValue = if (isReady) 0.5f else 0f,
+        animationSpec = tween(300),
+        label = "glowAlpha"
+    )
+
+    Box(
+        modifier = Modifier.size(54.dp).graphicsLayer {
+            scaleX = scaleAnim
+            scaleY = scaleAnim
+        },
+        contentAlignment = Alignment.Center
+    ) {
         Canvas(modifier = Modifier.size(46.dp)) {
+            // 外发光（对齐时）
             if (isReady) {
-                drawCircle(Brand.Success.copy(alpha = 0.35f), radius = size.minDimension / 2 + 4f)
+                drawCircle(
+                    color = Brand.Success.copy(alpha = glowAlpha),
+                    radius = size.minDimension / 2 + 5f,
+                    style = Stroke(width = 10f)
+                )
             }
+
+            // 底层轨道
             drawArc(
                 color = Color.White.copy(alpha = 0.12f),
-                startAngle = -90f, sweepAngle = 360f,
+                startAngle = -90f,
+                sweepAngle = 360f,
                 useCenter = false,
                 style = Stroke(width = 3.5f, cap = StrokeCap.Round)
             )
+
+            // 进度弧 - 使用渐变色
+            val progressColor = if (isReady) {
+                Brush.sweepGradient(
+                    listOf(Brand.Success, Brand.Success.copy(alpha = 0.6f)),
+                    center = Offset(size.width / 2, size.height / 2)
+                )
+            } else if (score > 60f) {
+                Brush.sweepGradient(
+                    listOf(Brand.Accent, Brand.Accent.copy(alpha = 0.5f)),
+                    center = Offset(size.width / 2, size.height / 2)
+                )
+            } else {
+                Brush.sweepGradient(
+                    listOf(Color.White.copy(alpha = 0.8f), Color.White.copy(alpha = 0.3f)),
+                    center = Offset(size.width / 2, size.height / 2)
+                )
+            }
+
             drawArc(
-                color = if (isReady) Brand.Success else Brand.Accent,
+                brush = progressColor,
                 startAngle = -90f,
-                sweepAngle = 360f * progress.coerceIn(0f, 1f),
+                sweepAngle = 360f * progress,
                 useCenter = false,
                 style = Stroke(width = 3.5f, cap = StrokeCap.Round)
             )
@@ -226,7 +278,156 @@ fun ScoreRing(score: Float, isReady: Boolean) {
     }
 }
 
-/** 扫描框四角修饰线——复刻 iOS ScanCornerLines */
+/**
+ * 场景扫描动画覆盖层——复刻 iOS sceneScanningOverlay。
+ * 带脉冲环、四角修饰线、旋转扫描弧。
+ */
+@Composable
+fun SceneScanningOverlay() {
+    val infiniteTransition = rememberInfiniteTransition(label = "scanPulse")
+    val pulseSize by infiniteTransition.animateFloat(
+        initialValue = 160f,
+        targetValue = 220f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1800),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+        ),
+        label = "pulseSize"
+    )
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1800),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+        ),
+        label = "pulseAlpha"
+    )
+
+    // 旋转扫描弧
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1600, easing = androidx.compose.animation.core.LinearEasing),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Restart
+        ),
+        label = "scanRotation"
+    )
+
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        // 脉冲圈
+        Canvas(
+            modifier = Modifier.size(pulseSize.dp)
+        ) {
+            drawCircle(
+                color = Brand.Accent.copy(alpha = pulseAlpha),
+                style = Stroke(width = 1.5f)
+            )
+        }
+
+        // 第二圈脉冲（延迟）
+        Canvas(
+            modifier = Modifier.size((pulseSize - 30).dp)
+        ) {
+            drawCircle(
+                color = Brand.Accent.copy(alpha = (pulseAlpha * 0.6f).coerceIn(0f, 0.35f)),
+                style = Stroke(width = 1f)
+            )
+        }
+
+        // 主框
+        Box(
+            modifier = Modifier
+                .size(140.dp, 190.dp)
+                .border(2.dp, Brand.Accent.copy(alpha = 0.8f), RoundedCornerShape(20.dp))
+        )
+
+        // 四角修饰线
+        ScanCornerLinesModifier()
+
+        // 内容
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.offset(y = (-10).dp)
+        ) {
+            // 旋转扫描弧
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .graphicsLayer { rotationZ = rotation }
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    drawArc(
+                        brush = Brush.sweepGradient(
+                            listOf(Brand.Accent, Color.Transparent),
+                            center = Offset(size.width / 2, size.height / 2)
+                        ),
+                        startAngle = 0f,
+                        sweepAngle = 90f,
+                        useCenter = false,
+                        style = Stroke(width = 2.5f, cap = StrokeCap.Round)
+                    )
+                }
+            }
+
+            Text(
+                "识别场景中…",
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(top = 10.dp)
+            )
+        }
+
+        // 底部提示
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.offset(y = 160.dp)
+        ) {
+            Text(
+                "将镜头对准拍摄背景",
+                color = Color.White.copy(alpha = 0.85f),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                "咖啡馆 · 海边 · 森林",
+                color = Brand.Accent.copy(alpha = 0.7f),
+                fontSize = 12.sp,
+                letterSpacing = 2.sp,
+                modifier = Modifier.padding(top = 6.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScanCornerLinesModifier() {
+    Canvas(modifier = Modifier.size(140.dp, 190.dp)) {
+        val w = size.width
+        val h = size.height
+        val len = 18.dp.toPx()
+        val thick = 2.5.dp.toPx()
+        val corners = listOf(
+            listOf(Offset(0f, len), Offset(0f, 0f), Offset(len, 0f)),
+            listOf(Offset(w - len, 0f), Offset(w, 0f), Offset(w, len)),
+            listOf(Offset(0f, h - len), Offset(0f, h), Offset(len, h)),
+            listOf(Offset(w - len, h), Offset(w, h), Offset(w, h - len))
+        )
+        corners.forEach { (a, b, c) ->
+            val p = Path().apply {
+                moveTo(a.x, a.y); lineTo(b.x, b.y); lineTo(c.x, c.y)
+            }
+            drawPath(p, Brand.Accent, style = Stroke(width = thick, cap = StrokeCap.Round))
+        }
+    }
+}
+
+/** 扫描框四角修饰线——独立组件 */
 @Composable
 fun ScanCornerLines() {
     Canvas(modifier = Modifier.fillMaxSize()) {
@@ -249,6 +450,127 @@ fun ScanCornerLines() {
     }
 }
 
+/**
+ * AR 地面脚印覆盖层——复刻 iOS arFootprintsOverlay。
+ */
+@Composable
+fun ARFootprintsOverlay() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Row(
+            modifier = Modifier.padding(bottom = 220.dp),
+            horizontalArrangement = Arrangement.spacedBy(36.dp)
+        ) {
+            Text("👣", fontSize = 24.sp, color = Brand.Accent.copy(alpha = 0.25f),
+                modifier = Modifier.graphicsLayer { rotationZ = -12f })
+            Text("👣", fontSize = 24.sp, color = Brand.Accent.copy(alpha = 0.25f),
+                modifier = Modifier.graphicsLayer { rotationZ = 12f })
+        }
+    }
+}
+
+/**
+ * 暗光屏幕柔边补光带——复刻 iOS 暗光补光。
+ */
+@Composable
+fun LowLightGlowOverlay() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .border(
+                    width = 50.dp,
+                    color = Color(0x55FFF3E0),
+                    shape = RoundedCornerShape(12.dp)
+                )
+        )
+    }
+}
+
+/**
+ * AI 构图灵感浮层——复刻 iOS aiAdvisorBanner。
+ */
+@Composable
+fun AiAdvisorBanner(text: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 120.dp)
+            .padding(horizontal = 24.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brand.Surface,
+                    RoundedCornerShape(20.dp)
+                )
+                .border(
+                    1.5.dp,
+                    Brush.linearGradient(
+                        listOf(Brand.AI_Purple.copy(alpha = 0.6f), Color.Transparent),
+                        start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                        end = androidx.compose.ui.geometry.Offset(1f, 1f)
+                    ),
+                    RoundedCornerShape(20.dp)
+                )
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+        ) {
+            Text("✨", fontSize = 20.sp, modifier = Modifier.padding(top = 2.dp))
+            Column(modifier = Modifier.padding(start = 12.dp)) {
+                Text("AI 构图灵感", color = Brand.AI_Purple, fontSize = 13.sp, fontWeight = FontWeight.Black)
+                Text(text, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium,
+                    lineHeight = 20.sp)
+            }
+        }
+    }
+}
+
+/**
+ * Vlog 提词器覆盖层——复刻 iOS vlogTextOverlay。
+ */
+@Composable
+fun VlogTextOverlay(text: String, isRecording: Boolean) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = 280.dp),
+        verticalArrangement = Arrangement.Bottom,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = text,
+                color = Color.White,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Black
+            )
+        }
+    }
+}
+
+/**
+ * 分数弧颜色——复刻 iOS scoreArcColors。
+ */
+fun scoreArcColors(score: Float): List<Color> {
+    return if (score > 60f) {
+        listOf(Brand.Accent, Brand.Accent.copy(alpha = 0.5f))
+    } else {
+        listOf(Color.White.copy(alpha = 0.8f), Color.White.copy(alpha = 0.3f))
+    }
+}
+
 /** 方案小标签——复刻 iOS TagBadge */
 @Composable
 private fun TagBadge(icon: String, text: String, active: Boolean) {
@@ -263,24 +585,52 @@ private fun TagBadge(icon: String, text: String, active: Boolean) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(icon, fontSize = 9.sp)
-        Text(text, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = if (active) Brand.Accent else Color.White.copy(alpha = 0.7f))
+        Text(text, fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
+            color = if (active) Brand.Accent else Color.White.copy(alpha = 0.7f))
     }
 }
 
 /** 方案选择卡片（紧凑 pill）——复刻 iOS PlanCard */
 @Composable
 fun PlanCard(plan: ShootingPlan, isSelected: Boolean, onClick: () -> Unit) {
+    val glowAlpha by animateFloatAsState(
+        targetValue = if (isSelected) 0.4f else 0f,
+        animationSpec = tween(300),
+        label = "cardGlow"
+    )
+    val scaleAnim by animateFloatAsState(
+        targetValue = if (isSelected) 1.03f else 1.0f,
+        animationSpec = spring(response = 0.32f, dampingRatio = 0.68f),
+        label = "cardScale"
+    )
+
     Column(
         modifier = Modifier
+            .graphicsLayer {
+                scaleX = scaleAnim
+                scaleY = scaleAnim
+            }
             .background(
                 if (isSelected) {
-                    Brush.linearGradient(listOf(Brand.Accent.copy(alpha = 0.22f), Brand.Accent.copy(alpha = 0.08f)))
+                    Brush.linearGradient(
+                        listOf(Brand.Accent.copy(alpha = 0.22f), Brand.Accent.copy(alpha = 0.08f)),
+                        start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                        end = androidx.compose.ui.geometry.Offset(0f, 1f)
+                    )
                 } else {
-                    Brush.linearGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Black.copy(alpha = 0.3f)))
+                    Brush.linearGradient(
+                        listOf(Color.Black.copy(alpha = 0.45f), Color.Black.copy(alpha = 0.3f)),
+                        start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                        end = androidx.compose.ui.geometry.Offset(0f, 1f)
+                    )
                 },
-                RoundedCornerShape(12)
+                RoundedCornerShape(12.dp)
             )
-            .border(1.dp, if (isSelected) Brand.Accent.copy(alpha = 0.75f) else Brand.Hairline, RoundedCornerShape(12))
+            .border(
+                width = if (isSelected) 1.5.dp else 1.dp,
+                color = if (isSelected) Brand.Accent.copy(alpha = 0.75f) else Brand.Border,
+                shape = RoundedCornerShape(12.dp)
+            )
             .clickable(onClick = onClick)
             .padding(horizontal = 13.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)

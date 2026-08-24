@@ -1,6 +1,10 @@
 package com.poseai.app.ui
 
-import androidx.compose.foundation.Image
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,16 +29,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -48,10 +53,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.poseai.app.design.Brand
 import com.poseai.app.model.SceneType
 import com.poseai.app.model.ShootingPlan
+import com.poseai.app.ui.components.ARFootprintsOverlay
+import com.poseai.app.ui.components.AiAdvisorBanner
 import com.poseai.app.ui.components.CompositionGuideLines
+import com.poseai.app.ui.components.LowLightGlowOverlay
 import com.poseai.app.ui.components.PlanCard
 import com.poseai.app.ui.components.ScoreRing
+import com.poseai.app.ui.components.SceneScanningOverlay
 import com.poseai.app.ui.components.SilhouetteGuideOverlay
+import com.poseai.app.ui.components.VlogTextOverlay
 import com.poseai.app.viewmodel.ShootingViewModel
 
 @Composable
@@ -90,6 +100,9 @@ fun ContentScreen(
 
     val plan = vm.currentPlan
 
+    // 场景正在扫描（未识别）
+    val isScanning = !isSceneReady && (scene == SceneType.UNKNOWN)
+
     // 相机绑定
     var previewView by remember { mutableStateOf<PreviewView?>(null) }
     DisposableEffect(hasCameraPermission, previewView) {
@@ -122,12 +135,28 @@ fun ContentScreen(
             }
         }
 
+        // 暗光屏幕补光（柔光叠加）
+        if (isLowLight) {
+            LowLightGlowOverlay()
+        }
+
         // 点击进入/退出沉浸模式
         Box(
             Modifier.matchParentSize()
                 .clickable { vm.toggleImmersiveMode() }
         )
 
+        // 场景扫描动画（识别中）
+        if (isScanning && !isImmersive) {
+            SceneScanningOverlay()
+        }
+
+        // AR 脚印覆盖层（场景已就绪）
+        if (isSceneReady && !isImmersive && !isCapturing) {
+            ARFootprintsOverlay()
+        }
+
+        // 构图辅助线
         if (!isImmersive) {
             CompositionGuideLines(if (isSceneReady) plan?.composition else null)
         }
@@ -163,14 +192,14 @@ fun ContentScreen(
             )
         }
 
+        // AI 构图灵感（增强版）
+        if (aiSuggestion != null && !isImmersive) {
+            AiAdvisorBanner(aiSuggestion!!)
+        }
+
         // 构图提示
         if (showCompositionTip && plan != null && !isImmersive) {
             CompositionTipOverlay(plan)
-        }
-
-        // AI 构图灵感
-        if (aiSuggestion != null && !isImmersive) {
-            AiBanner(aiSuggestion!!)
         }
 
         // 暗光提示
@@ -265,14 +294,14 @@ private fun TopBar(
             Row(
                 modifier = Modifier
                     .background(Brand.Surface.copy(alpha = 0.92f), RoundedCornerShape(14.dp))
-                    .border(1.dp, Brand.Hairline, RoundedCornerShape(14.dp))
+                    .border(1.dp, Brand.Border, RoundedCornerShape(14.dp))
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(scene.icon, fontSize = 14.sp)
                 Column {
-                    Text(scene.displayName, color = Brand.TextTertiary, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                    Text(scene.displayName, color = Brand.TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Medium)
                     val subtitle = when {
                         plan.vlogScript != null && activeVlogClipIndex < plan.vlogScript.clips.size ->
                             "Vlog [分镜 ${activeVlogClipIndex + 1}/${plan.vlogScript.clips.size}]"
@@ -304,7 +333,7 @@ private fun TopBar(
             modifier = Modifier
                 .size(44.dp)
                 .background(Brand.Surface.copy(alpha = 0.92f), CircleShape)
-                .border(1.dp, Brand.Hairline, CircleShape)
+                .border(1.dp, Brand.Border, CircleShape)
                 .clickable { onGuide() },
             contentAlignment = Alignment.Center
         ) {
@@ -346,7 +375,7 @@ private fun BottomPanel(
                         modifier = Modifier
                             .border(
                                 1.dp,
-                                if (isRecordingMode) Brand.Coral else Brand.Hairline,
+                                if (isRecordingMode) Brand.Coral else Brand.Border,
                                 RoundedCornerShape(Brand.Radius.Md)
                             )
                             .background(Brand.Surface.copy(alpha = 0.9f), RoundedCornerShape(Brand.Radius.Md))
@@ -385,7 +414,7 @@ private fun BottomPanel(
                     modifier = Modifier
                         .size(52.dp)
                         .background(Brand.Surface.copy(alpha = 0.9f), RoundedCornerShape(Brand.Radius.Md))
-                        .border(1.dp, Brand.Hairline, RoundedCornerShape(Brand.Radius.Md))
+                        .border(1.dp, Brand.Border, RoundedCornerShape(Brand.Radius.Md))
                         .clickable { onHistory() },
                     contentAlignment = Alignment.Center
                 ) {
@@ -393,7 +422,7 @@ private fun BottomPanel(
                 }
             }
 
-            // 快门
+            // 快门按钮（增强版 - iOS 风格）
             ShutterButton(isReady = vm.isReady, isCapturing = isCapturing, onClick = { vm.handleShutterTap() })
 
             // 右侧：切换摄像头 + 倒计时
@@ -402,7 +431,7 @@ private fun BottomPanel(
                     modifier = Modifier
                         .size(48.dp)
                         .background(Brand.Surface.copy(alpha = 0.9f), CircleShape)
-                        .border(1.dp, Brand.Hairline, CircleShape)
+                        .border(1.dp, Brand.Border, CircleShape)
                         .clickable { vm.manager.switchCamera() },
                     contentAlignment = Alignment.Center
                 ) {
@@ -419,7 +448,7 @@ private fun BottomPanel(
                         )
                         .border(
                             1.dp,
-                            if (timerSeconds > 0) Brand.Accent.copy(alpha = 0.6f) else Brand.Hairline,
+                            if (timerSeconds > 0) Brand.Accent.copy(alpha = 0.6f) else Brand.Border,
                             CircleShape
                         )
                         .clickable { vm.cycleTimer() },
@@ -437,34 +466,107 @@ private fun BottomPanel(
     }
 }
 
+/**
+ * 增强版快门按钮——复刻 iOS ShutterButton。
+ * 带呼吸光晕、渐变填充、按下缩放反馈。
+ */
 @Composable
 private fun ShutterButton(isReady: Boolean, isCapturing: Boolean, onClick: () -> Unit) {
+    val infiniteTransition = rememberInfiniteTransition(label = "shutterBreath")
+    val breathScale by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1400),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+        ),
+        label = "breathScale"
+    )
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1400),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+        ),
+        label = "glowAlpha"
+    )
+    val pressedScale by animateFloatAsState(
+        targetValue = if (isCapturing) 0.92f else 1.0f,
+        animationSpec = spring(response = 0.25f, dampingRatio = 0.6f),
+        label = "pressedScale"
+    )
+
+    val borderColor = if (isReady) Brand.Success else Color.White.copy(alpha = 0.6f)
+    val innerGradient = if (isReady) {
+        Brush.radialGradient(
+            colors = listOf(Color.White, Brand.Success),
+            center = Offset(0.3f, 0.3f)
+        )
+    } else {
+        Brush.radialGradient(
+            colors = listOf(Color.White, Color(0xFFE8E8E8)),
+            center = Offset(0.3f, 0.3f)
+        )
+    }
+
     Box(
         modifier = Modifier
-            .size(88.dp)
-            .border(2.5f.dp, if (isReady) Brand.Success else Color.White.copy(alpha = 0.55f), CircleShape)
-            .background(
-                if (isReady) Brand.Success else Color.White.copy(alpha = 0.9f),
-                CircleShape
-            )
+            .size(100.dp)
+            .graphicsLayer {
+                scaleX = breathScale * pressedScale
+                scaleY = breathScale * pressedScale
+            }
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        if (!isReady) {
-            Box(Modifier.size(28.dp).background(Color.Black.copy(alpha = 0.15f), CircleShape))
-        }
-        if (isCapturing) {
-            Box(
-                Modifier.size(24.dp)
-                    .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
-            )
+        // 外发光光晕
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .background(
+                    if (isReady) Brand.Success.copy(alpha = glowAlpha * 0.4f)
+                    else Color.White.copy(alpha = glowAlpha * 0.2f),
+                    CircleShape
+                )
+        )
+
+        // 外圈边框
+        Box(
+            modifier = Modifier
+                .size(92.dp)
+                .border(3.5.dp, borderColor, CircleShape)
+                .background(innerGradient, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            if (!isReady) {
+                // 未就绪 - 深色内部
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .background(Color.Black.copy(alpha = 0.18f), CircleShape)
+                )
+            }
+            if (isCapturing) {
+                // 录制中 - 脉冲方块
+                Box(
+                    modifier = Modifier
+                        .size(26.dp)
+                        .background(Color.Black.copy(alpha = 0.35f), RoundedCornerShape(6.dp))
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun CompositionTipOverlay(plan: ShootingPlan) {
-    Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 24.dp, vertical = 72.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = 24.dp, vertical = 72.dp)
+    ) {
         Row(
             modifier = Modifier
                 .background(Brand.Surface.copy(alpha = 0.92f), RoundedCornerShape(Brand.Radius.Lg))
@@ -474,32 +576,30 @@ private fun CompositionTipOverlay(plan: ShootingPlan) {
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Box(
-                Modifier.size(36.dp).background(Brand.Accent.copy(alpha = 0.2f), CircleShape),
+                Modifier.size(36.dp)
+                    .background(Brand.Accent.copy(alpha = 0.2f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text(plan.composition.displayName.take(2), color = Brand.Accent, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Text(
+                    plan.composition.displayName.take(2),
+                    color = Brand.Accent,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
             Column {
-                Text("${plan.composition.displayName} 构图", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                Text(plan.composition.reason, color = Brand.TextSecondary, fontSize = 11.sp, maxLines = 2)
-            }
-        }
-    }
-}
-
-@Composable
-private fun AiBanner(text: String) {
-    Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 24.dp, vertical = 62.dp)) {
-        Row(
-            modifier = Modifier
-                .background(Brand.Surface.copy(alpha = 0.92f), RoundedCornerShape(Brand.Radius.Lg))
-                .border(1.5f.dp, Brand.AccentSoft.copy(alpha = 0.6f), RoundedCornerShape(Brand.Radius.Lg))
-                .padding(horizontal = 20.dp, vertical = 14.dp),
-        ) {
-            Text("✨", fontSize = 20.sp)
-            Column(Modifier.padding(start = 12.dp)) {
-                Text("AI 构图灵感", color = Brand.AccentSoft, fontSize = 13.sp, fontWeight = FontWeight.Black)
-                Text(text, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Text(
+                    "${plan.composition.displayName} 构图",
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    plan.composition.reason,
+                    color = Brand.TextSecondary,
+                    fontSize = 11.sp,
+                    maxLines = 2
+                )
             }
         }
     }
@@ -518,7 +618,12 @@ private fun LowLightBanner() {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text("💡", fontSize = 13.sp)
-        Text(" 光线不足，移到明亮处效果更好", color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+        Text(
+            " 光线不足，移到明亮处效果更好",
+            color = Color.White.copy(alpha = 0.9f),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
@@ -534,7 +639,12 @@ private fun PitchWarning() {
             horizontalArrangement = Arrangement.Center
         ) {
             Text("⚠️", color = Brand.Coral, fontSize = 14.sp)
-            Text(" 请平行或低角度拍摄，显腿更长", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                " 请平行或低角度拍摄，显腿更长",
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }
@@ -550,7 +660,12 @@ private fun SpaceTip() {
                 .padding(horizontal = 18.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.Center
         ) {
-            Text("尝试平移留出一点空白，更有氛围感", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                "尝试平移留出一点空白，更有氛围感",
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }
@@ -573,31 +688,13 @@ private fun AngleGuide(reqPitch: Float, devicePitch: Float) {
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
-                if (isReaching) "机位正确，保持稳定" else if (reqPitch > 0) "请摄影师继续下蹲仰拍" else "请摄影师抬高俯拍",
-                color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold
+                if (isReaching) "机位正确，保持稳定"
+                else if (reqPitch > 0) "请摄影师继续下蹲仰拍"
+                else "请摄影师抬高俯拍",
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
             )
         }
-    }
-}
-
-@Composable
-private fun VlogTextOverlay(text: String, isRecording: Boolean) {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .navigationBarsPadding()
-            .padding(bottom = 120.dp),
-        verticalArrangement = Arrangement.Bottom,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text,
-            color = Color.White,
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Black,
-            modifier = Modifier
-                .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
-                .padding(horizontal = 24.dp, vertical = 16.dp)
-        )
     }
 }
