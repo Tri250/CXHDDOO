@@ -277,60 +277,26 @@ fun ContentScreen(
             AiAdvisorBanner(aiSuggestion!!)
         }
 
-        // 构图提示
+        // 构图提示（位置在 TopBar 下方 8dp，避免双重 statusBarsPadding）
         if (showCompositionTip && plan != null && !isImmersive) {
             CompositionTipOverlay(plan)
         }
 
-        // 暗光提示
-        if (isLowLight && isSceneReady && !isImmersive) {
+        // 暗光提示（位于构图提示下方）
+        if (isLowLight && isSceneReady && !isImmersive && !showCompositionTip) {
             LowLightBanner()
         }
 
-        // 俯拍警告
-        if (devicePitch < -0.35f && !isImmersive) {
-            PitchWarning()
-        }
+        // 底部提示（互斥显示，优先级：俯仰警告 > 留白 > 角度）
+        // 放在 BottomPanel 之后渲染，确保在其上方显示
+        val showBottomTip = devicePitch < -0.35f || 
+            (showSpaceTip && devicePitch >= -0.35f && !showCompositionTip) ||
+            (plan?.multiAngles?.let { multi -> 
+                val hasAngle = activeAngleIndex < multi.size && multi[activeAngleIndex].requiredPitch != null
+                hasAngle && !isImmersive && devicePitch >= -0.35f && !showSpaceTip && !showCompositionTip
+            } ?: false)
 
-        // 留白提醒
-        if (showSpaceTip && devicePitch >= -0.35f && !showCompositionTip && !isImmersive) {
-            SpaceTip()
-        }
-
-        // 多机位角度指示
-        plan?.multiAngles?.let { multi ->
-            if (activeAngleIndex < multi.size && multi[activeAngleIndex].requiredPitch != null && !isImmersive) {
-                AngleGuide(multi[activeAngleIndex].requiredPitch!!, devicePitch)
-            }
-        }
-
-        // Vlog 提词器
-        if (displayVlogText != null && !isImmersive) {
-            VlogTextOverlay(displayVlogText!!, isVlogRecording)
-        }
-
-        // 录制进度（Vlog）
-        if (isVlogRecording && activeVlogClipIndex < (plan?.vlogScript?.clips?.size ?: 0)) {
-            val totalClips = plan?.vlogScript?.clips?.size ?: 1
-            RecordingProgressBar(
-                current = activeVlogClipIndex + 1,
-                total = totalClips,
-                label = "Vlog 拍摄中 ${activeVlogClipIndex + 1}/$totalClips"
-            )
-        }
-
-        // 拍摄进度指示（连拍/序列）
-        if (isCapturing && expectedBurstCount > 1 && !isVlogRecording) {
-            BurstProgressIndicator(
-                current = max(capturedShotsCount, burstImages.size),
-                total = expectedBurstCount,
-                isSequence = plan?.sequence != null,
-                sequenceIndex = activeSequenceIndex,
-                sequenceTotal = plan?.sequence?.size ?: 1
-            )
-        }
-
-        // 底部控制区
+        // Bottom control area
         BottomPanel(
             vm = vm,
             isSceneReady = isSceneReady && vm.availablePlans.isNotEmpty(),
@@ -346,20 +312,64 @@ fun ContentScreen(
                 vm.setZoom(newZoom)
             },
             onHistory = onShowHistory,
-            onStats = onShowStats
+            onStats = onShowStats,
+            showBottomSpacing = showBottomTip
         )
 
-        // 快门闪光
+        // 底部安全提示条（显示在 BottomPanel 上方或内部）
+        if (!isImmersive) {
+            when {
+                devicePitch < -0.35f -> PitchWarning()
+                showSpaceTip && devicePitch >= -0.35f && !showCompositionTip -> SpaceTip()
+                else -> {
+                    plan?.multiAngles?.let { multi ->
+                        if (activeAngleIndex < multi.size && multi[activeAngleIndex].requiredPitch != null) {
+                            AngleGuide(multi[activeAngleIndex].requiredPitch!!, devicePitch)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Vlog 提词器
+        if (displayVlogText != null && !isImmersive) {
+            VlogTextOverlay(displayVlogText!!, isVlogRecording, screenH / localDensity.density)
+        }
+
+        // 录制进度（Vlog）
+        if (isVlogRecording && activeVlogClipIndex < (plan?.vlogScript?.clips?.size ?: 0)) {
+            val totalClips = plan?.vlogScript?.clips?.size ?: 1
+            val topOffset = screenH / localDensity.density * 0.18f
+            RecordingProgressBar(
+                current = activeVlogClipIndex + 1,
+                total = totalClips,
+                label = "Vlog 拍摄中 ${activeVlogClipIndex + 1}/$totalClips",
+                topOffsetDp = topOffset
+            )
+        }
+
+        // 拍摄进度指示（连拍/序列）
+        if (isCapturing && expectedBurstCount > 1 && !isVlogRecording) {
+            val burstTopOffset = screenH / localDensity.density * 0.19f
+            BurstProgressIndicator(
+                current = max(capturedShotsCount, burstImages.size),
+                total = expectedBurstCount,
+                isSequence = plan?.sequence != null,
+                sequenceIndex = activeSequenceIndex,
+                sequenceTotal = plan?.sequence?.size ?: 1,
+                topOffsetDp = burstTopOffset
+            )
+        }
+
+        // 快门闪光 + 倒计时（在所有内容之上）
         if (showShutterFlash) {
             ShutterFlashOverlay()
         }
 
-        // 倒计时动画
         if (countdown > 0) {
             AnimatedCountdown(countdown)
         }
 
-        // 录制倒计时
         if (isRecordingMode && recordCountdown > 0) {
             AnimatedCountdown(recordCountdown, isRecording = true)
         }
@@ -460,7 +470,8 @@ private fun BottomPanel(
     zoomLevel: Float,
     onZoomChange: (Float) -> Unit,
     onHistory: () -> Unit,
-    onStats: () -> Unit
+    onStats: () -> Unit,
+    showBottomSpacing: Boolean = false
 ) {
     val listState = rememberLazyListState()
 
@@ -479,7 +490,7 @@ private fun BottomPanel(
                     listOf(Color.Black.copy(alpha = 0f), Color.Black.copy(alpha = 0.7f))
                 )
             )
-            .padding(top = 4.dp)
+            .padding(top = if (showBottomSpacing) 80.dp else 4.dp)
             .navigationBarsPadding()
     ) {
         // 变焦水平条
@@ -771,12 +782,13 @@ private fun BurstProgressIndicator(
     total: Int,
     isSequence: Boolean,
     sequenceIndex: Int,
-    sequenceTotal: Int
+    sequenceTotal: Int,
+    topOffsetDp: Float = 140f
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 140.dp),
+            .padding(top = topOffsetDp.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(
@@ -960,9 +972,8 @@ private fun CompositionTipOverlay(plan: ShootingPlan) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .statusBarsPadding()
             .padding(horizontal = 24.dp)
-            .padding(top = 52.dp)
+            .padding(top = 8.dp)
     ) {
         Row(
             modifier = Modifier
@@ -993,8 +1004,8 @@ private fun LowLightBanner() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .statusBarsPadding()
             .padding(horizontal = 24.dp)
+            .padding(top = 8.dp)
             .background(Brand.Surface, CircleShape)
             .padding(horizontal = 14.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.Center,
@@ -1010,14 +1021,24 @@ private fun LowLightBanner() {
     }
 }
 
+/**
+ * 底部安全提示条——显示在 BottomPanel 上方。
+ * 使用 align(Alignment.BottomCenter) 定位到屏幕底部。
+ */
 @Composable
-private fun PitchWarning() {
-    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom) {
+private fun PitchWarning(bottomOffset: Float = 220f) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .align(Alignment.BottomCenter)
+            .navigationBarsPadding()
+            .padding(bottom = bottomOffset.dp),
+        contentAlignment = Alignment.BottomCenter
+    ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .background(Brand.Surface, CircleShape)
+                .background(Brand.Surface, RoundedCornerShape(16.dp))
+                .border(1.dp, Brand.Coral.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
                 .padding(horizontal = 18.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.Center
         ) {
@@ -1033,13 +1054,18 @@ private fun PitchWarning() {
 }
 
 @Composable
-private fun SpaceTip() {
-    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom) {
+private fun SpaceTip(bottomOffset: Float = 220f) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .align(Alignment.BottomCenter)
+            .navigationBarsPadding()
+            .padding(bottom = bottomOffset.dp),
+        contentAlignment = Alignment.BottomCenter
+    ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .background(Brand.Surface, CircleShape)
+                .background(Brand.Surface, RoundedCornerShape(16.dp))
                 .padding(horizontal = 18.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.Center
         ) {
@@ -1054,15 +1080,20 @@ private fun SpaceTip() {
 }
 
 @Composable
-private fun AngleGuide(reqPitch: Float, devicePitch: Float) {
+private fun AngleGuide(reqPitch: Float, devicePitch: Float, bottomOffset: Float = 220f) {
     val isReaching = (reqPitch > 0 && devicePitch >= reqPitch) || (reqPitch < 0 && devicePitch <= reqPitch)
-    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .align(Alignment.BottomCenter)
+            .navigationBarsPadding()
+            .padding(bottom = bottomOffset.dp),
+        contentAlignment = Alignment.BottomCenter
+    ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .background(Brand.Surface, CircleShape)
-                .border(2.dp, if (isReaching) Brand.Success.copy(alpha = 0.8f) else Brand.Coral.copy(alpha = 0.8f), CircleShape)
+                .background(Brand.Surface, RoundedCornerShape(16.dp))
+                .border(2.dp, if (isReaching) Brand.Success.copy(alpha = 0.8f) else Brand.Coral.copy(alpha = 0.8f), RoundedCornerShape(16.dp))
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.Center
         ) {

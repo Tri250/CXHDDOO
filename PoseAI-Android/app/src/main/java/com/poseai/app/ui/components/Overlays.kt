@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.shape.CircleShape
@@ -36,8 +37,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -202,6 +206,7 @@ fun CompositionGuideLines(composition: CompositionRule?) {
 /**
  * 增强版评分环——复刻 iOS scoreRing。
  * 带外发光、渐变进度弧、对齐时缩放脉冲效果。
+ * 48dp 紧凑尺寸适配顶部信息栏。
  */
 @Composable
 fun ScoreRing(score: Float, isReady: Boolean) {
@@ -222,24 +227,24 @@ fun ScoreRing(score: Float, isReady: Boolean) {
     )
 
     Box(
-        modifier = Modifier.size(64.dp).graphicsLayer {
+        modifier = Modifier.size(48.dp).graphicsLayer {
             scaleX = scaleAnim
             scaleY = scaleAnim
         },
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.size(64.dp)) {
+        Canvas(modifier = Modifier.size(48.dp)) {
             val cx = size.width / 2
             val cy = size.height / 2
-            val r = size.minDimension / 2 - 6f
+            val r = size.minDimension / 2 - 4f
 
             // 外发光（对齐时）
             if (isReady) {
                 drawCircle(
                     color = Brand.Success.copy(alpha = glowAlpha),
-                    radius = r + 4f,
+                    radius = r + 3f,
                     center = Offset(cx, cy),
-                    style = Stroke(width = 4f)
+                    style = Stroke(width = 3f)
                 )
             }
 
@@ -249,7 +254,7 @@ fun ScoreRing(score: Float, isReady: Boolean) {
                 startAngle = -90f,
                 sweepAngle = 360f,
                 useCenter = false,
-                style = Stroke(width = 3.5f, cap = StrokeCap.Round)
+                style = Stroke(width = 3f, cap = StrokeCap.Round)
             )
 
             // 进度弧 - 使用渐变色
@@ -275,13 +280,13 @@ fun ScoreRing(score: Float, isReady: Boolean) {
                 startAngle = -90f,
                 sweepAngle = 360f * progress,
                 useCenter = false,
-                style = Stroke(width = 3.5f, cap = StrokeCap.Round)
+                style = Stroke(width = 3f, cap = StrokeCap.Round)
             )
         }
         Text(
             text = "${score.toInt()}",
             color = Color.White,
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Black
         )
     }
@@ -510,13 +515,15 @@ fun LowLightGlowOverlay() {
 
 /**
  * AI 构图灵感浮层——复刻 iOS aiAdvisorBanner。
+ * 适配刘海屏，使用 statusBarsPadding。
  */
 @Composable
 fun AiAdvisorBanner(text: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 120.dp)
+            .statusBarsPadding()
+            .padding(top = 60.dp)
             .padding(horizontal = 24.dp)
     ) {
         Row(
@@ -549,13 +556,15 @@ fun AiAdvisorBanner(text: String) {
 
 /**
  * Vlog 提词器覆盖层——复刻 iOS vlogTextOverlay。
+ * 位置自适应，基于屏幕高度动态计算底部偏移。
  */
 @Composable
-fun VlogTextOverlay(text: String, isRecording: Boolean) {
+fun VlogTextOverlay(text: String, isRecording: Boolean, screenHeightDp: Float = 800f) {
+    val bottomOffset = (screenHeightDp * 0.28f).dp
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(bottom = 280.dp),
+            .padding(bottom = bottomOffset),
         verticalArrangement = Arrangement.Bottom,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -674,6 +683,7 @@ fun PlanCard(plan: ShootingPlan, isSelected: Boolean, onClick: () -> Unit) {
 /**
  * 点击对焦指示动画——国内手机相机标准体验。
  * 十字对焦框 + 脉冲动画，1.5秒后自动消失。
+ * 使用实际屏幕尺寸进行边界保护。
  */
 @Composable
 fun FocusIndicator(point: Offset) {
@@ -695,16 +705,23 @@ fun FocusIndicator(point: Offset) {
         label = "focusAlpha"
     )
 
+    // 获取屏幕尺寸用于边界保护
+    val configuration = LocalConfiguration.current
+    val localDensity = LocalDensity.current
+    val screenWidthPx = with(localDensity) { configuration.screenWidthDp.dp.toPx() }
+    val screenHeightPx = with(localDensity) { configuration.screenHeightDp.dp.toPx() }
+
+    val indicatorSizePx = 70.dp.toPx()
+    val halfSize = indicatorSizePx / 2f
+
     // 边界保护：确保对焦框不会超出屏幕
-    val indicatorSize = 70
-    val halfSize = indicatorSize / 2
-    val clampedX = point.x.toInt().coerceIn(halfSize, 10000 - halfSize)
-    val clampedY = point.y.toInt().coerceIn(halfSize, 10000 - halfSize)
+    val clampedX = point.x.coerceIn(halfSize, screenWidthPx - halfSize)
+    val clampedY = point.y.coerceIn(halfSize, screenHeightPx - halfSize)
 
     Box(
         modifier = Modifier
-            .offset { IntOffset(clampedX - halfSize, clampedY - halfSize) }
-            .size(indicatorSize.dp)
+            .offset { IntOffset((clampedX - halfSize).toInt(), (clampedY - halfSize).toInt()) }
+            .size(70.dp)
             .graphicsLayer {
                 scaleX = scaleAnim
                 scaleY = scaleAnim
@@ -789,14 +806,15 @@ fun ZoomLevelIndicator(
 /**
  * Vlog/多机位录制进度条——国内视频录制体验。
  * 显示当前片段进度和总体进度。
+ * @param topOffsetDp 顶部偏移（dp），由 ContentScreen 根据屏幕高度计算传入
  */
 @Composable
-fun RecordingProgressBar(current: Int, total: Int, label: String) {
+fun RecordingProgressBar(current: Int, total: Int, label: String, topOffsetDp: Float = 130f) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .padding(top = 130.dp)
+            .padding(top = topOffsetDp.dp)
     ) {
         Column(
             modifier = Modifier
