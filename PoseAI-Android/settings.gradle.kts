@@ -2,6 +2,8 @@ pluginManagement {
     repositories {
         // Primary Google Maven repository (AGP and Android artifacts)
         google()
+        // Aliyun mirror (fallback for network-restricted environments like GitHub Actions)
+        maven { url = uri("https://maven.aliyun.com/repository/google/") }
         // Alternative Google Maven URL (fallback)
         maven { url = uri("https://maven.google.com/dl/android/maven2/") }
         // Maven Central (fallback for non-Android artifacts)
@@ -16,6 +18,8 @@ dependencyResolutionManagement {
     repositories {
         // Primary Google Maven repository
         google()
+        // Aliyun mirror (fallback for network-restricted environments)
+        maven { url = uri("https://maven.aliyun.com/repository/google/") }
         // Alternative Google Maven URL (fallback)
         maven { url = uri("https://maven.google.com/dl/android/maven2/") }
         // Maven Central

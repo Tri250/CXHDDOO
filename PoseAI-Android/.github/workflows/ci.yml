@@ -37,6 +37,32 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Network diagnostics
+        run: |
+          echo "=== Testing network connectivity ==="
+          echo "--- services.gradle.org ---"
+          curl -sI --connect-timeout 10 https://services.gradle.org/distributions/gradle-8.9-bin.zip 2>&1 | head -3 || echo "FAILED"
+          echo "--- dl.google.com ---"
+          curl -sI --connect-timeout 10 https://dl.google.com/dl/android/maven2/ 2>&1 | head -3 || echo "FAILED"
+          echo "--- maven.google.com ---"
+          curl -sI --connect-timeout 10 https://maven.google.com/dl/android/maven2/ 2>&1 | head -3 || echo "FAILED"
+          echo "--- repo1.maven.org ---"
+          curl -sI --connect-timeout 10 https://repo1.maven.org/maven2/ 2>&1 | head -3 || echo "FAILED"
+          echo "--- plugins.gradle.org ---"
+          curl -sI --connect-timeout 10 https://plugins.gradle.org/m2/ 2>&1 | head -3 || echo "FAILED"
+
+      - name: Create gradle.properties for network resilience
+        run: |
+          mkdir -p PoseAI-Android
+          cat > PoseAI-Android/gradle.properties << 'EOF'
+          org.gradle.daemon=false
+          org.gradle.parallel=true
+          org.gradle.internal.http.connectionTimeout=120000
+          org.gradle.internal.http.socketTimeout=120000
+          org.gradle.internal.http.maxRedirects=5
+          EOF
+          cat PoseAI-Android/gradle.properties
+
       - name: Build Debug APK
         working-directory: PoseAI-Android
         env:
