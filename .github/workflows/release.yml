@@ -52,42 +52,20 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Pre-populate Gradle wrapper cache
+      - name: Debug environment
         run: |
-          # Gradle wrapper cache hash uses: md5(protocol:host+path)
-          # https://issues.gradle.org/browse/GRADLE-??? -> source: Wrapper.getHash()
-          # For https://services.gradle.org/distributions/gradle-8.9-bin.zip:
-          #   md5("https:" + "services.gradle.org" + "/distributions/gradle-8.9-bin.zip")
-          #   = md5("https:services.gradle.org/distributions/gradle-8.9-bin.zip")
-          #   = ac11646c
-          GRADLE_VERSION="8.9"
-          WRAPPER_HASH="ac11646c"
-          CACHE_DIR="$HOME/.gradle/wrapper/dists/gradle-${GRADLE_VERSION}-bin/${WRAPPER_HASH}"
-          mkdir -p "$CACHE_DIR"
-          
-          # Download Gradle distribution
-          for i in 1 2 3; do
-            if curl -fsSL --connect-timeout 30 --max-time 300 \
-              "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" \
-              -o "$CACHE_DIR/gradle-${GRADLE_VERSION}-bin.zip"; then
-              echo "Gradle ${GRADLE_VERSION} downloaded successfully"
-              break
-            fi
-            echo "Download attempt $i failed, retrying in $((i * 5))s..."
-            sleep $((i * 5))
-          done
-          
-          if [ -f "$CACHE_DIR/gradle-${GRADLE_VERSION}-bin.zip" ]; then
-            # Create marker file to indicate complete download
-            touch "$CACHE_DIR/gradle-${GRADLE_VERSION}-bin.zip.ok"
-            # Create lock file (wrapper checks for this)
-            touch "$CACHE_DIR/gradle-${GRADLE_VERSION}-bin.zip.lck"
-            echo "Gradle wrapper cache ready at $CACHE_DIR"
-            ls -la "$CACHE_DIR/"
-          else
-            echo "ERROR: Failed to download Gradle distribution after 3 attempts"
-            exit 1
-          fi
+          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
+          echo "GRADLE_USER_HOME=$GRADLE_USER_HOME"
+          echo "PATH=$PATH"
+          which gradle
+          gradle --version
+          ls -la $GRADLE_USER_HOME/wrapper/dists/gradle-8.9-bin/ 2>/dev/null
+          echo "---"
+          # Find the gradle binary
+          find $GRADLE_USER_HOME -name "gradle" -type f 2>/dev/null | head -5
+          echo "---"
+          # List project directory
+          ls -la $GITHUB_WORKSPACE/PoseAI-Android/ | head -10
 
       - name: Resolve version & tag
         id: version
