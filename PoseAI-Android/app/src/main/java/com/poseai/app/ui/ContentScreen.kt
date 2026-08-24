@@ -13,20 +13,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.outlined.QuestionMark
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,12 +33,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -150,7 +147,7 @@ fun ContentScreen(
             }
         }
 
-        // 顶部信息栏
+        // 顶部信息栏（含安全区）
         if (!isImmersive) {
             TopBar(
                 scene = scene,
@@ -203,7 +200,7 @@ fun ContentScreen(
             VlogTextOverlay(displayVlogText!!, isVlogRecording)
         }
 
-        // 底部控制区
+        // 底部控制区（含导航栏安全区）
         BottomPanel(
             vm = vm,
             isSceneReady = isSceneReady && vm.availablePlans.isNotEmpty(),
@@ -237,7 +234,6 @@ fun ContentScreen(
 }
 
 private fun toComposeRect(bbox: android.graphics.RectF): Rect =
-    // bbox 为归一化坐标（x 右，y 上），转换为 Compose 的 y 向下表示
     Rect(
         left = bbox.left,
         top = 1f - bbox.bottom,
@@ -261,21 +257,22 @@ private fun TopBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 18.dp, vertical = 12.dp),
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (isSceneReady && plan != null) {
             Row(
                 modifier = Modifier
-                    .background(Brand.Surface, RoundedCornerShape(16.dp))
-                    .border(1.dp, Brand.Hairline, RoundedCornerShape(16.dp))
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                    .background(Brand.Surface.copy(alpha = 0.92f), RoundedCornerShape(14.dp))
+                    .border(1.dp, Brand.Hairline, RoundedCornerShape(14.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(scene.icon, fontSize = 15.sp)
+                Text(scene.icon, fontSize = 14.sp)
                 Column {
-                    Text(scene.displayName, color = Brand.TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                    Text(scene.displayName, color = Brand.TextTertiary, fontSize = 11.sp, fontWeight = FontWeight.Medium)
                     val subtitle = when {
                         plan.vlogScript != null && activeVlogClipIndex < plan.vlogScript.clips.size ->
                             "Vlog [分镜 ${activeVlogClipIndex + 1}/${plan.vlogScript.clips.size}]"
@@ -287,8 +284,13 @@ private fun TopBar(
                     }
                     Text(
                         subtitle,
-                        color = if (plan.sequence != null) Brand.Success else if (plan.multiAngles != null) Brand.Coral else Color.White,
-                        fontSize = 15.sp, fontWeight = FontWeight.Bold
+                        color = when {
+                            plan.sequence != null -> Brand.Success
+                            plan.multiAngles != null -> Brand.Coral
+                            else -> Color.White
+                        },
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
@@ -300,13 +302,13 @@ private fun TopBar(
         Spacer(Modifier.size(10.dp))
         Box(
             modifier = Modifier
-                .size(40.dp)
-                .background(Brand.Surface, CircleShape)
+                .size(44.dp)
+                .background(Brand.Surface.copy(alpha = 0.92f), CircleShape)
                 .border(1.dp, Brand.Hairline, CircleShape)
                 .clickable { onGuide() },
             contentAlignment = Alignment.Center
         ) {
-            Text("？", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text("？", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -326,8 +328,13 @@ private fun BottomPanel(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.Black.copy(alpha = 0.4f))
-            .padding(top = 10.dp, bottom = 30.dp)
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color.Black.copy(alpha = 0f), Color.Black.copy(alpha = 0.55f))
+                )
+            )
+            .padding(top = 6.dp)
+            .navigationBarsPadding()
     ) {
         if (isSceneReady && !isImmersive) {
             LazyRow(
@@ -337,8 +344,12 @@ private fun BottomPanel(
                 item {
                     Column(
                         modifier = Modifier
-                            .border(1.dp, if (isRecordingMode) Brand.Coral else Brand.Hairline, RoundedCornerShape(12.dp))
-                            .background(Brand.Surface, RoundedCornerShape(12.dp))
+                            .border(
+                                1.dp,
+                                if (isRecordingMode) Brand.Coral else Brand.Hairline,
+                                RoundedCornerShape(Brand.Radius.Md)
+                            )
+                            .background(Brand.Surface.copy(alpha = 0.9f), RoundedCornerShape(Brand.Radius.Md))
                             .padding(horizontal = 14.dp, vertical = 10.dp)
                             .clickable { vm.startRecordingCustomPlan() },
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -362,18 +373,19 @@ private fun BottomPanel(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 28.dp, vertical = 14.dp),
+                .padding(horizontal = 24.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // 左侧：历史按钮
             Box(
                 modifier = Modifier.weight(1f),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
                     modifier = Modifier
-                        .size(50.dp)
-                        .background(Brand.Surface, RoundedCornerShape(12.dp))
-                        .border(1.dp, Brand.Hairline, RoundedCornerShape(12.dp))
+                        .size(52.dp)
+                        .background(Brand.Surface.copy(alpha = 0.9f), RoundedCornerShape(Brand.Radius.Md))
+                        .border(1.dp, Brand.Hairline, RoundedCornerShape(Brand.Radius.Md))
                         .clickable { onHistory() },
                     contentAlignment = Alignment.Center
                 ) {
@@ -384,31 +396,41 @@ private fun BottomPanel(
             // 快门
             ShutterButton(isReady = vm.isReady, isCapturing = isCapturing, onClick = { vm.handleShutterTap() })
 
+            // 右侧：切换摄像头 + 倒计时
             Row(Modifier.weight(1f), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-                // 切换摄像头
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
-                        .background(Brand.Surface, CircleShape)
+                        .size(48.dp)
+                        .background(Brand.Surface.copy(alpha = 0.9f), CircleShape)
                         .border(1.dp, Brand.Hairline, CircleShape)
                         .clickable { vm.manager.switchCamera() },
                     contentAlignment = Alignment.Center
                 ) {
                     Text("🔄", fontSize = 18.sp)
                 }
-                Spacer(Modifier.size(12.dp))
-                // 倒计时
+                Spacer(Modifier.size(10.dp))
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
-                        .background(if (timerSeconds > 0) Brand.Accent.copy(alpha = 0.18f) else Brand.Surface, CircleShape)
-                        .border(1.dp, if (timerSeconds > 0) Brand.Accent.copy(alpha = 0.6f) else Brand.Hairline, CircleShape)
+                        .size(48.dp)
+                        .background(
+                            if (timerSeconds > 0) Brand.Accent.copy(alpha = 0.18f)
+                            else Brand.Surface.copy(alpha = 0.9f),
+                            CircleShape
+                        )
+                        .border(
+                            1.dp,
+                            if (timerSeconds > 0) Brand.Accent.copy(alpha = 0.6f) else Brand.Hairline,
+                            CircleShape
+                        )
                         .clickable { vm.cycleTimer() },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(if (timerSeconds == 0) "⏱" else "${timerSeconds}s",
-                        fontSize = 14.sp, fontWeight = FontWeight.Bold,
-                        color = if (timerSeconds > 0) Brand.Accent else Brand.TextSecondary)
+                    Text(
+                        if (timerSeconds == 0) "⏱" else "${timerSeconds}s",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (timerSeconds > 0) Brand.Accent else Brand.TextSecondary
+                    )
                 }
             }
         }
@@ -419,7 +441,7 @@ private fun BottomPanel(
 private fun ShutterButton(isReady: Boolean, isCapturing: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .size(82.dp)
+            .size(88.dp)
             .border(2.5f.dp, if (isReady) Brand.Success else Color.White.copy(alpha = 0.55f), CircleShape)
             .background(
                 if (isReady) Brand.Success else Color.White.copy(alpha = 0.9f),
@@ -429,23 +451,32 @@ private fun ShutterButton(isReady: Boolean, isCapturing: Boolean, onClick: () ->
         contentAlignment = Alignment.Center
     ) {
         if (!isReady) {
-            Box(Modifier.size(26.dp).background(Color.Black.copy(alpha = 0.15f), CircleShape))
+            Box(Modifier.size(28.dp).background(Color.Black.copy(alpha = 0.15f), CircleShape))
+        }
+        if (isCapturing) {
+            Box(
+                Modifier.size(24.dp)
+                    .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
+            )
         }
     }
 }
 
 @Composable
 private fun CompositionTipOverlay(plan: ShootingPlan) {
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 130.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 24.dp, vertical = 72.dp)) {
         Row(
             modifier = Modifier
-                .background(Brand.Surface.copy(alpha = 0.9f), RoundedCornerShape(16.dp))
-                .border(1.dp, Brand.Accent.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
+                .background(Brand.Surface.copy(alpha = 0.92f), RoundedCornerShape(Brand.Radius.Lg))
+                .border(1.dp, Brand.Accent.copy(alpha = 0.35f), RoundedCornerShape(Brand.Radius.Lg))
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Box(Modifier.size(34.dp).background(Brand.Accent.copy(alpha = 0.2f), CircleShape), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier.size(36.dp).background(Brand.Accent.copy(alpha = 0.2f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
                 Text(plan.composition.displayName.take(2), color = Brand.Accent, fontSize = 14.sp, fontWeight = FontWeight.Medium)
             }
             Column {
@@ -458,12 +489,12 @@ private fun CompositionTipOverlay(plan: ShootingPlan) {
 
 @Composable
 private fun AiBanner(text: String) {
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 120.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 24.dp, vertical = 62.dp)) {
         Row(
             modifier = Modifier
-                .background(Brand.Surface.copy(alpha = 0.9f), RoundedCornerShape(20.dp))
-                .border(1.5f.dp, Brand.AccentSoft.copy(alpha = 0.6f), RoundedCornerShape(20.dp))
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .background(Brand.Surface.copy(alpha = 0.92f), RoundedCornerShape(Brand.Radius.Lg))
+                .border(1.5f.dp, Brand.AccentSoft.copy(alpha = 0.6f), RoundedCornerShape(Brand.Radius.Lg))
+                .padding(horizontal = 20.dp, vertical = 14.dp),
         ) {
             Text("✨", fontSize = 20.sp)
             Column(Modifier.padding(start = 12.dp)) {
@@ -477,8 +508,12 @@ private fun AiBanner(text: String) {
 @Composable
 private fun LowLightBanner() {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 110.dp).padding(horizontal = 24.dp)
-            .background(Brand.Surface.copy(alpha = 0.9f), CircleShape).padding(horizontal = 16.dp, vertical = 10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = 24.dp)
+            .background(Brand.Surface.copy(alpha = 0.92f), CircleShape)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -491,10 +526,11 @@ private fun LowLightBanner() {
 private fun PitchWarning() {
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom) {
         Row(
-            modifier = Modifier.fillMaxWidth()
-                .background(Brand.Surface.copy(alpha = 0.9f), CircleShape)
-                .padding(horizontal = 18.dp, vertical = 12.dp)
-                .padding(bottom = 150.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .background(Brand.Surface.copy(alpha = 0.92f), CircleShape)
+                .padding(horizontal = 18.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.Center
         ) {
             Text("⚠️", color = Brand.Coral, fontSize = 14.sp)
@@ -507,10 +543,11 @@ private fun PitchWarning() {
 private fun SpaceTip() {
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom) {
         Row(
-            modifier = Modifier.fillMaxWidth()
-                .background(Brand.Surface.copy(alpha = 0.9f), CircleShape)
-                .padding(horizontal = 18.dp, vertical = 12.dp)
-                .padding(bottom = 150.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .background(Brand.Surface.copy(alpha = 0.92f), CircleShape)
+                .padding(horizontal = 18.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.Center
         ) {
             Text("尝试平移留出一点空白，更有氛围感", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
@@ -523,11 +560,16 @@ private fun AngleGuide(reqPitch: Float, devicePitch: Float) {
     val isReaching = (reqPitch > 0 && devicePitch >= reqPitch) || (reqPitch < 0 && devicePitch <= reqPitch)
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom) {
         Row(
-            modifier = Modifier.fillMaxWidth()
-                .background(Brand.Surface.copy(alpha = 0.9f), CircleShape)
-                .border(2.dp, if (isReaching) Brand.Success.copy(alpha = 0.8f) else Brand.Coral.copy(alpha = 0.8f), CircleShape)
-                .padding(horizontal = 20.dp, vertical = 14.dp)
-                .padding(bottom = 210.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .background(Brand.Surface.copy(alpha = 0.92f), CircleShape)
+                .border(
+                    2.dp,
+                    if (isReaching) Brand.Success.copy(alpha = 0.8f) else Brand.Coral.copy(alpha = 0.8f),
+                    CircleShape
+                )
+                .padding(horizontal = 20.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
@@ -540,7 +582,14 @@ private fun AngleGuide(reqPitch: Float, devicePitch: Float) {
 
 @Composable
 private fun VlogTextOverlay(text: String, isRecording: Boolean) {
-    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .navigationBarsPadding()
+            .padding(bottom = 120.dp),
+        verticalArrangement = Arrangement.Bottom,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Text(
             text,
             color = Color.White,
@@ -549,7 +598,6 @@ private fun VlogTextOverlay(text: String, isRecording: Boolean) {
             modifier = Modifier
                 .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
                 .padding(horizontal = 24.dp, vertical = 16.dp)
-                .padding(bottom = 260.dp)
         )
     }
 }
