@@ -10,6 +10,9 @@ jobs:
   build-debug:
     name: Build & Lint Debug
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: PoseAI-Android
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,9 +29,9 @@ jobs:
 
       - name: Run Lint & Build
         run: |
-          ./gradlew :app:lintDebug --no-daemon --stacktrace 2>&1
+          ./gradlew :app:lintDebug --no-daemon --stacktrace
           LINT_EXIT=$?
-          ./gradlew :app:assembleDebug --no-daemon --stacktrace 2>&1
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
           ASSEMBLE_EXIT=$?
           # Fail if either failed
           exit $((LINT_EXIT + ASSEMBLE_EXIT))
@@ -38,5 +41,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: PoseAI-Android/app/build/outputs/apk/debug/*.apk
           retention-days: 7
