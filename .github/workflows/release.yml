@@ -52,42 +52,14 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Pre-populate Gradle wrapper cache
+      - name: Verify Gradle setup
         run: |
-          GRADLE_VERSION="8.9"
-          # Wrapper hash: md5(protocol + ":" + host + path)
-          # = md5("https:" + "services.gradle.org" + "/distributions/gradle-8.9-bin.zip")
-          # = "https:services.gradle.org/distributions/gradle-8.9-bin.zip"
-          # MD5 = ac11646cd33c12a8cfbf4c9546290e60
-          WRAPPER_HASH="ac11646c"
-          CACHE_DIR="$HOME/.gradle/wrapper/dists/gradle-${GRADLE_VERSION}-bin/${WRAPPER_HASH}"
-          mkdir -p "$CACHE_DIR"
-          
-          echo "Downloading Gradle ${GRADLE_VERSION} from GitHub releases..."
-          for i in 1 2 3; do
-            if curl -fsSL --connect-timeout 30 --max-time 300 \
-              "https://github.com/gradle/gradle/releases/download/v${GRADLE_VERSION}.0/gradle-${GRADLE_VERSION}-bin.zip" \
-              -o "$CACHE_DIR/gradle-${GRADLE_VERSION}-bin.zip"; then
-              echo "Gradle ${GRADLE_VERSION} downloaded successfully"
-              break
-            fi
-            echo "Download attempt $i failed, retrying in $((i * 5))s..."
-            sleep $((i * 5))
-          done
-          
-          if [ -f "$CACHE_DIR/gradle-${GRADLE_VERSION}-bin.zip" ]; then
-            touch "$CACHE_DIR/gradle-${GRADLE_VERSION}-bin.zip.ok"
-            # Extract the distribution (wrapper expects this)
-            unzip -q -o "$CACHE_DIR/gradle-${GRADLE_VERSION}-bin.zip" -d "$CACHE_DIR/"
-            echo "Gradle wrapper cache ready at $CACHE_DIR"
-            ls -la "$CACHE_DIR/"
-          else
-            echo "ERROR: Failed to download Gradle distribution"
-            exit 1
-          fi
-
-      - name: Make gradlew executable
-        run: chmod +x PoseAI-Android/gradlew
+          echo "Gradle version:"
+          gradle --version
+          echo "Gradle path:"
+          which gradle
+          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+          ls -la PoseAI-Android/
 
       - name: Resolve version & tag
         id: version
@@ -123,7 +95,7 @@ jobs:
           VERSION_CODE: ${{ steps.version.outputs.VERSION_CODE }}
           VERSION_NAME: ${{ steps.version.outputs.VERSION_NAME }}
         run: |
-          ./gradlew :app:clean :app:assembleDebug --no-daemon --console=plain --stacktrace -Dorg.gradle.jvmargs="-Xmx2g -Xms512m"
+          gradle :app:clean :app:assembleDebug --no-daemon --console=plain --stacktrace -Dorg.gradle.jvmargs="-Xmx2g -Xms512m"
 
       - name: Build Release APK & AAB
         working-directory: PoseAI-Android
@@ -134,7 +106,7 @@ jobs:
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS || 'poseai' }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD || 'poseai_release' }}
         run: |
-          ./gradlew :app:assembleRelease :app:bundleRelease --no-daemon --console=plain --stacktrace -Dorg.gradle.jvmargs="-Xmx2g -Xms512m"
+          gradle :app:assembleRelease :app:bundleRelease --no-daemon --console=plain --stacktrace -Dorg.gradle.jvmargs="-Xmx2g -Xms512m"
 
       - name: Collect artifacts
         run: |
