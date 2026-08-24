@@ -50,22 +50,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.9'
-
-      - name: Debug environment
-        run: |
-          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
-          echo "GRADLE_USER_HOME=$GRADLE_USER_HOME"
-          echo "PATH=$PATH"
-          which gradle
-          gradle --version
-          ls -la $GRADLE_USER_HOME/wrapper/dists/gradle-8.9-bin/ 2>/dev/null
-          echo "---"
-          # Find the gradle binary
-          find $GRADLE_USER_HOME -name "gradle" -type f 2>/dev/null | head -5
-          echo "---"
-          # List project directory
-          ls -la $GITHUB_WORKSPACE/PoseAI-Android/ | head -10
+          gradle-version: '8.11'
 
       - name: Resolve version & tag
         id: version
@@ -101,8 +86,7 @@ jobs:
           VERSION_CODE: ${{ steps.version.outputs.VERSION_CODE }}
           VERSION_NAME: ${{ steps.version.outputs.VERSION_NAME }}
         run: |
-          chmod +x gradlew
-          ./gradlew :app:clean :app:assembleDebug --no-daemon --console=plain --stacktrace
+          gradle :app:clean :app:assembleDebug --no-daemon --console=plain --stacktrace
 
       - name: Build Release APK & AAB
         working-directory: PoseAI-Android
@@ -113,7 +97,7 @@ jobs:
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS || 'poseai' }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD || 'poseai_release' }}
         run: |
-          ./gradlew :app:assembleRelease :app:bundleRelease --no-daemon --console=plain --stacktrace
+          gradle :app:assembleRelease :app:bundleRelease --no-daemon --console=plain --stacktrace
 
       - name: Collect artifacts
         run: |
