@@ -52,14 +52,32 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Verify Gradle setup
+      - name: Fix plugin repositories
         run: |
-          echo "Gradle version:"
-          gradle --version
-          echo "Gradle path:"
-          which gradle
-          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
-          ls -la PoseAI-Android/
+          # The gradle command may not resolve plugins correctly.
+          # Let's ensure pluginManagement repositories are properly configured.
+          cat > PoseAI-Android/settings.gradle.kts << 'SETTINGSEOF'
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "PoseAI-Android"
+include(":app")
+SETTINGSEOF
+          echo "Updated settings.gradle.kts"
+          cat PoseAI-Android/settings.gradle.kts
 
       - name: Resolve version & tag
         id: version
