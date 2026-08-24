@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.internal.http.connectionTimeout=60000 -Dorg.gradle.internal.http.socketTimeout=60000"
 
 jobs:
   build-release:
@@ -50,7 +50,10 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.11'
+          gradle-version: '8.9'
+
+      - name: Make gradlew executable
+        run: chmod +x PoseAI-Android/gradlew
 
       - name: Resolve version & tag
         id: version
@@ -86,7 +89,7 @@ jobs:
           VERSION_CODE: ${{ steps.version.outputs.VERSION_CODE }}
           VERSION_NAME: ${{ steps.version.outputs.VERSION_NAME }}
         run: |
-          gradle :app:clean :app:assembleDebug --no-daemon --console=plain --stacktrace
+          ./gradlew :app:clean :app:assembleDebug --no-daemon --console=plain --stacktrace -Dorg.gradle.jvmargs="-Xmx2g -Xms512m" 2>&1 | tail -100
 
       - name: Build Release APK & AAB
         working-directory: PoseAI-Android
@@ -97,7 +100,7 @@ jobs:
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS || 'poseai' }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD || 'poseai_release' }}
         run: |
-          gradle :app:assembleRelease :app:bundleRelease --no-daemon --console=plain --stacktrace
+          ./gradlew :app:assembleRelease :app:bundleRelease --no-daemon --console=plain --stacktrace -Dorg.gradle.jvmargs="-Xmx2g -Xms512m" 2>&1 | tail -100
 
       - name: Collect artifacts
         run: |
