@@ -18,7 +18,6 @@ on:
 permissions:
   contents: write
 
-# 避免重复/并发发布互相覆盖
 concurrency:
   group: android-release
   cancel-in-progress: false
@@ -53,16 +52,51 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Pre-download Gradle wrapper distribution
+        run: |
+          GRADLE_VERSION="8.9"
+          # Download the Gradle distribution that the wrapper expects
+          # and place it where the wrapper caches it
+          GRADLE_DIST="${GRADLE_USER_HOME}/wrapper/dists/gradle-${GRADLE_VERSION}-bin"
+          mkdir -p "${GRADLE_DIST}"
+          # Try up to 3 times to handle transient network issues
+          for i in 1 2 3; do
+            if curl -fsSL --connect-timeout 30 --max-time 300 \
+              "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" \
+              -o "/tmp/gradle-${GRADLE_VERSION}-bin.zip"; then
+              echo "Gradle ${GRADLE_VERSION} downloaded successfully"
+              break
+            fi
+            echo "Download attempt $i failed, retrying..."
+            sleep $((i * 5))
+          done
+          if [ -f "/tmp/gradle-${GRADLE_VERSION}-bin.zip" ]; then
+            # Find the wrapper's expected hash directory
+            cd PoseAI-Android
+            WRAPPER_PROPS="gradle/wrapper/gradle-wrapper.properties"
+            # Extract distribution URL and checksum
+            DISTRIBUTION_URL=$(grep "distributionUrl" "$WRAPPER_PROPS" | sed 's/.*=//')
+            DISTRIBUTION_SHA=$(grep "distributionSha256Sum" "$WRAPPER_PROPS" | sed 's/.*=//')
+            # Create the expected directory structure
+            WRAPPER_HASH=$(echo -n "$DISTRIBUTION_URL" | sha256sum | cut -c1-8)
+            CACHE_DIR="${GRADLE_USER_HOME}/wrapper/dists/gradle-${GRADLE_VERSION}-bin/${WRAPPER_HASH}"
+            mkdir -p "$CACHE_DIR"
+            cp "/tmp/gradle-${GRADLE_VERSION}-bin.zip" "$CACHE_DIR/"
+            # Create the .ok marker file
+            touch "$CACHE_DIR/gradle-${GRADLE_VERSION}-bin.zip.ok"
+            echo "Gradle placed in wrapper cache: $CACHE_DIR"
+          else
+            echo "WARNING: Failed to pre-download Gradle, will try wrapper download"
+          fi
+
       - name: Resolve version & tag
         id: version
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
-            # 由标签触发：版本名直接取自标签（如 v1.2.3 -> 1.2.3）
             RELEASE_TAG="${GITHUB_REF_NAME}"
             VERSION_NAME="${GITHUB_REF_NAME#v}"
             VERSION_CODE="${{ github.run_number }}"
           else
-            # 手动触发：使用输入参数
             RELEASE_TAG="v${{ inputs.versionName || '1.0.0' }}"
             VERSION_NAME="${{ inputs.versionName || '1.0.0' }}"
             VERSION_CODE="${{ inputs.versionCode || github.run_number }}"
@@ -77,7 +111,6 @@ jobs:
           if [ -n "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
             echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > ~/.android/release-key.jks
           else
-            # 无签名密钥时自动生成，保证 release 包仍可签出（CI 内部可用，非生产密钥）
             keytool -genkeypair -v -keystore ~/.android/release-key.jks \
               -storepass poseai_release -alias poseai -keypass poseai_release \
               -dname "CN=PoseAI, OU=Mobile, O=PoseAI, L=Beijing, ST=Beijing, C=CN" \
@@ -93,7 +126,7 @@ jobs:
           VERSION_CODE: ${{ steps.version.outputs.VERSION_CODE }}
           VERSION_NAME: ${{ steps.version.outputs.VERSION_NAME }}
         run: |
-          ./gradlew :app:assembleDebug --no-daemon --console=plain
+          ./gradlew :app:clean :app:assembleDebug --no-daemon --console=plain
           echo "=== Debug APKs ==="
           find . -name "*.apk" -ls 2>/dev/null || echo "NONE"
 
