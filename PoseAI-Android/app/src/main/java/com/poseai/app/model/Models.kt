@@ -7,6 +7,19 @@ import kotlin.math.roundToInt
  */
 data class NormPoint(val x: Float, val y: Float)
 
+/** 相册展示用的照片记录（从 ShootingRecordEntity 投影过来） */
+data class PhotoRecord(
+    val id: String,
+    val filePath: String,
+    val thumbnailPath: String?,
+    val isFavorite: Boolean = false,
+    val score: Int,
+    val sceneName: String,
+    val planName: String,
+    val createdAt: Long,
+    val filterName: String? = null
+)
+
 /** 自定义方案：用户可以保存自己的拍摄方案 */
 data class CustomPlan(
     val id: String = "",
@@ -19,7 +32,7 @@ data class CustomPlan(
     val posePoints: Map<String, NormPoint>
 )
 
-/** 一次性拍摄记录 */
+/** 一次性拍摄记录（用于拍照流程中的中间态传递） */
 data class ShotResult(
     val fileUri: String,
     val thumbnailUri: String,

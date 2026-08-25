@@ -93,7 +93,8 @@ fun ContentScreen(
     hasCameraPermission: Boolean,
     onShowHistory: () -> Unit,
     onShowGuide: () -> Unit,
-    onShowStats: () -> Unit
+    onShowStats: () -> Unit,
+    onShowVideoPreview: () -> Unit = {}
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
 

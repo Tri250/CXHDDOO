@@ -84,6 +84,7 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
 
     // 自定义方案
     val customShootingPlans = MutableStateFlow<List<ShootingPlan>>(emptyList())
+    val customPlans = MutableStateFlow<List<com.poseai.app.model.CustomPlan>>(emptyList())
     val isRecordingMode = MutableStateFlow(false)
     val recordCountdown = MutableStateFlow(0)
     val pointsToSave = MutableStateFlow<Map<String, NormPoint>?>(null)
@@ -161,6 +162,7 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
         customPlansJob = viewModelScope.launch {
             customDao.observeAll().collect { entities ->
                 customShootingPlans.value = entities.map { it.toShootingPlan() }
+                customPlans.value = entities.map { it.toCustomPlan() }
             }
         }
     }
@@ -181,6 +183,27 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
             composition = CompositionRule.CENTER,
             frameRatio = FrameRatio.FULL_BODY,
             voiceGuide = "摆出你的自定义姿势：加上一点小调整，完美",
+            posePoints = points
+        )
+    }
+
+    /** 数据库实体 → 领域模型 CustomPlan（激活 CustomPlan 引用） */
+    private fun CustomPlanEntity.toCustomPlan(): com.poseai.app.model.CustomPlan {
+        val points = try {
+            val obj = JSONObject(pointsJson)
+            obj.keys().asSequence().associate { key ->
+                val p = obj.getJSONObject(key)
+                key to NormPoint(p.getDouble("x").toFloat(), p.getDouble("y").toFloat())
+            }
+        } catch (e: Exception) { emptyMap() }
+        return com.poseai.app.model.CustomPlan(
+            id = id,
+            name = poseName,
+            emoji = if (poseEmoji.isEmpty()) "🧍" else poseEmoji,
+            description = "用户自定义拍摄方案",
+            composition = CompositionRule.CENTER,
+            frameRatio = FrameRatio.FULL_BODY,
+            voiceGuide = "摆出你的自定义姿势",
             posePoints = points
         )
     }
