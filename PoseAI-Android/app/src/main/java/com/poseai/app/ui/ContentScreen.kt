@@ -1,8 +1,8 @@
 package com.poseai.app.ui
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.keyframes
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,12 +17,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -161,7 +159,7 @@ fun ContentScreen(
         // 1. 相机预览层
         if (hasCameraPermission) {
             AndroidView(
-                modifier = Modifier.matchParentSize(),
+                modifier = Modifier.fillMaxSize(),
                 factory = { factoryCtx ->
                     PreviewView(factoryCtx).also { pv ->
                         pv.scaleType = PreviewView.ScaleType.FILL_CENTER
@@ -170,7 +168,7 @@ fun ContentScreen(
                 }
             )
         } else {
-            Box(Modifier.matchParentSize().background(Color.Black), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
                 Text("需要摄像头权限才能使用", color = Color.White, fontSize = 16.sp)
             }
         }
@@ -178,7 +176,7 @@ fun ContentScreen(
         // 2. 手势层：双击缩放 + 单击对焦 + 长按变焦面板
         Box(
             modifier = Modifier
-                .matchParentSize()
+                .fillMaxSize()
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onDoubleTap = { offset ->
@@ -662,17 +660,16 @@ private fun ShutterButton(
     isCapturing: Boolean,
     onClick: () -> Unit
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "shutterBreath")
-    val breathScale by infiniteTransition.animateFloat(
-        initialValue = 1.0f, targetValue = 1.05f,
+    val breathScale by animateFloatAsState(
+        targetValue = 1.05f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1100),
             repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
         ),
         label = "breathScale"
     )
-    val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.4f, targetValue = 0.1f,
+    val glowAlpha by animateFloatAsState(
+        targetValue = 0.1f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1100),
             repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
@@ -680,8 +677,8 @@ private fun ShutterButton(
         label = "glowAlpha"
     )
 
-    val readyGlowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.8f, targetValue = 0.2f,
+    val readyGlowAlpha by animateFloatAsState(
+        targetValue = 0.2f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1100),
             repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
@@ -692,7 +689,6 @@ private fun ShutterButton(
     val pressedScale by animateFloatAsState(
         targetValue = if (isCapturing) 0.92f else if (isReady) 1.05f else 1.0f,
         animationSpec = androidx.compose.animation.core.spring(
-            response = 0.3f,
             dampingRatio = 0.55f
         ),
         label = "pressedScale"
