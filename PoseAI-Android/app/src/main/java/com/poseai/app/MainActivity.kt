@@ -265,6 +265,7 @@ fun PoseAIApp() {
                 onShowStats = { statsOpen = true },
                 onShowVideoPreview = { showVideoPreview = true }
             )
+            // Note: statsOpen and showVideoPreview are kept for future use
         }
     }
 }
@@ -285,8 +286,8 @@ private fun MainContent(
     hasCamera: Boolean,
     onShowHistory: () -> Unit,
     onShowGuide: () -> Unit,
-    onShowStats: () -> Unit,
-    onShowVideoPreview: () -> Unit
+    onShowStats: () -> Unit,  // 预留接口
+    onShowVideoPreview: () -> Unit  // 预留接口
 ) {
     val context = LocalContext.current
 
