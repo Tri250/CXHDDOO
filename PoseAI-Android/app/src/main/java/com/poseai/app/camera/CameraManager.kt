@@ -206,7 +206,7 @@ class CameraManager(
         val cam = camera ?: return
         runCatching {
             val action = androidx.camera.core.FocusMeteringAction.Builder(
-                androidx.camera.core.MeteringPoint(normX, normY)
+                androidx.camera.core.SurfaceOrientedMeteringPointFactory(1f, 1f).createPoint(normX, normY)
             ).build()
             cam.cameraControl.startFocusAndMetering(action)
         }
