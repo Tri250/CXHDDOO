@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,42 +23,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.poseai.app.design.Brand
-
-// ─── 安全区感知容器 ───
-
-/** 全屏容器：自动处理状态栏和导航栏安全区 */
-@Composable
-fun SafeAreaScreen(
-    modifier: Modifier = Modifier,
-    content: @Composable BoxScope.() -> Unit
-) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Brand.Screen)
-            .statusBarsPadding()
-            .navigationBarsPadding(),
-        content = content
-    )
-}
-
-/** 仅处理导航栏安全区的容器（用于底部控制区） */
-@Composable
-fun BottomSafeArea(
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .navigationBarsPadding(),
-        content = { content() }
-    )
-}
 
 // ─── iOS 风格顶部栏 ───
 
@@ -191,24 +157,6 @@ fun SecondaryButton(
     }
 }
 
-// ─── iOS 风格卡片 ───
-
-/** iOS Grouped Card — 对应 UITableView grouped cell */
-@Composable
-fun GroupedCard(
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(Brand.Radius.Md))
-            .background(Brand.Surface)
-            .border(1.dp, Brand.Hairline, RoundedCornerShape(Brand.Radius.Md))
-    ) {
-        content()
-    }
-}
-
 // ─── iOS 风格关闭按钮 ───
 
 /** iOS Style Close Button — 对应 UIBarButtonItem close */
@@ -228,24 +176,6 @@ fun CloseButton(
         contentAlignment = Alignment.Center
     ) {
         Text("✕", color = Brand.TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-    }
-}
-
-/** iOS Style Back Button — 对应 UIBarButtonItem back */
-@Composable
-fun BackButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .size(44.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color.Transparent)
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Text("‹", color = Brand.Accent, fontSize = 26.sp, fontWeight = FontWeight.Normal)
     }
 }
 

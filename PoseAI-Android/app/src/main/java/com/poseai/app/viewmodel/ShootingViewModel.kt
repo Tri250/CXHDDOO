@@ -50,7 +50,6 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
     // 姿势匹配
     val detectedPoses = MutableStateFlow<List<PoseData>>(emptyList())
     val score = MutableStateFlow(0f)
-    val isDualMatchedPrimary = MutableStateFlow(true)
 
     // 拍摄状态
     val showShutterFlash = MutableStateFlow(false)
@@ -69,7 +68,6 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
     val capturedShotsCount = MutableStateFlow(0)
     val expectedBurstCount = MutableStateFlow(1)
     val isReviewingPhotos = MutableStateFlow(false)
-    val showSessionGallery = MutableStateFlow(false)
 
     // 倒计时自拍
     val timerSeconds = MutableStateFlow(0)
@@ -125,9 +123,6 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
     val historyRecords: kotlinx.coroutines.flow.Flow<List<ShootingRecordEntity>>
         get() = recordDao.observeAll()
 
-    /** 设置应用（全免费，无需解锁逻辑） */
-    val isPro = true
-
     // MARK: - 计算属性
     val availablePlans: List<ShootingPlan>
         get() = customShootingPlans.value + scene.value.plans
@@ -140,9 +135,6 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
 
     val isReady: Boolean
         get() = score.value > (if (currentPlan?.secondaryPosePoints != null) dualSuccessThreshold else successThreshold)
-
-    // 全免费：所有功能解锁
-    val isPremiumScene: Boolean get() = false
 
     // MARK: - 初始化
     init {
@@ -253,16 +245,14 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
         val baselineScore: Float
         if (secondary != null && poses.size >= 2) {
             // 双人方案，且检测到两人：使用完整全排列双人匹配
-            val (score, primaryAsFirst) = PoseMatcher.calculateDualSimilarity(
+            val (score, _) = PoseMatcher.calculateDualSimilarity(
                 poses[0].points, poses[1].points,
                 activePrimary, secondary,
                 poses[0].isHalfBody, poses[1].isHalfBody
             )
-            isDualMatchedPrimary.value = primaryAsFirst
             baselineScore = score
         } else if (secondary != null) {
             // 降级：双人方案但仅检测到单人，只比较主要姿态并打 0.75x 折扣
-            isDualMatchedPrimary.value = true
             baselineScore = if (poses.isNotEmpty()) {
                 PoseMatcher.calculateSimilarity(poses[0].points, activePrimary, poses[0].isHalfBody, score.value) * 0.75f
             } else 0f
@@ -678,11 +668,6 @@ class ShootingViewModel(app: Application) : AndroidViewModel(app) {
     fun toggleImmersiveMode() {
         isImmersiveMode.value = !isImmersiveMode.value
         feedback.impact(DeviceFeedback.LIGHT)
-    }
-
-    // MARK: - 相机生命周期派发（UI 在 onResume/onPause 调用）
-    fun resumeCameraIfNeeded() {
-        // 相机 bind 由 UI 通过 lifecycle 绑定；这里通知 UI 层面保持运行状态
     }
 
     // MARK: - 自定义录制流程

@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -441,29 +440,6 @@ private fun ScanCornerLinesModifier() {
     }
 }
 
-/** 扫描框四角修饰线——独立组件 */
-@Composable
-fun ScanCornerLines() {
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        val w = size.width
-        val h = size.height
-        val len = 18.dp.toPx()
-        val thick = 2.5.dp.toPx()
-        val corners = listOf(
-            listOf(Offset(0f, len), Offset(0f, 0f), Offset(len, 0f)),
-            listOf(Offset(w - len, 0f), Offset(w, 0f), Offset(w, len)),
-            listOf(Offset(0f, h - len), Offset(0f, h), Offset(len, h)),
-            listOf(Offset(w - len, h), Offset(w, h), Offset(w, h - len))
-        )
-        corners.forEach { (a, b, c) ->
-            val p = Path().apply {
-                moveTo(a.x, a.y); lineTo(b.x, b.y); lineTo(c.x, c.y)
-            }
-            drawPath(p, Brand.Accent, style = Stroke(width = thick, cap = StrokeCap.Round))
-        }
-    }
-}
-
 /**
  * AR 地面脚印覆盖层——复刻 iOS arFootprintsOverlay。
  */
@@ -581,17 +557,6 @@ fun VlogTextOverlay(text: String, isRecording: Boolean, screenHeightDp: Float = 
                 fontWeight = FontWeight.Black
             )
         }
-    }
-}
-
-/**
- * 分数弧颜色——复刻 iOS scoreArcColors。
- */
-fun scoreArcColors(score: Float): List<Color> {
-    return if (score > 60f) {
-        listOf(Brand.Accent, Brand.Accent.copy(alpha = 0.5f))
-    } else {
-        listOf(Color.White.copy(alpha = 0.8f), Color.White.copy(alpha = 0.3f))
     }
 }
 

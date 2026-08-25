@@ -18,12 +18,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -189,7 +188,7 @@ fun ContentScreen(
             LowLightGlowOverlay()
         }
 
-        // 手势层：双击缩放 + 长按快门 + 单击对焦
+        // 手势层：双击缩放 + 单击对焦（长按录制由快门按钮处理，避免双重触发）
         Box(
             Modifier
                 .matchParentSize()
@@ -202,18 +201,12 @@ fun ContentScreen(
                             vm.setZoom(newZoom)
                             vm.feedback.impact(com.poseai.app.video.DeviceFeedback.LIGHT)
                         },
-                        onLongPress = { offset ->
-                            // 长按进入录制模式
-                            if (isSceneReady) {
-                                vm.handleShutterLongPress()
-                            }
-                        },
                         onTap = { offset ->
                             // 单击对焦
                             focusPoint = offset
                             showFocusIndicator = true
-                            val normX = (offset.x / size.width).coerceIn(0f, 1f)
-                            val normY = (offset.y / size.height).coerceIn(0f, 1f)
+                            val normX = (offset.x / screenW).coerceIn(0f, 1f)
+                            val normY = (offset.y / screenH).coerceIn(0f, 1f)
                             vm.focusAt(normX, normY)
                             vm.feedback.impact(com.poseai.app.video.DeviceFeedback.LIGHT)
                         }
@@ -393,7 +386,6 @@ private fun TopBar(
     activeSequenceIndex: Int,
     activeAngleIndex: Int,
     activeVlogClipIndex: Int,
-    isVlogRecording: Boolean,
     onGuide: () -> Unit
 ) {
     Row(
