@@ -190,11 +190,18 @@ fun PoseAIApp() {
                 screen = if (!hasSeenOnboarding) Screen.ONBOARDING else Screen.MAIN
             })
 
-            screen == Screen.ONBOARDING -> OnboardingScreen(onFinish = {
-                hasSeenOnboarding = true
-                prefs.edit().putBoolean("has_seen_onboarding", true).apply()
-                screen = Screen.MAIN
-            })
+            screen == Screen.ONBOARDING -> OnboardingScreen(
+                onStart = {
+                    hasSeenOnboarding = true
+                    prefs.edit().putBoolean("has_seen_onboarding", true).apply()
+                    screen = Screen.MAIN
+                },
+                onSkip = {
+                    hasSeenOnboarding = true
+                    prefs.edit().putBoolean("has_seen_onboarding", true).apply()
+                    screen = Screen.MAIN
+                }
+            )
 
             showPhotoPreview && photoRecords.isNotEmpty() -> PhotoPreviewScreen(
                 photos = photoRecords,

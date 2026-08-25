@@ -511,7 +511,7 @@ private fun PlanPickerSection(
 
     LaunchedEffect(currentIndex) {
         if (currentIndex in plans.indices) {
-            listState.animateScrollToItem(currentIndex, scrollToStart = false)
+            listState.animateScrollToItem(currentIndex)
         }
     }
 

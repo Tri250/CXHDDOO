@@ -328,7 +328,7 @@ private fun StepCard(step: OnboardingStep) {
                 )
             }
         }
-        .padding(top = 16.dp)
+        .then(Modifier.padding(top = 16.dp))
 
         Spacer(Modifier.height(36.dp))
 

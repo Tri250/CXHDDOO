@@ -89,6 +89,7 @@ class CameraManager(
     private var imageCapture: ImageCapture? = null
     private var videoCapture: VideoCapture<Recorder>? = null
     private var camera: Camera? = null
+    private var previewView: PreviewView? = null
 
     @Volatile
     private var activeRecording: Recording? = null
@@ -142,6 +143,7 @@ class CameraManager(
     @androidx.camera.camera2.interop.ExperimentalCamera2Interop
     fun bindUseCases(lifecycleOwner: androidx.lifecycle.LifecycleOwner, previewView: PreviewView) {
         val provider = cameraProvider ?: return
+        this.previewView = previewView
         provider.unbindAll()
 
         val selector = if (isFrontCamera) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
@@ -202,9 +204,21 @@ class CameraManager(
      */
     fun focusAt(normX: Float, normY: Float) {
         val cam = camera ?: return
-        val focusPoint = androidx.camera.core.FocusPoint(normX, normY)
-        val action = androidx.camera.core.FocusMeteringAction.Builder(focusPoint).build()
-        cam.cameraControl.startFocusAndMetering(action)
+        val previewView = previewView
+        if (previewView != null) {
+            val factory = previewView.createMeteringPointFactory(
+                displayOrientation = previewView.display?.rotation ?: 0
+            )
+            val point = factory.createPoint(normX, normY)
+            val action = androidx.camera.core.FocusMeteringAction.Builder(point)
+                .setAutoFocusCallbackOnCanceling(false)
+                .build()
+            cam.cameraControl.startFocusAndMetering(action)
+        } else {
+            val point = androidx.camera.core.FocusPoint(normX, normY)
+            val action = androidx.camera.core.FocusMeteringAction.Builder(point).build()
+            cam.cameraControl.startFocusAndMetering(action)
+        }
     }
 
     /**
