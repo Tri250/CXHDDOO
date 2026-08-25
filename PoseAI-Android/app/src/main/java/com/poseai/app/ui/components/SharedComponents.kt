@@ -115,9 +115,12 @@ fun PrimaryButton(
         modifier = modifier
             .height(54.dp)
             .clip(RoundedCornerShape(Brand.Radius.Lg))
-            .background(
-                if (enabled) Brush.horizontalGradient(colors)
-                else Brand.SurfaceHigh
+            .then(
+                if (enabled) {
+                    Modifier.background(Brush.horizontalGradient(colors))
+                } else {
+                    Modifier.background(Brand.SurfaceHigh)
+                }
             )
             .clickable(enabled = enabled) { onClick() },
         contentAlignment = Alignment.Center

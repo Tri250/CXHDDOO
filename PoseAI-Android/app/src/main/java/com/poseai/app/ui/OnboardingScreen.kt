@@ -29,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.poseai.app.design.Brand
+import kotlinx.coroutines.launch
 
 private data class OnboardingStep(
     val icon: String,
@@ -80,6 +82,7 @@ fun OnboardingScreen(
     onSkip: () -> Unit
 ) {
     val pagerState = rememberPagerState(pageCount = { onboardingSteps.size })
+    val coroutineScope = rememberCoroutineScope()
     var hasAgreedToPrivacy by remember { mutableStateOf(false) }
 
     Box(
@@ -151,7 +154,7 @@ fun OnboardingScreen(
                     val isActive = idx == pagerState.currentPage
                     val widthAnim by animateFloatAsState(
                         targetValue = if (isActive) 24f else 8f,
-                        animationSpec = spring(response = 0.35f, dampingRatio = 0.7f),
+                        animationSpec = spring(dampingRatio = 0.7f),
                         label = "indicatorWidth_$idx"
                     )
                     Box(
@@ -239,7 +242,9 @@ fun OnboardingScreen(
                             } else {
                                 val nextPage = pagerState.currentPage + 1
                                 if (nextPage < onboardingSteps.size) {
-                                    pagerState.scrollToPage(nextPage)
+                                    coroutineScope.launch {
+                                        pagerState.scrollToPage(nextPage)
+                                    }
                                 }
                             }
                         },
@@ -279,7 +284,7 @@ private fun StepCard(step: OnboardingStep) {
 
     val scaleAnim by animateFloatAsState(
         targetValue = if (appeared) 1f else 0.75f,
-        animationSpec = spring(response = 0.55f, dampingRatio = 0.78f),
+        animationSpec = spring(dampingRatio = 0.78f),
         label = "stepScale"
     )
     val alphaAnim by animateFloatAsState(

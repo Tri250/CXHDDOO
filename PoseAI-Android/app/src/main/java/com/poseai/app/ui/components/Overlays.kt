@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,7 +21,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -48,10 +48,9 @@ import androidx.compose.ui.unit.sp
 import com.poseai.app.design.Brand
 import com.poseai.app.model.CompositionRule
 import com.poseai.app.model.ShootingPlan
+import kotlin.math.abs
 import kotlin.math.max
-import kotlin.math.maxOf
 import kotlin.math.min
-import kotlin.math.minOf
 import kotlin.math.roundToInt
 
 @Immutable
@@ -216,7 +215,7 @@ fun ScoreRing(score: Float, isReady: Boolean) {
     )
     val scaleAnim by animateFloatAsState(
         targetValue = if (isReady) 1.08f else 1.0f,
-        animationSpec = spring(response = 0.3f, dampingRatio = 0.55f),
+        animationSpec = spring(dampingRatio = 0.55f),
         label = "scoreScale"
     )
     val glowAlpha by animateFloatAsState(
@@ -298,8 +297,7 @@ fun ScoreRing(score: Float, isReady: Boolean) {
 @Composable
 fun SceneScanningOverlay() {
     val infiniteTransition = rememberInfiniteTransition(label = "scanPulse")
-    val pulseSize by infiniteTransition.animateFloat(
-        initialValue = 160f,
+    val pulseSize by animateFloatAsState(
         targetValue = 220f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1800),
@@ -307,8 +305,7 @@ fun SceneScanningOverlay() {
         ),
         label = "pulseSize"
     )
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.35f,
+    val pulseAlpha by animateFloatAsState(
         targetValue = 0f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1800),
@@ -318,8 +315,7 @@ fun SceneScanningOverlay() {
     )
 
     // 旋转扫描弧
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
+    val rotation by animateFloatAsState(
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1600, easing = androidx.compose.animation.core.LinearEasing),
@@ -476,13 +472,14 @@ fun LowLightGlowOverlay() {
             val w = size.width
             val h = size.height
             // 边缘微光
+            val maxDim = max(w, h)
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(Color.Transparent, Color(0x10FFE8C0)),
                     center = Offset(w / 2, h / 2),
-                    radius = maxOf(w, h) / 2
+                    radius = maxDim / 2
                 ),
-                radius = maxOf(w, h) / 2,
+                radius = maxDim / 2,
                 center = Offset(w / 2, h / 2)
             )
         }
@@ -589,7 +586,7 @@ fun PlanCard(plan: ShootingPlan, isSelected: Boolean, onClick: () -> Unit) {
     )
     val scaleAnim by animateFloatAsState(
         targetValue = if (isSelected) 1.03f else 1.0f,
-        animationSpec = spring(response = 0.32f, dampingRatio = 0.68f),
+        animationSpec = spring(dampingRatio = 0.68f),
         label = "cardScale"
     )
 
@@ -653,16 +650,16 @@ fun PlanCard(plan: ShootingPlan, isSelected: Boolean, onClick: () -> Unit) {
 @Composable
 fun FocusIndicator(point: Offset) {
     val infiniteTransition = rememberInfiniteTransition(label = "focusPulse")
-    val scaleAnim by infiniteTransition.animateFloat(
-        initialValue = 1.2f, targetValue = 1.0f,
+    val scaleAnim by animateFloatAsState(
+        targetValue = 1.0f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1000),
             repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
         ),
         label = "focusScale"
     )
-    val alphaAnim by infiniteTransition.animateFloat(
-        initialValue = 1f, targetValue = 0.4f,
+    val alphaAnim by animateFloatAsState(
+        targetValue = 0.4f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1000),
             repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
@@ -676,7 +673,7 @@ fun FocusIndicator(point: Offset) {
     val screenWidthPx = with(localDensity) { configuration.screenWidthDp.dp.toPx() }
     val screenHeightPx = with(localDensity) { configuration.screenHeightDp.dp.toPx() }
 
-    val indicatorSizePx = 70.dp.toPx()
+    val indicatorSizePx = with(localDensity) { 70.dp.toPx() }
     val halfSize = indicatorSizePx / 2f
 
     // 边界保护：确保对焦框不会超出屏幕
@@ -822,13 +819,14 @@ fun RecordingProgressBar(current: Int, total: Int, label: String, topOffsetDp: F
                 repeat(total) { idx ->
                     Box(
                         modifier = Modifier
-                            .weight(1f)
+                            .then(if (idx == 0) Modifier else Modifier)
                             .height(3.dp)
                             .background(
                                 if (idx < current) Brand.Coral
                                 else Color.White.copy(alpha = 0.2f),
                                 RoundedCornerShape(2.dp)
                             )
+                            .fillMaxWidth()
                     )
                 }
             }

@@ -982,7 +982,7 @@ private fun AngleGuide(reqPitch: Float, devicePitch: Float, bottomOffset: Float 
 private fun ShutterFlashOverlay() {
     Box(
         modifier = Modifier
-            .matchParentSize()
+            .fillMaxSize()
             .background(Color(0xFFFFF0DD).copy(alpha = 0.9f))
     )
 }
@@ -1003,7 +1003,7 @@ private fun AnimatedCountdown(seconds: Int, isRecording: Boolean = false) {
         label = "countdownPulse_$seconds"
     )
 
-    Box(Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(
             text = "$seconds",
             color = if (isRecording) Brand.Success.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.9f),
