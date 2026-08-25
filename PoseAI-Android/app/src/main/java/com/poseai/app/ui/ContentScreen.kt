@@ -372,7 +372,7 @@ private fun TopBar(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = 18.dp, vertical = 8.dp),
+            .padding(horizontal = 18.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (isSceneReady && plan != null) {
@@ -385,17 +385,17 @@ private fun TopBar(
                         RoundedCornerShape(Brand.Radius.Lg)
                     )
                     .border(1.dp, Brand.Border, RoundedCornerShape(Brand.Radius.Lg))
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(40.dp)
                         .background(Brand.Surface, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(scene.icon, fontSize = 15.sp, color = Brand.Accent)
+                    Text(scene.icon, fontSize = 16.sp, color = Brand.Accent)
                 }
 
                 Column {
@@ -439,11 +439,11 @@ private fun TopBar(
             ScoreRing(score, isReady)
         }
 
-        Spacer(Modifier.size(10.dp))
+        Spacer(Modifier.size(12.dp))
 
         Box(
             modifier = Modifier
-                .size(40.dp)
+                .size(44.dp)
                 .background(Brand.Surface, CircleShape)
                 .border(1.dp, Brand.Border, CircleShape)
                 .clickable { onGuide() },
