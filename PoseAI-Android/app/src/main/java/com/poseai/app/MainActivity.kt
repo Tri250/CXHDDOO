@@ -361,9 +361,7 @@ private fun MainContent(
             vm = vm,
             hasCameraPermission = hasCamera,
             onShowHistory = onShowHistory,
-            onShowGuide = onShowGuide,
-            onShowStats = onShowStats,
-            onShowVideoPreview = onShowVideoPreview
+            onShowGuide = onShowGuide
         )
     }
 }

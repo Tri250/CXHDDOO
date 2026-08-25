@@ -3,13 +3,10 @@ package com.poseai.app.ui
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -43,10 +40,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
@@ -56,45 +50,27 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.poseai.app.design.Brand
+import com.poseai.app.model.FrameRatio
 import com.poseai.app.model.SceneType
 import com.poseai.app.model.ShootingPlan
 import com.poseai.app.ui.components.ARFootprintsOverlay
 import com.poseai.app.ui.components.AiAdvisorBanner
 import com.poseai.app.ui.components.CompositionGuideLines
-import com.poseai.app.ui.components.FocusIndicator
 import com.poseai.app.ui.components.LowLightGlowOverlay
 import com.poseai.app.ui.components.PlanCard
-import com.poseai.app.ui.components.RecordingProgressBar
 import com.poseai.app.ui.components.ScoreRing
 import com.poseai.app.ui.components.SceneScanningOverlay
 import com.poseai.app.ui.components.SilhouetteGuideOverlay
 import com.poseai.app.ui.components.VlogTextOverlay
-import com.poseai.app.ui.components.ZoomLevelIndicator
 import com.poseai.app.viewmodel.ShootingViewModel
 import kotlinx.coroutines.delay
-import kotlin.math.max
-import kotlin.math.min
 
-/**
- * ContentScreen —— 拍摄主界面深度优化版。
- *
- * 针对国内手机摄影用户体验优化点：
- * - 手势：双击缩放、长按快门录像、单击对焦
- * - 方案选择：吸附滚动、当前方案高亮指示
- * - 快门：呼吸光晕 + 缩放反馈 + 闪光动画
- * - 倒计时：环形进度 + 缩放脉冲
- * - 拍摄进度：连拍数/录像时长实时反馈
- * - 变焦指示：底部变焦水平条
- * - 场景扫描：动画 + 进度步骤
- */
 @Composable
 fun ContentScreen(
     vm: ShootingViewModel,
     hasCameraPermission: Boolean,
     onShowHistory: () -> Unit,
-    onShowGuide: () -> Unit,
-    onShowStats: () -> Unit,
-    onShowVideoPreview: () -> Unit = {}
+    onShowGuide: () -> Unit
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -127,11 +103,6 @@ fun ContentScreen(
     val plan = vm.currentPlan
     val isScanning = !isSceneReady && (scene == SceneType.UNKNOWN)
 
-    // 手势状态
-    var zoomLevel by remember { mutableStateOf(1f) }
-    var focusPoint by remember { mutableStateOf<Offset?>(null) }
-    var showFocusIndicator by remember { mutableStateOf(false) }
-
     // 相机绑定
     var previewView by remember { mutableStateOf<PreviewView?>(null) }
     DisposableEffect(hasCameraPermission, previewView) {
@@ -153,21 +124,12 @@ fun ContentScreen(
         }
     }
 
-    // 自动隐藏对焦指示
-    LaunchedEffect(showFocusIndicator) {
-        if (showFocusIndicator) {
-            delay(1500)
-            showFocusIndicator = false
-            focusPoint = null
-        }
-    }
-
     BoxWithConstraints(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         val localDensity = LocalDensity.current
         val screenW = with(localDensity) { maxWidth.toPx() }
         val screenH = constraints.maxHeight.toFloat()
 
-        // 相机预览层
+        // 1. 相机预览层
         if (hasCameraPermission) {
             AndroidView(
                 modifier = Modifier.matchParentSize(),
@@ -184,73 +146,39 @@ fun ContentScreen(
             }
         }
 
-        // 暗光屏幕补光
-        if (isLowLight) {
-            LowLightGlowOverlay()
-        }
-
-        // 手势层：双击缩放 + 单击对焦（长按录制由快门按钮处理，避免双重触发）
+        // 2. 点击进入/退出沉浸模式的手势层
         Box(
-            Modifier
+            modifier = Modifier
                 .matchParentSize()
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onDoubleTap = { offset ->
-                            // 双击切换变焦：1x → 2x → 1x
-                            val newZoom = if (zoomLevel < 1.5f) 2f else 1f
-                            zoomLevel = newZoom
-                            vm.setZoom(newZoom)
-                            vm.feedback.impact(com.poseai.app.video.DeviceFeedback.LIGHT)
-                        },
-                        onTap = { offset ->
-                            // 单击对焦
-                            focusPoint = offset
-                            showFocusIndicator = true
-                            val normX = (offset.x / screenW).coerceIn(0f, 1f)
-                            val normY = (offset.y / screenH).coerceIn(0f, 1f)
-                            vm.focusAt(normX, normY)
-                            vm.feedback.impact(com.poseai.app.video.DeviceFeedback.LIGHT)
-                        }
-                    )
-                }
+                .clickable { vm.toggleImmersiveMode() }
         )
 
-        // 对焦指示框
-        if (showFocusIndicator && focusPoint != null) {
-            FocusIndicator(point = focusPoint!!)
+        // 3. 构图辅助线
+        if (isSceneReady && !isImmersive) {
+            CompositionGuideLines(plan?.composition)
         }
 
-        // 场景扫描动画
-        if (isScanning && !isImmersive) {
+        // 4. 场景扫描 / 剪影引导
+        if (!isSceneReady) {
             SceneScanningOverlay()
-        }
-
-        // AR 脚印覆盖层
-        if (isSceneReady && !isImmersive && !isCapturing) {
-            ARFootprintsOverlay()
-        }
-
-        // 构图辅助线
-        if (!isImmersive) {
-            CompositionGuideLines(if (isSceneReady) plan?.composition else null)
-        }
-
-        // 剪影引导
-        if (isSceneReady && plan != null) {
-            val w = screenW
-            val h = screenH
+        } else if (plan != null) {
             if (plan.secondaryPosePoints != null) {
                 val b0 = detectedPoses.getOrNull(0)?.bbox?.let { toComposeRect(it) }
                 val b1 = detectedPoses.getOrNull(1)?.bbox?.let { toComposeRect(it) }
-                SilhouetteGuideOverlay(vm.isReady, plan, b0, w, h, forceOffset = -w * 0.18f)
-                SilhouetteGuideOverlay(vm.isReady, plan, b1, w, h, forceOffset = w * 0.18f)
+                SilhouetteGuideOverlay(vm.isReady, plan, b0, screenW, screenH, forceOffset = -screenW * 0.18f)
+                SilhouetteGuideOverlay(vm.isReady, plan, b1, screenW, screenH, forceOffset = screenW * 0.18f)
             } else {
                 val b = detectedPoses.firstOrNull()?.bbox?.let { toComposeRect(it) }
-                SilhouetteGuideOverlay(vm.isReady, plan, b, w, h)
+                SilhouetteGuideOverlay(vm.isReady, plan, b, screenW, screenH)
             }
         }
 
-        // 顶部信息栏
+        // 5. AR 地面脚印
+        if (!isImmersive && isSceneReady && plan?.frameRatio == com.poseai.app.model.FrameRatio.FULL_BODY) {
+            ARFootprintsOverlay()
+        }
+
+        // 6. 顶部信息栏
         if (!isImmersive) {
             TopBar(
                 scene = scene,
@@ -266,31 +194,22 @@ fun ContentScreen(
             )
         }
 
-        // AI 构图灵感
-        if (aiSuggestion != null && !isImmersive) {
-            AiAdvisorBanner(aiSuggestion!!)
-        }
-
-        // 构图提示（位置在 TopBar 下方 8dp，避免双重 statusBarsPadding）
-        if (showCompositionTip && plan != null && !isImmersive) {
+        // 7. 构图提示浮层
+        if (!isImmersive && showCompositionTip && plan != null) {
             CompositionTipOverlay(plan)
         }
 
-        // 暗光提示（位于构图提示下方）
-        if (isLowLight && isSceneReady && !isImmersive && !showCompositionTip) {
+        // 8. AI 构图灵感
+        if (!isImmersive && aiSuggestion != null) {
+            AiAdvisorBanner(aiSuggestion!!)
+        }
+
+        // 9. 暗光提示 Banner
+        if (!isImmersive && isLowLight && isSceneReady) {
             LowLightBanner()
         }
 
-        // 底部提示（互斥显示，优先级：俯仰警告 > 留白 > 角度）
-        // 放在 BottomPanel 之后渲染，确保在其上方显示
-        val showBottomTip = devicePitch < -0.35f || 
-            (showSpaceTip && devicePitch >= -0.35f && !showCompositionTip) ||
-            (plan?.multiAngles?.let { multi -> 
-                val hasAngle = activeAngleIndex < multi.size && multi[activeAngleIndex].requiredPitch != null
-                hasAngle && !isImmersive && devicePitch >= -0.35f && !showSpaceTip && !showCompositionTip
-            } ?: false)
-
-        // Bottom control area
+        // 10. 底部控制区
         BottomPanel(
             vm = vm,
             isSceneReady = isSceneReady && vm.availablePlans.isNotEmpty(),
@@ -298,19 +217,10 @@ fun ContentScreen(
             plans = vm.availablePlans,
             currentPlanIndex = currentPlanIndex,
             timerSeconds = timerSeconds,
-            isRecordingMode = isRecordingMode,
-            isCapturing = isCapturing,
-            zoomLevel = zoomLevel,
-            onZoomChange = { newZoom ->
-                zoomLevel = newZoom
-                vm.setZoom(newZoom)
-            },
-            onHistory = onShowHistory,
-            onStats = onShowStats,
-            showBottomSpacing = showBottomTip
+            onHistory = onShowHistory
         )
 
-        // 底部安全提示条（显示在 BottomPanel 上方或内部）
+        // 11. 底部提示 (俯仰警告/留白/角度)
         if (!isImmersive) {
             when {
                 devicePitch < -0.35f -> PitchWarning()
@@ -325,57 +235,39 @@ fun ContentScreen(
             }
         }
 
-        // Vlog 提词器
-        if (displayVlogText != null && !isImmersive) {
+        // 12. Vlog 提词器
+        if (!isImmersive && displayVlogText != null) {
             VlogTextOverlay(displayVlogText!!, isVlogRecording, screenH / localDensity.density)
         }
 
-        // 录制进度（Vlog）
-        if (isVlogRecording && activeVlogClipIndex < (plan?.vlogScript?.clips?.size ?: 0)) {
-            val totalClips = plan?.vlogScript?.clips?.size ?: 1
-            val topOffset = screenH / localDensity.density * 0.18f
-            RecordingProgressBar(
-                current = activeVlogClipIndex + 1,
-                total = totalClips,
-                label = "Vlog 拍摄中 ${activeVlogClipIndex + 1}/$totalClips",
-                topOffsetDp = topOffset
-            )
+        // 13. 屏幕柔边补光带
+        if (isLowLight && !isImmersive) {
+            LowLightGlowOverlay()
         }
 
-        // 拍摄进度指示（连拍/序列）
-        if (isCapturing && expectedBurstCount > 1 && !isVlogRecording) {
-            val burstTopOffset = screenH / localDensity.density * 0.19f
-            BurstProgressIndicator(
-                current = max(capturedShotsCount, burstImages.size),
-                total = expectedBurstCount,
-                isSequence = plan?.sequence != null,
-                sequenceIndex = activeSequenceIndex,
-                sequenceTotal = plan?.sequence?.size ?: 1,
-                topOffsetDp = burstTopOffset
-            )
-        }
-
-        // 快门闪光 + 倒计时（在所有内容之上）
+        // 14. 快门闪光
         if (showShutterFlash) {
             ShutterFlashOverlay()
         }
 
+        // 15. 倒计时大数字
         if (countdown > 0) {
             AnimatedCountdown(countdown)
         }
 
+        // 16. 录制倒计时
         if (isRecordingMode && recordCountdown > 0) {
             AnimatedCountdown(recordCountdown, isRecording = true)
         }
     }
 }
 
-// ─── ─── ─── ─── Helpers ─── ─── ─── ───
+// ─── Helpers ───
 
 private fun toComposeRect(bbox: android.graphics.RectF): Rect =
     Rect(left = bbox.left, top = 1f - bbox.bottom, right = bbox.right, bottom = 1f - bbox.top)
 
-// ─── ─── ─── ─── TopBar ─── ─── ─── ───
+// ─── TopBar ───
 
 @Composable
 private fun TopBar(
@@ -387,54 +279,82 @@ private fun TopBar(
     activeSequenceIndex: Int,
     activeAngleIndex: Int,
     activeVlogClipIndex: Int,
+    isVlogRecording: Boolean,
     onGuide: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 18.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (isSceneReady && plan != null) {
             Row(
                 modifier = Modifier
-                    .background(Brand.Surface, RoundedCornerShape(14.dp))
-                    .border(1.dp, Brand.Border, RoundedCornerShape(14.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
+                        ),
+                        RoundedCornerShape(Brand.Radius.Lg)
+                    )
+                    .border(1.dp, Brand.Border, RoundedCornerShape(Brand.Radius.Lg))
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(scene.icon, fontSize = 14.sp)
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(Brand.Surface, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(scene.icon, fontSize = 15.sp, color = Brand.Accent)
+                }
+
                 Column {
-                    Text(scene.displayName, color = Brand.TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                    Text(
+                        text = scene.displayName,
+                        color = Brand.TextSecondary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                     val subtitle = when {
-                        plan.vlogScript != null && activeVlogClipIndex < plan.vlogScript.clips.size ->
+                        plan.vlogScript != null && activeVlogClipIndex < plan.vlogScript.clips.size -> {
+                            val isRecording = isVlogRecording
+                            val color = if (isRecording) Brand.Coral else Brand.TextSecondary
                             "分镜 ${activeVlogClipIndex + 1}/${plan.vlogScript.clips.size}"
+                        }
                         plan.sequence != null && activeSequenceIndex < plan.sequence.size ->
                             "${activeSequenceIndex + 1}/${plan.sequence.size} ${plan.sequence[activeSequenceIndex].title}"
                         plan.multiAngles != null && activeAngleIndex < plan.multiAngles.size ->
                             "${activeAngleIndex + 1}/${plan.multiAngles.size} ${plan.multiAngles[activeAngleIndex].title}"
-                        else -> plan.poseName
+                        else -> "${plan.poseEmoji} ${plan.poseName}"
+                    }
+                    val subColor = when {
+                        plan.vlogScript != null -> Brand.Coral
+                        plan.sequence != null -> Brand.Success
+                        plan.multiAngles != null -> Brand.Coral
+                        else -> Brand.TextPrimary
                     }
                     Text(
-                        subtitle,
-                        color = when {
-                            plan.sequence != null -> Brand.Success
-                            plan.multiAngles != null -> Brand.Coral
-                            else -> Color.White
-                        },
-                        fontSize = 14.sp,
+                        text = subtitle,
+                        color = subColor,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
         }
+
         Spacer(Modifier.weight(1f))
+
         if (isSceneReady) {
             ScoreRing(score, isReady)
         }
-        Spacer(Modifier.size(8.dp))
+
+        Spacer(Modifier.size(10.dp))
+
         Box(
             modifier = Modifier
                 .size(40.dp)
@@ -443,12 +363,12 @@ private fun TopBar(
                 .clickable { onGuide() },
             contentAlignment = Alignment.Center
         ) {
-            Text("？", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            Text("?", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
 
-// ─── ─── ─── ─── BottomPanel ─── ─── ─── ───
+// ─── BottomPanel ───
 
 @Composable
 private fun BottomPanel(
@@ -458,23 +378,8 @@ private fun BottomPanel(
     plans: List<ShootingPlan>,
     currentPlanIndex: Int,
     timerSeconds: Int,
-    isRecordingMode: Boolean,
-    isCapturing: Boolean,
-    zoomLevel: Float,
-    onZoomChange: (Float) -> Unit,
-    onHistory: () -> Unit,
-    onStats: () -> Unit,
-    showBottomSpacing: Boolean = false
+    onHistory: () -> Unit
 ) {
-    val listState = rememberLazyListState()
-
-    // 自动滚动到选中方案
-    LaunchedEffect(currentPlanIndex) {
-        if (currentPlanIndex in plans.indices) {
-            listState.animateScrollToItem(currentPlanIndex, scrollToStart = false)
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -483,482 +388,299 @@ private fun BottomPanel(
                     listOf(Color.Black.copy(alpha = 0f), Color.Black.copy(alpha = 0.7f))
                 )
             )
-            .padding(top = if (showBottomSpacing) 80.dp else 4.dp)
             .navigationBarsPadding()
     ) {
-        // 变焦水平条
-        if (!isImmersive && isSceneReady) {
-            ZoomLevelIndicator(
-                currentZoom = zoomLevel,
-                onZoomChange = onZoomChange
-            )
-        }
-
-        // 方案选择横向滑动（带吸附）
         if (isSceneReady && !isImmersive) {
-            LazyRow(
-                state = listState,
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                item {
-                    Column(
-                        modifier = Modifier
-                            .border(1.dp, if (isRecordingMode) Brand.Coral else Brand.Border, RoundedCornerShape(Brand.Radius.Md))
-                            .background(Brand.Surface, RoundedCornerShape(Brand.Radius.Md))
-                            .padding(horizontal = 14.dp, vertical = 10.dp)
-                            .clickable { vm.startRecordingCustomPlan() },
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(if (isRecordingMode) "🔴" else "＋", fontSize = 18.sp,
-                            color = if (isRecordingMode) Brand.Coral else Color.White)
-                        Text(if (isRecordingMode) "捕捉中" else "录制专属", fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold, color = if (isRecordingMode) Brand.Coral else Color.White)
-                    }
-                }
-                itemsIndexed(plans) { idx, plan ->
-                    PlanCard(
-                        plan = plan,
-                        isSelected = idx == currentPlanIndex,
-                        onClick = { vm.selectPlan(idx) }
-                    )
-                }
-            }
-
-            // 选中方案指示器
-            if (plans.isNotEmpty() && currentPlanIndex in plans.indices) {
-                PlanSelectionIndicator(
-                    plans = plans,
-                    currentIndex = currentPlanIndex
-                )
-            }
+            PlanPickerSection(
+                plans = plans,
+                currentIndex = currentPlanIndex,
+                onSelect = { vm.selectPlan(it) },
+                onStartRecording = { vm.startRecordingCustomPlan() },
+                isRecordingMode = vm.isRecordingMode.collectAsStateWithLifecycle().value
+            )
         }
 
-        // 主控制行
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // 左侧：历史 + 统计
-            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.Start, verticalAlignment = Alignment.CenterVertically) {
-                ControlButton(icon = "🖼", onClick = onHistory, size = 48.dp)
-                Spacer(Modifier.size(8.dp))
-                ControlButton(icon = "📊", onClick = onStats, size = 48.dp)
-            }
-
-            // 快门按钮
-            EnhancedShutterButton(
-                isReady = vm.isReady,
-                isCapturing = isCapturing,
-                isRecordingMode = isRecordingMode,
-                onClick = { vm.handleShutterTap() },
-                onLongPress = { vm.handleShutterLongPress() }
-            )
-
-            // 右侧：闪光灯 + 切换摄像头 + 倒计时
-            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-                // 闪光灯（暗光时高亮）
-                ControlButton(
-                    icon = if (vm.isLowLight.value) "⚡" else "⚡",
-                    onClick = { vm.toggleFlash() },
-                    size = 48.dp,
-                    highlighted = vm.isLowLight.value
-                )
-                Spacer(Modifier.size(8.dp))
-                ControlButton(icon = "🔄", onClick = { vm.manager.switchCamera() }, size = 48.dp)
-                Spacer(Modifier.size(8.dp))
-                TimerButton(timerSeconds = timerSeconds, onClick = { vm.cycleTimer() })
-            }
-        }
-    }
-}
-
-@Composable
-private fun ControlButton(
-    icon: String,
-    onClick: () -> Unit,
-    size: androidx.compose.ui.unit.Dp = 48.dp,
-    highlighted: Boolean = false
-) {
-    Box(
-        modifier = Modifier
-            .size(size)
-            .background(
-                if (highlighted) Brand.Accent.copy(alpha = 0.25f) else Brand.Surface,
-                CircleShape
-            )
-            .border(
-                1.dp,
-                if (highlighted) Brand.Accent.copy(alpha = 0.6f) else Brand.Border,
-                CircleShape
-            )
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Text(icon, fontSize = (size.value * 0.45f).sp)
-    }
-}
-
-@Composable
-private fun TimerButton(timerSeconds: Int, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(48.dp)
-            .background(
-                if (timerSeconds > 0) Brand.Accent.copy(alpha = 0.18f) else Brand.Surface,
-                CircleShape
-            )
-            .border(1.dp, if (timerSeconds > 0) Brand.Accent.copy(alpha = 0.6f) else Brand.Border, CircleShape)
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            if (timerSeconds == 0) "⏱" else "${timerSeconds}",
-            fontSize = if (timerSeconds == 0) 18.sp else 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (timerSeconds > 0) Brand.Accent else Brand.TextSecondary
+        ControlRow(
+            timerSeconds = timerSeconds,
+            isFrontCamera = vm.manager.isFrontCamera,
+            onShutter = { vm.handleShutterTap() },
+            onToggleCamera = { vm.manager.switchCamera() },
+            onCycleTimer = { vm.cycleTimer() },
+            onHistory = onHistory,
+            isReady = vm.isReady,
+            isCapturing = vm.isCapturing.collectAsStateWithLifecycle().value
         )
     }
 }
 
-// ─── ─── ─── ─── 增强快门按钮 ─── ─── ─── ───
+@Composable
+private fun PlanPickerSection(
+    plans: List<ShootingPlan>,
+    currentIndex: Int,
+    onSelect: (Int) -> Unit,
+    onStartRecording: () -> Unit,
+    isRecordingMode: Boolean
+) {
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(currentIndex) {
+        if (currentIndex in plans.indices) {
+            listState.animateScrollToItem(currentIndex, scrollToStart = false)
+        }
+    }
+
+    LazyRow(
+        state = listState,
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.padding(top = 10.dp)
+    ) {
+        item {
+            Column(
+                modifier = Modifier
+                    .background(
+                        if (isRecordingMode) Brand.Coral.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.08f),
+                        RoundedCornerShape(12.dp)
+                    )
+                    .border(
+                        1.dp,
+                        if (isRecordingMode) Brand.Coral.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.3f),
+                        RoundedCornerShape(12.dp)
+                    )
+                    .clickable { onStartRecording() }
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = if (isRecordingMode) "●" else "＋",
+                    color = if (isRecordingMode) Brand.Coral else Color.White,
+                    fontSize = 18.sp
+                )
+                Text(
+                    text = if (isRecordingMode) "捕捉中..." else "录制专属",
+                    color = if (isRecordingMode) Brand.Coral else Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+        itemsIndexed(plans) { idx, plan ->
+            PlanCard(
+                plan = plan,
+                isSelected = idx == currentIndex,
+                onClick = { onSelect(idx) }
+            )
+        }
+    }
+}
 
 @Composable
-private fun EnhancedShutterButton(
+private fun ControlRow(
+    timerSeconds: Int,
+    isFrontCamera: Boolean,
+    onShutter: () -> Unit,
+    onToggleCamera: () -> Unit,
+    onCycleTimer: () -> Unit,
+    onHistory: () -> Unit,
+    isReady: Boolean,
+    isCapturing: Boolean
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 28.dp, vertical = 22.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Left: History
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .size(50.dp)
+                .background(Brand.Surface, RoundedCornerShape(12.dp))
+                .border(1.dp, Brand.Border, RoundedCornerShape(12.dp))
+                .clickable { onHistory() },
+            contentAlignment = Alignment.Center
+        ) {
+            Text("🖼", fontSize = 19.sp)
+        }
+
+        // Center: Shutter
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            ShutterButton(
+                isReady = isReady,
+                isCapturing = isCapturing,
+                onClick = onShutter
+            )
+        }
+
+        // Right: Flip Camera & Timer
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(Brand.Surface, CircleShape)
+                    .border(1.dp, Brand.Border, CircleShape)
+                    .clickable { onToggleCamera() },
+                contentAlignment = Alignment.Center
+            ) {
+                Text("🔄", fontSize = 18.sp)
+            }
+
+            Spacer(Modifier.size(12.dp))
+
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(
+                        if (timerSeconds > 0) Brand.Accent.copy(alpha = 0.18f) else Brand.Surface,
+                        CircleShape
+                    )
+                    .border(
+                        1.dp,
+                        if (timerSeconds > 0) Brand.Accent.copy(alpha = 0.6f) else Brand.Border,
+                        CircleShape
+                    )
+                    .clickable { onCycleTimer() },
+                contentAlignment = Alignment.Center
+            ) {
+                if (timerSeconds == 0) {
+                    Text("⏱", fontSize = 18.sp, color = Brand.TextSecondary)
+                } else {
+                    Text(
+                        text = "$timerSeconds",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Brand.Accent
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ─── ShutterButton ───
+
+@Composable
+private fun ShutterButton(
     isReady: Boolean,
     isCapturing: Boolean,
-    isRecordingMode: Boolean,
-    onClick: () -> Unit,
-    onLongPress: () -> Unit
+    onClick: () -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "shutterBreath")
     val breathScale by infiniteTransition.animateFloat(
         initialValue = 1.0f, targetValue = 1.05f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1600),
+            animation = tween(durationMillis = 1100),
             repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
         ),
         label = "breathScale"
     )
     val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.35f, targetValue = 0f,
+        initialValue = 0.4f, targetValue = 0.1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1600),
+            animation = tween(durationMillis = 1100),
             repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
         ),
         label = "glowAlpha"
     )
-    val pressedScale by animateFloatAsState(
-        targetValue = if (isCapturing) 0.9f else 1.0f,
-        animationSpec = spring(response = 0.25f, dampingRatio = 0.55f),
-        label = "pressedScale"
-    )
-    val readyPulse by infiniteTransition.animateFloat(
-        initialValue = 1.0f, targetValue = 1.12f,
+
+    val readyGlowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.8f, targetValue = 0.2f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 800),
+            animation = tween(durationMillis = 1100),
             repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
         ),
-        label = "readyPulse"
+        label = "readyGlowAlpha"
     )
 
-    val borderColor = when {
-        isReady && !isCapturing -> Brand.Success
-        isCapturing -> Brand.Coral
-        else -> Color.White.copy(alpha = 0.6f)
-    }
-
-    val innerGradient = when {
-        isReady -> Brush.radialGradient(
-            colors = listOf(Color.White, Brand.Success.copy(alpha = 0.7f)),
-            center = Offset(0.3f, 0.3f)
-        )
-        else -> Brush.radialGradient(
-            colors = listOf(Color.White, Color(0xFFE0E0E0)),
-            center = Offset(0.3f, 0.3f)
-        )
-    }
+    val pressedScale by animateFloatAsState(
+        targetValue = if (isCapturing) 0.92f else if (isReady) 1.05f else 1.0f,
+        animationSpec = androidx.compose.animation.core.spring(
+            response = 0.3f,
+            dampingRatio = 0.55f
+        ),
+        label = "pressedScale"
+    )
 
     Box(
         modifier = Modifier
-            .size(96.dp)
+            .size(92.dp)
             .graphicsLayer {
-                scaleX = breathScale * pressedScale
-                scaleY = breathScale * pressedScale
+                scaleX = pressedScale * if (isReady) breathScale else 1f
+                scaleY = pressedScale * if (isReady) breathScale else 1f
             }
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = { onClick() },
-                    onLongPress = { onLongPress() }
-                )
-            },
+            .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        // 就绪时脉冲光环
-        if (isReady && !isCapturing) {
+        // Outer glow (when ready)
+        if (isReady) {
             Box(
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(82.dp)
                     .graphicsLayer {
-                        scaleX = readyPulse
-                        scaleY = readyPulse
+                        scaleX = breathScale * 1.5f
+                        scaleY = breathScale * 1.5f
+                        alpha = 2.0f - (breathScale * 1.5f)
                     }
-                    .background(
-                        Brand.Success.copy(alpha = glowAlpha * 0.5f),
-                        CircleShape
-                    )
+                    .background(Brand.SuccessGlow.copy(alpha = readyGlowAlpha), CircleShape)
             )
         }
 
-        // 呼吸光晕
+        // Outer ring
         Box(
             modifier = Modifier
-                .size(110.dp)
-                .background(
-                    if (isReady) Brand.Success.copy(alpha = glowAlpha * 0.3f)
-                    else Color.White.copy(alpha = glowAlpha * 0.15f),
-                    CircleShape
+                .size(82.dp)
+                .border(
+                    width = 2.5.dp,
+                    color = if (isReady) Brand.Success.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.55f),
+                    shape = CircleShape
                 )
         )
 
-        // 外圈边框
+        // Inner circle
         Box(
             modifier = Modifier
-                .size(90.dp)
-                .border(3.dp, borderColor, CircleShape)
-                .background(innerGradient, CircleShape),
+                .size(68.dp)
+                .background(
+                    brush = if (isReady) {
+                        Brush.linearGradient(
+                            listOf(Brand.Success, Color(0xFF33D97A)),
+                            start = Offset(0f, 0f),
+                            end = Offset(1f, 1f)
+                        )
+                    } else {
+                        Brush.linearGradient(
+                            listOf(Color.White.copy(alpha = 0.92f), Color.White.copy(alpha = 0.78f)),
+                            start = Offset(0f, 0f),
+                            end = Offset(0f, 1f)
+                        )
+                    },
+                    shape = CircleShape
+                ),
             contentAlignment = Alignment.Center
         ) {
-            when {
-                isCapturing && isRecordingMode -> {
-                    // 录制中 - 脉动红点
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .background(Brand.Coral, RoundedCornerShape(8.dp))
-                    )
-                }
-                isCapturing -> {
-                    // 连拍中 - 缩小动画
-                    Box(
-                        modifier = Modifier
-                            .size(30.dp)
-                            .background(Color.Black.copy(alpha = 0.35f), CircleShape)
-                    )
-                }
-                else -> {
-                    // 就绪/待拍
-                    Box(
-                        modifier = Modifier
-                            .size(30.dp)
-                            .background(
-                                when {
-                                    isReady -> Brand.Success.copy(alpha = 0.18f)
-                                    else -> Color.Black.copy(alpha = 0.15f)
-                                },
-                                CircleShape
-                            )
-                    )
-                }
-            }
-        }
-    }
-}
-
-// ─── ─── ─── ─── 拍摄进度指示 ─── ─── ─── ───
-
-@Composable
-private fun BurstProgressIndicator(
-    current: Int,
-    total: Int,
-    isSequence: Boolean,
-    sequenceIndex: Int,
-    sequenceTotal: Int,
-    topOffsetDp: Float = 140f
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = topOffsetDp.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .background(Brand.Surface.copy(alpha = 0.85f), RoundedCornerShape(20.dp))
-                .padding(horizontal = 14.dp, vertical = 8.dp)
-        ) {
-            if (isSequence) {
-                Text("📸", fontSize = 13.sp)
-                Text(
-                    "连拍 $current/$total",
-                    color = Color.White,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    " · 分镜 ${sequenceIndex + 1}/$sequenceTotal",
-                    color = Brand.TextSecondary,
-                    fontSize = 12.sp
-                )
+            if (isReady) {
+                Text("●", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
             } else {
-                repeat(total) { idx ->
-                    val isDone = idx < current
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .background(
-                                if (isDone) Brand.Accent else Color.White.copy(alpha = 0.3f),
-                                CircleShape
-                            )
-                    )
-                }
-                Text(
-                    " $current/$total",
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
+                Box(
+                    modifier = Modifier
+                        .size(26.dp)
+                        .background(Color.Black.copy(alpha = 0.08f), CircleShape)
                 )
             }
         }
     }
 }
 
-@Composable
-private fun PlanSelectionIndicator(
-    plans: List<ShootingPlan>,
-    currentIndex: Int
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        plans.forEachIndexed { idx, _ ->
-            Box(
-                modifier = Modifier
-                    .padding(horizontal = 3.dp)
-                    .size(if (idx == currentIndex) 6.dp else 4.dp)
-                    .background(
-                        if (idx == currentIndex) Brand.Accent else Color.White.copy(alpha = 0.25f),
-                        CircleShape
-                    )
-            )
-        }
-    }
-}
-
-// ─── ─── ─── ─── 快门闪光 ─── ─── ─── ───
-
-@Composable
-private fun ShutterFlashOverlay() {
-    val flashProgress by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = tween(durationMillis = 200),
-        label = "flashProgress"
-    )
-    Box(
-        Modifier
-            .matchParentSize()
-            .graphicsLayer {
-                alpha = 1f - flashProgress
-            }
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(Brand.ShutterWarm.copy(alpha = 0.95f), Brand.ShutterWarm.copy(alpha = 0.3f)),
-                    center = Offset(0.5f, 0.5f)
-                )
-            )
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            // 扩散环——随flashProgress从中心扩散到全屏
-            val ringRadius = min(size.width, size.height) * 0.15f + flashProgress * min(size.width, size.height) * 0.4f
-            drawCircle(
-                color = Color.White.copy(alpha = (1f - flashProgress) * 0.5f),
-                radius = ringRadius,
-                style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
-            )
-        }
-    }
-}
-
-// ─── ─── ─── ─── 倒计时动画 ─── ─── ─── ───
-
-@Composable
-private fun AnimatedCountdown(seconds: Int, isRecording: Boolean = false) {
-    val currentCount = seconds
-    val scaleAnim by animateFloatAsState(
-        targetValue = 1.3f,
-        animationSpec = keyframes {
-            durationMillis = 900
-            0f at 0
-            1.2f at 200
-            1.0f at 500
-            0.85f at 800
-        },
-        finishedListener = { /* 动画完成 */ },
-        label = "countdownPulse_$currentCount"
-    )
-
-    val progress by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = tween(durationMillis = 900),
-        label = "countdownProgress_$currentCount"
-    )
-
-    Box(Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
-        // 环形进度背景
-        Canvas(
-            modifier = Modifier.size(140.dp)
-        ) {
-            val strokeWidth = 4.dp.toPx()
-            val radius = (size.minDimension - strokeWidth) / 2f
-            val center = Offset(size.width / 2, size.height / 2)
-
-            // 背景圆
-            drawCircle(
-                color = Color.White.copy(alpha = 0.15f),
-                radius = radius,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-            )
-
-            // 进度弧
-            val sweepAngle = 360f * progress
-            drawArc(
-                brush = Brush.sweepGradient(
-                    listOf(
-                        if (isRecording) Brand.Coral else Brand.Accent,
-                        if (isRecording) Brand.Coral.copy(alpha = 0.5f) else Brand.Accent.copy(alpha = 0.5f)
-                    ),
-                    center = center
-                ),
-                startAngle = -90f,
-                sweepAngle = sweepAngle,
-                useCenter = false,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-            )
-        }
-
-        // 数字
-        Text(
-            text = "$currentCount",
-            color = if (isRecording) Brand.Coral.copy(alpha = 0.95f) else Color.White.copy(alpha = 0.95f),
-            fontSize = 88.sp,
-            fontWeight = FontWeight.Light,
-            modifier = Modifier.graphicsLayer {
-                scaleX = scaleAnim
-                scaleY = scaleAnim
-            }
-        )
-    }
-}
-
-// ─── ─── ─── ─── 构图提示 ─── ─── ─── ───
+// ─── CompositionTipOverlay ───
 
 @Composable
 private fun CompositionTipOverlay(plan: ShootingPlan) {
@@ -966,31 +688,48 @@ private fun CompositionTipOverlay(plan: ShootingPlan) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .padding(top = 8.dp)
+            .padding(top = 130.dp)
     ) {
         Row(
             modifier = Modifier
-                .background(Brand.Surface, RoundedCornerShape(Brand.Radius.Lg))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
+                    ),
+                    RoundedCornerShape(Brand.Radius.Lg)
+                )
                 .border(1.dp, Brand.Accent.copy(alpha = 0.35f), RoundedCornerShape(Brand.Radius.Lg))
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Box(
-                Modifier.size(36.dp).background(Brand.Accent.copy(alpha = 0.2f), CircleShape),
+                modifier = Modifier
+                    .size(34.dp)
+                    .background(Brand.Accent.copy(alpha = 0.2f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text(plan.composition.icon, fontSize = 16.sp)
+                Text(plan.composition.icon, fontSize = 14.sp, color = Brand.Accent)
             }
             Column {
-                Text("${plan.composition.displayName} 构图", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                Text(plan.composition.reason, color = Brand.TextSecondary, fontSize = 11.sp, maxLines = 2)
+                Text(
+                    text = "${plan.composition.displayName} 构图",
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = plan.composition.reason,
+                    color = Brand.TextSecondary,
+                    fontSize = 11.sp,
+                    maxLines = 2
+                )
             }
         }
     }
 }
 
-// ─── ─── ─── ─── 暗光/警告提示 ─── ─── ─── ───
+// ─── LowLightBanner ───
 
 @Composable
 private fun LowLightBanner() {
@@ -998,46 +737,60 @@ private fun LowLightBanner() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .padding(top = 8.dp)
-            .background(Brand.Surface, CircleShape)
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+            .padding(top = 110.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("💡", fontSize = 13.sp)
-        Text(
-            " 光线不足，建议开启补光或换个位置",
-            color = Color.White.copy(alpha = 0.85f),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium
-        )
+        Row(
+            modifier = Modifier
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
+                    ),
+                    RoundedCornerShape(20.dp)
+                )
+                .border(1.dp, Color(0x66FFEB3B), RoundedCornerShape(20.dp))
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text("💡", fontSize = 13.sp)
+            Text(
+                text = "光线不足，移到明亮处效果更好",
+                color = Color.White.copy(alpha = 0.9f),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }
 
-/**
- * 底部安全提示条——显示在 BottomPanel 上方。
- * 使用 align(Alignment.BottomCenter) 定位到屏幕底部。
- */
+// ─── Bottom Tips ───
+
 @Composable
-private fun PitchWarning(bottomOffset: Float = 220f) {
+private fun PitchWarning(bottomOffset: Float = 170f) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .align(Alignment.BottomCenter)
-            .navigationBarsPadding()
             .padding(bottom = bottomOffset.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
         Row(
             modifier = Modifier
-                .background(Brand.Surface, RoundedCornerShape(16.dp))
-                .border(1.dp, Brand.Coral.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
-                .padding(horizontal = 18.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.Center
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
+                    ),
+                    RoundedCornerShape(20.dp)
+                )
+                .border(1.dp, Brand.Coral.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                .padding(horizontal = 18.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text("⚠️", color = Brand.Coral, fontSize = 13.sp)
+            Text("⚠️", color = Brand.Coral, fontSize = 14.sp)
             Text(
-                " 建议低角度仰拍，更显腿长",
+                text = "请平行或低角度拍摄，显腿更长",
                 color = Color.White,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
@@ -1047,23 +800,29 @@ private fun PitchWarning(bottomOffset: Float = 220f) {
 }
 
 @Composable
-private fun SpaceTip(bottomOffset: Float = 220f) {
+private fun SpaceTip(bottomOffset: Float = 170f) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .align(Alignment.BottomCenter)
-            .navigationBarsPadding()
             .padding(bottom = bottomOffset.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
         Row(
             modifier = Modifier
-                .background(Brand.Surface, RoundedCornerShape(16.dp))
-                .padding(horizontal = 18.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.Center
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
+                    ),
+                    RoundedCornerShape(20.dp)
+                )
+                .border(1.dp, Brand.Accent.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                .padding(horizontal = 18.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            Text("✨", color = Brand.Accent, fontSize = 14.sp)
             Text(
-                "稍微平移留出空白，构图更有呼吸感",
+                text = "尝试平移留出一点空白，更有氛围感",
                 color = Color.White,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
@@ -1073,31 +832,99 @@ private fun SpaceTip(bottomOffset: Float = 220f) {
 }
 
 @Composable
-private fun AngleGuide(reqPitch: Float, devicePitch: Float, bottomOffset: Float = 220f) {
+private fun AngleGuide(reqPitch: Float, devicePitch: Float, bottomOffset: Float = 230f) {
     val isReaching = (reqPitch > 0 && devicePitch >= reqPitch) || (reqPitch < 0 && devicePitch <= reqPitch)
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .align(Alignment.BottomCenter)
-            .navigationBarsPadding()
             .padding(bottom = bottomOffset.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
         Row(
             modifier = Modifier
-                .background(Brand.Surface, RoundedCornerShape(16.dp))
-                .border(2.dp, if (isReaching) Brand.Success.copy(alpha = 0.8f) else Brand.Coral.copy(alpha = 0.8f), RoundedCornerShape(16.dp))
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.Center
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
+                    ),
+                    RoundedCornerShape(20.dp)
+                )
+                .border(
+                    2.dp,
+                    if (isReaching) Brand.Success.copy(alpha = 0.8f) else Brand.Coral.copy(alpha = 0.8f),
+                    RoundedCornerShape(20.dp)
+                )
+                .padding(horizontal = 20.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            Box(
+                modifier = Modifier
+                    .size(30.dp)
+                    .border(2.dp, Color.White.copy(alpha = 0.3f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(width = 20.dp, height = 3.dp)
+                        .background(
+                            if (isReaching) Brand.Success else Brand.Coral,
+                            RoundedCornerShape(2.dp)
+                        )
+                )
+            }
             Text(
-                if (isReaching) "✓ 机位正确，保持不动"
-                else if (reqPitch > 0) "请摄影师下蹲仰拍 ${(devicePitch * 100).toInt()}°"
-                else "请摄影师抬高俯拍 ${(devicePitch * 100).toInt()}°",
+                text = if (isReaching) {
+                    "机位正确，保持稳定"
+                } else if (reqPitch > 0) {
+                    "请摄影师继续下蹲仰拍"
+                } else {
+                    "请摄影师抬高俯拍"
+                },
                 color = Color.White,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold
             )
         }
+    }
+}
+
+// ─── ShutterFlashOverlay ───
+
+@Composable
+private fun ShutterFlashOverlay() {
+    Box(
+        modifier = Modifier
+            .matchParentSize()
+            .background(Color(0xFFFFF0DD).copy(alpha = 0.9f))
+    )
+}
+
+// ─── AnimatedCountdown ───
+
+@Composable
+private fun AnimatedCountdown(seconds: Int, isRecording: Boolean = false) {
+    val scaleAnim by animateFloatAsState(
+        targetValue = 1.4f,
+        animationSpec = keyframes {
+            durationMillis = 900
+            1.0f at 0
+            1.4f at 200
+            1.0f at 500
+        },
+        finishedListener = { },
+        label = "countdownPulse_$seconds"
+    )
+
+    Box(Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
+        Text(
+            text = "$seconds",
+            color = if (isRecording) Brand.Success.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.9f),
+            fontSize = 130.sp,
+            fontWeight = FontWeight.Light,
+            modifier = Modifier.graphicsLayer {
+                scaleX = scaleAnim
+                scaleY = scaleAnim
+            }
+        )
     }
 }
