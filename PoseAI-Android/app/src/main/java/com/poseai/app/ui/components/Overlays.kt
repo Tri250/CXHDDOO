@@ -496,7 +496,7 @@ fun AiAdvisorBanner(text: String) {
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(top = 60.dp)
+            .padding(top = 85.dp)
             .padding(horizontal = 24.dp)
     ) {
         Row(
@@ -566,12 +566,12 @@ private fun TagBadge(icon: String, text: String, active: Boolean) {
                 if (active) Brand.Accent.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.1f),
                 CircleShape
             )
-            .padding(horizontal = 7.dp, vertical = 3.5.dp),
-        horizontalArrangement = Arrangement.spacedBy(3.dp),
+            .padding(horizontal = 9.dp, vertical = 5.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(icon, fontSize = 9.sp)
-        Text(text, fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
+        Text(icon, fontSize = 11.sp)
+        Text(text, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
             color = if (active) Brand.Accent else Color.White.copy(alpha = 0.7f))
     }
 }
@@ -610,29 +610,29 @@ fun PlanCard(plan: ShootingPlan, isSelected: Boolean, onClick: () -> Unit) {
                         end = androidx.compose.ui.geometry.Offset(0f, 1f)
                     )
                 },
-                RoundedCornerShape(12.dp)
+                RoundedCornerShape(14.dp)
             )
             .border(
                 width = if (isSelected) 1.5.dp else 1.dp,
                 color = if (isSelected) Brand.Accent.copy(alpha = 0.75f) else Brand.Border,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(14.dp)
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 13.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(plan.poseEmoji, fontSize = 17.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(plan.poseEmoji, fontSize = 18.sp)
             Text(
                 plan.poseName,
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
                 maxLines = 1
             )
         }
         if (isSelected) {
-            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 TagBadge(icon = plan.composition.icon, text = plan.composition.displayName, active = true)
                 TagBadge(icon = plan.frameRatio.icon, text = plan.frameRatio.displayName, active = true)
             }

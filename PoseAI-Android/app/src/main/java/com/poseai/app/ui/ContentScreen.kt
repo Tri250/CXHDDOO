@@ -13,10 +13,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -45,6 +47,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -372,7 +375,7 @@ private fun TopBar(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = 18.dp, vertical = 12.dp),
+            .padding(horizontal = 24.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (isSceneReady && plan != null) {
@@ -385,25 +388,29 @@ private fun TopBar(
                         RoundedCornerShape(Brand.Radius.Lg)
                     )
                     .border(1.dp, Brand.Border, RoundedCornerShape(Brand.Radius.Lg))
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = 18.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(44.dp)
                         .background(Brand.Surface, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(scene.icon, fontSize = 16.sp, color = Brand.Accent)
+                    Text(scene.icon, fontSize = 17.sp, color = Brand.Accent)
                 }
 
-                Column {
+                Column(
+                    modifier = Modifier.height(IntrinsicSize.Min)
+                ) {
                     Text(
                         text = scene.displayName,
                         color = Brand.TextSecondary,
                         fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     val subtitle = when {
                         plan.vlogScript != null && activeVlogClipIndex < plan.vlogScript.clips.size -> {
@@ -426,8 +433,10 @@ private fun TopBar(
                     Text(
                         text = subtitle,
                         color = subColor,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -439,17 +448,17 @@ private fun TopBar(
             ScoreRing(score, isReady)
         }
 
-        Spacer(Modifier.size(12.dp))
+        Spacer(Modifier.size(14.dp))
 
         Box(
             modifier = Modifier
-                .size(44.dp)
+                .size(48.dp)
                 .background(Brand.Surface, CircleShape)
                 .border(1.dp, Brand.Border, CircleShape)
                 .clickable { onGuide() },
             contentAlignment = Alignment.Center
         ) {
-            Text("?", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text("?", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -517,31 +526,31 @@ private fun PlanPickerSection(
 
     LazyRow(
         state = listState,
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.padding(top = 10.dp)
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier.padding(top = 14.dp, bottom = 4.dp)
     ) {
         item {
             Column(
                 modifier = Modifier
                     .background(
                         if (isRecordingMode) Brand.Coral.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.08f),
-                        RoundedCornerShape(12.dp)
+                        RoundedCornerShape(14.dp)
                     )
                     .border(
                         1.dp,
                         if (isRecordingMode) Brand.Coral.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.3f),
-                        RoundedCornerShape(12.dp)
+                        RoundedCornerShape(14.dp)
                     )
                     .clickable { onStartRecording() }
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                    .padding(horizontal = 18.dp, vertical = 14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     text = if (isRecordingMode) "●" else "＋",
                     color = if (isRecordingMode) Brand.Coral else Color.White,
-                    fontSize = 18.sp
+                    fontSize = 20.sp
                 )
                 Text(
                     text = if (isRecordingMode) "捕捉中..." else "录制专属",
@@ -575,20 +584,20 @@ private fun ControlRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 28.dp, vertical = 22.dp),
+            .padding(horizontal = 32.dp, vertical = 28.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Left: History
         Box(
             modifier = Modifier
                 .weight(1f)
-                .size(50.dp)
-                .background(Brand.Surface, RoundedCornerShape(12.dp))
-                .border(1.dp, Brand.Border, RoundedCornerShape(12.dp))
+                .size(56.dp)
+                .background(Brand.Surface, RoundedCornerShape(14.dp))
+                .border(1.dp, Brand.Border, RoundedCornerShape(14.dp))
                 .clickable { onHistory() },
             contentAlignment = Alignment.Center
         ) {
-            Text("🖼", fontSize = 19.sp)
+            Text("🖼", fontSize = 21.sp)
         }
 
         // Center: Shutter
@@ -611,20 +620,20 @@ private fun ControlRow(
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(52.dp)
                     .background(Brand.Surface, CircleShape)
                     .border(1.dp, Brand.Border, CircleShape)
                     .clickable { onToggleCamera() },
                 contentAlignment = Alignment.Center
             ) {
-                Text("🔄", fontSize = 18.sp)
+                Text("🔄", fontSize = 20.sp)
             }
 
-            Spacer(Modifier.size(12.dp))
+            Spacer(Modifier.size(16.dp))
 
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(52.dp)
                     .background(
                         if (timerSeconds > 0) Brand.Accent.copy(alpha = 0.18f) else Brand.Surface,
                         CircleShape
@@ -638,11 +647,11 @@ private fun ControlRow(
                 contentAlignment = Alignment.Center
             ) {
                 if (timerSeconds == 0) {
-                    Text("⏱", fontSize = 18.sp, color = Brand.TextSecondary)
+                    Text("⏱", fontSize = 20.sp, color = Brand.TextSecondary)
                 } else {
                     Text(
                         text = "$timerSeconds",
-                        fontSize = 14.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Brand.Accent
                     )
@@ -696,7 +705,7 @@ private fun ShutterButton(
 
     Box(
         modifier = Modifier
-            .size(92.dp)
+            .size(112.dp)
             .graphicsLayer {
                 scaleX = pressedScale * if (isReady) breathScale else 1f
                 scaleY = pressedScale * if (isReady) breathScale else 1f
@@ -708,7 +717,7 @@ private fun ShutterButton(
         if (isReady) {
             Box(
                 modifier = Modifier
-                    .size(82.dp)
+                    .size(100.dp)
                     .graphicsLayer {
                         scaleX = breathScale * 1.5f
                         scaleY = breathScale * 1.5f
@@ -721,9 +730,9 @@ private fun ShutterButton(
         // Outer ring
         Box(
             modifier = Modifier
-                .size(82.dp)
+                .size(100.dp)
                 .border(
-                    width = 2.5.dp,
+                    width = 3.dp,
                     color = if (isReady) Brand.Success.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.55f),
                     shape = CircleShape
                 )
@@ -732,7 +741,7 @@ private fun ShutterButton(
         // Inner circle
         Box(
             modifier = Modifier
-                .size(68.dp)
+                .size(84.dp)
                 .background(
                     brush = if (isReady) {
                         Brush.linearGradient(
@@ -752,11 +761,11 @@ private fun ShutterButton(
             contentAlignment = Alignment.Center
         ) {
             if (isReady) {
-                Text("●", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Text("●", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
             } else {
                 Box(
                     modifier = Modifier
-                        .size(26.dp)
+                        .size(32.dp)
                         .background(Color.Black.copy(alpha = 0.08f), CircleShape)
                 )
             }
@@ -772,7 +781,7 @@ private fun CompositionTipOverlay(plan: ShootingPlan) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .padding(top = 130.dp)
+            .padding(top = 150.dp)
     ) {
         Row(
             modifier = Modifier
@@ -821,7 +830,7 @@ private fun LowLightBanner() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .padding(top = 110.dp),
+            .padding(top = 130.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -852,7 +861,7 @@ private fun LowLightBanner() {
 // ─── Bottom Tips ───
 
 @Composable
-private fun PitchWarning(bottomOffset: Float = 170f) {
+private fun PitchWarning(bottomOffset: Float = 200f) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -884,7 +893,7 @@ private fun PitchWarning(bottomOffset: Float = 170f) {
 }
 
 @Composable
-private fun SpaceTip(bottomOffset: Float = 170f) {
+private fun SpaceTip(bottomOffset: Float = 200f) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -916,7 +925,7 @@ private fun SpaceTip(bottomOffset: Float = 170f) {
 }
 
 @Composable
-private fun AngleGuide(reqPitch: Float, devicePitch: Float, bottomOffset: Float = 230f) {
+private fun AngleGuide(reqPitch: Float, devicePitch: Float, bottomOffset: Float = 260f) {
     val isReaching = (reqPitch > 0 && devicePitch >= reqPitch) || (reqPitch < 0 && devicePitch <= reqPitch)
     Box(
         modifier = Modifier
