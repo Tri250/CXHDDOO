@@ -204,22 +204,11 @@ class CameraManager(
      */
     fun focusAt(normX: Float, normY: Float) {
         val cam = camera ?: return
-        try {
-            val pointFactory = previewView?.createMeteringPointFactory(
-                previewView?.display?.rotation ?: 0
-            )
-            if (pointFactory != null) {
-                val point = pointFactory.createPoint(normX, normY)
-                val action = androidx.camera.core.FocusMeteringAction.Builder(point).build()
-                cam.cameraControl.startFocusAndMetering(action)
-            }
-        } catch (e: Exception) {
-            runCatching {
-                val action = androidx.camera.core.FocusMeteringAction.Builder(
-                    androidx.camera.core.FocusPoint(normX, normY)
-                ).build()
-                cam.cameraControl.startFocusAndMetering(action)
-            }
+        runCatching {
+            val action = androidx.camera.core.FocusMeteringAction.Builder(
+                androidx.camera.core.MeteringPoint(normX, normY)
+            ).build()
+            cam.cameraControl.startFocusAndMetering(action)
         }
     }
 

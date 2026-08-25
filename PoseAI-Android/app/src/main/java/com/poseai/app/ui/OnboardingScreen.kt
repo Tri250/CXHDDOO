@@ -305,7 +305,8 @@ private fun StepCard(step: OnboardingStep) {
             modifier = Modifier
                 .size(130.dp)
                 .clip(CircleShape)
-                .background(step.iconColor.copy(alpha = 0.12f)),
+                .background(step.iconColor.copy(alpha = 0.12f))
+                .padding(top = 16.dp),
             contentAlignment = Alignment.Center
         ) {
             Box(
@@ -328,7 +329,6 @@ private fun StepCard(step: OnboardingStep) {
                 )
             }
         }
-        .then(Modifier.padding(top = 16.dp))
 
         Spacer(Modifier.height(36.dp))
 
