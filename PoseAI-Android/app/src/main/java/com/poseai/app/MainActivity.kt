@@ -328,7 +328,7 @@ private fun MainContent(
                     fileUri = "",
                     thumbnailUri = "",
                     score = vm.score.value.toInt(),
-                    filterName = null,
+                    filterName = "",
                     shotAt = System.currentTimeMillis(),
                     ratioName = com.poseai.app.model.CropRatio.SQUARE.displayName
                 )
