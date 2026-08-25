@@ -7,6 +7,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -41,6 +43,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
@@ -56,12 +59,15 @@ import com.poseai.app.model.ShootingPlan
 import com.poseai.app.ui.components.ARFootprintsOverlay
 import com.poseai.app.ui.components.AiAdvisorBanner
 import com.poseai.app.ui.components.CompositionGuideLines
+import com.poseai.app.ui.components.FocusIndicator
 import com.poseai.app.ui.components.LowLightGlowOverlay
 import com.poseai.app.ui.components.PlanCard
+import com.poseai.app.ui.components.RecordingProgressBar
 import com.poseai.app.ui.components.ScoreRing
 import com.poseai.app.ui.components.SceneScanningOverlay
 import com.poseai.app.ui.components.SilhouetteGuideOverlay
 import com.poseai.app.ui.components.VlogTextOverlay
+import com.poseai.app.ui.components.ZoomLevelIndicator
 import com.poseai.app.viewmodel.ShootingViewModel
 import kotlinx.coroutines.delay
 
@@ -102,6 +108,29 @@ fun ContentScreen(
 
     val plan = vm.currentPlan
     val isScanning = !isSceneReady && (scene == SceneType.UNKNOWN)
+
+    // 手势和交互状态
+    var zoomLevel by remember { mutableStateOf(1f) }
+    var focusPoint by remember { mutableStateOf<Offset?>(null) }
+    var showFocusIndicator by remember { mutableStateOf(false) }
+    var showZoomPanel by remember { mutableStateOf(false) }
+
+    // 自动隐藏对焦指示
+    LaunchedEffect(showFocusIndicator) {
+        if (showFocusIndicator) {
+            delay(1500)
+            showFocusIndicator = false
+            focusPoint = null
+        }
+    }
+
+    // 自动隐藏变焦面板
+    LaunchedEffect(showZoomPanel) {
+        if (showZoomPanel) {
+            delay(3000)
+            showZoomPanel = false
+        }
+    }
 
     // 相机绑定
     var previewView by remember { mutableStateOf<PreviewView?>(null) }
@@ -146,12 +175,62 @@ fun ContentScreen(
             }
         }
 
-        // 2. 点击进入/退出沉浸模式的手势层
+        // 2. 手势层：双击缩放 + 单击对焦 + 长按变焦面板
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .clickable { vm.toggleImmersiveMode() }
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onDoubleTap = { offset ->
+                            // 双击切换 1x ↔ 2x 缩放
+                            val newZoom = if (zoomLevel > 1.5f) 1f else 2f
+                            zoomLevel = newZoom
+                            vm.setZoom(newZoom)
+                        },
+                        onTap = { offset ->
+                            if (isImmersive) {
+                                vm.toggleImmersiveMode()
+                            } else {
+                                // 单击切换沉浸模式
+                                vm.toggleImmersiveMode()
+                            }
+                        }
+                    )
+                }
+                .pointerInput(Unit) {
+                    detectDragGesturesAfterLongPress(
+                        onDragStart = { offset ->
+                            // 长按显示变焦面板
+                            showZoomPanel = true
+                        },
+                        onDragEnd = {
+                            showZoomPanel = false
+                        }
+                    ) { change, dragAmount ->
+                        // 拖动调整变焦
+                        change.consume()
+                        val delta = dragAmount.y / 200f
+                        zoomLevel = (zoomLevel - delta).coerceIn(0.5f, 3f)
+                        vm.setZoom(zoomLevel)
+                    }
+                }
         )
+
+        // 2.5. 对焦指示器
+        if (showFocusIndicator && focusPoint != null) {
+            FocusIndicator(focusPoint!!)
+        }
+
+        // 2.6. 变焦水平条（长按显示）
+        if (showZoomPanel) {
+            ZoomLevelIndicator(
+                currentZoom = zoomLevel,
+                onZoomChange = { newZoom ->
+                    zoomLevel = newZoom
+                    vm.setZoom(newZoom)
+                }
+            )
+        }
 
         // 3. 构图辅助线
         if (isSceneReady && !isImmersive) {
@@ -238,6 +317,15 @@ fun ContentScreen(
         // 12. Vlog 提词器
         if (!isImmersive && displayVlogText != null) {
             VlogTextOverlay(displayVlogText!!, isVlogRecording, screenH / localDensity.density)
+        }
+
+        // 12.5. 录制进度条（Vlog录制时显示）
+        if (!isImmersive && isVlogRecording && plan?.vlogScript != null) {
+            RecordingProgressBar(
+                current = activeVlogClipIndex + 1,
+                total = plan.vlogScript.clips.size,
+                label = "Vlog 录制中"
+            )
         }
 
         // 13. 屏幕柔边补光带
