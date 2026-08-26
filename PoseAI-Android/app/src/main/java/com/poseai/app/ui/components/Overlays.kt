@@ -225,13 +225,13 @@ fun ScoreRing(score: Float, isReady: Boolean) {
     )
 
     Box(
-        modifier = Modifier.size(48.dp).graphicsLayer {
+        modifier = Modifier.size(54.dp).graphicsLayer {
             scaleX = scaleAnim
             scaleY = scaleAnim
         },
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.size(48.dp)) {
+        Canvas(modifier = Modifier.size(54.dp)) {
             val cx = size.width / 2
             val cy = size.height / 2
             val r = size.minDimension / 2 - 4f
@@ -284,7 +284,7 @@ fun ScoreRing(score: Float, isReady: Boolean) {
         Text(
             text = "${score.toInt()}",
             color = Color.White,
-            fontSize = 11.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Black
         )
     }
@@ -496,7 +496,7 @@ fun AiAdvisorBanner(text: String) {
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(top = 85.dp)
+            .padding(top = 95.dp)
             .padding(horizontal = 24.dp)
     ) {
         Row(
@@ -504,7 +504,7 @@ fun AiAdvisorBanner(text: String) {
                 .fillMaxWidth()
                 .background(
                     Brand.Surface,
-                    RoundedCornerShape(20.dp)
+                    RoundedCornerShape(18.dp)
                 )
                 .border(
                     1.5.dp,
@@ -513,11 +513,11 @@ fun AiAdvisorBanner(text: String) {
                         start = androidx.compose.ui.geometry.Offset(0f, 0f),
                         end = androidx.compose.ui.geometry.Offset(1f, 1f)
                     ),
-                    RoundedCornerShape(20.dp)
+                    RoundedCornerShape(18.dp)
                 )
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .padding(horizontal = 18.dp, vertical = 14.dp),
         ) {
-            Text("✨", fontSize = 20.sp, modifier = Modifier.padding(top = 2.dp))
+            Text("✨", fontSize = 18.sp, modifier = Modifier.padding(top = 2.dp))
             Column(modifier = Modifier.padding(start = 12.dp)) {
                 Text("AI 构图灵感", color = Brand.AI_Purple, fontSize = 13.sp, fontWeight = FontWeight.Black)
                 Text(text, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium,
@@ -533,7 +533,7 @@ fun AiAdvisorBanner(text: String) {
  */
 @Composable
 fun VlogTextOverlay(text: String, isRecording: Boolean, screenHeightDp: Float = 800f) {
-    val bottomOffset = (screenHeightDp * 0.28f).dp
+    val bottomOffset = (screenHeightDp * 0.33f).dp
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -544,13 +544,13 @@ fun VlogTextOverlay(text: String, isRecording: Boolean, screenHeightDp: Float = 
         Box(
             modifier = Modifier
                 .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+                .padding(horizontal = 24.dp, vertical = 14.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = text,
                 color = Color.White,
-                fontSize = 26.sp,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.Black
             )
         }
@@ -610,29 +610,29 @@ fun PlanCard(plan: ShootingPlan, isSelected: Boolean, onClick: () -> Unit) {
                         end = androidx.compose.ui.geometry.Offset(0f, 1f)
                     )
                 },
-                RoundedCornerShape(14.dp)
+                RoundedCornerShape(12.dp)
             )
             .border(
                 width = if (isSelected) 1.5.dp else 1.dp,
                 color = if (isSelected) Brand.Accent.copy(alpha = 0.75f) else Brand.Border,
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(12.dp)
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(plan.poseEmoji, fontSize = 18.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(plan.poseEmoji, fontSize = 16.sp)
             Text(
                 plan.poseName,
-                fontSize = 14.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
                 maxLines = 1
             )
         }
         if (isSelected) {
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 TagBadge(icon = plan.composition.icon, text = plan.composition.displayName, active = true)
                 TagBadge(icon = plan.frameRatio.icon, text = plan.frameRatio.displayName, active = true)
             }
@@ -729,7 +729,7 @@ fun ZoomLevelIndicator(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp, vertical = 4.dp),
+            .padding(horizontal = 36.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -738,7 +738,7 @@ fun ZoomLevelIndicator(
             val isActive = abs(currentZoom - preset) < 0.05f
             Box(
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(44.dp)
                     .background(
                         if (isActive) Brand.Accent.copy(alpha = 0.2f)
                         else Color.White.copy(alpha = 0.08f),
@@ -755,7 +755,7 @@ fun ZoomLevelIndicator(
                 Text(
                     text = if (preset < 1) "${preset}x" else "${preset.toInt()}x",
                     color = if (isActive) Brand.Accent else Color.White.copy(alpha = 0.7f),
-                    fontSize = 11.sp,
+                    fontSize = 13.sp,
                     fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium
                 )
             }
@@ -771,7 +771,7 @@ fun ZoomLevelIndicator(
  * @param topOffsetDp 顶部偏移（dp），由 ContentScreen 根据屏幕高度计算传入
  */
 @Composable
-fun RecordingProgressBar(current: Int, total: Int, label: String, topOffsetDp: Float = 130f) {
+fun RecordingProgressBar(current: Int, total: Int, label: String, topOffsetDp: Float = 155f) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -780,9 +780,9 @@ fun RecordingProgressBar(current: Int, total: Int, label: String, topOffsetDp: F
     ) {
         Column(
             modifier = Modifier
-                .background(Brand.Surface.copy(alpha = 0.9f), RoundedCornerShape(16.dp))
-                .border(1.dp, Brand.Coral.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
-                .padding(horizontal = 16.dp, vertical = 10.dp)
+                .background(Brand.Surface.copy(alpha = 0.9f), RoundedCornerShape(14.dp))
+                .border(1.dp, Brand.Coral.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
+                .padding(horizontal = 14.dp, vertical = 10.dp)
                 .fillMaxWidth()
         ) {
             Row(
@@ -793,20 +793,20 @@ fun RecordingProgressBar(current: Int, total: Int, label: String, topOffsetDp: F
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(8.dp)
+                            .size(6.dp)
                             .background(Brand.Coral, CircleShape)
                     )
                     Text(
                         text = " ● $label",
                         color = Color.White,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
                 Text(
                     text = "$current/$total",
                     color = Brand.TextSecondary,
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -820,7 +820,7 @@ fun RecordingProgressBar(current: Int, total: Int, label: String, topOffsetDp: F
                     Box(
                         modifier = Modifier
                             .then(if (idx == 0) Modifier else Modifier)
-                            .height(3.dp)
+                            .height(2.dp)
                             .background(
                                 if (idx < current) Brand.Coral
                                 else Color.White.copy(alpha = 0.2f),

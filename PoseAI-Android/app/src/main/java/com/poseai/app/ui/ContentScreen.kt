@@ -375,7 +375,7 @@ private fun TopBar(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = 18.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (isSceneReady && plan != null) {
@@ -388,17 +388,17 @@ private fun TopBar(
                         RoundedCornerShape(Brand.Radius.Lg)
                     )
                     .border(1.dp, Brand.Border, RoundedCornerShape(Brand.Radius.Lg))
-                    .padding(horizontal = 18.dp, vertical = 14.dp),
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(36.dp)
                         .background(Brand.Surface, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(scene.icon, fontSize = 17.sp, color = Brand.Accent)
+                    Text(scene.icon, fontSize = 14.sp, color = Brand.Accent)
                 }
 
                 Column(
@@ -448,17 +448,17 @@ private fun TopBar(
             ScoreRing(score, isReady)
         }
 
-        Spacer(Modifier.size(14.dp))
+        Spacer(Modifier.size(10.dp))
 
         Box(
             modifier = Modifier
-                .size(48.dp)
+                .size(40.dp)
                 .background(Brand.Surface, CircleShape)
                 .border(1.dp, Brand.Border, CircleShape)
                 .clickable { onGuide() },
             contentAlignment = Alignment.Center
         ) {
-            Text("?", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+            Text("?", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -480,10 +480,11 @@ private fun BottomPanel(
             .fillMaxWidth()
             .background(
                 Brush.verticalGradient(
-                    listOf(Color.Black.copy(alpha = 0f), Color.Black.copy(alpha = 0.7f))
+                    listOf(Color.Black.copy(alpha = 0f), Color.Black.copy(alpha = 0.75f))
                 )
             )
             .navigationBarsPadding()
+            .padding(bottom = 12.dp)
     ) {
         if (isSceneReady && !isImmersive) {
             PlanPickerSection(
@@ -526,31 +527,31 @@ private fun PlanPickerSection(
 
     LazyRow(
         state = listState,
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-        modifier = Modifier.padding(top = 14.dp, bottom = 4.dp)
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.padding(top = 10.dp, bottom = 4.dp)
     ) {
         item {
             Column(
                 modifier = Modifier
                     .background(
                         if (isRecordingMode) Brand.Coral.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.08f),
-                        RoundedCornerShape(14.dp)
+                        RoundedCornerShape(12.dp)
                     )
                     .border(
                         1.dp,
                         if (isRecordingMode) Brand.Coral.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.3f),
-                        RoundedCornerShape(14.dp)
+                        RoundedCornerShape(12.dp)
                     )
                     .clickable { onStartRecording() }
-                    .padding(horizontal = 18.dp, vertical = 14.dp),
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
                     text = if (isRecordingMode) "●" else "＋",
                     color = if (isRecordingMode) Brand.Coral else Color.White,
-                    fontSize = 20.sp
+                    fontSize = 18.sp
                 )
                 Text(
                     text = if (isRecordingMode) "捕捉中..." else "录制专属",
@@ -584,20 +585,20 @@ private fun ControlRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp, vertical = 28.dp),
+            .padding(horizontal = 28.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Left: History
         Box(
             modifier = Modifier
                 .weight(1f)
-                .size(56.dp)
-                .background(Brand.Surface, RoundedCornerShape(14.dp))
-                .border(1.dp, Brand.Border, RoundedCornerShape(14.dp))
+                .size(50.dp)
+                .background(Brand.Surface, RoundedCornerShape(12.dp))
+                .border(1.dp, Brand.Border, RoundedCornerShape(12.dp))
                 .clickable { onHistory() },
             contentAlignment = Alignment.Center
         ) {
-            Text("🖼", fontSize = 21.sp)
+            Text("🖼", fontSize = 19.sp)
         }
 
         // Center: Shutter
@@ -620,20 +621,20 @@ private fun ControlRow(
         ) {
             Box(
                 modifier = Modifier
-                    .size(52.dp)
+                    .size(44.dp)
                     .background(Brand.Surface, CircleShape)
                     .border(1.dp, Brand.Border, CircleShape)
                     .clickable { onToggleCamera() },
                 contentAlignment = Alignment.Center
             ) {
-                Text("🔄", fontSize = 20.sp)
+                Text("🔄", fontSize = 18.sp)
             }
 
-            Spacer(Modifier.size(16.dp))
+            Spacer(Modifier.size(12.dp))
 
             Box(
                 modifier = Modifier
-                    .size(52.dp)
+                    .size(44.dp)
                     .background(
                         if (timerSeconds > 0) Brand.Accent.copy(alpha = 0.18f) else Brand.Surface,
                         CircleShape
@@ -647,11 +648,11 @@ private fun ControlRow(
                 contentAlignment = Alignment.Center
             ) {
                 if (timerSeconds == 0) {
-                    Text("⏱", fontSize = 20.sp, color = Brand.TextSecondary)
+                    Text("⏱", fontSize = 18.sp, color = Brand.TextSecondary)
                 } else {
                     Text(
                         text = "$timerSeconds",
-                        fontSize = 16.sp,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = Brand.Accent
                     )
@@ -705,7 +706,7 @@ private fun ShutterButton(
 
     Box(
         modifier = Modifier
-            .size(112.dp)
+            .size(92.dp)
             .graphicsLayer {
                 scaleX = pressedScale * if (isReady) breathScale else 1f
                 scaleY = pressedScale * if (isReady) breathScale else 1f
@@ -717,7 +718,7 @@ private fun ShutterButton(
         if (isReady) {
             Box(
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(82.dp)
                     .graphicsLayer {
                         scaleX = breathScale * 1.5f
                         scaleY = breathScale * 1.5f
@@ -730,9 +731,9 @@ private fun ShutterButton(
         // Outer ring
         Box(
             modifier = Modifier
-                .size(100.dp)
+                .size(82.dp)
                 .border(
-                    width = 3.dp,
+                    width = 2.5.dp,
                     color = if (isReady) Brand.Success.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.55f),
                     shape = CircleShape
                 )
@@ -741,7 +742,7 @@ private fun ShutterButton(
         // Inner circle
         Box(
             modifier = Modifier
-                .size(84.dp)
+                .size(68.dp)
                 .background(
                     brush = if (isReady) {
                         Brush.linearGradient(
@@ -761,11 +762,11 @@ private fun ShutterButton(
             contentAlignment = Alignment.Center
         ) {
             if (isReady) {
-                Text("●", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                Text("●", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
             } else {
                 Box(
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(26.dp)
                         .background(Color.Black.copy(alpha = 0.08f), CircleShape)
                 )
             }
@@ -781,7 +782,7 @@ private fun CompositionTipOverlay(plan: ShootingPlan) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .padding(top = 150.dp)
+            .padding(top = 130.dp)
     ) {
         Row(
             modifier = Modifier
@@ -830,7 +831,7 @@ private fun LowLightBanner() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .padding(top = 130.dp),
+            .padding(top = 140.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -840,14 +841,14 @@ private fun LowLightBanner() {
                     Brush.verticalGradient(
                         listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
                     ),
-                    RoundedCornerShape(20.dp)
+                    RoundedCornerShape(18.dp)
                 )
-                .border(1.dp, Color(0x66FFEB3B), RoundedCornerShape(20.dp))
+                .border(1.dp, Color(0x66FFEB3B), RoundedCornerShape(18.dp))
                 .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text("💡", fontSize = 13.sp)
+            Text("💡", fontSize = 14.sp)
             Text(
                 text = "光线不足，移到明亮处效果更好",
                 color = Color.White.copy(alpha = 0.9f),
@@ -861,7 +862,7 @@ private fun LowLightBanner() {
 // ─── Bottom Tips ───
 
 @Composable
-private fun PitchWarning(bottomOffset: Float = 200f) {
+private fun PitchWarning(bottomOffset: Float = 170f) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -874,9 +875,9 @@ private fun PitchWarning(bottomOffset: Float = 200f) {
                     Brush.verticalGradient(
                         listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
                     ),
-                    RoundedCornerShape(20.dp)
+                    RoundedCornerShape(18.dp)
                 )
-                .border(1.dp, Brand.Coral.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                .border(1.dp, Brand.Coral.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
                 .padding(horizontal = 18.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -893,7 +894,7 @@ private fun PitchWarning(bottomOffset: Float = 200f) {
 }
 
 @Composable
-private fun SpaceTip(bottomOffset: Float = 200f) {
+private fun SpaceTip(bottomOffset: Float = 170f) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -906,9 +907,9 @@ private fun SpaceTip(bottomOffset: Float = 200f) {
                     Brush.verticalGradient(
                         listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
                     ),
-                    RoundedCornerShape(20.dp)
+                    RoundedCornerShape(18.dp)
                 )
-                .border(1.dp, Brand.Accent.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                .border(1.dp, Brand.Accent.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
                 .padding(horizontal = 18.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -925,7 +926,7 @@ private fun SpaceTip(bottomOffset: Float = 200f) {
 }
 
 @Composable
-private fun AngleGuide(reqPitch: Float, devicePitch: Float, bottomOffset: Float = 260f) {
+private fun AngleGuide(reqPitch: Float, devicePitch: Float, bottomOffset: Float = 230f) {
     val isReaching = (reqPitch > 0 && devicePitch >= reqPitch) || (reqPitch < 0 && devicePitch <= reqPitch)
     Box(
         modifier = Modifier
@@ -939,12 +940,12 @@ private fun AngleGuide(reqPitch: Float, devicePitch: Float, bottomOffset: Float 
                     Brush.verticalGradient(
                         listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
                     ),
-                    RoundedCornerShape(20.dp)
+                    RoundedCornerShape(18.dp)
                 )
                 .border(
                     2.dp,
                     if (isReaching) Brand.Success.copy(alpha = 0.8f) else Brand.Coral.copy(alpha = 0.8f),
-                    RoundedCornerShape(20.dp)
+                    RoundedCornerShape(18.dp)
                 )
                 .padding(horizontal = 20.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
