@@ -135,13 +135,15 @@ private fun resolveLayout(
         val detectedCenterX = (bbox.center.x + paddingSide / 2f) * screenW
         val centerX = detectedCenterX.coerceIn(silW / 2f, screenW - silW / 2f)
         val detectedMidY = (bbox.top - paddingTop / 2f + bboxH / 2f) * screenH
-        val centerY = detectedMidY.coerceIn(silH / 2f, screenH - silH / 2f - 40f)
+        val bottomSafeZone = screenH * 0.08f
+        val centerY = detectedMidY.coerceIn(silH / 2f, screenH - silH / 2f - bottomSafeZone)
         return SilLayout(silW, silH, centerX, centerY)
     } else {
         val defaultH = screenH * plan.frameRatio.heightRatio
         val defaultW = defaultH * aspect
         val defaultX = screenW / 2f
-        val defaultY = if (plan.frameRatio.name == "FULL_BODY") screenH - defaultH / 2f - 140f else screenH * 0.42f
+        val bottomOffset = screenH * 0.15f
+        val defaultY = if (plan.frameRatio.name == "FULL_BODY") screenH - defaultH / 2f - bottomOffset else screenH * 0.42f
         return SilLayout(defaultW, defaultH, defaultX, defaultY)
     }
 }
@@ -293,9 +295,10 @@ fun ScoreRing(score: Float, isReady: Boolean) {
 /**
  * 场景扫描动画覆盖层——复刻 iOS sceneScanningOverlay。
  * 带脉冲环、四角修饰线、旋转扫描弧。
+ * @param screenHeightDp 屏幕高度（dp），用于响应式定位底部提示
  */
 @Composable
-fun SceneScanningOverlay() {
+fun SceneScanningOverlay(screenHeightDp: Float = 800f) {
     val infiniteTransition = rememberInfiniteTransition(label = "scanPulse")
     val pulseSize by animateFloatAsState(
         targetValue = 220f,
@@ -314,7 +317,6 @@ fun SceneScanningOverlay() {
         label = "pulseAlpha"
     )
 
-    // 旋转扫描弧
     val rotation by animateFloatAsState(
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
@@ -324,11 +326,12 @@ fun SceneScanningOverlay() {
         label = "scanRotation"
     )
 
+    val bottomTipOffset = screenHeightDp * 0.2f
+
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        // 脉冲圈
         Canvas(
             modifier = Modifier.size(pulseSize.dp)
         ) {
@@ -338,7 +341,6 @@ fun SceneScanningOverlay() {
             )
         }
 
-        // 第二圈脉冲（延迟）
         Canvas(
             modifier = Modifier.size((pulseSize - 30).dp)
         ) {
@@ -348,22 +350,18 @@ fun SceneScanningOverlay() {
             )
         }
 
-        // 主框
         Box(
             modifier = Modifier
                 .size(140.dp, 190.dp)
                 .border(2.dp, Brand.Accent.copy(alpha = 0.8f), RoundedCornerShape(20.dp))
         )
 
-        // 四角修饰线
         ScanCornerLinesModifier()
 
-        // 内容
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.offset(y = (-10).dp)
         ) {
-            // 旋转扫描弧
             Box(
                 modifier = Modifier
                     .size(44.dp)
@@ -392,10 +390,9 @@ fun SceneScanningOverlay() {
             )
         }
 
-        // 底部提示
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.offset(y = 160.dp)
+            modifier = Modifier.offset(y = bottomTipOffset.dp)
         ) {
             Text(
                 "将镜头对准拍摄背景",
@@ -438,15 +435,16 @@ private fun ScanCornerLinesModifier() {
 
 /**
  * AR 地面脚印覆盖层——复刻 iOS arFootprintsOverlay。
+ * @param bottomPadding 底部偏移（dp），由 ContentScreen 根据屏幕高度计算传入
  */
 @Composable
-fun ARFootprintsOverlay() {
+fun ARFootprintsOverlay(bottomPadding: Float = 220f) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.BottomCenter
     ) {
         Row(
-            modifier = Modifier.padding(bottom = 220.dp),
+            modifier = Modifier.padding(bottom = bottomPadding.dp),
             horizontalArrangement = Arrangement.spacedBy(36.dp)
         ) {
             Text("👣", fontSize = 24.sp, color = Brand.Accent.copy(alpha = 0.25f),
@@ -489,14 +487,15 @@ fun LowLightGlowOverlay() {
 /**
  * AI 构图灵感浮层——复刻 iOS aiAdvisorBanner。
  * 适配刘海屏，使用 statusBarsPadding。
+ * @param topPadding 顶部偏移（dp），由 ContentScreen 根据屏幕高度计算传入
  */
 @Composable
-fun AiAdvisorBanner(text: String) {
+fun AiAdvisorBanner(text: String, topPadding: Float = 95f) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(top = 95.dp)
+            .padding(top = topPadding.dp)
             .padding(horizontal = 24.dp)
     ) {
         Row(
@@ -530,10 +529,11 @@ fun AiAdvisorBanner(text: String) {
 /**
  * Vlog 提词器覆盖层——复刻 iOS vlogTextOverlay。
  * 位置自适应，基于屏幕高度动态计算底部偏移。
+ * @param screenHeightDp 屏幕高度（dp），用于响应式定位
  */
 @Composable
 fun VlogTextOverlay(text: String, isRecording: Boolean, screenHeightDp: Float = 800f) {
-    val bottomOffset = (screenHeightDp * 0.33f).dp
+    val bottomOffset = max(screenHeightDp * 0.33f, 280f).dp
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -771,7 +771,7 @@ fun ZoomLevelIndicator(
  * @param topOffsetDp 顶部偏移（dp），由 ContentScreen 根据屏幕高度计算传入
  */
 @Composable
-fun RecordingProgressBar(current: Int, total: Int, label: String, topOffsetDp: Float = 155f) {
+fun RecordingProgressBar(current: Int, total: Int, label: String, topOffsetDp: Float = 128f) {
     Box(
         modifier = Modifier
             .fillMaxWidth()

@@ -71,6 +71,7 @@ import com.poseai.app.ui.components.VlogTextOverlay
 import com.poseai.app.ui.components.ZoomLevelIndicator
 import com.poseai.app.viewmodel.ShootingViewModel
 import kotlinx.coroutines.delay
+import kotlin.math.max
 
 @Composable
 fun ContentScreen(
@@ -158,6 +159,18 @@ fun ContentScreen(
         val localDensity = LocalDensity.current
         val screenW = with(localDensity) { maxWidth.toPx() }
         val screenH = constraints.maxHeight.toFloat()
+        val screenWidthDp = with(localDensity) { maxWidth.toDp() }
+        val screenHeightDp = with(localDensity) { constraints.maxHeight.toDp() }
+
+        // 响应式位置计算（基于屏幕高度百分比）
+        val topBarBottomPadding = with(localDensity) { screenHeightDp * 0.09f }
+        val aiBannerTopPadding = with(localDensity) { screenHeightDp * 0.12f }
+        val tipOverlayTopPadding = with(localDensity) { screenHeightDp * 0.16f }
+        val lowLightBannerTopPadding = with(localDensity) { screenHeightDp * 0.13f }
+        val bottomTipOffset = with(localDensity) { max(screenHeightDp * 0.35f, 220.dp) }
+        val angleGuideOffset = with(localDensity) { max(screenHeightDp * 0.40f, 260.dp) }
+        val progressBarTopOffset = with(localDensity) { screenHeightDp * 0.16f }
+        val arFootprintsBottomPadding = with(localDensity) { screenHeightDp * 0.35f }
 
         // 1. 相机预览层
         if (hasCameraPermission) {
@@ -183,32 +196,24 @@ fun ContentScreen(
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onDoubleTap = { offset ->
-                            // 双击切换 1x ↔ 2x 缩放
                             val newZoom = if (zoomLevel > 1.5f) 1f else 2f
                             zoomLevel = newZoom
                             vm.setZoom(newZoom)
                         },
                         onTap = { offset ->
-                            if (isImmersive) {
-                                vm.toggleImmersiveMode()
-                            } else {
-                                // 单击切换沉浸模式
-                                vm.toggleImmersiveMode()
-                            }
+                            vm.toggleImmersiveMode()
                         }
                     )
                 }
                 .pointerInput(Unit) {
                     detectDragGesturesAfterLongPress(
                         onDragStart = { offset ->
-                            // 长按显示变焦面板
                             showZoomPanel = true
                         },
                         onDragEnd = {
                             showZoomPanel = false
                         }
                     ) { change, dragAmount ->
-                        // 拖动调整变焦
                         change.consume()
                         val delta = dragAmount.y / 200f
                         zoomLevel = (zoomLevel - delta).coerceIn(0.5f, 3f)
@@ -240,7 +245,7 @@ fun ContentScreen(
 
         // 4. 场景扫描 / 剪影引导
         if (!isSceneReady) {
-            SceneScanningOverlay()
+            SceneScanningOverlay(screenHeightDp = screenHeightDp)
         } else if (plan != null) {
             if (plan.secondaryPosePoints != null) {
                 val b0 = detectedPoses.getOrNull(0)?.bbox?.let { toComposeRect(it) }
@@ -255,10 +260,10 @@ fun ContentScreen(
 
         // 5. AR 地面脚印
         if (!isImmersive && isSceneReady && plan?.frameRatio == com.poseai.app.model.FrameRatio.FULL_BODY) {
-            ARFootprintsOverlay()
+            ARFootprintsOverlay(bottomPadding = arFootprintsBottomPadding)
         }
 
-        // 6. 顶部信息栏
+        // 6. 顶部信息栏（固定在顶部）
         if (!isImmersive) {
             TopBar(
                 scene = scene,
@@ -274,22 +279,60 @@ fun ContentScreen(
             )
         }
 
-        // 7. 构图提示浮层
-        if (!isImmersive && showCompositionTip && plan != null) {
-            CompositionTipOverlay(plan)
+        // 7. AI 构图灵感（位于 TopBar 下方）
+        if (!isImmersive && aiSuggestion != null) {
+            AiAdvisorBanner(aiSuggestion!!, topPadding = aiBannerTopPadding)
         }
 
-        // 8. AI 构图灵感
-        if (!isImmersive && aiSuggestion != null) {
-            AiAdvisorBanner(aiSuggestion!!)
+        // 8. 构图提示浮层（位于 AI Banner 下方）
+        if (!isImmersive && showCompositionTip && plan != null) {
+            CompositionTipOverlay(plan, topPadding = tipOverlayTopPadding)
         }
 
         // 9. 暗光提示 Banner
         if (!isImmersive && isLowLight && isSceneReady) {
-            LowLightBanner()
+            LowLightBanner(topPadding = lowLightBannerTopPadding)
         }
 
-        // 10. 底部控制区
+        // 10. 底部提示 (俯仰警告/留白/角度) - 在底部控制面板上方
+        if (!isImmersive) {
+            when {
+                devicePitch < -0.35f -> PitchWarning(bottomOffset = bottomTipOffset)
+                showSpaceTip && devicePitch >= -0.35f && !showCompositionTip -> SpaceTip(bottomOffset = bottomTipOffset)
+                else -> {
+                    plan?.multiAngles?.let { multi ->
+                        if (activeAngleIndex < multi.size && multi[activeAngleIndex].requiredPitch != null) {
+                            AngleGuide(
+                                multi[activeAngleIndex].requiredPitch!!,
+                                devicePitch,
+                                bottomOffset = angleGuideOffset
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // 11. Vlog 提词器（位于屏幕中上部）
+        if (!isImmersive && displayVlogText != null) {
+            VlogTextOverlay(
+                displayVlogText!!,
+                isVlogRecording,
+                screenHeightDp = screenHeightDp
+            )
+        }
+
+        // 11.5. 录制进度条（Vlog录制时显示）
+        if (!isImmersive && isVlogRecording && plan?.vlogScript != null) {
+            RecordingProgressBar(
+                current = activeVlogClipIndex + 1,
+                total = plan.vlogScript.clips.size,
+                label = "Vlog 录制中",
+                topOffsetDp = progressBarTopOffset
+            )
+        }
+
+        // 12. 底部控制区（固定在底部）
         BottomPanel(
             vm = vm,
             isSceneReady = isSceneReady && vm.availablePlans.isNotEmpty(),
@@ -299,35 +342,6 @@ fun ContentScreen(
             timerSeconds = timerSeconds,
             onHistory = onShowHistory
         )
-
-        // 11. 底部提示 (俯仰警告/留白/角度)
-        if (!isImmersive) {
-            when {
-                devicePitch < -0.35f -> PitchWarning()
-                showSpaceTip && devicePitch >= -0.35f && !showCompositionTip -> SpaceTip()
-                else -> {
-                    plan?.multiAngles?.let { multi ->
-                        if (activeAngleIndex < multi.size && multi[activeAngleIndex].requiredPitch != null) {
-                            AngleGuide(multi[activeAngleIndex].requiredPitch!!, devicePitch)
-                        }
-                    }
-                }
-            }
-        }
-
-        // 12. Vlog 提词器
-        if (!isImmersive && displayVlogText != null) {
-            VlogTextOverlay(displayVlogText!!, isVlogRecording, screenH / localDensity.density)
-        }
-
-        // 12.5. 录制进度条（Vlog录制时显示）
-        if (!isImmersive && isVlogRecording && plan?.vlogScript != null) {
-            RecordingProgressBar(
-                current = activeVlogClipIndex + 1,
-                total = plan.vlogScript.clips.size,
-                label = "Vlog 录制中"
-            )
-        }
 
         // 13. 屏幕柔边补光带
         if (isLowLight && !isImmersive) {
@@ -777,12 +791,12 @@ private fun ShutterButton(
 // ─── CompositionTipOverlay ───
 
 @Composable
-private fun CompositionTipOverlay(plan: ShootingPlan) {
+private fun CompositionTipOverlay(plan: ShootingPlan, topPadding: Float = 0f) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .padding(top = 130.dp)
+            .padding(top = topPadding.dp)
     ) {
         Row(
             modifier = Modifier
@@ -826,12 +840,12 @@ private fun CompositionTipOverlay(plan: ShootingPlan) {
 // ─── LowLightBanner ───
 
 @Composable
-private fun LowLightBanner() {
+private fun LowLightBanner(topPadding: Float = 0f) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .padding(top = 140.dp),
+            .padding(top = topPadding.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -862,7 +876,7 @@ private fun LowLightBanner() {
 // ─── Bottom Tips ───
 
 @Composable
-private fun PitchWarning(bottomOffset: Float = 170f) {
+private fun PitchWarning(bottomOffset: Float = 220f) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -894,7 +908,7 @@ private fun PitchWarning(bottomOffset: Float = 170f) {
 }
 
 @Composable
-private fun SpaceTip(bottomOffset: Float = 170f) {
+private fun SpaceTip(bottomOffset: Float = 220f) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -926,7 +940,7 @@ private fun SpaceTip(bottomOffset: Float = 170f) {
 }
 
 @Composable
-private fun AngleGuide(reqPitch: Float, devicePitch: Float, bottomOffset: Float = 230f) {
+private fun AngleGuide(reqPitch: Float, devicePitch: Float, bottomOffset: Float = 260f) {
     val isReaching = (reqPitch > 0 && devicePitch >= reqPitch) || (reqPitch < 0 && devicePitch <= reqPitch)
     Box(
         modifier = Modifier
