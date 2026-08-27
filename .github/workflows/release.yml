@@ -45,6 +45,9 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+          cache-disabled: false
 
       - name: Resolve version & tag
         id: version
@@ -62,6 +65,9 @@ jobs:
           echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_OUTPUT"
           echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_OUTPUT"
           echo ">>> $RELEASE_TAG (code=$VERSION_CODE, name=$VERSION_NAME)"
+
+      - name: Make gradlew executable
+        run: chmod +x PoseAI-Android/gradlew
 
       - name: Create signing keystore
         run: |
@@ -87,7 +93,7 @@ jobs:
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD || 'poseai_release' }}
         run: |
           ./gradlew :app:assembleRelease :app:bundleRelease \
-            --no-daemon --console=plain --stacktrace
+            --no-daemon --console=plain --stacktrace --no-build-cache
 
       - name: Collect & validate artifacts
         run: |
@@ -99,6 +105,7 @@ jobs:
           ls -lh artifacts/
           echo "=== Validate sizes ==="
           for f in artifacts/*.apk artifacts/*.aab; do
+            [ -f "$f" ] || continue
             size=$(stat -c%s "$f" 2>/dev/null || echo 0)
             if [ "$size" -lt 1000000 ]; then
               echo "ERROR: $f is suspiciously small ($size bytes)"
@@ -109,13 +116,20 @@ jobs:
 
       - name: Verify APK signature
         run: |
-          BT="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          # 动态查找 apksigner（兼容不同 build-tools 版本路径）
+          APKSIGNER=$(find "$ANDROID_HOME" -name "apksigner" -type f 2>/dev/null | head -1)
+          if [ -z "$APKSIGNER" ]; then
+            APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          fi
+          echo "Using apksigner: $APKSIGNER"
           for apk in artifacts/*.apk; do
+            [ -f "$apk" ] || continue
             echo "=== Verifying $apk ==="
-            "$BT" verify --verbose "$apk" && echo "SIGNATURE OK" || echo "SIGNATURE FAIL"
+            "$APKSIGNER" verify --verbose "$apk" && echo "SIGNATURE OK" || echo "SIGNATURE FAIL"
           done
           echo "=== Verify APK contents ==="
           for apk in artifacts/*.apk; do
+            [ -f "$apk" ] || continue
             echo "$(basename "$apk"): $(unzip -l "$apk" | tail -1)"
           done
 
@@ -168,6 +182,10 @@ jobs:
             - 构图辅助线（三分法 / 黄金分割）
             - 响应式布局（适配各尺寸 Android）
             - 内存稳定性优化（ANR 风险消除）
+            - 权限批量请求优化（避免弹窗叠加）
+            - POST_NOTIFICATIONS 运行时权限适配
+            - CameraProvider 初始化异常安全
+            - Bitmap 回收竞态修复（OOTD 崩溃防护）
 
             ### Build Info
             - versionName: ${{ steps.version.outputs.VERSION_NAME }}
