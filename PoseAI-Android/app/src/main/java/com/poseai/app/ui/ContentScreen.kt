@@ -48,6 +48,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -157,10 +158,10 @@ fun ContentScreen(
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         val localDensity = LocalDensity.current
-        val screenW = with(localDensity) { maxWidth.toPx() }
+        val screenW = constraints.maxWidth.toFloat()
         val screenH = constraints.maxHeight.toFloat()
-        val screenWidthDp = with(localDensity) { maxWidth.toDp() }
-        val screenHeightDp = with(localDensity) { constraints.maxHeight.toDp() }
+        val screenWidthDp = maxWidth
+        val screenHeightDp = maxHeight
 
         // 响应式位置计算（基于屏幕高度百分比）
         val topBarBottomPadding = screenHeightDp * 0.09f
@@ -791,12 +792,12 @@ private fun ShutterButton(
 // ─── CompositionTipOverlay ───
 
 @Composable
-private fun CompositionTipOverlay(plan: ShootingPlan, topPadding: Float = 0f) {
+private fun CompositionTipOverlay(plan: ShootingPlan, topPadding: Dp = 0.dp) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .padding(top = topPadding.dp)
+            .padding(top = topPadding)
     ) {
         Row(
             modifier = Modifier
@@ -840,12 +841,12 @@ private fun CompositionTipOverlay(plan: ShootingPlan, topPadding: Float = 0f) {
 // ─── LowLightBanner ───
 
 @Composable
-private fun LowLightBanner(topPadding: Float = 0f) {
+private fun LowLightBanner(topPadding: Dp = 0.dp) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .padding(top = topPadding.dp),
+            .padding(top = topPadding),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -876,11 +877,11 @@ private fun LowLightBanner(topPadding: Float = 0f) {
 // ─── Bottom Tips ───
 
 @Composable
-private fun PitchWarning(bottomOffset: Float = 220f) {
+private fun PitchWarning(bottomOffset: Dp = 220.dp) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = bottomOffset.dp),
+            .padding(bottom = bottomOffset),
         contentAlignment = Alignment.BottomCenter
     ) {
         Row(
@@ -908,11 +909,11 @@ private fun PitchWarning(bottomOffset: Float = 220f) {
 }
 
 @Composable
-private fun SpaceTip(bottomOffset: Float = 220f) {
+private fun SpaceTip(bottomOffset: Dp = 220.dp) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = bottomOffset.dp),
+            .padding(bottom = bottomOffset),
         contentAlignment = Alignment.BottomCenter
     ) {
         Row(
@@ -940,12 +941,12 @@ private fun SpaceTip(bottomOffset: Float = 220f) {
 }
 
 @Composable
-private fun AngleGuide(reqPitch: Float, devicePitch: Float, bottomOffset: Float = 260f) {
+private fun AngleGuide(reqPitch: Float, devicePitch: Float, bottomOffset: Dp = 260.dp) {
     val isReaching = (reqPitch > 0 && devicePitch >= reqPitch) || (reqPitch < 0 && devicePitch <= reqPitch)
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = bottomOffset.dp),
+            .padding(bottom = bottomOffset),
         contentAlignment = Alignment.BottomCenter
     ) {
         Row(

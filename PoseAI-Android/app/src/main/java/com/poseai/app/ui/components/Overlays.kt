@@ -491,12 +491,12 @@ fun LowLightGlowOverlay() {
  * @param topPadding 顶部偏移（dp），由 ContentScreen 根据屏幕高度计算传入
  */
 @Composable
-fun AiAdvisorBanner(text: String, topPadding: Float = 95f) {
+fun AiAdvisorBanner(text: String, topPadding: Dp = 95.dp) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(top = topPadding.dp)
+            .padding(top = topPadding)
             .padding(horizontal = 24.dp)
     ) {
         Row(
@@ -533,8 +533,8 @@ fun AiAdvisorBanner(text: String, topPadding: Float = 95f) {
  * @param screenHeightDp 屏幕高度（dp），用于响应式定位
  */
 @Composable
-fun VlogTextOverlay(text: String, isRecording: Boolean, screenHeightDp: Float = 800f) {
-    val bottomOffset = max(screenHeightDp * 0.33f, 280f).dp
+fun VlogTextOverlay(text: String, isRecording: Boolean, screenHeightDp: Dp = 800.dp) {
+    val bottomOffset = (screenHeightDp * 0.33f).coerceAtLeast(280.dp)
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -772,12 +772,12 @@ fun ZoomLevelIndicator(
  * @param topOffsetDp 顶部偏移（dp），由 ContentScreen 根据屏幕高度计算传入
  */
 @Composable
-fun RecordingProgressBar(current: Int, total: Int, label: String, topOffsetDp: Float = 128f) {
+fun RecordingProgressBar(current: Int, total: Int, label: String, topOffsetDp: Dp = 128.dp) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .padding(top = topOffsetDp.dp)
+            .padding(top = topOffsetDp)
     ) {
         Column(
             modifier = Modifier
