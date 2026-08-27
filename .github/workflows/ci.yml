@@ -37,13 +37,16 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Make gradlew executable
+        run: chmod +x PoseAI-Android/gradlew
+
       - name: Build Debug APK
         working-directory: PoseAI-Android
         env:
           VERSION_CODE: ${{ github.run_number }}
           VERSION_NAME: "1.0.0-ci"
         run: |
-          gradle :app:clean :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g" --stacktrace --console=plain
+          ./gradlew :app:clean :app:assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2g" --stacktrace --console=plain
 
       - name: Verify APK
         run: find PoseAI-Android -name "*.apk" -type f 2>/dev/null

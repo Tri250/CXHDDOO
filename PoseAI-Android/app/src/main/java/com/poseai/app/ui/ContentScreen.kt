@@ -142,7 +142,10 @@ fun ContentScreen(
             val pv = previewView!!
             vm.manager.bindToCamera(lifecycleOwner, pv)
         }
-        onDispose { if (!hasCameraPermission) vm.manager.cleanUp() }
+        onDispose {
+            // 无论权限状态如何，离开时都应清理相机资源
+            vm.manager.cleanUp()
+        }
     }
 
     // 切换摄像头后重新绑定

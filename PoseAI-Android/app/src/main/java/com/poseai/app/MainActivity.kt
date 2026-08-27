@@ -111,7 +111,7 @@ fun PoseAIApp() {
     var showPhotoPreview by rememberSaveable { mutableStateOf(false) }
     var showVideoPreview by rememberSaveable { mutableStateOf(false) }
 
-    // 相机 / 录音 / 存储权限
+    // 相机 / 录音 / 存储 / 通知 权限
     var hasCamera by rememberSaveable {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
@@ -125,6 +125,9 @@ fun PoseAIApp() {
     var hasMediaRead by rememberSaveable {
         mutableStateOf(checkMediaReadPermission(context))
     }
+    var hasNotifications by rememberSaveable {
+        mutableStateOf(checkNotificationPermission(context))
+    }
     var hasLocation by rememberSaveable {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
@@ -132,44 +135,47 @@ fun PoseAIApp() {
         )
     }
 
-    val cameraLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted -> hasCamera = granted }
-    val audioLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted -> hasAudio = granted }
-    val mediaLauncher = rememberLauncherForActivityResult(
+    // 统一权限请求 Launcher（批量请求，避免多个弹窗同时弹出）
+    val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { grants ->
-        hasMediaRead = grants.values.any { it }
-    }
-    val locationLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { grants ->
-        hasLocation = grants.values.any { it }
+        grants.forEach { (perm, granted) ->
+            when (perm) {
+                Manifest.permission.CAMERA -> hasCamera = granted
+                Manifest.permission.RECORD_AUDIO -> hasAudio = granted
+                Manifest.permission.READ_MEDIA_IMAGES,
+                Manifest.permission.READ_MEDIA_VIDEO,
+                Manifest.permission.READ_EXTERNAL_STORAGE -> if (granted) hasMediaRead = true
+                Manifest.permission.POST_NOTIFICATIONS -> hasNotifications = granted
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.ACCESS_FINE_LOCATION -> if (granted) hasLocation = true
+            }
+        }
     }
 
+    // 进入主界面时按优先级批量请求权限（相机 > 录音 > 存储 > 通知 > 定位）
     LaunchedEffect(screen) {
         if (screen == Screen.MAIN) {
-            if (!hasCamera) cameraLauncher.launch(Manifest.permission.CAMERA)
-            if (!hasAudio) audioLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            val needed = mutableListOf<String>()
+            if (!hasCamera) needed.add(Manifest.permission.CAMERA)
+            if (!hasAudio) needed.add(Manifest.permission.RECORD_AUDIO)
             if (!hasMediaRead) {
-                val permissions = mutableListOf<String>()
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                    permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
-                    permissions.add(Manifest.permission.READ_MEDIA_VIDEO)
+                    needed.add(Manifest.permission.READ_MEDIA_IMAGES)
+                    needed.add(Manifest.permission.READ_MEDIA_VIDEO)
                 } else {
-                    permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+                    needed.add(Manifest.permission.READ_EXTERNAL_STORAGE)
                 }
-                mediaLauncher.launch(permissions.toTypedArray())
+            }
+            if (!hasNotifications && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                needed.add(Manifest.permission.POST_NOTIFICATIONS)
             }
             if (!hasLocation) {
-                locationLauncher.launch(
-                    arrayOf(
-                        Manifest.permission.ACCESS_COARSE_LOCATION,
-                        Manifest.permission.ACCESS_FINE_LOCATION
-                    )
-                )
+                needed.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+                needed.add(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
+            if (needed.isNotEmpty()) {
+                permissionLauncher.launch(needed.toTypedArray())
             }
         }
     }
@@ -284,6 +290,15 @@ private fun checkMediaReadPermission(context: android.content.Context): Boolean 
         imgs == PackageManager.PERMISSION_GRANTED || vids == PackageManager.PERMISSION_GRANTED
     } else {
         ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+    }
+}
+
+/** 检查通知权限（Android 13+ 需要 POST_NOTIFICATIONS 运行时权限） */
+private fun checkNotificationPermission(context: android.content.Context): Boolean {
+    return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    } else {
+        true // Android 13 以下不需要运行时权限
     }
 }
 

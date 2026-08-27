@@ -129,11 +129,17 @@ class CameraManager(
 
     @Suppress("UnsafeOptInUsageError")
     fun bindToCamera(lifecycleOwner: androidx.lifecycle.LifecycleOwner, previewView: PreviewView) {
+        this.previewView = previewView
         val providerFuture = ProcessCameraProvider.getInstance(context)
         providerFuture.addListener({
-            val provider = providerFuture.get()
-            cameraProvider = provider
-            bindUseCases(lifecycleOwner, previewView)
+            try {
+                val provider = providerFuture.get()
+                cameraProvider = provider
+                bindUseCases(lifecycleOwner, previewView)
+            } catch (e: Exception) {
+                // ProcessCameraProvider 初始化失败（设备不支持 CameraX 等罕见场景）
+                // 不崩溃，仅记录日志；UI 会显示黑屏，用户可尝试重启 App
+            }
         }, mainExecutor)
     }
 
@@ -282,10 +288,11 @@ class CameraManager(
                     val bitmap = imageProxy.toBitmap()
                     if (bitmap != null && !bitmap.isRecycled) {
                         // 若要发送 OOTD，先同步 downscale 保存引用，再交给 classify 异步处理
+                        // 重要：downscale 必须创建独立的 Bitmap 副本，因为 SceneClassifier 会回收原图
                         val bmpToSend: Bitmap? = synchronized(ootdLock) {
                             if (pendingOOTDRequest) {
                                 pendingOOTDRequest = false
-                                downscale(bitmap, 512)
+                                downscaleToCopy(bitmap, 512)
                             } else null
                         }
                         sceneClassifier.classify(bitmap, onResult = { scene -> handleSceneResult(scene) })
@@ -473,6 +480,20 @@ class CameraManager(
         val scale = maxSize.toFloat() / maxOf(w, h)
         if (scale >= 1f) return src
         return Bitmap.createScaledBitmap(src, (w * scale).toInt(), (h * scale).toInt(), true)
+    }
+
+    /**
+     * 下采样并创建独立的 Bitmap 副本（即使原图已经足够小也会复制）。
+     * 用于需要将 Bitmap 传给异步回收方（SceneClassifier）的同时保留另一份给 OOTD 回调的场景，
+     * 避免原图被回收后 OOTD 回调崩溃。
+     */
+    private fun downscaleToCopy(src: Bitmap, maxSize: Int): Bitmap {
+        val w = src.width
+        val h = src.height
+        val scale = maxSize.toFloat() / maxOf(w, h)
+        val targetW = if (scale >= 1f) w else (w * scale).toInt()
+        val targetH = if (scale >= 1f) h else (h * scale).toInt()
+        return Bitmap.createScaledBitmap(src, targetW, targetH, true)
     }
 
     // MARK: - 拍照
