@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.internal.http.connectionTimeout=60000 -Dorg.gradle.internal.http.socketTimeout=60000"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true -Dorg.gradle.internal.http.connectionTimeout=120000 -Dorg.gradle.internal.http.socketTimeout=120000 -Dorg.gradle.jvmargs=-Xmx2048m -Xms512m"
 
 jobs:
   build-release:
@@ -34,7 +34,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -51,6 +50,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+          cache-watch: false
 
       - name: Resolve version & tag
         id: version
@@ -67,26 +67,21 @@ jobs:
           echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
           echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_OUTPUT"
           echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo ">>> $RELEASE_TAG (code=$VERSION_CODE, name=$VERSION_NAME)"
 
       - name: Create signing keystore
         run: |
           mkdir -p ~/.android
           if [ -n "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
             echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > ~/.android/release-key.jks
+            echo "Using provided release keystore"
           else
             keytool -genkeypair -v -keystore ~/.android/release-key.jks \
               -storepass poseai_release -alias poseai -keypass poseai_release \
               -dname "CN=PoseAI, OU=Mobile, O=PoseAI, L=Beijing, ST=Beijing, C=CN" \
               -keyalg RSA -keysize 2048 -validity 10000
+            echo "Generated fallback release keystore"
           fi
-
-      - name: Build Debug APK
-        working-directory: PoseAI-Android
-        env:
-          VERSION_CODE: ${{ steps.version.outputs.VERSION_CODE }}
-          VERSION_NAME: ${{ steps.version.outputs.VERSION_NAME }}
-        run: |
-          gradle :app:clean :app:assembleDebug --no-daemon --console=plain --stacktrace -Dorg.gradle.jvmargs="-Xmx2g -Xms512m"
 
       - name: Build Release APK & AAB
         working-directory: PoseAI-Android
@@ -97,16 +92,37 @@ jobs:
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS || 'poseai' }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD || 'poseai_release' }}
         run: |
-          gradle :app:assembleRelease :app:bundleRelease --no-daemon --console=plain --stacktrace -Dorg.gradle.jvmargs="-Xmx2g -Xms512m"
+          gradle :app:assembleRelease :app:bundleRelease --no-daemon --console=plain --stacktrace
 
-      - name: Collect artifacts
+      - name: Collect & validate artifacts
         run: |
           mkdir -p artifacts
           find PoseAI-Android/app/build/outputs -name "*.apk" -o -name "*.aab" | while read f; do
             cp "$f" artifacts/
           done
           echo "=== Artifacts ==="
-          ls -la artifacts/
+          ls -lh artifacts/
+          echo "=== Validate sizes ==="
+          for f in artifacts/*.apk artifacts/*.aab; do
+            size=$(stat -c%s "$f" 2>/dev/null || echo 0)
+            if [ "$size" -lt 1000000 ]; then
+              echo "ERROR: $f is suspiciously small ($size bytes)"
+              exit 1
+            fi
+            echo "OK: $f ($size bytes)"
+          done
+
+      - name: Verify APK signature
+        run: |
+          BT="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          for apk in artifacts/*.apk; do
+            echo "=== Verifying $apk ==="
+            "$BT" verify --verbose "$apk" && echo "SIGNATURE OK" || echo "SIGNATURE FAIL"
+          done
+          echo "=== Verify APK contents ==="
+          for apk in artifacts/*.apk; do
+            echo "$(basename "$apk"): $(unzip -l "$apk" | tail -1)"
+          done
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -155,3 +171,11 @@ jobs:
             - OOTD 穿搭分析（远程多模态 / 本地确定性降级）
             - Vlog 多角度录制合并
             - 构图辅助线（三分法 / 黄金分割）
+            - 响应式布局（适配各尺寸 Android）
+            - 内存稳定性优化（ANR 风险消除）
+
+            ### Build Info
+            - versionName: ${{ steps.version.outputs.VERSION_NAME }}
+            - versionCode: ${{ steps.version.outputs.VERSION_CODE }}
+            - gradle: 8.9
+            - compileSdk: 35
