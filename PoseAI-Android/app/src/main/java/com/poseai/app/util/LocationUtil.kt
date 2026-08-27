@@ -74,15 +74,14 @@ object LocationUtil {
     ): Pair<String?, String?> = withContext(Dispatchers.IO) {
         runCatching {
             val geocoder = Geocoder(context, Locale.getDefault())
+            @Suppress("DEPRECATION")
             val addresses: List<Address>? = geocoder.getFromLocation(lat, lng, 1)
             if (addresses.isNullOrEmpty()) return@withContext Pair(null, null)
             val addr = addresses.first()
-            // 地点名：优先 subLocality / thoroughfare / featureName
             val place = addr.subLocality
                 ?: addr.thoroughfare
                 ?: addr.featureName
                 ?: addr.locality
-            // 城市：locality 或 subAdminArea
             val city = addr.locality
                 ?: addr.subAdminArea
                 ?: addr.adminArea
