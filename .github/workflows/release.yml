@@ -22,9 +22,6 @@ concurrency:
   group: android-release
   cancel-in-progress: false
 
-env:
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true -Dorg.gradle.internal.http.connectionTimeout=120000 -Dorg.gradle.internal.http.socketTimeout=120000 -Dorg.gradle.jvmargs=-Xmx2048m -Xms512m"
-
 jobs:
   build-release:
     name: Build Release APK & AAB
@@ -48,7 +45,6 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-          
 
       - name: Resolve version & tag
         id: version
@@ -90,7 +86,8 @@ jobs:
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS || 'poseai' }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD || 'poseai_release' }}
         run: |
-          gradle :app:assembleRelease :app:bundleRelease --no-daemon --console=plain --stacktrace
+          ./gradlew :app:assembleRelease :app:bundleRelease \
+            --no-daemon --console=plain --stacktrace
 
       - name: Collect & validate artifacts
         run: |
