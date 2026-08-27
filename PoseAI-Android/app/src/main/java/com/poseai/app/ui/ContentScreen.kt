@@ -163,14 +163,14 @@ fun ContentScreen(
         val screenHeightDp = with(localDensity) { constraints.maxHeight.toDp() }
 
         // 响应式位置计算（基于屏幕高度百分比）
-        val topBarBottomPadding = with(localDensity) { screenHeightDp * 0.09f }
-        val aiBannerTopPadding = with(localDensity) { screenHeightDp * 0.12f }
-        val tipOverlayTopPadding = with(localDensity) { screenHeightDp * 0.16f }
-        val lowLightBannerTopPadding = with(localDensity) { screenHeightDp * 0.13f }
-        val bottomTipOffset = with(localDensity) { max(screenHeightDp * 0.35f, 220.dp) }
-        val angleGuideOffset = with(localDensity) { max(screenHeightDp * 0.40f, 260.dp) }
-        val progressBarTopOffset = with(localDensity) { screenHeightDp * 0.16f }
-        val arFootprintsBottomPadding = with(localDensity) { screenHeightDp * 0.35f }
+        val topBarBottomPadding = screenHeightDp * 0.09f
+        val aiBannerTopPadding = screenHeightDp * 0.12f
+        val tipOverlayTopPadding = screenHeightDp * 0.16f
+        val lowLightBannerTopPadding = screenHeightDp * 0.13f
+        val bottomTipOffset = (screenHeightDp * 0.35f).coerceAtLeast(220.dp)
+        val angleGuideOffset = (screenHeightDp * 0.40f).coerceAtLeast(260.dp)
+        val progressBarTopOffset = screenHeightDp * 0.16f
+        val arFootprintsBottomPadding = screenHeightDp * 0.35f
 
         // 1. 相机预览层
         if (hasCameraPermission) {

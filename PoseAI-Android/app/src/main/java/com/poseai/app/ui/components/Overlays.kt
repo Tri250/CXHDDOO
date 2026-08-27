@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -298,7 +299,7 @@ fun ScoreRing(score: Float, isReady: Boolean) {
  * @param screenHeightDp 屏幕高度（dp），用于响应式定位底部提示
  */
 @Composable
-fun SceneScanningOverlay(screenHeightDp: Float = 800f) {
+fun SceneScanningOverlay(screenHeightDp: Dp = 800.dp) {
     val infiniteTransition = rememberInfiniteTransition(label = "scanPulse")
     val pulseSize by animateFloatAsState(
         targetValue = 220f,
@@ -392,7 +393,7 @@ fun SceneScanningOverlay(screenHeightDp: Float = 800f) {
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.offset(y = bottomTipOffset.dp)
+            modifier = Modifier.offset(y = bottomTipOffset)
         ) {
             Text(
                 "将镜头对准拍摄背景",
@@ -438,13 +439,13 @@ private fun ScanCornerLinesModifier() {
  * @param bottomPadding 底部偏移（dp），由 ContentScreen 根据屏幕高度计算传入
  */
 @Composable
-fun ARFootprintsOverlay(bottomPadding: Float = 220f) {
+fun ARFootprintsOverlay(bottomPadding: Dp = 220.dp) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.BottomCenter
     ) {
         Row(
-            modifier = Modifier.padding(bottom = bottomPadding.dp),
+            modifier = Modifier.padding(bottom = bottomPadding),
             horizontalArrangement = Arrangement.spacedBy(36.dp)
         ) {
             Text("👣", fontSize = 24.sp, color = Brand.Accent.copy(alpha = 0.25f),
