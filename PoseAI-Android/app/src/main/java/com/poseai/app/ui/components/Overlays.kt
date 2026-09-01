@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -39,14 +40,18 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.poseai.app.design.AppIcons
 import com.poseai.app.design.Brand
+import com.poseai.app.design.materialIcon
 import com.poseai.app.model.CompositionRule
 import com.poseai.app.model.ShootingPlan
 import kotlin.math.abs
@@ -448,10 +453,22 @@ fun ARFootprintsOverlay(bottomPadding: Dp = 220.dp) {
             modifier = Modifier.padding(bottom = bottomPadding),
             horizontalArrangement = Arrangement.spacedBy(36.dp)
         ) {
-            Text("👣", fontSize = 24.sp, color = Brand.Accent.copy(alpha = 0.25f),
-                modifier = Modifier.graphicsLayer { rotationZ = -12f })
-            Text("👣", fontSize = 24.sp, color = Brand.Accent.copy(alpha = 0.25f),
-                modifier = Modifier.graphicsLayer { rotationZ = 12f })
+            Icon(
+                imageVector = AppIcons.Footprint,
+                contentDescription = null,
+                tint = Brand.Accent.copy(alpha = 0.25f),
+                modifier = Modifier
+                    .size(28.dp)
+                    .graphicsLayer { rotationZ = -12f }
+            )
+            Icon(
+                imageVector = AppIcons.Footprint,
+                contentDescription = null,
+                tint = Brand.Accent.copy(alpha = 0.25f),
+                modifier = Modifier
+                    .size(28.dp)
+                    .graphicsLayer { rotationZ = 12f }
+            )
         }
     }
 }
@@ -504,7 +521,7 @@ fun AiAdvisorBanner(text: String, topPadding: Dp = 95.dp) {
                 .fillMaxWidth()
                 .background(
                     Brand.Surface,
-                    RoundedCornerShape(18.dp)
+                    RoundedCornerShape(Brand.Radius.Lg)
                 )
                 .border(
                     1.5.dp,
@@ -513,11 +530,18 @@ fun AiAdvisorBanner(text: String, topPadding: Dp = 95.dp) {
                         start = androidx.compose.ui.geometry.Offset(0f, 0f),
                         end = androidx.compose.ui.geometry.Offset(1f, 1f)
                     ),
-                    RoundedCornerShape(18.dp)
+                    RoundedCornerShape(Brand.Radius.Lg)
                 )
                 .padding(horizontal = 18.dp, vertical = 14.dp),
         ) {
-            Text("✨", fontSize = 18.sp, modifier = Modifier.padding(top = 2.dp))
+            Icon(
+                imageVector = AppIcons.AiSparkle,
+                contentDescription = null,
+                tint = Brand.AI_Purple,
+                modifier = Modifier
+                    .size(20.dp)
+                    .padding(top = 2.dp)
+            )
             Column(modifier = Modifier.padding(start = 12.dp)) {
                 Text("AI 构图灵感", color = Brand.AI_Purple, fontSize = 13.sp, fontWeight = FontWeight.Black)
                 Text(text, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium,
@@ -544,7 +568,7 @@ fun VlogTextOverlay(text: String, isRecording: Boolean, screenHeightDp: Dp = 800
     ) {
         Box(
             modifier = Modifier
-                .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
+                .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(Brand.Radius.Md))
                 .padding(horizontal = 24.dp, vertical = 14.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -558,9 +582,9 @@ fun VlogTextOverlay(text: String, isRecording: Boolean, screenHeightDp: Dp = 800
     }
 }
 
-/** 方案小标签——复刻 iOS TagBadge */
+/** 方案小标签——复刻 iOS TagBadge。icon 直接接收 Material 矢量图标,避免渲染 SF Symbol 字符串 */
 @Composable
-private fun TagBadge(icon: String, text: String, active: Boolean) {
+private fun TagBadge(icon: ImageVector, text: String, active: Boolean) {
     Row(
         modifier = Modifier
             .background(
@@ -571,15 +595,22 @@ private fun TagBadge(icon: String, text: String, active: Boolean) {
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(icon, fontSize = 11.sp)
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (active) Brand.Accent else Color.White.copy(alpha = 0.7f),
+            modifier = Modifier.size(12.dp)
+        )
         Text(text, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
             color = if (active) Brand.Accent else Color.White.copy(alpha = 0.7f))
     }
 }
 
-/** 方案选择卡片（紧凑 pill）——复刻 iOS PlanCard */
+/** 方案选择卡片（紧凑 pill）——复刻 iOS PlanCard。
+ *  Android 端不再渲染 iOS poseEmoji (emoji 字符),改为由父层注入矢量图标,
+ *  保证视觉风格统一,对齐国内主流相机 APP 的矢量图标体系。 */
 @Composable
-fun PlanCard(plan: ShootingPlan, isSelected: Boolean, onClick: () -> Unit) {
+fun PlanCard(plan: ShootingPlan, icon: ImageVector, isSelected: Boolean, onClick: () -> Unit) {
     val glowAlpha by animateFloatAsState(
         targetValue = if (isSelected) 0.4f else 0f,
         animationSpec = tween(300),
@@ -611,31 +642,37 @@ fun PlanCard(plan: ShootingPlan, isSelected: Boolean, onClick: () -> Unit) {
                         end = androidx.compose.ui.geometry.Offset(0f, 1f)
                     )
                 },
-                RoundedCornerShape(12.dp)
+                RoundedCornerShape(Brand.Radius.Md)
             )
             .border(
                 width = if (isSelected) 1.5.dp else 1.dp,
                 color = if (isSelected) Brand.Accent.copy(alpha = 0.75f) else Brand.Border,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(Brand.Radius.Md)
             )
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(plan.poseEmoji, fontSize = 16.sp)
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (isSelected) Brand.Accent else Color.White.copy(alpha = 0.7f),
+                modifier = Modifier.size(16.dp)
+            )
             Text(
                 plan.poseName,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
-                maxLines = 1
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
         if (isSelected) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                TagBadge(icon = plan.composition.icon, text = plan.composition.displayName, active = true)
-                TagBadge(icon = plan.frameRatio.icon, text = plan.frameRatio.displayName, active = true)
+                TagBadge(icon = plan.composition.materialIcon, text = plan.composition.displayName, active = true)
+                TagBadge(icon = plan.frameRatio.materialIcon, text = plan.frameRatio.displayName, active = true)
             }
         }
     }
@@ -781,8 +818,8 @@ fun RecordingProgressBar(current: Int, total: Int, label: String, topOffsetDp: D
     ) {
         Column(
             modifier = Modifier
-                .background(Brand.Surface.copy(alpha = 0.9f), RoundedCornerShape(14.dp))
-                .border(1.dp, Brand.Coral.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
+                .background(Brand.Surface.copy(alpha = 0.9f), RoundedCornerShape(Brand.Radius.Md))
+                .border(1.dp, Brand.Coral.copy(alpha = 0.4f), RoundedCornerShape(Brand.Radius.Md))
                 .padding(horizontal = 14.dp, vertical = 10.dp)
                 .fillMaxWidth()
         ) {
@@ -791,14 +828,18 @@ fun RecordingProgressBar(current: Int, total: Int, label: String, topOffsetDp: D
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    // 录制红点 (单独的 Box),文字不再重复 "●" 前缀,避免出现双圆点
                     Box(
                         modifier = Modifier
                             .size(6.dp)
                             .background(Brand.Coral, CircleShape)
                     )
                     Text(
-                        text = " ● $label",
+                        text = label,
                         color = Color.White,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
@@ -812,7 +853,7 @@ fun RecordingProgressBar(current: Int, total: Int, label: String, topOffsetDp: D
                 )
             }
             Spacer(Modifier.height(6.dp))
-            // 总体进度点
+            // 总体进度条 - 每段等宽分配,使用 weight(1f) 而非 fillMaxWidth()
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(3.dp)
@@ -820,14 +861,13 @@ fun RecordingProgressBar(current: Int, total: Int, label: String, topOffsetDp: D
                 repeat(total) { idx ->
                     Box(
                         modifier = Modifier
-                            .then(if (idx == 0) Modifier else Modifier)
+                            .weight(1f)
                             .height(2.dp)
                             .background(
                                 if (idx < current) Brand.Coral
                                 else Color.White.copy(alpha = 0.2f),
-                                RoundedCornerShape(2.dp)
+                                RoundedCornerShape(Brand.Radius.Xs)
                             )
-                            .fillMaxWidth()
                     )
                 }
             }

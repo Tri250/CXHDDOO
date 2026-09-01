@@ -1,9 +1,17 @@
 package com.poseai.app.ui
 
+import androidx.camera.view.PreviewView
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,6 +36,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -43,6 +52,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -52,9 +62,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.camera.view.PreviewView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.poseai.app.design.AppIcons
 import com.poseai.app.design.Brand
+import com.poseai.app.design.materialIcon
 import com.poseai.app.model.FrameRatio
 import com.poseai.app.model.SceneType
 import com.poseai.app.model.ShootingPlan
@@ -72,7 +83,6 @@ import com.poseai.app.ui.components.VlogTextOverlay
 import com.poseai.app.ui.components.ZoomLevelIndicator
 import com.poseai.app.viewmodel.ShootingViewModel
 import kotlinx.coroutines.delay
-import kotlin.math.max
 
 @Composable
 fun ContentScreen(
@@ -193,19 +203,24 @@ fun ContentScreen(
             }
         }
 
-        // 2. 手势层：双击缩放 + 单击对焦 + 长按变焦面板
+        // 2. 手势层：单击对焦 + 双击切换沉浸 + 长按拖动变焦
+        // 对齐国内主流相机 APP 交互：单击预览区即可对焦 (设置对焦框 + 调用 CameraX FocusMeteringAction),
+        // 双击切换沉浸模式隐藏 UI chrome,长按拖动调出变焦档位条。
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(Unit) {
                     detectTapGestures(
-                        onDoubleTap = { offset ->
-                            val newZoom = if (zoomLevel > 1.5f) 1f else 2f
-                            zoomLevel = newZoom
-                            vm.setZoom(newZoom)
+                        onDoubleTap = {
+                            vm.toggleImmersiveMode()
                         },
                         onTap = { offset ->
-                            vm.toggleImmersiveMode()
+                            // 归一化到预览坐标,触发 CameraX 对焦测光
+                            val normX = (offset.x / screenW).coerceIn(0f, 1f)
+                            val normY = (offset.y / screenH).coerceIn(0f, 1f)
+                            focusPoint = offset
+                            showFocusIndicator = true
+                            vm.focusAt(normX, normY)
                         }
                     )
                 }
@@ -267,8 +282,12 @@ fun ContentScreen(
             ARFootprintsOverlay(bottomPadding = arFootprintsBottomPadding)
         }
 
-        // 6. 顶部信息栏（固定在顶部）
-        if (!isImmersive) {
+        // 6. 顶部信息栏（固定在顶部，沉浸模式下淡出滑出）
+        AnimatedVisibility(
+            visible = !isImmersive,
+            enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut()
+        ) {
             TopBar(
                 scene = scene,
                 plan = plan,
@@ -341,6 +360,7 @@ fun ContentScreen(
             vm = vm,
             isSceneReady = isSceneReady && vm.availablePlans.isNotEmpty(),
             isImmersive = isImmersive,
+            sceneIcon = scene.materialIcon,
             plans = vm.availablePlans,
             currentPlanIndex = currentPlanIndex,
             timerSeconds = timerSeconds,
@@ -416,7 +436,12 @@ private fun TopBar(
                         .background(Brand.Surface, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(scene.icon, fontSize = 14.sp, color = Brand.Accent)
+                    Icon(
+                        imageVector = scene.materialIcon,
+                        contentDescription = scene.displayName,
+                        tint = Brand.Accent,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
 
                 Column(
@@ -431,16 +456,13 @@ private fun TopBar(
                         overflow = TextOverflow.Ellipsis
                     )
                     val subtitle = when {
-                        plan.vlogScript != null && activeVlogClipIndex < plan.vlogScript.clips.size -> {
-                            val isRecording = isVlogRecording
-                            val color = if (isRecording) Brand.Coral else Brand.TextSecondary
+                        plan.vlogScript != null && activeVlogClipIndex < plan.vlogScript.clips.size ->
                             "分镜 ${activeVlogClipIndex + 1}/${plan.vlogScript.clips.size}"
-                        }
                         plan.sequence != null && activeSequenceIndex < plan.sequence.size ->
                             "${activeSequenceIndex + 1}/${plan.sequence.size} ${plan.sequence[activeSequenceIndex].title}"
                         plan.multiAngles != null && activeAngleIndex < plan.multiAngles.size ->
                             "${activeAngleIndex + 1}/${plan.multiAngles.size} ${plan.multiAngles[activeAngleIndex].title}"
-                        else -> "${plan.poseEmoji} ${plan.poseName}"
+                        else -> plan.poseName
                     }
                     val subColor = when {
                         plan.vlogScript != null -> Brand.Coral
@@ -476,7 +498,12 @@ private fun TopBar(
                 .clickable { onGuide() },
             contentAlignment = Alignment.Center
         ) {
-            Text("?", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Icon(
+                imageVector = AppIcons.Help,
+                contentDescription = "拍摄引导",
+                tint = Color.White,
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }
@@ -488,6 +515,7 @@ private fun BottomPanel(
     vm: ShootingViewModel,
     isSceneReady: Boolean,
     isImmersive: Boolean,
+    sceneIcon: ImageVector,
     plans: List<ShootingPlan>,
     currentPlanIndex: Int,
     timerSeconds: Int,
@@ -504,9 +532,14 @@ private fun BottomPanel(
             .navigationBarsPadding()
             .padding(bottom = 12.dp)
     ) {
-        if (isSceneReady && !isImmersive) {
+        AnimatedVisibility(
+            visible = isSceneReady && !isImmersive,
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+        ) {
             PlanPickerSection(
                 plans = plans,
+                sceneIcon = sceneIcon,
                 currentIndex = currentPlanIndex,
                 onSelect = { vm.selectPlan(it) },
                 onStartRecording = { vm.startRecordingCustomPlan() },
@@ -530,6 +563,7 @@ private fun BottomPanel(
 @Composable
 private fun PlanPickerSection(
     plans: List<ShootingPlan>,
+    sceneIcon: ImageVector,
     currentIndex: Int,
     onSelect: (Int) -> Unit,
     onStartRecording: () -> Unit,
@@ -554,22 +588,23 @@ private fun PlanPickerSection(
                 modifier = Modifier
                     .background(
                         if (isRecordingMode) Brand.Coral.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.08f),
-                        RoundedCornerShape(12.dp)
+                        RoundedCornerShape(Brand.Radius.Md)
                     )
                     .border(
                         1.dp,
                         if (isRecordingMode) Brand.Coral.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.3f),
-                        RoundedCornerShape(12.dp)
+                        RoundedCornerShape(Brand.Radius.Md)
                     )
                     .clickable { onStartRecording() }
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Text(
-                    text = if (isRecordingMode) "●" else "＋",
-                    color = if (isRecordingMode) Brand.Coral else Color.White,
-                    fontSize = 18.sp
+                Icon(
+                    imageVector = if (isRecordingMode) AppIcons.RecordingDot else AppIcons.RecordCustom,
+                    contentDescription = if (isRecordingMode) "正在捕捉" else "录制专属方案",
+                    tint = if (isRecordingMode) Brand.Coral else Color.White,
+                    modifier = Modifier.size(20.dp)
                 )
                 Text(
                     text = if (isRecordingMode) "捕捉中..." else "录制专属",
@@ -582,6 +617,7 @@ private fun PlanPickerSection(
         itemsIndexed(plans) { idx, plan ->
             PlanCard(
                 plan = plan,
+                icon = sceneIcon,
                 isSelected = idx == currentIndex,
                 onClick = { onSelect(idx) }
             )
@@ -611,12 +647,17 @@ private fun ControlRow(
             modifier = Modifier
                 .weight(1f)
                 .size(50.dp)
-                .background(Brand.Surface, RoundedCornerShape(12.dp))
-                .border(1.dp, Brand.Border, RoundedCornerShape(12.dp))
+                .background(Brand.Surface, RoundedCornerShape(Brand.Radius.Md))
+                .border(1.dp, Brand.Border, RoundedCornerShape(Brand.Radius.Md))
                 .clickable { onHistory() },
             contentAlignment = Alignment.Center
         ) {
-            Text("🖼", fontSize = 19.sp)
+            Icon(
+                imageVector = AppIcons.History,
+                contentDescription = "拍摄历史",
+                tint = Color.White,
+                modifier = Modifier.size(22.dp)
+            )
         }
 
         // Center: Shutter
@@ -645,7 +686,12 @@ private fun ControlRow(
                     .clickable { onToggleCamera() },
                 contentAlignment = Alignment.Center
             ) {
-                Text("🔄", fontSize = 18.sp)
+                Icon(
+                    imageVector = AppIcons.FlipCamera,
+                    contentDescription = if (isFrontCamera) "切换到后置摄像头" else "切换到前置摄像头",
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp)
+                )
             }
 
             Spacer(Modifier.size(12.dp))
@@ -666,10 +712,15 @@ private fun ControlRow(
                 contentAlignment = Alignment.Center
             ) {
                 if (timerSeconds == 0) {
-                    Text("⏱", fontSize = 18.sp, color = Brand.TextSecondary)
+                    Icon(
+                        imageVector = AppIcons.Timer,
+                        contentDescription = "倒计时",
+                        tint = Brand.TextSecondary,
+                        modifier = Modifier.size(22.dp)
+                    )
                 } else {
                     Text(
-                        text = "$timerSeconds",
+                        text = "${timerSeconds}s",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = Brand.Accent
@@ -688,30 +739,19 @@ private fun ShutterButton(
     isCapturing: Boolean,
     onClick: () -> Unit
 ) {
-    val breathScale by animateFloatAsState(
-        targetValue = 1.05f,
+    // 呼吸动画：使用 rememberInfiniteTransition 让外发光环在 1.0 ↔ 1.5 之间真正往复运动,
+    // 复刻 iOS vm.breathingScale (1.0 → 1.5) 的呼吸效果。
+    // 修复前:breathScale 用 animateFloatAsState + 常量 targetValue(1.05f) + Reverse,
+    // 由于 targetValue 不变,动画根本不会发生 (dead animation)。
+    val infiniteTransition = rememberInfiniteTransition(label = "shutterBreath")
+    val breathScale by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.5f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1100),
+            animation = tween(durationMillis = 1100, easing = androidx.compose.animation.core.FastOutSlowInEasing),
             repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
         ),
         label = "breathScale"
-    )
-    val glowAlpha by animateFloatAsState(
-        targetValue = 0.1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1100),
-            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
-        ),
-        label = "glowAlpha"
-    )
-
-    val readyGlowAlpha by animateFloatAsState(
-        targetValue = 0.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1100),
-            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
-        ),
-        label = "readyGlowAlpha"
     )
 
     val pressedScale by animateFloatAsState(
@@ -726,27 +766,29 @@ private fun ShutterButton(
         modifier = Modifier
             .size(92.dp)
             .graphicsLayer {
-                scaleX = pressedScale * if (isReady) breathScale else 1f
-                scaleY = pressedScale * if (isReady) breathScale else 1f
+                // 内圆主体仅按就绪/按下状态缩放,不参与呼吸往复 (对齐 iOS:
+                // .scaleEffect(vm.isCapturing ? 0.92 : (vm.isReady ? 1.05 : 1.0)))
+                scaleX = pressedScale
+                scaleY = pressedScale
             }
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        // Outer glow (when ready)
+        // 外发光 (就绪时呼吸),尺寸 82dp,缩放 1.0 ↔ 1.5,透明度随之衰减
         if (isReady) {
             Box(
                 modifier = Modifier
                     .size(82.dp)
                     .graphicsLayer {
-                        scaleX = breathScale * 1.5f
-                        scaleY = breathScale * 1.5f
-                        alpha = 2.0f - (breathScale * 1.5f)
+                        scaleX = breathScale
+                        scaleY = breathScale
+                        alpha = (2.0f - breathScale).coerceIn(0f, 1f)
                     }
-                    .background(Brand.SuccessGlow.copy(alpha = readyGlowAlpha), CircleShape)
+                    .background(Brand.SuccessGlow, CircleShape)
             )
         }
 
-        // Outer ring
+        // 外圈轨道
         Box(
             modifier = Modifier
                 .size(82.dp)
@@ -757,7 +799,7 @@ private fun ShutterButton(
                 )
         )
 
-        // Inner circle
+        // 内圆主体
         Box(
             modifier = Modifier
                 .size(68.dp)
@@ -780,7 +822,12 @@ private fun ShutterButton(
             contentAlignment = Alignment.Center
         ) {
             if (isReady) {
-                Text("●", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Icon(
+                    imageVector = AppIcons.ShutterReady,
+                    contentDescription = "拍照,姿势已对齐",
+                    tint = Color.White,
+                    modifier = Modifier.size(26.dp)
+                )
             } else {
                 Box(
                     modifier = Modifier
@@ -821,7 +868,12 @@ private fun CompositionTipOverlay(plan: ShootingPlan, topPadding: Dp = 0.dp) {
                     .background(Brand.Accent.copy(alpha = 0.2f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text(plan.composition.icon, fontSize = 14.sp, color = Brand.Accent)
+                Icon(
+                    imageVector = plan.composition.materialIcon,
+                    contentDescription = plan.composition.displayName,
+                    tint = Brand.Accent,
+                    modifier = Modifier.size(18.dp)
+                )
             }
             Column {
                 Text(
@@ -859,14 +911,19 @@ private fun LowLightBanner(topPadding: Dp = 0.dp) {
                     Brush.verticalGradient(
                         listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
                     ),
-                    RoundedCornerShape(18.dp)
+                    RoundedCornerShape(Brand.Radius.Lg)
                 )
-                .border(1.dp, Color(0x66FFEB3B), RoundedCornerShape(18.dp))
+                .border(1.dp, Brand.Warning, RoundedCornerShape(Brand.Radius.Lg))
                 .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text("💡", fontSize = 14.sp)
+            Icon(
+                imageVector = AppIcons.Lightbulb,
+                contentDescription = null,
+                tint = Brand.Warning,
+                modifier = Modifier.size(18.dp)
+            )
             Text(
                 text = "光线不足，移到明亮处效果更好",
                 color = Color.White.copy(alpha = 0.9f),
@@ -893,14 +950,19 @@ private fun PitchWarning(bottomOffset: Dp = 220.dp) {
                     Brush.verticalGradient(
                         listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
                     ),
-                    RoundedCornerShape(18.dp)
+                    RoundedCornerShape(Brand.Radius.Lg)
                 )
-                .border(1.dp, Brand.Coral.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+                .border(1.dp, Brand.Coral.copy(alpha = 0.5f), RoundedCornerShape(Brand.Radius.Lg))
                 .padding(horizontal = 18.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text("⚠️", color = Brand.Coral, fontSize = 14.sp)
+            Icon(
+                imageVector = AppIcons.Warning,
+                contentDescription = null,
+                tint = Brand.Coral,
+                modifier = Modifier.size(18.dp)
+            )
             Text(
                 text = "请平行或低角度拍摄，显腿更长",
                 color = Color.White,
@@ -925,14 +987,19 @@ private fun SpaceTip(bottomOffset: Dp = 220.dp) {
                     Brush.verticalGradient(
                         listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
                     ),
-                    RoundedCornerShape(18.dp)
+                    RoundedCornerShape(Brand.Radius.Lg)
                 )
-                .border(1.dp, Brand.Accent.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+                .border(1.dp, Brand.Accent.copy(alpha = 0.5f), RoundedCornerShape(Brand.Radius.Lg))
                 .padding(horizontal = 18.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text("✨", color = Brand.Accent, fontSize = 14.sp)
+            Icon(
+                imageVector = AppIcons.AiSparkle,
+                contentDescription = null,
+                tint = Brand.Accent,
+                modifier = Modifier.size(18.dp)
+            )
             Text(
                 text = "尝试平移留出一点空白，更有氛围感",
                 color = Color.White,
@@ -958,12 +1025,12 @@ private fun AngleGuide(reqPitch: Float, devicePitch: Float, bottomOffset: Dp = 2
                     Brush.verticalGradient(
                         listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
                     ),
-                    RoundedCornerShape(18.dp)
+                    RoundedCornerShape(Brand.Radius.Lg)
                 )
                 .border(
                     2.dp,
                     if (isReaching) Brand.Success.copy(alpha = 0.8f) else Brand.Coral.copy(alpha = 0.8f),
-                    RoundedCornerShape(18.dp)
+                    RoundedCornerShape(Brand.Radius.Lg)
                 )
                 .padding(horizontal = 20.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
