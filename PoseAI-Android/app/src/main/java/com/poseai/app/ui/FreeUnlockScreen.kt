@@ -38,9 +38,8 @@ fun FreeUnlockScreen(onStart: () -> Unit) {
             .background(
                 Brush.verticalGradient(
                     listOf(
-                        Color(0xFF1A140B),
-                        Color(0xFF120A08),
-                        Color(0xFF0A0A10)
+                        Brand.SurfaceLow,
+                        Brand.Screen
                     )
                 )
             )
@@ -121,7 +120,7 @@ fun FreeUnlockScreen(onStart: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
-                    .background(Brush.horizontalGradient(listOf(Color(0xFFFFD98A), Brand.Gold)), RoundedCornerShape(28.dp))
+                    .background(Brush.horizontalGradient(listOf(Brand.Accent, Brand.AccentSoft)), RoundedCornerShape(28.dp))
                     .clickable { onStart() },
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically

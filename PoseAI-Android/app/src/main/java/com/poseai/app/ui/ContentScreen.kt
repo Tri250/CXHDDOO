@@ -28,6 +28,11 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Cameraswitch
+import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -55,6 +60,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.poseai.app.design.Brand
+import com.poseai.app.design.Type
 import com.poseai.app.model.FrameRatio
 import com.poseai.app.model.SceneType
 import com.poseai.app.model.ShootingPlan
@@ -401,7 +407,7 @@ private fun TopBar(
                 modifier = Modifier
                     .background(
                         Brush.verticalGradient(
-                            listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
+                            listOf(Brand.Surface, Brand.Surface)
                         ),
                         RoundedCornerShape(Brand.Radius.Lg)
                     )
@@ -616,7 +622,11 @@ private fun ControlRow(
                 .clickable { onHistory() },
             contentAlignment = Alignment.Center
         ) {
-            Text("🖼", fontSize = 19.sp)
+            Icon(
+                imageVector = Icons.Outlined.PhotoLibrary,
+                contentDescription = "相册",
+                tint = Brand.TextPrimary
+            )
         }
 
         // Center: Shutter
@@ -645,7 +655,11 @@ private fun ControlRow(
                     .clickable { onToggleCamera() },
                 contentAlignment = Alignment.Center
             ) {
-                Text("🔄", fontSize = 18.sp)
+                Icon(
+                    imageVector = Icons.Outlined.Cameraswitch,
+                    contentDescription = "切换摄像头",
+                    tint = Brand.TextPrimary
+                )
             }
 
             Spacer(Modifier.size(12.dp))
@@ -666,7 +680,11 @@ private fun ControlRow(
                 contentAlignment = Alignment.Center
             ) {
                 if (timerSeconds == 0) {
-                    Text("⏱", fontSize = 18.sp, color = Brand.TextSecondary)
+                    Icon(
+                        imageVector = Icons.Outlined.Timer,
+                        contentDescription = "定时",
+                        tint = Brand.TextSecondary
+                    )
                 } else {
                     Text(
                         text = "$timerSeconds",
@@ -806,7 +824,7 @@ private fun CompositionTipOverlay(plan: ShootingPlan, topPadding: Dp = 0.dp) {
             modifier = Modifier
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
+                        listOf(Brand.Surface, Brand.Surface)
                     ),
                     RoundedCornerShape(Brand.Radius.Lg)
                 )
@@ -857,7 +875,7 @@ private fun LowLightBanner(topPadding: Dp = 0.dp) {
             modifier = Modifier
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
+                        listOf(Brand.Surface, Brand.Surface)
                     ),
                     RoundedCornerShape(18.dp)
                 )
@@ -891,7 +909,7 @@ private fun PitchWarning(bottomOffset: Dp = 220.dp) {
             modifier = Modifier
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
+                        listOf(Brand.Surface, Brand.Surface)
                     ),
                     RoundedCornerShape(18.dp)
                 )
@@ -923,7 +941,7 @@ private fun SpaceTip(bottomOffset: Dp = 220.dp) {
             modifier = Modifier
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
+                        listOf(Brand.Surface, Brand.Surface)
                     ),
                     RoundedCornerShape(18.dp)
                 )
@@ -956,7 +974,7 @@ private fun AngleGuide(reqPitch: Float, devicePitch: Float, bottomOffset: Dp = 2
             modifier = Modifier
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
+                        listOf(Brand.Surface, Brand.Surface)
                     ),
                     RoundedCornerShape(18.dp)
                 )
@@ -1030,9 +1048,8 @@ private fun AnimatedCountdown(seconds: Int, isRecording: Boolean = false) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(
             text = "$seconds",
-            color = if (isRecording) Brand.Success.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.9f),
-            fontSize = 130.sp,
-            fontWeight = FontWeight.Light,
+            style = Type.display,
+            color = if (isRecording) Brand.Success.copy(alpha = 0.9f) else Brand.TextPrimary.copy(alpha = 0.9f),
             modifier = Modifier.graphicsLayer {
                 scaleX = scaleAnim
                 scaleY = scaleAnim

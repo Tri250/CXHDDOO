@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.poseai.app.design.Brand
+import com.poseai.app.design.Type
 import com.poseai.app.model.CompositionRule
 import com.poseai.app.model.ShootingPlan
 import kotlin.math.abs
@@ -384,9 +385,8 @@ fun SceneScanningOverlay(screenHeightDp: Dp = 800.dp) {
 
             Text(
                 "识别场景中…",
-                color = Color.White,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
+                style = Type.caption,
+                color = Brand.TextPrimary,
                 modifier = Modifier.padding(top = 10.dp)
             )
         }
@@ -397,14 +397,13 @@ fun SceneScanningOverlay(screenHeightDp: Dp = 800.dp) {
         ) {
             Text(
                 "将镜头对准拍摄背景",
-                color = Color.White.copy(alpha = 0.85f),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
+                style = Type.body,
+                color = Brand.TextPrimary.copy(alpha = 0.85f)
             )
             Text(
                 "咖啡馆 · 海边 · 森林",
+                style = Type.label,
                 color = Brand.Accent.copy(alpha = 0.7f),
-                fontSize = 12.sp,
                 letterSpacing = 2.sp,
                 modifier = Modifier.padding(top = 6.dp)
             )
@@ -519,9 +518,8 @@ fun AiAdvisorBanner(text: String, topPadding: Dp = 95.dp) {
         ) {
             Text("✨", fontSize = 18.sp, modifier = Modifier.padding(top = 2.dp))
             Column(modifier = Modifier.padding(start = 12.dp)) {
-                Text("AI 构图灵感", color = Brand.AI_Purple, fontSize = 13.sp, fontWeight = FontWeight.Black)
-                Text(text, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium,
-                    lineHeight = 20.sp)
+                Text("AI 构图灵感", style = Type.label, color = Brand.AI_Purple)
+                Text(text, style = Type.bodySecondary, color = Brand.TextPrimary)
             }
         }
     }

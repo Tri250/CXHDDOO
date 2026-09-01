@@ -96,7 +96,7 @@ fun OnboardingScreen(
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color(0xFF14141F), Color.Black)
+                        listOf(Brand.SurfaceLow, Brand.Screen)
                     )
                 )
         )

@@ -12,6 +12,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,6 +27,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.poseai.app.data.ShootingRecordEntity
+import com.poseai.app.design.Brand
+import com.poseai.app.design.Type
 import com.poseai.app.model.PhotoRecord
 import com.poseai.app.model.ShotResult
 import com.poseai.app.ui.ContentScreen
@@ -55,7 +59,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            PoseAIApp()
+            // 全局设计基底：Doka 中性配色 + Inter 字体排版体系
+            MaterialTheme(
+                colorScheme = darkColorScheme(
+                    background = Brand.Screen,
+                    surface = Brand.Surface,
+                    onBackground = Brand.TextPrimary,
+                    onSurface = Brand.TextPrimary,
+                ),
+                typography = Type.material(),
+            ) {
+                PoseAIApp()
+            }
         }
     }
 }
